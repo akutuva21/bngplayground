@@ -15,7 +15,10 @@ interface ContactMapViewerProps {
 const BASE_LAYOUT = {
   name: 'cose',
   animate: false,
-  padding: 20,
+  padding: 40,
+  componentSpacing: 80,
+  nodeRepulsion: 200000,
+  nestingFactor: 5,
 } as const;
 
 export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, selectedRuleId, onSelectRule }) => {
@@ -50,18 +53,17 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
         {
           selector: 'node[type = "molecule"]',
           style: {
-            'background-color': 'data(color)',
-            'border-color': theme === 'dark' ? '#FFFFFF' : '#000000',
-            'border-width': 2,
+            'background-color': '#EFEFEF', // BNG yEd standard
+            'border-color': '#999999',
+            'border-width': 1,
             'text-valign': 'top',
             'text-halign': 'center',
             label: 'data(label)',
-            shape: 'round-rectangle',
-            padding: '10px',
+            shape: 'ellipse', // BNG yEd uses ellipse
+            padding: '12px',
             'font-size': 14,
-            'font-weight': 700,
-            // Simple black/white text based on theme
-            color: theme === 'dark' ? '#FFFFFF' : '#000000',
+            'font-weight': 700, // bold
+            color: '#000000',
           },
         },
         {
@@ -70,12 +72,13 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
             'background-color': '#eef2ff',
             'border-color': '#6366f1',
             'border-width': 2,
+            'border-style': 'dashed', // yEd group style often dashed
             'text-valign': 'top',
             'text-halign': 'center',
             label: 'data(label)',
             shape: 'round-rectangle',
-            padding: '12px',
-            'font-size': 13,
+            padding: '20px',
+            'font-size': 16,
             'font-weight': 700,
             color: theme === 'dark' ? '#FFFFFF' : '#000000',
           },
@@ -83,79 +86,63 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
         {
           selector: 'node[type = "component"]',
           style: {
-            'background-color': '#EFEFEF', // Light grey (BNG style)
+            'background-color': '#EFEFEF', // BNG yEd standard
             'border-color': '#999999',
             'border-width': 1,
-            // Auto-size to fit label
             width: 'label',
             height: 'label',
-            'padding': '4px',
+            padding: '6px',
             label: 'data(label)',
-            'font-size': 10,
-            shape: 'round-rectangle',
+            'font-size': 14, // BNG yEd standard
+            shape: 'ellipse', // BNG yEd uses ellipse
             color: '#000000',
           },
         },
         {
           selector: 'node[type = "state"]',
           style: {
-            'background-color': '#FFF0A7', // Yellow (BNG InternalState color)
+            'background-color': '#FFF0A7', // BNG yEd standard yellow
             'border-color': '#999999',
             'border-width': 1,
-            // Auto-size to fit label
             width: 'label',
             height: 'label',
-            'padding': '3px',
+            padding: '4px',
             label: 'data(label)',
-            'font-size': 9,
-            shape: 'round-rectangle',
+            'font-size': 14, // BNG yEd standard
+            shape: 'ellipse', // BNG yEd uses ellipse
             color: '#000000',
           },
         },
         {
           selector: 'edge',
           style: {
-            width: 3,
+            width: 2,
             'curve-style': 'bezier',
-            'line-color': theme === 'dark' ? '#94A3B8' : '#94A3B8',
-// 'target-arrow-color': theme === 'dark' ? '#94A3B8' : '#94A3B8',
-            'target-arrow-shape': 'none',
-            // edge labels are handled below for edges that have a label
-          },
-        },
-        {
-          selector: 'edge[label]',
-          style: {
-            label: 'data(label)',
-            'text-rotation': 'autorotate',
-            'font-size': '10px',
-            color: theme === 'dark' ? '#E2E8F0' : '#1E293B',
-            'text-background-color': theme === 'dark' ? '#1E293B' : '#FFFFFF',
-            'text-background-opacity': 0.8,
-            'text-background-padding': '2px',
+            'line-color': theme === 'dark' ? '#94A3B8' : '#64748B',
+            'target-arrow-shape': 'none', // Contact maps are undirected graphs
           },
         },
         {
           selector: 'edge[type = "binding"]',
           style: {
-            'line-color': '#F97316',
-// 'target-arrow-color': '#F97316',
+            'line-color': '#999999', // BNG yEd uses #999999 for bonds
+            width: 1,
           },
         },
         {
           selector: 'edge[type = "state_change"]',
           style: {
             'line-color': '#0EA5E9',
-// 'target-arrow-color': '#0EA5E9',
             'line-style': 'dashed',
+            width: 2,
           },
         },
         {
           selector: 'edge[type = "unbinding"]',
           style: {
-            'line-color': '#EF4444', // Red for unbinding
-// 'target-arrow-color': '#EF4444',
+            'line-color': '#EF4444',
             'line-style': 'dotted',
+            width: 2,
           },
         },
         {
@@ -164,7 +151,7 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
             'border-width': 4,
             'border-color': '#0ea5e9',
             'line-color': '#0ea5e9',
-// 'target-arrow-color': '#0ea5e9',
+            // 'target-arrow-color': '#0ea5e9',
             'transition-property': 'border-width, border-color, line-color, target-arrow-color',
             'transition-duration': 150,
           },
@@ -387,20 +374,20 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
         <h4 className="text-xs font-semibold text-slate-500 uppercase">Legend</h4>
         <div className="flex items-center gap-4 text-xs flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-slate-200 border border-slate-400" />
+            <div className="w-3 h-3 rounded-full bg-[#EFEFEF] border border-[#999999]" />
             <span className="text-slate-700 dark:text-slate-300">Molecule</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-gray-200 border border-gray-400" />
+            <div className="w-3 h-3 rounded-full bg-[#EFEFEF] border border-[#999999]" />
             <span className="text-slate-700 dark:text-slate-300">Component</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-yellow-200 border border-yellow-400" />
+            <div className="w-3 h-3 rounded-full bg-[#FFF0A7] border border-[#999999]" />
             <span className="text-slate-700 dark:text-slate-300">State</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-0 border-t-2 border-orange-400" />
-            <span className="text-slate-700 dark:text-slate-300">Binding</span>
+            <div className="w-6 h-0 border-t border-[#999999]" />
+            <span className="text-slate-700 dark:text-slate-300">Bond</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-0 border-t-2 border-red-400 border-dotted" />

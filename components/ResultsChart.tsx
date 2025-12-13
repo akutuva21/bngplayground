@@ -47,14 +47,14 @@ const ExternalLegend: React.FC<{
               title="Double-click to isolate"
               className={`flex items-center cursor-pointer transition-opacity ${!isVisible ? 'opacity-40' : isHighlighted ? 'opacity-100' : 'opacity-60'} hover:bg-slate-50 dark:hover:bg-slate-800 rounded px-1 -ml-1`}
             >
-              <div 
-                style={{ 
-                  width: 12, 
-                  height: 12, 
-                  backgroundColor: CHART_COLORS[index % CHART_COLORS.length], 
-                  marginRight: 6, 
-                  borderRadius: '2px' 
-                }} 
+              <div
+                style={{
+                  width: 12,
+                  height: 12,
+                  backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
+                  marginRight: 6,
+                  borderRadius: '2px'
+                }}
               />
               <span className="text-xs text-slate-700 dark:text-slate-300">{name}</span>
             </div>
@@ -164,7 +164,7 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
   };
   const currentDomain = zoomHistory.length > 0 ? zoomHistory[zoomHistory.length - 1] : undefined;
   const highlightSet = new Set(highlightedSeries);
-  
+
   // Use external legend when there are many series to keep chart size fixed
   const useExternalLegend = speciesToPlot.length > LEGEND_THRESHOLD;
 
@@ -246,7 +246,7 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
           )}
         </LineChart>
       </ResponsiveContainer>
-      
+
       {/* External legend below the chart when there are many series */}
       {useExternalLegend && (
         <ExternalLegend
@@ -257,7 +257,7 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
           highlightedSeries={highlightSet}
         />
       )}
-      
+
       <div className="mt-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="inline-flex gap-2">

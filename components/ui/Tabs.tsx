@@ -74,6 +74,6 @@ export const TabPanels: React.FC<{ children: React.ReactNode[] | React.ReactNode
   return <div className="mt-4 flex-1 min-h-0 overflow-hidden">{Children.toArray(children)[context.activeIndex]}</div>;
 };
 
-export const TabPanel: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return <div>{children}</div>;
+export const TabPanel: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => {
+  return <div className={`h-full ${className || ''}`}>{children}</div>;
 };

@@ -1,31 +1,42 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../hooks/useTheme';
 import cytoscape from 'cytoscape';
+import dagre from 'cytoscape-dagre';
 import type { RegulatoryGraph } from '../types/visualization';
+import { Select } from './ui/Select';
 import { Button } from './ui/Button';
 import { LoadingSpinner } from './ui/LoadingSpinner';
+
+cytoscape.use(dagre);
 
 interface RegulatoryGraphViewerProps {
   graph: RegulatoryGraph;
   onSelectRule?: (ruleId: string) => void;
 }
 
-const BASE_LAYOUT = {
+const DAGRE_LAYOUT = {
+  name: 'dagre',
+  rankDir: 'TB',
+  padding: 30,
+  spacingFactor: 1.2,
+  animate: true,
+  animationDuration: 500,
+} as const;
+
+const COSE_LAYOUT = {
   name: 'cose',
-  animate: false,
-  padding: 20,
-  nodeDimensionsIncludeLabels: true,
-  // Tuning for better separation
+  padding: 30,
   componentSpacing: 100,
   nodeRepulsion: 10000,
-  idealEdgeLength: 150,
-  edgeElasticity: 100,
   nestingFactor: 5,
+  animate: true,
+  animationDuration: 500,
 } as const;
 
 export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ graph, onSelectRule }) => {
   const [theme] = useTheme();
   const [isLayoutRunning, setIsLayoutRunning] = useState(false);
+  const [layoutType, setLayoutType] = useState<'dagre' | 'cose'>('dagre');
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
 
@@ -53,70 +64,72 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
         {
           selector: 'node[type = "species"]',
           style: {
-            'background-opacity': 0,
-            'text-background-color': '#FFE9C7', // Light Orange
-            'text-background-opacity': 1,
-            'text-background-shape': 'roundrectangle',
-            'text-background-padding': '10px',
-            'text-border-color': '#999999',
-            'text-border-width': 1,
-            'text-border-opacity': 1,
+            'background-color': '#FFE9C7', // BNG yEd AtomicPattern
+            'border-color': '#999999',
+            'border-width': 1,
+            shape: 'round-rectangle', // BNG roundrectangle
+            width: 'label',
+            height: 'label',
+            padding: '8px',
             color: '#000000',
-            width: 60, // Fixed hit area for dragging
-            height: 40,
             'text-valign': 'center',
             'text-halign': 'center',
+            label: 'data(label)',
+            'font-size': 14, // BNG 14pt
           },
         },
         {
           selector: 'node[type = "rule"]',
           style: {
-            'background-opacity': 0,
-            'text-background-color': '#CC99FF', // Light Purple
-            'text-background-opacity': 1,
-            'text-background-shape': 'roundrectangle',
-            'text-background-padding': '10px',
-            'text-border-color': '#999999',
-            'text-border-width': 1,
-            'text-border-opacity': 1,
+            'background-color': '#CC99FF', // BNG yEd Rule color
+            'border-color': '#999999',
+            'border-width': 1,
+            shape: 'ellipse', // BNG uses ellipse for rules
+            width: 'label',
+            height: 'label',
+            padding: '8px',
             color: '#000000',
-            width: 60, // Fixed hit area for dragging
-            height: 40,
             'text-valign': 'center',
             'text-halign': 'center',
+            label: 'data(label)',
+            'font-size': 14, // BNG 14pt
           },
         },
         {
           selector: 'edge',
           style: {
-            width: 2,
+            width: 1.5,
             'curve-style': 'bezier',
             'target-arrow-shape': 'triangle',
+            'arrow-scale': 1.2,
           },
         },
         {
           selector: 'edge[type = "reactant"]',
           style: {
-            'line-color': '#000000',
+            'line-color': '#000000', // BNG yEd black
             'target-arrow-color': '#000000',
+            'target-arrow-shape': 'triangle', // BNG 'standard'
           },
         },
         {
           selector: 'edge[type = "product"]',
           style: {
-            'line-color': '#000000',
+            'line-color': '#000000', // BNG yEd black
             'target-arrow-color': '#000000',
+            'target-arrow-shape': 'triangle', // BNG 'standard'
           },
         },
         {
           selector: 'edge[type = "catalyst"]',
           style: {
-            'line-color': '#AAAAAA', // Grey
+            'line-color': '#AAAAAA', // BNG yEd Context edge
             'target-arrow-color': '#AAAAAA',
+            'target-arrow-shape': 'triangle', // BNG 'standard'
           },
         },
       ],
-      layout: { ...BASE_LAYOUT },
+      layout: { ...DAGRE_LAYOUT },
     });
 
     return () => {
@@ -195,15 +208,8 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
 
     setIsLayoutRunning(true);
     try {
-      const layout = cy.layout({
-        name: 'cose',
-        animate: true,
-        randomize: false,
-        fit: true,
-        padding: 30,
-        nodeDimensionsIncludeLabels: true,
-        tile: true,
-      } as any);
+      const config = layoutType === 'dagre' ? DAGRE_LAYOUT : COSE_LAYOUT;
+      const layout = cy.layout(config as any);
       layout.run();
       layout.on('layoutstop', () => setIsLayoutRunning(false));
     } catch (err) {
@@ -211,6 +217,11 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
       setIsLayoutRunning(false);
     }
   };
+
+  // Re-run layout when type changes
+  useEffect(() => {
+    runLayout();
+  }, [layoutType]);
 
   const handleFit = () => {
     const cy = cyRef.current;
@@ -237,7 +248,19 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
   return (
     <div className="flex flex-col h-full gap-2">
       {/* Toolbar */}
-      <div className="flex justify-end gap-2 bg-white dark:bg-slate-900 p-1 rounded-md border border-slate-200 dark:border-slate-700">
+      <div className="flex justify-end items-center gap-2 bg-white dark:bg-slate-900 p-1 rounded-md border border-slate-200 dark:border-slate-700">
+        <label className="text-xs font-semibold text-slate-500 mr-2">Layout:</label>
+        <Select
+          value={layoutType}
+          onChange={(e) => setLayoutType(e.target.value as any)}
+          className="w-32 h-8 py-0 pl-2 text-xs"
+        >
+          <option value="dagre">Hierarchic</option>
+          <option value="cose">Force Based</option>
+        </Select>
+
+        <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-2" />
+
         <Button variant="subtle" onClick={handleFit} className="text-xs h-8 px-3">Fit View</Button>
         <Button variant="subtle" onClick={() => runLayout()} disabled={isLayoutRunning} className="text-xs h-8 px-3">
           {isLayoutRunning ? <LoadingSpinner className="w-4 h-4" /> : 'Re-Layout'}
@@ -259,7 +282,7 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
             <span className="text-slate-700 dark:text-slate-300">Species / Pattern</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-[#CC99FF] border border-[#999999]" />
+            <div className="w-3 h-3 rounded-full bg-[#CC99FF] border border-[#999999]" />
             <span className="text-slate-700 dark:text-slate-300">Rule</span>
           </div>
           <div className="flex items-center gap-2">

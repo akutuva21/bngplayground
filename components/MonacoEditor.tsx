@@ -100,35 +100,150 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
         // Register BNGL language once
         if (!monaco.languages.getLanguages().some(({ id }: { id: string }) => id === 'bngl')) {
           monaco.languages.register({ id: 'bngl' });
+
+          // Enhanced Monarch tokenizer based on BNG VSCode extension TextMate grammar
           monaco.languages.setMonarchTokensProvider('bngl', {
-            keywords: [
-              'begin', 'end', 'model', 'parameters', 'molecule', 'types', 'seed',
-              'species', 'observables', 'functions', 'reaction', 'rules', 'actions',
-              'generate_network', 'simulate', 'method', 't_end', 'n_steps', 'ode', 'ssa',
-              'overwrite',
+            // Block begin/end keywords
+            blockKeywords: ['begin', 'end'],
+
+            // Block type names
+            blockNames: [
+              'model', 'parameters', 'compartments', 'molecule types', 'molecule', 'types',
+              'seed species', 'species', 'observables', 'functions', 'reaction rules',
+              'reactions', 'groups', 'population maps', 'energy patterns', 'actions'
             ],
+
+            // Action command names (from TextMate grammar)
+            actions: [
+              'generate_network', 'generate_hybrid_model', 'simulate', 'simulate_ode',
+              'simulate_ssa', 'simulate_pla', 'simulate_nf', 'parameter_scan', 'bifurcate',
+              'readFile', 'writeFile', 'writeModel', 'writeNetwork', 'writeXML', 'writeSBML',
+              'writeMfile', 'writeMexfile', 'writeMDL', 'visualize', 'setConcentration',
+              'addConcentration', 'saveConcentrations', 'resetConcentrations', 'setParameter',
+              'saveParameters', 'resetParameters', 'quit', 'setModelName', 'substanceUnits',
+              'version', 'setOption'
+            ],
+
+            // Observable types
+            observableTypes: ['Molecules', 'Species'],
+
+            // Rule modifiers
+            ruleModifiers: ['DeleteMolecules', 'MoveConnected', 'TotalRate',
+              'exclude_reactants', 'include_reactants', 'exclude_products', 'include_products'],
+
+            // Operators
+            operators: ['->', '<->', '=>', '<=>', '!', '.', '+', ',', '~', '@', '%', '$'],
+
             tokenizer: {
               root: [
+                // Comments
                 [/#.*$/, 'comment'],
-                [/[a-zA-Z_]\w*/, {
-                  cases: {
-                    '@keywords': 'keyword',
-                    '@default': 'identifier',
-                  },
-                }],
-                [/([a-zA-Z_]\w*)\s*\(/, 'type.identifier'],
-                [/\d+(\.\d+)?(e[+-]?\d+)?/, 'number'],
-                [/->|<->/, 'operator'],
-                [/[()\[\]{},.!~+@]/, 'delimiter'],
+
+                // Block begin/end with type
+                [/(begin|end)(\s+)(model|parameters|compartments|molecule\s+types|seed\s+species|species|observables|functions|reaction\s+rules|reactions|groups|population\s+maps|energy\s+patterns|actions)/,
+                  ['keyword.control', 'white', 'keyword.type']],
+
+                // Simple begin/end
+                [/\b(begin|end)\b/, 'keyword.control'],
+
+                // Actions with parentheses
+                [/(generate_network|generate_hybrid_model|simulate|simulate_ode|simulate_ssa|simulate_pla|simulate_nf|parameter_scan|bifurcate|readFile|writeFile|writeModel|writeNetwork|writeXML|writeSBML|writeMfile|writeMexfile|writeMDL|visualize|setConcentration|addConcentration|saveConcentrations|resetConcentrations|setParameter|saveParameters|resetParameters|quit|setModelName|substanceUnits|version|setOption)(\s*)(\()/,
+                  ['keyword.action', 'white', 'delimiter.parenthesis']],
+
+                // Observable type keywords
+                [/\b(Molecules|Species)\b/, 'keyword.observable'],
+
+                // Rule modifiers
+                [/\b(DeleteMolecules|MoveConnected|TotalRate|exclude_reactants|include_reactants|exclude_products|include_products)\b/, 'keyword.modifier'],
+
+                // Molecule names (capitalized identifier followed by parentheses)
+                [/[A-Z][A-Za-z0-9_]*(?=\()/, 'type.molecule'],
+
+                // Component/state within parentheses
+                [/[a-z][A-Za-z0-9_]*(?=[\~\!\,\)])/, 'variable.component'],
+
+                // State values after tilde
+                [/\~([A-Za-z0-9_]+)/, 'string.state'],
+
+                // Bond index after exclamation
+                [/\!([0-9]+|\?|\+)/, 'constant.bond'],
+
+                // Compartment annotation
+                [/@([A-Za-z][A-Za-z0-9_]*)/, 'variable.compartment'],
+
+                // Rule arrows
+                [/<->|->/, 'operator.arrow'],
+
+                // Action argument assignment
+                [/=>/, 'operator.assign'],
+
+                // Numbers (scientific notation supported)
+                [/\d+(\.\d+)?([eE][+-]?\d+)?/, 'number'],
+
+                // Quoted strings
+                [/"[^"]*"/, 'string'],
+
+                // Parameter/variable names (identifier = value pattern)
+                [/([A-Za-z_][A-Za-z0-9_]*)(\s*)(=)/, ['variable.parameter', 'white', 'operator']],
+
+                // Generic identifiers
+                [/[A-Za-z_][A-Za-z0-9_]*/, 'identifier'],
+
+                // Delimiters
+                [/[(){}[\],.]/, 'delimiter'],
+
+                // Whitespace
+                [/\s+/, 'white'],
               ],
             },
+          });
+
+          // Define custom theme colors for BNGL
+          monaco.editor.defineTheme('bngl-light', {
+            base: 'vs',
+            inherit: true,
+            rules: [
+              { token: 'keyword.control', foreground: '0000FF', fontStyle: 'bold' },
+              { token: 'keyword.type', foreground: '008080', fontStyle: 'bold' },
+              { token: 'keyword.action', foreground: '800080' },
+              { token: 'keyword.observable', foreground: '008080' },
+              { token: 'keyword.modifier', foreground: 'FF8C00' },
+              { token: 'type.molecule', foreground: '2E8B57', fontStyle: 'bold' },
+              { token: 'variable.component', foreground: '4169E1' },
+              { token: 'string.state', foreground: 'DAA520' },
+              { token: 'constant.bond', foreground: 'DC143C' },
+              { token: 'variable.compartment', foreground: '9370DB' },
+              { token: 'operator.arrow', foreground: 'FF4500', fontStyle: 'bold' },
+              { token: 'variable.parameter', foreground: '2F4F4F' },
+            ],
+            colors: {},
+          });
+
+          monaco.editor.defineTheme('bngl-dark', {
+            base: 'vs-dark',
+            inherit: true,
+            rules: [
+              { token: 'keyword.control', foreground: '569CD6', fontStyle: 'bold' },
+              { token: 'keyword.type', foreground: '4EC9B0', fontStyle: 'bold' },
+              { token: 'keyword.action', foreground: 'C586C0' },
+              { token: 'keyword.observable', foreground: '4EC9B0' },
+              { token: 'keyword.modifier', foreground: 'DCDCAA' },
+              { token: 'type.molecule', foreground: '4FC1FF', fontStyle: 'bold' },
+              { token: 'variable.component', foreground: '9CDCFE' },
+              { token: 'string.state', foreground: 'CE9178' },
+              { token: 'constant.bond', foreground: 'F48771' },
+              { token: 'variable.compartment', foreground: 'B5CEA8' },
+              { token: 'operator.arrow', foreground: 'FFD700', fontStyle: 'bold' },
+              { token: 'variable.parameter', foreground: '9CDCFE' },
+            ],
+            colors: {},
           });
         }
 
         editor = monaco.editor.create(editorRef.current, {
           value,
           language,
-          theme: theme === 'dark' ? 'vs-dark' : 'vs',
+          theme: theme === 'dark' ? 'bngl-dark' : 'bngl-light',
           automaticLayout: true,
           minimap: { enabled: false },
           wordWrap: 'on',
@@ -216,7 +331,7 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
     const monaco = monacoRef.current;
     const editor = editorInstanceRef.current;
     if (!monaco || !editor) return;
-    monaco.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs');
+    monaco.editor.setTheme(theme === 'dark' ? 'bngl-dark' : 'bngl-light');
   }, [theme]);
 
   // Effect 1c: Update language without recreating the editor

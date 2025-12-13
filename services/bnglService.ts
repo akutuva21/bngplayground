@@ -157,12 +157,12 @@ class BnglService {
         return;
       }
       // handle cache model responses as well
-      if (type === 'cache_model_success') {
+      if (type === 'cache_model_success' || type === 'release_model_success') {
         pending.resolve(payload);
         return;
       }
 
-      if (type === 'parse_error' || type === 'simulate_error' || type === 'cache_model_error') {
+      if (type === 'parse_error' || type === 'simulate_error' || type === 'cache_model_error' || type === 'release_model_error') {
         const errType = type === 'parse_error' ? 'parse' : type === 'simulate_error' ? 'simulate' : 'cache_model';
         const err = toError(errType === 'parse' ? 'parse' : 'simulate', payload);
         pending.reject(err);

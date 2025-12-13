@@ -4,10 +4,12 @@ import { Tabs, TabList, Tab, TabPanels, TabPanel } from './ui/Tabs';
 import { ResultsChart } from './ResultsChart';
 import { ContactMapTab } from './tabs/ContactMapTab';
 import { SteadyStateTab } from './tabs/SteadyStateTab';
+import { RobustnessTab } from './tabs/RobustnessTab';
 import { FIMTab } from './tabs/FIMTab';
 import { CartoonTab } from './tabs/CartoonTab';
 import { RegulatoryTab } from './tabs/RegulatoryTab';
-import { ParameterPanel } from './ParameterPanel';
+import { VerificationTab } from './tabs/VerificationTab';
+
 
 interface VisualizationPanelProps {
   model: BNGLModel | null;
@@ -72,11 +74,18 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
             <Tab>Rule Cartoons</Tab>
             <Tab>Identifiability</Tab>
             <Tab>Steady State</Tab>
+            <Tab>Verification</Tab>
+            {/* <Tab>Robustness</Tab> */}
           </TabList>
           <TabPanels>
             <TabPanel>
               <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">Time Courses – plot observables vs time</div>
-              <ResultsChart results={results} model={model} visibleSpecies={visibleSpecies} onVisibleSpeciesChange={setVisibleSpecies} />
+              <ResultsChart
+                results={results}
+                model={model}
+                visibleSpecies={visibleSpecies}
+                onVisibleSpeciesChange={setVisibleSpecies}
+              />
             </TabPanel>
             <TabPanel>
               <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">Regulatory Graph – how rules influence molecular states</div>
@@ -102,6 +111,12 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
             <TabPanel>
               <SteadyStateTab model={model} onSimulate={onSimulate} onCancelSimulation={onCancelSimulation} isSimulating={isSimulating} />
             </TabPanel>
+            <TabPanel>
+              <VerificationTab model={model} results={results} />
+            </TabPanel>
+            {/* <TabPanel>
+              <RobustnessTab model={model} />
+            </TabPanel> */}
           </TabPanels>
         </Tabs>
       </div>

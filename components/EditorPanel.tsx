@@ -6,7 +6,8 @@ import { UploadIcon } from './icons/UploadIcon';
 import { XIcon } from './icons/XIcon';
 import { ExampleGalleryModal } from './ExampleGalleryModal';
 import { RadioGroup } from './ui/RadioGroup';
-
+import { ParameterPanel } from './ParameterPanel';
+import { ChevronDownIcon } from './icons/ChevronDownIcon';
 // Minimal BNGL tidy helper (inlined to avoid module resolution issues)
 function formatBNGLMini(code: string): string {
   if (!code) return '';
@@ -15,16 +16,16 @@ function formatBNGLMini(code: string): string {
   const out: string[] = [];
   let blank = false;
   let insideBlock = false;
-  
+
   // Block keywords that mark the start of indented sections
   const blockStarts = ['begin', 'setOption'];
   const blockEnds = ['end'];
-  
+
   for (const ln of lines) {
     // Strip comments and trailing whitespace
     const withoutComment = ln.replace(/#.*/g, '').trimEnd();
     const trimmed = withoutComment.trim();
-    
+
     // Handle blank lines (collapse multiple blanks into one)
     if (!trimmed) {
       if (!blank) out.push('');
@@ -32,26 +33,26 @@ function formatBNGLMini(code: string): string {
       continue;
     }
     blank = false;
-    
+
     // Check if this line starts or ends a block
     const isBlockStart = blockStarts.some(kw => trimmed.toLowerCase().startsWith(kw.toLowerCase()));
     const isBlockEnd = blockEnds.some(kw => trimmed.toLowerCase().startsWith(kw.toLowerCase()));
-    
+
     // Update block state
     if (isBlockEnd) {
       insideBlock = false;
     }
-    
+
     // Format the line content (collapse multiple spaces, but preserve structure)
     const formattedContent = trimmed.replace(/\s+/g, ' ');
-    
+
     // Apply indentation: 1 tab inside blocks, none for block start/end
     if (insideBlock && !isBlockStart && !isBlockEnd) {
       out.push('\t' + formattedContent);
     } else {
       out.push(formattedContent);
     }
-    
+
     // After processing, update block state for next line
     if (isBlockStart) {
       insideBlock = true;
@@ -67,7 +68,6 @@ interface EditorPanelProps {
   onCodeChange: (code: string) => void;
   onParse: () => void;
   onSimulate: (options: SimulationOptions) => void;
-  onCancelSimulation: () => void;
   isSimulating: boolean;
   modelExists: boolean;
   validationWarnings: ValidationWarning[];
@@ -160,7 +160,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   onCodeChange,
   onParse,
   onSimulate,
-  onCancelSimulation,
+
   isSimulating,
   modelExists,
   validationWarnings,
@@ -177,6 +177,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   const [customAtol, setCustomAtol] = useState<string>('');
   const [customRtol, setCustomRtol] = useState<string>('');
   const [odeSolver, setOdeSolver] = useState<'auto' | 'cvode' | 'cvode_auto' | 'cvode_sparse' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4'>('auto');
+  const [isParamsOpen, setIsParamsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -240,7 +241,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
             <button onClick={onParse} className="text-xs underline text-slate-600 dark:text-slate-400">Re-parse</button>
           )}
         </div>
-        <div className="relative flex-1 min-h-[16rem] overflow-hidden">
+        <div className="relative flex-1 min-h-[24rem] overflow-hidden">
           <MonacoEditor
             language="bngl"
             value={code}
@@ -372,6 +373,23 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
                 className="w-12 rounded border border-slate-300 px-1 py-0.5 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
               />
             </>
+          )}
+        </div>
+
+        {/* Row 3: Collapsible Parameter Sliders */}
+        <div className="border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-800/50 overflow-hidden">
+          <button
+            onClick={() => setIsParamsOpen(!isParamsOpen)}
+            className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            <span>Parameter Sliders</span>
+            <ChevronDownIcon className={`w-4 h-4 transition-transform duration-200 ${isParamsOpen ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {isParamsOpen && (
+            <div className="border-t border-slate-200 dark:border-slate-700 p-2">
+               <ParameterPanel code={code} onCodeChange={onCodeChange} />
+            </div>
           )}
         </div>
       </div>

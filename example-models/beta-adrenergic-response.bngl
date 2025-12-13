@@ -3,37 +3,72 @@ begin parameters
     k_bind 0.02
     k_unbind 0.002
     k_activate 0.4
+    k_deactivate 0.04
+    k_g_bind 0.05
+    k_g_unbind 0.01
+    k_g_act 0.2
+    k_ac_bind 0.03
+    k_ac_unbind 0.01
+    k_ac_act 0.1
     k_hydrolysis 0.15
     k_camp 0.5
     k_reset 0.08
+    k_cAMP_deg 0.05
 end parameters
 
 begin molecule types
     Epinephrine(r)
-    BetaReceptor(l,state~inactive~active)
-    Gs(alpha~GDP~GTP)
-    AC(activity~low~high)
+    BetaReceptor(l,g,state~inactive~active)
+    Gs(r,alpha~GDP~GTP)
+    AC(g,activity~low~high)
     cAMP(pool~basal~elevated)
 end molecule types
 
 begin seed species
     Epinephrine(r) 60
-    BetaReceptor(l,state~inactive) 40
-    Gs(alpha~GDP) 30
-    AC(activity~low) 20
+    BetaReceptor(l,g,state~inactive) 40
+    Gs(r,alpha~GDP) 30
+    AC(g,activity~low) 20
     cAMP(pool~basal) 50
 end seed species
 
 begin reaction rules
+    # Ligand binding (Explicit)
     Epinephrine(r) + BetaReceptor(l,state~inactive) <-> Epinephrine(r!1).BetaReceptor(l!1,state~inactive) k_bind, k_unbind
-    Epinephrine(r!1).BetaReceptor(l!1,state~inactive) -> Epinephrine(r!1).BetaReceptor(l!1,state~active) k_activate
-    BetaReceptor(l,state~active) + Gs(alpha~GDP) -> BetaReceptor(l,state~active) + Gs(alpha~GTP) k_activate
-    Gs(alpha~GTP) + AC(activity~low) -> Gs(alpha~GTP) + AC(activity~high) k_camp
-    AC(activity~high) + cAMP(pool~basal) -> AC(activity~high) + cAMP(pool~elevated) k_camp
-    Gs(alpha~GTP) -> Gs(alpha~GDP) k_hydrolysis
-    AC(activity~high) -> AC(activity~low) k_reset
-    cAMP(pool~elevated) -> cAMP(pool~basal) k_reset
-    BetaReceptor(l,state~active) -> BetaReceptor(l,state~inactive) k_reset
+    
+    # Receptor activation (Explicit conformational change)
+    Epinephrine(r!1).BetaReceptor(l!1,state~inactive) <-> Epinephrine(r!1).BetaReceptor(l!1,state~active) k_activate, k_deactivate
+    
+    # G-protein binding to active receptor
+    # Active receptor (ligand-bound l!+) binds Gs via receptor g site and Gs r site
+    BetaReceptor(l!+,g,state~active) + Gs(r,alpha~GDP) <-> BetaReceptor(l!+,g!1,state~active).Gs(r!1,alpha~GDP) k_g_bind, k_g_unbind
+    
+    # G-protein activation (GDP -> GTP exchange while bound)
+    BetaReceptor(l!+,g!1,state~active).Gs(r!1,alpha~GDP) -> BetaReceptor(l!+,g,state~active) + Gs(r,alpha~GTP) k_g_act
+
+    # AC binding to activated Gs (GTP-bound)
+    Gs(r,alpha~GTP) + AC(g,activity~low) <-> Gs(r,alpha~GTP!1).AC(g!1,activity~low) k_ac_bind, k_ac_unbind
+    
+    # AC activation while bound to Gs
+    Gs(r,alpha~GTP!1).AC(g!1,activity~low) -> Gs(r,alpha~GTP!1).AC(g!1,activity~high) k_ac_act
+    
+    # cAMP production (Catalytic from High AC complex)
+    Gs(alpha~GTP!1).AC(g!1,activity~high) + cAMP(pool~basal) -> Gs(alpha~GTP!1).AC(g!1,activity~high) + cAMP(pool~elevated) k_camp
+    # Standalone AC (after Gs dissociates):
+    AC(g,activity~high) + cAMP(pool~basal) -> AC(g,activity~high) + cAMP(pool~elevated) k_camp
+
+    # GTP Hydrolysis (Resets Gs, releases AC)
+    Gs(r,alpha~GTP!1).AC(g!1) -> Gs(r,alpha~GDP) + AC(g) k_hydrolysis
+    Gs(r,alpha~GTP) -> Gs(r,alpha~GDP) k_hydrolysis
+    
+    # AC Reset
+    AC(g,activity~high) -> AC(g,activity~low) k_reset
+    
+    # Receptor Reset (deactivation without unbinding)
+    BetaReceptor(l!+,state~active) -> BetaReceptor(l!+,state~inactive) k_reset
+    
+    # cAMP degradation
+    cAMP(pool~elevated) -> cAMP(pool~basal) k_cAMP_deg
 end reaction rules
 
 begin observables

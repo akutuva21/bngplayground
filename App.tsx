@@ -12,7 +12,7 @@ import SimulationModal from './components/SimulationModal';
 import { validateBNGLModel, validationWarningsToMarkers } from './services/modelValidation';
 
 function App() {
-  const PANEL_MAX_HEIGHT = 'calc(100vh - 220px)';
+  const PANEL_MAX_HEIGHT = 'calc(100vh - 100px)';
   const [code, setCode] = useState<string>(INITIAL_BNGL_CODE);
   const [model, setModel] = useState<BNGLModel | null>(null);
   const [results, setResults] = useState<SimulationResults | null>(null);
@@ -28,7 +28,7 @@ function App() {
   const [editorMarkers, setEditorMarkers] = useState<EditorMarker[]>([]);
   const [loadedModelName, setLoadedModelName] = useState<string | null>(null);
 
-  const [editorSelection, setEditorSelection] = useState<{ startLineNumber: number; endLineNumber: number } | undefined>(undefined);
+  const [editorSelection] = useState<{ startLineNumber: number; endLineNumber: number } | undefined>(undefined);
 
   const parseAbortRef = useRef<AbortController | null>(null);
   const simulateAbortRef = useRef<AbortController | null>(null);
@@ -243,7 +243,7 @@ function App() {
                 onCodeChange={handleCodeChange}
                 onParse={handleParse}
                 onSimulate={handleSimulate}
-                onCancelSimulation={handleCancelSimulation}
+
                 isSimulating={isSimulating}
                 modelExists={!!model}
                 validationWarnings={validationWarnings}
@@ -262,6 +262,7 @@ function App() {
                 onCancelSimulation={handleCancelSimulation}
                 activeTabIndex={activeVizTab}
                 onActiveTabIndexChange={setActiveVizTab}
+
               />
             </div>
           </div>

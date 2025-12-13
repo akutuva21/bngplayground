@@ -411,7 +411,7 @@ export class NetworkGenerator {
   private checkConstraints(rule: RxnRule, reactant1: Species, reactant2?: Species): boolean {
     const hasConstraints = (rule.excludeReactants && rule.excludeReactants.length > 0) ||
       (rule.includeReactants && rule.includeReactants.length > 0);
-    
+
     if (!hasConstraints) {
       return true;
     }
@@ -441,12 +441,12 @@ export class NetworkGenerator {
           const isMatch = matchesPattern(target, constraint.pattern);
 
           // Debug: Log interesting cases where pattern doesn't match but target contains the molecule type
-          if (NetworkGenerator.DEBUG_CONSTRAINTS && 
-              NetworkGenerator.constraintDebugCount < NetworkGenerator.CONSTRAINT_DEBUG_LIMIT) {
+          if (NetworkGenerator.DEBUG_CONSTRAINTS &&
+            NetworkGenerator.constraintDebugCount < NetworkGenerator.CONSTRAINT_DEBUG_LIMIT) {
             const patternMolNames = constraint.pattern.molecules.map(m => m.name);
             const targetMolNames = target.graph.molecules.map(m => m.name);
             const targetContainsPatternMol = patternMolNames.some(pn => targetMolNames.includes(pn));
-            
+
             // Only log if pattern molecule IS in target but matching failed (potential bug)
             // Or log first few for context
             if ((targetContainsPatternMol && !isMatch) || NetworkGenerator.constraintDebugCount < 5) {
@@ -1511,24 +1511,24 @@ export class NetworkGenerator {
     // 3. Finally, map new-bond pattern components to remaining unbound product components
     // CRITICAL FIX: Build reverse lookup from product pattern molecule to reactant pattern molecule
     // This allows us to use the matcher's componentMap for exact component identification
-    const productToReactantPattern = new Map<number, { 
-      reactantIdx: number, 
-      reactantPatternMolIdx: number 
+    const productToReactantPattern = new Map<number, {
+      reactantIdx: number,
+      reactantPatternMolIdx: number
     }>();
     for (const [pMolIdx, mapping] of productPatternToReactant.entries()) {
       const match = matches[mapping.reactantIdx];
       if (!match) continue;
       for (const [rpMolIdx, tMolIdx] of match.moleculeMap.entries()) {
         if (tMolIdx === mapping.targetMolIdx) {
-          productToReactantPattern.set(pMolIdx, { 
-            reactantIdx: mapping.reactantIdx, 
-            reactantPatternMolIdx: rpMolIdx 
+          productToReactantPattern.set(pMolIdx, {
+            reactantIdx: mapping.reactantIdx,
+            reactantPatternMolIdx: rpMolIdx
           });
           break;
         }
       }
     }
-    
+
     const usedComponentIndicesPerMol = new Map<number, Set<number>>();
 
 
@@ -1576,7 +1576,7 @@ export class NetworkGenerator {
           // Find matching reactant pattern component by name
           for (let rpCompIdx = 0; rpCompIdx < reactantPatternMol.components.length; rpCompIdx++) {
             if (reactantPatternMol.components[rpCompIdx].name !== pComp.name) continue;
-            
+
             // Look up exact target component via componentMap
             const compKey = `${prMapping.reactantPatternMolIdx}.${rpCompIdx}`;
             const targetKey = match.componentMap.get(compKey);
@@ -1593,30 +1593,30 @@ export class NetworkGenerator {
         if (candidateIdx === -1) {
 
 
-        for (let idx = 0; idx < productMol.components.length; idx++) {
-          if (usedSet.has(idx)) continue;
-          if (productMol.components[idx].name !== pComp.name) continue;
+          for (let idx = 0; idx < productMol.components.length; idx++) {
+            if (usedSet.has(idx)) continue;
+            if (productMol.components[idx].name !== pComp.name) continue;
 
-          // For wildcard components (!+), prefer already-bound components
-          if (pComp.wildcard === '+') {
-            if (isBound(idx)) {
+            // For wildcard components (!+), prefer already-bound components
+            if (pComp.wildcard === '+') {
+              if (isBound(idx)) {
+                candidateIdx = idx;
+                break;
+              }
+            }
+            // For components without wildcards, prefer unbound components
+            else {
+              if (!isBound(idx)) {
+                candidateIdx = idx;
+                break;
+              }
+            }
+
+            // Fallback: take any available if no preferred found
+            if (candidateIdx === -1) {
               candidateIdx = idx;
-              break;
             }
           }
-          // For components without wildcards, prefer unbound components
-          else {
-            if (!isBound(idx)) {
-              candidateIdx = idx;
-              break;
-            }
-          }
-
-          // Fallback: take any available if no preferred found
-          if (candidateIdx === -1) {
-            candidateIdx = idx;
-          }
-        }
 
         } // End of fallback if (candidateIdx === -1) block
 

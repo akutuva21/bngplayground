@@ -624,8 +624,8 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
 
   // 3. Pre-process Observables (Cache matching species indices and coefficients)
   const concreteObservables = model.observables.map(obs => {
-    // Split pattern by whitespace to handle multiple patterns (e.g. "A B")
-    const patterns = obs.pattern.split(/\s+/).filter(p => p.length > 0);
+    // Split pattern by comma to handle multiple patterns (e.g. "A,B" or "pattern1, pattern2")
+    const patterns = obs.pattern.split(',').map(p => p.trim()).filter(p => p.length > 0);
     const matchingIndices: number[] = [];
     const coefficients: number[] = [];
 
@@ -888,11 +888,11 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
     // Without preconditioning, SPGMR fails on stiff models like Barua_2013.
     // For now, always use the dense CVODE solver which works reliably for moderate-sized models.
     // The dense solver can handle up to ~1000-2000 species; larger models would need SPGMR + preconditioner.
-    
+
     // OPTIMIZATION: Use analytical Jacobian for mass-action kinetics (no functional rates)
     // This eliminates O(n²) finite-difference overhead and drastically reduces JS↔WASM boundary crossings
     const allMassAction = functionalRateCount === 0;
-    
+
     if (solverType === 'auto') {
       // Use analytical Jacobian when all reactions are mass-action (no observable-dependent rates)
       solverType = allMassAction ? 'cvode_jac' : 'cvode';
@@ -903,7 +903,7 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
     // J[i][k] = ∂(dSᵢ/dt)/∂Sₖ = Σ_r stoich[i][r] * k_r * ∂(∏ⱼ Sⱼ^nⱼ)/∂Sₖ
     // For mass-action: ∂velocity/∂Sₖ = velocity * reactant_order[k] / Sₖ
     let jacobian: ((y: Float64Array, J: Float64Array) => void) | undefined;
-    
+
     if (allMassAction) {
       // Precompute reactant counts for each reaction (for higher-order terms like A + A -> ...)
       const reactantCountMaps: Map<number, number>[] = concreteReactions.map(rxn => {
@@ -928,7 +928,7 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
           // For each unique reactant k in this reaction, compute ∂(velocity)/∂y_k
           for (const [speciesK, orderK] of reactantCounts) {
             let dVelocity_dyk: number;
-            
+
             if (y[speciesK] > 1e-100) {
               // Compute base velocity
               let velocity = k;
@@ -965,14 +965,14 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
           }
         }
       };
-      
+
       console.log(`[Worker] Built analytical Jacobian for ${concreteReactions.length} mass-action reactions`);
     }
 
     // Log max initial concentration for debugging
     const maxInitConc = Math.max(...state);
     console.log(`[Worker] Max initial concentration: ${maxInitConc}`);
-    
+
     // Use exactly what user/model specifies (matching native BNG behavior)
     // BNG defaults: atol=1e-8, rtol=1e-8, maxStep=0 (unlimited)
     const userAtol = model.simulationOptions?.atol ?? options.atol ?? 1e-8;
@@ -986,7 +986,7 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
       maxStep: 0,  // 0 = unlimited, matching native BNG which uses CVodeSetMaxStep(cvode_mem, 0.0)
       solver: solverType as 'auto' | 'cvode' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4',
     };
-    
+
     // Pass analytical Jacobian if available
     if (jacobian && solverType === 'cvode_jac') {
       solverOptions.jacobian = jacobian;
@@ -1034,11 +1034,11 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
       if (!result.success) {
         // CVODE failed - return partial results with helpful error message
         const errorMsg = result.errorMessage || 'Unknown error';
-        
+
         // Detect specific CVODE error flags and provide helpful guidance
         let userFriendlyMessage = errorMsg;
         let suggestion = '';
-        
+
         if (errorMsg.includes('flag -3') || errorMsg.includes('CV_CONV_FAILURE')) {
           userFriendlyMessage = `Simulation reached t=${t.toFixed(2)} before numerical convergence failed. ` +
             `This model has extreme stiffness that exceeds browser-based solver limits.`;
@@ -1048,21 +1048,21 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
             `This model has very sharp transients that are difficult to track accurately.`;
           suggestion = 'Try increasing tolerances, reducing simulation time, or using SSA method.';
         }
-        
+
         // Log warning but continue with partial results
         console.warn(`[Worker] ODE solver failed at t=${t}: ${errorMsg}`);
-        
+
         // If we have at least some data, return it as partial success
         if (data.length > 1) {
           console.warn(`[Worker] Returning ${data.length} partial time points up to t=${t}`);
-          
+
           // Post progress update with warning
-          postMessage({ 
-            type: 'progress', 
+          postMessage({
+            type: 'progress',
             message: `Simulation stopped at t=${t.toFixed(2)} (${data.length} time points)`,
             warning: userFriendlyMessage
           });
-          
+
           // Don't throw - break out and return partial results
           shouldStop = true;
           break;

@@ -70,6 +70,44 @@ import simple from './published-models/tutorials/simple.bngl?raw';
 import toy1 from './published-models/tutorials/toy1.bngl?raw';
 import toy2 from './published-models/tutorials/toy2.bngl?raw';
 
+// Native Tutorials
+import ABTutorial from './published-models/native-tutorials/AB/AB.bngl?raw';
+import ABCTutorial from './published-models/native-tutorials/ABC/ABC.bngl?raw';
+import ABCScanTutorial from './published-models/native-tutorials/ABC/ABC_scan.bngl?raw';
+import ABCSsaTutorial from './published-models/native-tutorials/ABC/ABC_ssa.bngl?raw';
+import LVTutorial from './published-models/native-tutorials/ABC/LV.bngl?raw';
+import SIRTutorial from './published-models/native-tutorials/ABC/SIR.bngl?raw';
+import ABpTutorial from './published-models/native-tutorials/ABp/ABp.bngl?raw';
+import ABpApproxTutorial from './published-models/native-tutorials/ABp/ABp_approx.bngl?raw';
+import GKTutorial from './published-models/native-tutorials/ABp/GK.bngl?raw';
+import LismanTutorial from './published-models/native-tutorials/ABp/Lisman.bngl?raw';
+import LismanBifurcateTutorial from './published-models/native-tutorials/ABp/Lisman_bifurcate.bngl?raw';
+import BABTutorial from './published-models/native-tutorials/BAB/BAB.bngl?raw';
+import BABCoopTutorial from './published-models/native-tutorials/BAB/BAB_coop.bngl?raw';
+import BABScanTutorial from './published-models/native-tutorials/BAB/BAB_scan.bngl?raw';
+import BLBRTutorial from './published-models/native-tutorials/CBNGL/BLBR.bngl?raw';
+import cBNGLSimpleTutorial from './published-models/native-tutorials/CBNGL/cBNGL_simple.bngl?raw';
+import LRTutorial from './published-models/native-tutorials/CBNGL/LR.bngl?raw';
+import LRRTutorial from './published-models/native-tutorials/CBNGL/LRR.bngl?raw';
+import LRRCompTutorial from './published-models/native-tutorials/CBNGL/LRR_comp.bngl?raw';
+import LRCompTutorial from './published-models/native-tutorials/CBNGL/LR_comp.bngl?raw';
+import LVCompTutorial from './published-models/native-tutorials/CBNGL/LV_comp.bngl?raw';
+import organelleTransportTutorial from './published-models/native-tutorials/CBNGL/organelle_transport.bngl?raw';
+import organelleTransportStructTutorial from './published-models/native-tutorials/CBNGL/organelle_transport_struct.bngl?raw';
+import ChylekLibraryTutorial from './published-models/native-tutorials/LargerModels/Chylek_library.bngl?raw';
+import Creamer2012Tutorial from './published-models/native-tutorials/LargerModels/Creamer_2012.bngl?raw';
+import egfrSimpleTutorial from './published-models/native-tutorials/LargerModels/egfr_simple.bngl?raw';
+import FceRIJiTutorial from './published-models/native-tutorials/LargerModels/FceRI_ji.bngl?raw';
+import Suderman2013Tutorial from './published-models/native-tutorials/LargerModels/Suderman_2013.bngl?raw';
+// import translateSBMLTutorial from './published-models/native-tutorials/SBML/translateSBML.bngl?raw';
+import birthDeathTutorial from './published-models/native-tutorials/SynDeg/birth-death.bngl?raw';
+import CircadianOscillatorTutorial from './published-models/native-tutorials/SynDeg/CircadianOscillator.bngl?raw';
+import ComplexDegradationTutorial from './published-models/native-tutorials/SynDeg/ComplexDegradation.bngl?raw';
+import RepressilatorTutorial from './published-models/native-tutorials/SynDeg/Repressilator.bngl?raw';
+import toggleTutorial from './published-models/native-tutorials/SynDeg/toggle.bngl?raw';
+import FceRIVizTutorial from './published-models/native-tutorials/Viz/FceRI_viz.bngl?raw';
+import visualizeTutorial from './published-models/native-tutorials/Viz/visualize.bngl?raw';
+
 // Test Models
 import aktSignaling from './example-models/akt-signaling.bngl?raw';
 import allostericActivation from './example-models/allosteric-activation.bngl?raw';
@@ -132,12 +170,20 @@ import viralSensingInnateImmunity from './example-models/viral-sensing-innate-im
 import wntBetaCateninSignaling from './example-models/wnt-beta-catenin-signaling.bngl?raw';
 import woundHealingPdgfSignaling from './example-models/wound-healing-pdgf-signaling.bngl?raw';
 
+// Literature Models
+import dolan2015 from './published-models/literature/Dolan_2015.bngl?raw';
+import linErk2019 from './published-models/literature/Lin_ERK_2019.bngl?raw';
+import linTcr2019 from './published-models/literature/Lin_TCR_2019.bngl?raw';
+import linPrion2019 from './published-models/literature/Lin_Prion_2019.bngl?raw';
+import cheemalavaguJakStat from './published-models/literature/Cheemalavagu_JAK_STAT.bngl?raw';
+
 export const CHART_COLORS = [
   '#4E79A7', '#F28E2B', '#E15759', '#76B7B2', '#59A14F',
   '#EDC948', '#B07AA1', '#FF9DA7', '#9C755F', '#BAB0AC'
 ];
 
-export const INITIAL_BNGL_CODE = simple;
+// Set AB model as default
+export const INITIAL_BNGL_CODE = ABTutorial;
 
 // Models that successfully parse and simulate with BNG2.pl (ODE/SSA compatible)
 // Models not in this list either:
@@ -212,18 +258,62 @@ const BNG2_COMPATIBLE_MODELS = new Set([
   'viral-sensing-innate-immunity',
   'wnt-beta-catenin-signaling',
   'wound-healing-pdgf-signaling',
+  'wound-healing-pdgf-signaling',
+  // Native Tutorials
+  'AB',
+  'ABC',
+  'ABC_scan',
+  'ABC_ssa',
+  'LV',
+  'SIR',
+  'ABp',
+  'ABp_approx',
+  'GK',
+  'Lisman',
+  'Lisman_bifurcate',
+  'BAB',
+  'BAB_coop',
+  'BAB_scan',
+  'BLBR',
+  'cBNGL_simple',
+  'LR',
+  'LRR',
+  'LRR_comp',
+  'LR_comp',
+  'LV_comp',
+  'organelle_transport',
+  'organelle_transport_struct',
+  'Chylek_library',
+  'Creamer_2012',
+  'egfr_simple',
+  'FceRI_ji',
+  'Suderman_2013',
+  'translateSBML',
+  'birth-death',
+  'CircadianOscillator',
+  'ComplexDegradation',
+  'Repressilator',
+  'toggle',
+  'FceRI_viz',
+  'visualize',
+  // Literature Models
+  'Dolan_2015',
+  'Lin_ERK_2019',
+  'Lin_TCR_2019',
+  'Lin_Prion_2019',
+  'Cheemalavagu_JAK_STAT',
 ]);
 
 // Models that require NFsim (network-free simulation) - kept for reference but not displayed
-const NFSIM_MODELS = new Set([
-  'Blinov_ran',
-  'McMillan_2021',
-  'Blinov_egfr',
-  'Ligon_2014',
-  'Model_ZAP', // Also has generate_network, so it's in compatible list
-  'polymer',
-  'polymer_draft',
-]);
+// const NFSIM_MODELS = new Set([
+//   'Blinov_ran',
+//   'McMillan_2021',
+//   'Blinov_egfr',
+//   'Ligon_2014',
+//   'Model_ZAP', // Also has generate_network, so it's in compatible list
+//   'polymer',
+//   'polymer_draft',
+// // ]);
 
 // Helper to filter models to only BNG2.pl compatible ones
 // Excludes models using simulate_nf (network-free simulation) which is not supported
@@ -451,6 +541,13 @@ const COMPLEX_MODELS: Example[] = [
     code: zhang2023,
     tags: ['published', 'complex models'],
   },
+  {
+    id: 'Lin_Prion_2019',
+    name: 'Lin Prion 2019',
+    description: 'Prion model (Lin et al. 2019)',
+    code: linPrion2019,
+    tags: ['published', 'literature', 'prion'],
+  },
 ];
 
 const GROWTH_FACTOR_SIGNALING: Example[] = [
@@ -495,6 +592,20 @@ const GROWTH_FACTOR_SIGNALING: Example[] = [
     description: 'BNGL model: Rule based egfr tutorial',
     code: ruleBasedEgfrTutorial,
     tags: ['published', 'growth factor signaling'],
+  },
+  {
+    id: 'Dolan_2015',
+    name: 'Dolan 2015',
+    description: 'Model of Insulin Signaling (Dolan et al. 2015)',
+    code: dolan2015,
+    tags: ['published', 'literature', 'signaling'],
+  },
+  {
+    id: 'Lin_ERK_2019',
+    name: 'Lin ERK 2019',
+    description: 'ERK Signaling model (Lin et al. 2019)',
+    code: linErk2019,
+    tags: ['published', 'literature', 'signaling'],
   },
 ];
 
@@ -596,6 +707,20 @@ const IMMUNE_SIGNALING: Example[] = [
     description: 'BNGL model: TLBR',
     code: tlbr,
     tags: ['published', 'immune signaling'],
+  },
+  {
+    id: 'Lin_TCR_2019',
+    name: 'Lin TCR 2019',
+    description: 'TCR Signaling model (Lin et al. 2019)',
+    code: linTcr2019,
+    tags: ['published', 'literature', 'immune'],
+  },
+  {
+    id: 'Cheemalavagu_JAK_STAT',
+    name: 'JAK-STAT (Cheemalavagu)',
+    description: 'JAK-STAT and SOCS degradation model',
+    code: cheemalavaguJakStat,
+    tags: ['published', 'literature', 'signaling'],
   },
 ];
 
@@ -1067,6 +1192,257 @@ const TEST_MODELS: Example[] = [
   },
 ];
 
+const NATIVE_TUTORIALS: Example[] = [
+  {
+    id: 'AB',
+    name: 'AB',
+    description: 'Native BNGL Tutorial: AB',
+    code: ABTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'ABC',
+    name: 'ABC',
+    description: 'Native BNGL Tutorial: ABC',
+    code: ABCTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'ABC_scan',
+    name: 'ABC Scan',
+    description: 'Native BNGL Tutorial: ABC Scan',
+    code: ABCScanTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'ABC_ssa',
+    name: 'ABC Ssa',
+    description: 'Native BNGL Tutorial: ABC Ssa',
+    code: ABCSsaTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'LV',
+    name: 'LV',
+    description: 'Native BNGL Tutorial: LV',
+    code: LVTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'SIR',
+    name: 'SIR',
+    description: 'Native BNGL Tutorial: SIR',
+    code: SIRTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'ABp',
+    name: 'ABp',
+    description: 'Native BNGL Tutorial: ABp',
+    code: ABpTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'ABp_approx',
+    name: 'ABp Approx',
+    description: 'Native BNGL Tutorial: ABp Approx',
+    code: ABpApproxTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'GK',
+    name: 'GK',
+    description: 'Native BNGL Tutorial: GK',
+    code: GKTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'Lisman',
+    name: 'Lisman',
+    description: 'Native BNGL Tutorial: Lisman',
+    code: LismanTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'Lisman_bifurcate',
+    name: 'Lisman Bifurcate',
+    description: 'Native BNGL Tutorial: Lisman Bifurcate',
+    code: LismanBifurcateTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'BAB',
+    name: 'BAB',
+    description: 'Native BNGL Tutorial: BAB',
+    code: BABTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'BAB_coop',
+    name: 'BAB Coop',
+    description: 'Native BNGL Tutorial: BAB Coop',
+    code: BABCoopTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'BAB_scan',
+    name: 'BAB Scan',
+    description: 'Native BNGL Tutorial: BAB Scan',
+    code: BABScanTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'BLBR',
+    name: 'BLBR',
+    description: 'Native BNGL Tutorial: BLBR',
+    code: BLBRTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'cBNGL_simple',
+    name: 'CBNGL Simple',
+    description: 'Native BNGL Tutorial: CBNGL Simple',
+    code: cBNGLSimpleTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'LR',
+    name: 'LR',
+    description: 'Native BNGL Tutorial: LR',
+    code: LRTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'LRR',
+    name: 'LRR',
+    description: 'Native BNGL Tutorial: LRR',
+    code: LRRTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'LRR_comp',
+    name: 'LRR Comp',
+    description: 'Native BNGL Tutorial: LRR Comp',
+    code: LRRCompTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'LR_comp',
+    name: 'LR Comp',
+    description: 'Native BNGL Tutorial: LR Comp',
+    code: LRCompTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'LV_comp',
+    name: 'LV Comp',
+    description: 'Native BNGL Tutorial: LV Comp',
+    code: LVCompTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'organelle_transport',
+    name: 'Organelle Transport',
+    description: 'Native BNGL Tutorial: Organelle Transport',
+    code: organelleTransportTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'organelle_transport_struct',
+    name: 'Organelle Transport Struct',
+    description: 'Native BNGL Tutorial: Organelle Transport Struct',
+    code: organelleTransportStructTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'Chylek_library',
+    name: 'Chylek Library',
+    description: 'Native BNGL Tutorial: Chylek Library',
+    code: ChylekLibraryTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'Creamer_2012',
+    name: 'Creamer 2012',
+    description: 'Native BNGL Tutorial: Creamer 2012',
+    code: Creamer2012Tutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'egfr_simple',
+    name: 'Egfr Simple',
+    description: 'Native BNGL Tutorial: Egfr Simple',
+    code: egfrSimpleTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'FceRI_ji',
+    name: 'FceRI Ji',
+    description: 'Native BNGL Tutorial: FceRI Ji',
+    code: FceRIJiTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'Suderman_2013',
+    name: 'Suderman 2013',
+    description: 'Native BNGL Tutorial: Suderman 2013',
+    code: Suderman2013Tutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+
+  {
+    id: 'birth-death',
+    name: 'Birth-Death',
+    description: 'Native BNGL Tutorial: Birth-Death',
+    code: birthDeathTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'CircadianOscillator',
+    name: 'CircadianOscillator',
+    description: 'Native BNGL Tutorial: CircadianOscillator',
+    code: CircadianOscillatorTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'ComplexDegradation',
+    name: 'ComplexDegradation',
+    description: 'Native BNGL Tutorial: ComplexDegradation',
+    code: ComplexDegradationTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'Repressilator',
+    name: 'Repressilator',
+    description: 'Native BNGL Tutorial: Repressilator',
+    code: RepressilatorTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'toggle',
+    name: 'Toggle',
+    description: 'Native BNGL Tutorial: Toggle',
+    code: toggleTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'FceRI_viz',
+    name: 'FceRI Viz',
+    description: 'Native BNGL Tutorial: FceRI Viz',
+    code: FceRIVizTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+  {
+    id: 'visualize',
+    name: 'Visualize',
+    description: 'Native BNGL Tutorial: Visualize',
+    code: visualizeTutorial,
+    tags: ['published', 'tutorial', 'native'],
+  },
+];
+
+
+
 export interface ModelCategory {
   id: string;
   name: string;
@@ -1106,6 +1482,13 @@ const RAW_MODEL_CATEGORIES: ModelCategory[] = [
     description: 'Educational models and basic BNGL syntax examples',
     models: TUTORIALS,
   },
+  {
+    id: 'native-tutorials',
+    name: 'RuleWorld Tutorials',
+    description: 'Models from the official BioNetGen tutorial',
+    models: NATIVE_TUTORIALS,
+  },
+
   {
     id: 'test-models',
     name: 'Test Models',

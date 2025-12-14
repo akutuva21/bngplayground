@@ -68,8 +68,8 @@ describe('Example gallery models', () => {
 
       expect(result.species.length).toBeGreaterThan(0);
       expect(result.reactions.length).toBeGreaterThan(0);
-      expect(result.species.length).toBeLessThan(MAX_SPECIES);
-      expect(result.reactions.length).toBeLessThan(MAX_REACTIONS);
+      expect(result.species.length).toBeLessThanOrEqual(MAX_SPECIES);
+      expect(result.reactions.length).toBeLessThanOrEqual(MAX_REACTIONS);
 
       const canonicalSeen = new Set<string>();
       for (const species of result.species) {

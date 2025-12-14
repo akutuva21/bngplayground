@@ -395,6 +395,12 @@ export class NetworkGenerator {
     }
 
     const totalTime = ((Date.now() - this.startTime) / 1000).toFixed(2);
+
+    // MEDIUM BUG FIX: Warn when maxIterations limit was reached
+    if (iteration >= this.options.maxIterations && queue.length > 0) {
+      console.warn(`[NetworkGenerator] WARNING: maxIterations limit (${this.options.maxIterations}) reached with ${queue.length} species still in queue. Network may be incomplete.`);
+    }
+
     progressLog(`[NetworkGenerator] Complete: ${speciesList.length} species, ${reactionsList.length} reactions in ${totalTime}s (${iteration} iterations)`);
 
     return { species: speciesList, reactions: reactionsList };
@@ -531,7 +537,9 @@ export class NetworkGenerator {
         // Find orbit ID for tMol from Map
         const orbitId = orbits.get(tMol);
         if (orbitId === undefined) {
-          throw new Error(`Orbit not found for molecule ${tMol}`);
+          // BUG FIX: Skip this match gracefully instead of throwing
+          console.warn(`[NetworkGenerator] Orbit not found for molecule ${tMol}, skipping match`);
+          continue;
         }
         sigParts.push(orbitId);
       }

@@ -9,6 +9,9 @@ import { FIMTab } from './tabs/FIMTab';
 import { CartoonTab } from './tabs/CartoonTab';
 import { RegulatoryTab } from './tabs/RegulatoryTab';
 import { VerificationTab } from './tabs/VerificationTab';
+import { ParameterScanTab } from './tabs/ParameterScanTab';
+import { FluxAnalysisTab } from './tabs/FluxAnalysisTab';
+import { ExpressionInputPanel, CustomExpression } from './ExpressionInputPanel';
 
 
 interface VisualizationPanelProps {
@@ -34,6 +37,7 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
 }) => {
   const [visibleSpecies, setVisibleSpecies] = useState<Set<string>>(new Set());
   const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
+  const [expressions, setExpressions] = useState<CustomExpression[]>([]);
 
   React.useEffect(() => {
     if (model) {
@@ -42,6 +46,32 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
       setVisibleSpecies(new Set());
     }
   }, [model]);
+
+  // Wrapper to sync expression names with visibleSpecies for legend toggle
+  const handleExpressionsChange = React.useCallback((newExpressions: CustomExpression[]) => {
+    // Find newly added expressions and add them to visibleSpecies
+    const newNames = newExpressions.map(e => e.name);
+    const oldNames = expressions.map(e => e.name);
+
+    setVisibleSpecies(prev => {
+      const updated = new Set(prev);
+      // Add new expression names
+      newNames.forEach(name => {
+        if (!oldNames.includes(name)) {
+          updated.add(name);
+        }
+      });
+      // Remove deleted expression names
+      oldNames.forEach(name => {
+        if (!newNames.includes(name)) {
+          updated.delete(name);
+        }
+      });
+      return updated;
+    });
+
+    setExpressions(newExpressions);
+  }, [expressions]);
 
   React.useEffect(() => {
     if (!model || model.reactionRules.length === 0) {
@@ -74,6 +104,8 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
             <Tab>Rule Cartoons</Tab>
             <Tab>Identifiability</Tab>
             <Tab>Steady State</Tab>
+            <Tab>Parameter Scan</Tab>
+            <Tab>Flux Analysis</Tab>
             <Tab>Verification</Tab>
             {/* <Tab>Robustness</Tab> */}
           </TabList>
@@ -85,6 +117,13 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
                 model={model}
                 visibleSpecies={visibleSpecies}
                 onVisibleSpeciesChange={setVisibleSpecies}
+                expressions={expressions}
+              />
+              <ExpressionInputPanel
+                expressions={expressions}
+                onExpressionsChange={handleExpressionsChange}
+                observableNames={model?.observables?.map((o) => o.name) ?? []}
+                hasSpeciesData={!!results?.speciesData && results.speciesData.length > 0}
               />
             </TabPanel>
             <TabPanel>
@@ -110,6 +149,14 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
             </TabPanel>
             <TabPanel>
               <SteadyStateTab model={model} onSimulate={onSimulate} onCancelSimulation={onCancelSimulation} isSimulating={isSimulating} />
+            </TabPanel>
+            <TabPanel>
+              <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">Parameter Scan – explore how observables change with parameter values</div>
+              <ParameterScanTab model={model} />
+            </TabPanel>
+            <TabPanel>
+              <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">Flux Analysis – visualize reaction flux contributions</div>
+              <FluxAnalysisTab model={model} results={results} />
             </TabPanel>
             <TabPanel>
               <VerificationTab model={model} results={results} />

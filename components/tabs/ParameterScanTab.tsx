@@ -53,45 +53,6 @@ const computeDefaultBounds = (value: number): [number, number] => {
   return [lower, upper];
 };
 
-const cloneWithParameters = (model: BNGLModel, overrides: Record<string, number>): BNGLModel => {
-  if (!model) {
-    throw new Error('cloneWithParameters called with null model');
-  }
-  // Shallow-clone the model and only replace parameters and rebuild reactions.
-  // Avoid JSON.parse(JSON.stringify(...)) which is expensive when called many times.
-  const nextModel: BNGLModel = {
-    ...model,
-    parameters: { ...(model.parameters || {}), ...overrides },
-    reactions: [],
-  } as BNGLModel;
-
-  // Rebuild reactions based on reactionRules and the new parameters.
-  (model.reactionRules || []).forEach((rule) => {
-    const forwardRate = nextModel.parameters[rule.rate] ?? parseFloat(rule.rate as unknown as string);
-    if (!Number.isNaN(forwardRate)) {
-      nextModel.reactions.push({
-        reactants: rule.reactants,
-        products: rule.products,
-        rate: rule.rate,
-        rateConstant: forwardRate,
-      });
-    }
-    if (rule.isBidirectional && rule.reverseRate) {
-      const reverseRate = nextModel.parameters[rule.reverseRate] ?? parseFloat(rule.reverseRate as unknown as string);
-      if (!Number.isNaN(reverseRate)) {
-        nextModel.reactions.push({
-          reactants: rule.products,
-          products: rule.reactants,
-          rate: rule.reverseRate,
-          rateConstant: reverseRate,
-        });
-      }
-    }
-  });
-
-  return nextModel;
-};
-
 const generateRange = (start: number, end: number, steps: number, isLog = false): number[] => {
   if (steps <= 1) return [start];
   if (isLog) {
@@ -133,6 +94,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
   const [param2End, setParam2End] = useState('');
   const [param2Steps, setParam2Steps] = useState('5');
   const [method, setMethod] = useState<'ode' | 'ssa'>('ode');
+  const [solver, setSolver] = useState<'auto' | 'cvode' | 'cvode_sparse' | 'rosenbrock23' | 'rk45' | 'rk4'>('cvode');
   const [tEnd, setTEnd] = useState('100');
   const [nSteps, setNSteps] = useState('100');
   const [selectedObservable, setSelectedObservable] = useState('');
@@ -146,7 +108,6 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
   const scanAbortControllerRef = useRef<AbortController | null>(null);
   const isMountedRef = useRef(true);
   const cachedModelIdRef = useRef<number | null>(null);
-  
 
   const previousModelRef = useRef<BNGLModel | null>(null);
   const previousParameter1 = useRef<string | null>(null);
@@ -227,7 +188,6 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
     }
   }, []);
 
-  
 
   const oneDChartData = useMemo(() => {
     if (!oneDResult || !selectedObservable) return [];
@@ -236,39 +196,6 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
       observableValue: entry.observables[selectedObservable] ?? 0,
     }));
   }, [oneDResult, selectedObservable]);
-
-  const xAxisDomain = useMemo(() => {
-    if (!oneDChartData || oneDChartData.length === 0) return [0, 1];
-    const vals = oneDChartData.map((d) => d.parameterValue).filter(Number.isFinite);
-    if (vals.length === 0) return [0, 1];
-    let min = Math.min(...vals);
-    let max = Math.max(...vals);
-    if (!Number.isFinite(min)) min = 0;
-    if (!Number.isFinite(max)) max = min + 1;
-    if (min === max) {
-      const pad = Math.abs(min) * 0.1 || 0.01;
-      return [Number((min - pad).toPrecision(12)), Number((max + pad).toPrecision(12))];
-    }
-    const lower = Math.max(0, min * 0.9);
-    const upper = max * 1.1;
-    return [Number(lower.toPrecision(12)), Number(upper.toPrecision(12))];
-  }, [oneDChartData]);
-
-  const yAxisDomain = useMemo(() => {
-    if (!oneDChartData || oneDChartData.length === 0) return ['auto', 'auto'] as const;
-    const vals = oneDChartData.map((d) => d.observableValue).filter(Number.isFinite);
-    if (vals.length === 0) return ['auto', 'auto'] as const;
-    let min = Math.min(...vals);
-    let max = Math.max(...vals);
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return ['auto', 'auto'] as const;
-    if (min === max) {
-      const pad = Math.abs(min) * 0.1 || 0.01;
-      return [Number((min - pad).toPrecision(12)), Number((max + pad).toPrecision(12))] as const;
-    }
-    const lower = min * 0.9;
-    const upper = max * 1.1;
-    return [Number(lower.toPrecision(12)), Number(upper.toPrecision(12))] as const;
-  }, [oneDChartData]);
 
   const heatmapData = useMemo(() => {
     if (!twoDResult || !selectedObservable) return null;
@@ -395,6 +322,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
       method,
       t_end: tEndValue,
       n_steps: nStepsValue,
+      ...(method === 'ode' ? { solver } : {}),
     } as const;
 
     const controller = new AbortController();
@@ -408,57 +336,57 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
       modelId = await bnglService.prepareModel(model, { signal: controller.signal });
       cachedModelIdRef.current = modelId;
 
-        if (scanType === '1d') {
-          const result: OneDResult = { parameterName: parameter1, values: [] };
-          let completed = 0;
-          for (const value of range1) {
-            const overrides = { [parameter1]: value } as Record<string, number>;
+      if (scanType === '1d') {
+        const result: OneDResult = { parameterName: parameter1, values: [] };
+        let completed = 0;
+        for (const value of range1) {
+          const overrides = { [parameter1]: value } as Record<string, number>;
+          const simResults = await bnglService.simulateCached(modelId, overrides, simulationOptions, {
+            signal: controller.signal,
+            description: `Parameter scan (${parameter1}=${value})`,
+          });
+          const lastPoint = simResults.data.at(-1) ?? {};
+          const observables = observableNames.reduce<Record<string, number>>((acc, name) => {
+            const raw = lastPoint[name];
+            const numeric = typeof raw === 'number' ? raw : Number(raw ?? 0);
+            acc[name] = Number.isFinite(numeric) ? numeric : 0;
+            return acc;
+          }, {});
+          result.values.push({ parameterValue: value, observables });
+          completed += 1;
+          if (isMountedRef.current) setProgress({ current: completed, total: totalRuns });
+        }
+        if (isMountedRef.current) setOneDResult(result);
+      } else {
+        const grid: Record<string, number[][]> = {};
+        observableNames.forEach((name) => {
+          grid[name] = range2.map(() => new Array(range1.length).fill(0));
+        });
+        let completed = 0;
+        for (let yi = 0; yi < range2.length; yi += 1) {
+          for (let xi = 0; xi < range1.length; xi += 1) {
+            const overrides = { [parameter1]: range1[xi], [parameter2]: range2[yi] };
             const simResults = await bnglService.simulateCached(modelId, overrides, simulationOptions, {
               signal: controller.signal,
-              description: `Parameter scan (${parameter1}=${value})`,
+              description: `2D parameter scan (${parameter1}, ${parameter2})`,
             });
             const lastPoint = simResults.data.at(-1) ?? {};
-            const observables = observableNames.reduce<Record<string, number>>((acc, name) => {
+            observableNames.forEach((name) => {
               const raw = lastPoint[name];
               const numeric = typeof raw === 'number' ? raw : Number(raw ?? 0);
-              acc[name] = Number.isFinite(numeric) ? numeric : 0;
-              return acc;
-            }, {});
-            result.values.push({ parameterValue: value, observables });
+              grid[name][yi][xi] = Number.isFinite(numeric) ? numeric : 0;
+            });
             completed += 1;
             if (isMountedRef.current) setProgress({ current: completed, total: totalRuns });
           }
-          if (isMountedRef.current) setOneDResult(result);
-        } else {
-          const grid: Record<string, number[][]> = {};
-          observableNames.forEach((name) => {
-            grid[name] = range2.map(() => new Array(range1.length).fill(0));
-          });
-          let completed = 0;
-          for (let yi = 0; yi < range2.length; yi += 1) {
-            for (let xi = 0; xi < range1.length; xi += 1) {
-              const overrides = { [parameter1]: range1[xi], [parameter2]: range2[yi] };
-              const simResults = await bnglService.simulateCached(modelId, overrides, simulationOptions, {
-                signal: controller.signal,
-                description: `2D parameter scan (${parameter1}, ${parameter2})`,
-              });
-              const lastPoint = simResults.data.at(-1) ?? {};
-              observableNames.forEach((name) => {
-                const raw = lastPoint[name];
-                const numeric = typeof raw === 'number' ? raw : Number(raw ?? 0);
-                grid[name][yi][xi] = Number.isFinite(numeric) ? numeric : 0;
-              });
-              completed += 1;
-              if (isMountedRef.current) setProgress({ current: completed, total: totalRuns });
-            }
-          }
-          if (isMountedRef.current) setTwoDResult({
-            parameterNames: [parameter1, parameter2],
-            xValues: range1,
-            yValues: range2,
-            grid,
-          });
         }
+        if (isMountedRef.current) setTwoDResult({
+          parameterNames: [parameter1, parameter2],
+          xValues: range1,
+          yValues: range2,
+          grid,
+        });
+      }
     } catch (scanError) {
       if (scanError instanceof DOMException && scanError.name === 'AbortError') {
         const cancelledByUser = scanError.message?.includes('cancelled by user');
@@ -516,13 +444,6 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
     };
   }, [model]);
 
-  const makeCellColor = (value: number, min: number, max: number) => {
-    if (max <= min) return 'rgba(33,128,141,0.2)';
-    const ratio = (value - min) / (max - min);
-    const alpha = 0.15 + 0.75 * Math.min(Math.max(ratio, 0), 1);
-    return `rgba(33,128,141,${alpha.toFixed(2)})`;
-  };
-
   const downloadFile = (content: string, fileName: string, mime = 'text/csv') => {
     const blob = new Blob([content], { type: mime });
     const url = URL.createObjectURL(blob);
@@ -575,21 +496,8 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
   const guardMessage = !model
     ? 'Parse a model to set up a parameter scan.'
     : parameterNames.length === 0
-    ? 'The current model does not declare any parameters to scan.'
-    : null;
-
-  // lightweight debug: log only when key dependencies change to avoid spamming console
-  // eslint-disable-next-line no-console
-  React.useEffect(() => {
-    console.debug('ParameterScanTab render', {
-      modelKeys: model ? Object.keys(model.parameters) : null,
-      parameter1,
-      parameter2,
-      oneDValues: oneDResult ? oneDResult.values.length : 0,
-      xAxisDomain,
-      yAxisDomain,
-    });
-  }, [model, parameter1, parameter2, oneDResult, xAxisDomain, yAxisDomain]);
+      ? 'The current model does not declare any parameters to scan.'
+      : null;
 
   return (
     <div className="space-y-6">
@@ -658,14 +566,27 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
           )}
         </div>
 
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-4">
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Solver</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Method</label>
             <Select value={method} onChange={(event) => setMethod(event.target.value as 'ode' | 'ssa')}>
               <option value="ode">ODE</option>
-              <option value="ssa">SSA</option>
+              <option value="ssa">SSA (Stochastic)</option>
             </Select>
           </div>
+          {method === 'ode' && (
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Solver</label>
+              <Select value={solver} onChange={(event) => setSolver(event.target.value as typeof solver)}>
+                <option value="cvode">CVODE (Recommended)</option>
+                <option value="cvode_sparse">CVODE Sparse</option>
+                <option value="rosenbrock23">Rosenbrock23</option>
+                <option value="rk45">RK45 (Dormand-Prince)</option>
+                <option value="rk4">RK4 (Fixed-step)</option>
+                <option value="auto">Auto</option>
+              </Select>
+            </div>
+          )}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">t_end</label>
             <Input type="number" value={tEnd} min={0} onChange={(event) => setTEnd(event.target.value)} />
@@ -717,7 +638,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
         </div>
       )}
 
-      
+
 
       {isRunning && (
         <div className="w-full">
@@ -742,27 +663,33 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
         <Card className="space-y-6">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">1D Scan Results</h3>
           {selectedObservable && oneDChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={360}>
-              <LineChart data={oneDChartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.35)" />
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={oneDChartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(128, 128, 128, 0.3)" />
                 <XAxis
                   dataKey="parameterValue"
-                  label={{ value: oneDResult.parameterName, position: 'insideBottom', offset: -6 }}
+                  label={{ value: oneDResult.parameterName, position: 'insideBottom', offset: -5 }}
                   type="number"
-                  domain={[xAxisDomain[0], xAxisDomain[1]]}
+                  domain={['dataMin', 'dataMax']}
                   scale={isLogScale ? 'log' : 'linear'}
-                  tickFormatter={(value) => formatNumber(value)}
                 />
                 <YAxis
-                  label={{ value: selectedObservable, angle: -90, position: 'insideLeft', offset: 16 }}
-                  domain={yAxisDomain}
-                  tickFormatter={(value) => formatNumber(value)}
+                  label={{ value: selectedObservable, angle: -90, position: 'insideLeft' }}
+                  domain={['auto', 'auto']}
+                  allowDataOverflow={true}
+                  tickFormatter={(value) => {
+                    if (typeof value !== 'number') return value;
+                    const abs = Math.abs(value);
+                    if (abs >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+                    if (abs >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+                    if (abs >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+                    if (abs < 0.01 && abs !== 0) return value.toExponential(1);
+                    return value.toFixed(0);
+                  }}
                 />
                 <Tooltip
-                  formatter={(value: number) => formatNumber(value as number)}
-                  labelFormatter={(value) => `${oneDResult.parameterName}: ${formatNumber(value as number)}`}
-                  trigger="hover"
-                  cursor={{ stroke: 'rgba(148, 163, 184, 0.45)', strokeDasharray: '4 4' }}
+                  formatter={(value: number) => typeof value === 'number' ? value.toFixed(2) : value}
+                  labelFormatter={(label) => `${oneDResult.parameterName}: ${typeof label === 'number' ? label : label}`}
                 />
                 <Legend
                   verticalAlign="bottom"
@@ -774,12 +701,11 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
                   dataKey="observableValue"
                   name={selectedObservable}
                   stroke={CHART_COLORS[0]}
-                  strokeWidth={2}
-                  dot={{ r: 2 }}
-                  activeDot={{ r: 4 }}
+                  strokeWidth={1.5}
+                  dot={false}
                 />
               </LineChart>
-              </ResponsiveContainer>
+            </ResponsiveContainer>
           ) : (
             <p className="text-sm text-slate-500">Select an observable to visualize the scan.</p>
           )}

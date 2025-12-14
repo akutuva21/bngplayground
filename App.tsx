@@ -10,6 +10,7 @@ import { BNGLModel, SimulationOptions, SimulationResults, Status, ValidationWarn
 import { INITIAL_BNGL_CODE } from './constants';
 import SimulationModal from './components/SimulationModal';
 import { validateBNGLModel, validationWarningsToMarkers } from './services/modelValidation';
+import { getModelFromUrl, clearModelFromUrl } from './src/utils/shareUrl';
 
 function App() {
   const PANEL_MAX_HEIGHT = 'calc(100vh - 100px)';
@@ -44,6 +45,16 @@ function App() {
         console.warn('Error terminating bnglService on App unmount', err);
       }
     };
+  }, []);
+
+  // Load model from URL hash on startup (for shared links)
+  useEffect(() => {
+    const sharedCode = getModelFromUrl();
+    if (sharedCode) {
+      setCode(sharedCode);
+      clearModelFromUrl(); // Clean up URL
+      setStatus({ type: 'success', message: 'Model loaded from shared link!' });
+    }
   }, []);
 
   const handleParse = useCallback(async () => {
@@ -87,7 +98,7 @@ function App() {
     }
     // Estimate complexity and warn user for large models
     const estimateComplexity = (m: BNGLModel): number => {
-      const ruleCount = m.reactions?.length ?? 0;
+      const ruleCount = m.reactionRules?.length ?? 0;
       const seedCount = m.species?.length ?? 0;
       const molTypeCount = m.moleculeTypes?.length ?? 0;
       // Heuristic: seeds × rules^1.5 × molTypes
@@ -99,7 +110,7 @@ function App() {
       const proceed = window.confirm(
         `⚠️ Large Model Detected\n\n` +
         `Complexity score: ${Math.round(complexity)}\n` +
-        `• ${model.reactions.length} rules\n` +
+        `• ${model.reactionRules?.length ?? 0} rules\n` +
         `• ${model.species.length} seed species\n` +
         `• ${model.moleculeTypes.length} molecule types\n\n` +
         `Network generation may take 30-60 seconds. Continue?`
@@ -228,6 +239,7 @@ function App() {
             console.warn('SBML export failed', e);
           }
         }}
+        code={code}
       />
 
       <main className="flex-1 min-h-0 overflow-hidden">

@@ -2,7 +2,6 @@
 
 import type {
   BNGLModel,
-  BNGLSpecies,
   SimulationOptions,
   SimulationResults,
   WorkerRequest,
@@ -16,7 +15,8 @@ import { BNGLParser } from '../src/services/graph/core/BNGLParser';
 import { Species } from '../src/services/graph/core/Species';
 import { Rxn } from '../src/services/graph/core/Rxn';
 import { GraphCanonicalizer } from '../src/services/graph/core/Canonical';
-import { parseBNGL as parseBNGLModel } from './parseBNGL';
+// Using official ANTLR parser for bng2.pl parity (util polyfill added in vite.config.ts)
+import { parseBNGLStrict as parseBNGLModel } from '../src/parser/BNGLParserWrapper';
 
 const ctx: DedicatedWorkerGlobalScope = self as unknown as DedicatedWorkerGlobalScope;
 
@@ -185,7 +185,7 @@ function matchMolecule(patMol: string, specMol: string): boolean {
 
   // Every component in pattern must be satisfied by species
   return patComps.every(pCompStr => {
-    const pM = pCompStr.match(/^([A-Za-z0-9_]+)(?:~([A-Za-z0-9_]+))?(?:!([0-9]+|\+|\?))?$/);
+    const pM = pCompStr.match(/^([A-Za-z0-9_]+)(?:~([A-Za-z0-9_?]+))?(?:!([0-9]+|\+|\?))?$/);
     if (!pM) return false;
     const [_, pName, pState, pBond] = pM;
 
@@ -196,9 +196,10 @@ function matchMolecule(patMol: string, specMol: string): boolean {
 
     if (!sCompStr) return false;
 
-    const sM = sCompStr.match(/^([A-Za-z0-9_]+)(?:~([A-Za-z0-9_]+))?(?:!([0-9]+))?$/);
+    // BUG FIX: Handle !+ and !? wildcards in species string too
+    const sM = sCompStr.match(/^([A-Za-z0-9_]+)(?:~([A-Za-z0-9_]+))?(?:!([0-9]+|\+|\?))?$/);
     if (!sM) return false;
-    const [__, sName, sState, sBond] = sM;
+    const [__, _sName, sState, sBond] = sM;
 
     if (pState && pState !== sState) return false;
 
@@ -234,15 +235,29 @@ function isSpeciesMatch(speciesStr: string, pattern: string): boolean {
     const patternMolecules = cleanPat.split('.').map(s => s.trim());
     const speciesMolecules = cleanSpec.split('.').map(s => s.trim());
 
-    // Sort both to handle order independence for complexes
-    patternMolecules.sort();
-    speciesMolecules.sort();
+    // Complex patterns: check if ALL pattern molecules can match DIFFERENT species molecules
+    // This is subgraph matching - pattern can match a subset of species
+    if (patternMolecules.length > speciesMolecules.length) return false;
 
-    if (patternMolecules.length !== speciesMolecules.length) return false;
+    // Use recursive matching to find valid assignment
+    const usedIndices = new Set<number>();
 
-    return patternMolecules.every((patMol, idx) => {
-      return matchMolecule(patMol, speciesMolecules[idx]);
-    });
+    const findMatch = (patIdx: number): boolean => {
+      if (patIdx >= patternMolecules.length) return true;
+
+      const patMol = patternMolecules[patIdx];
+      for (let i = 0; i < speciesMolecules.length; i++) {
+        if (usedIndices.has(i)) continue;
+        if (matchMolecule(patMol, speciesMolecules[i])) {
+          usedIndices.add(i);
+          if (findMatch(patIdx + 1)) return true;
+          usedIndices.delete(i);
+        }
+      }
+      return false;
+    };
+
+    return findMatch(0);
   } else {
     // Single molecule pattern matching against potentially complex species
     // If pattern is "A", it matches "A.B"
@@ -297,7 +312,8 @@ function evaluateFunctionalRate(
   let expandedExpr = expression;
   if (functions && functions.length > 0) {
     // Repeatedly expand function calls (handles nested calls)
-    for (let pass = 0; pass < 5; pass++) { // Max 5 passes for nested functions
+    // MEDIUM BUG FIX: Increased from 5 to 10 to handle deeply nested functions
+    for (let pass = 0; pass < 10; pass++) {
       let foundFunction = false;
       for (const func of functions) {
         // Match function_name() - zero-argument functions
@@ -328,19 +344,20 @@ function evaluateFunctionalRate(
     const fn = new Function(`return ${evalExpr};`);
     const result = fn();
     if (typeof result !== 'number' || !isFinite(result)) {
+      console.warn(`[evaluateFunctionalRate] Expression '${expression}' evaluated to non-numeric: ${result}`);
       return 0;
     }
     return result;
-  } catch (e) {
-    // Failed to evaluate - return 0
+  } catch (e: any) {
+    // BUG FIX: Log warning on evaluation failure
+    console.warn(`[evaluateFunctionalRate] Failed to evaluate '${expression}': ${e.message}`);
     return 0;
   }
 }
 
 function parseBNGL(jobId: number, bnglCode: string): BNGLModel {
-  return parseBNGLModel(bnglCode, {
-    checkCancelled: () => ensureNotCancelled(jobId),
-  });
+  ensureNotCancelled(jobId);
+  return parseBNGLModel(bnglCode);
 }
 
 
@@ -537,6 +554,8 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
   const n_steps = inputModel.simulationOptions?.n_steps ?? options.n_steps;
   const method = options.method;
   const headers = ['time', ...model.observables.map((observable) => observable.name)];
+  // Species headers for cdat-style output
+  const speciesHeaders = model.species.map((s) => s.name);
 
   // --- OPTIMIZATION: Pre-process Network for Fast Simulation ---
 
@@ -559,6 +578,12 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
     const productIndices = r.products.map(name => speciesMap.get(name));
 
     if (reactantIndices.some(i => i === undefined) || productIndices.some(i => i === undefined)) {
+      // BUG FIX: Log which species are missing
+      const missingReactants = r.reactants.filter(name => speciesMap.get(name) === undefined);
+      const missingProducts = r.products.filter(name => speciesMap.get(name) === undefined);
+      if (missingReactants.length > 0 || missingProducts.length > 0) {
+        console.warn(`[Worker] Reaction skipped - missing species: reactants=[${missingReactants.join(',')}] products=[${missingProducts.join(',')}]`);
+      }
       return null;
     }
 
@@ -671,6 +696,7 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
   console.log('[Worker] Total initial concentration:', totalConc);
 
   const data: Record<string, number>[] = [];
+  const speciesData: Record<string, number>[] = [];
 
   // --- Fast Observable Evaluator ---
   const evaluateObservablesFast = (currentState: Float64Array) => {
@@ -699,6 +725,10 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
     let nextTOut = 0;
 
     data.push({ time: t, ...evaluateObservablesFast(state) });
+    // Initial species concentrations (cdat)
+    const speciesPoint0: Record<string, number> = { time: t };
+    for (let i = 0; i < numSpecies; i++) speciesPoint0[speciesHeaders[i]] = state[i];
+    speciesData.push(speciesPoint0);
 
     while (t < t_end) {
       checkCancelled();
@@ -742,6 +772,10 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
       while (t >= nextTOut && nextTOut <= t_end) {
         checkCancelled();
         data.push({ time: Math.round(nextTOut * 1e10) / 1e10, ...evaluateObservablesFast(state) });
+        // Also record species concentrations for SSA
+        const speciesPointLoop: Record<string, number> = { time: Math.round(nextTOut * 1e10) / 1e10 };
+        for (let k = 0; k < numSpecies; k++) speciesPointLoop[speciesHeaders[k]] = state[k];
+        speciesData.push(speciesPointLoop);
         nextTOut += dtOut;
       }
     }
@@ -749,10 +783,14 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
     // Fill remaining steps
     while (nextTOut <= t_end) {
       data.push({ time: Math.round(nextTOut * 1e10) / 1e10, ...evaluateObservablesFast(state) });
+      // Also record species concentrations for SSA
+      const speciesPointFinal: Record<string, number> = { time: Math.round(nextTOut * 1e10) / 1e10 };
+      for (let k = 0; k < numSpecies; k++) speciesPointFinal[speciesHeaders[k]] = state[k];
+      speciesData.push(speciesPointFinal);
       nextTOut += dtOut;
     }
 
-    return { headers, data } satisfies SimulationResults;
+    return { headers, data, speciesHeaders, speciesData, expandedReactions: model.reactions, expandedSpecies: model.species } satisfies SimulationResults;
   }
 
   if (method === 'ode') {
@@ -1001,6 +1039,10 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
     let t = 0;
 
     data.push({ time: t, ...evaluateObservablesFast(state) });
+    // Initial species concentrations (cdat) for ODE
+    const odeSpeciesPoint0: Record<string, number> = { time: t };
+    for (let i = 0; i < numSpecies; i++) odeSpeciesPoint0[speciesHeaders[i]] = state[i];
+    speciesData.push(odeSpeciesPoint0);
 
     // State vector for simulation
     let y = new Float64Array(state);
@@ -1094,6 +1136,12 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
       }
 
       data.push({ time: Math.round(t * 1e10) / 1e10, ...evaluateObservablesFast(y) });
+      // Also record species concentrations (cdat-style)
+      const speciesPoint: Record<string, number> = { time: Math.round(t * 1e10) / 1e10 };
+      for (let k = 0; k < numSpecies; k++) {
+        speciesPoint[speciesHeaders[k]] = y[k];
+      }
+      speciesData.push(speciesPoint);
 
       if (shouldStop) break;
     }
@@ -1104,7 +1152,7 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
     console.log('[Worker] ⏱️ TIMING: Total simulation time', totalTime.toFixed(0), 'ms');
     console.log('[Worker] ⏱️ SUMMARY: Parse=N/A, Network=' + networkGenTime.toFixed(0) + 'ms, ODE=' + odeTime.toFixed(0) + 'ms, Total=' + totalTime.toFixed(0) + 'ms');
 
-    return { headers, data } satisfies SimulationResults;
+    return { headers, data, speciesHeaders, speciesData, expandedReactions: model.reactions, expandedSpecies: model.species } satisfies SimulationResults;
   }
 
 
@@ -1258,7 +1306,7 @@ ctx.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
       const p = payload as any;
       const modelId = p && typeof p === 'object' ? (p as { modelId?: unknown }).modelId : undefined;
       if (typeof modelId !== 'number') throw new Error('release_model payload missing modelId');
-      const existed = cachedModels.delete(modelId);
+      cachedModels.delete(modelId);
       const response: WorkerResponse = { id, type: 'release_model_success', payload: { modelId } };
       ctx.postMessage(response);
     } catch (error) {

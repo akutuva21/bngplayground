@@ -445,17 +445,20 @@ export class Rosenbrock23Solver {
         }
       }
 
-      h = Math.max(result.hNew, minStep);
+      // BUG FIX: Check minStep BEFORE setting h to avoid false-positive termination
+      const nextH = Math.max(result.hNew, minStep);
 
-      if (h < minStep && t < tEnd - minStep) {
+      if (nextH < minStep && t < tEnd - minStep) {
         return {
           success: false,
           t,
           y,
           steps,
-          errorMessage: `Step size too small (h=${h.toExponential(4)}) at t=${t.toExponential(4)}`
+          errorMessage: `Step size too small (h=${nextH.toExponential(4)}) at t=${t.toExponential(4)}`
         };
       }
+
+      h = nextH;
     }
 
     return { success: true, t, y, steps };
@@ -1136,10 +1139,10 @@ export class CVODESolver {
     try {
       // Check if we're already at or past the target (within floating point tolerance)
       const relTol = 1e-10 * Math.max(1, Math.abs(tEnd));
-      
+
       while (t < tEnd - relTol) {
         if (checkCancelled) checkCancelled();
-        
+
         // Hard limit on steps within a single integrate() call to prevent infinite loops
         if (steps >= 100000) {
           console.warn(`[CVODESolver] Reached 100000 steps at t=${t}, target=${tEnd}, stopping`);
@@ -1154,7 +1157,7 @@ export class CVODESolver {
         // This prevents CVODE from getting stuck with h ~ machine epsilon
         const remainingDistance = Math.abs(tEnd - t);
         const machineEpsilonRelative = Math.max(1e-13, Math.abs(tEnd) * 1e-13);
-        
+
         if (remainingDistance < machineEpsilonRelative) {
           // We're close enough - treat as success
           t = tEnd; // Snap to exact target
@@ -1172,7 +1175,7 @@ export class CVODESolver {
         // Detect stuck solver: if t hasn't advanced meaningfully
         const advance = Math.abs(t - lastT);
         const minAdvance = Math.max(1e-14, Math.abs(t) * 1e-14);
-        
+
         if (advance < minAdvance) {
           stuckCount++;
           if (stuckCount >= MAX_STUCK_ITERATIONS) {
@@ -1334,9 +1337,9 @@ export class CVODEAutoSolver {
     }
 
     // Check if this is a convergence failure (flag -4) or error test failure (flag -3)
-    if (result.errorMessage?.includes('flag -4') || 
-        result.errorMessage?.includes('flag -3') ||
-        result.errorMessage?.includes('convergence')) {
+    if (result.errorMessage?.includes('flag -4') ||
+      result.errorMessage?.includes('flag -3') ||
+      result.errorMessage?.includes('convergence')) {
       console.log('[CVODEAutoSolver] CVODE failed, switching to Rosenbrock23');
       this.useFallback = true;
       // Retry from beginning with Rosenbrock

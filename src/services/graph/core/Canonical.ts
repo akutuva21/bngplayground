@@ -11,16 +11,18 @@ interface MoleculeInfo {
 }
 
 /**
- * Simple hash function for strings
+ * FNV-1a hash function for strings (better collision resistance than djb2)
  */
 function simpleHash(str: string): number {
-  let hash = 0;
+  // FNV-1a parameters for 32-bit
+  let hash = 0x811c9dc5;
+  const fnvPrime = 0x01000193;
+  
   for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0; // Convert to 32bit integer
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, fnvPrime);
   }
-  return hash;
+  return hash >>> 0; // Convert to unsigned 32-bit integer
 }
 
 /**

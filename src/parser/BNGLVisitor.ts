@@ -552,8 +552,14 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       // Evaluate
       // eslint-disable-next-line no-new-func
       const result = new Function('return ' + expr)();
-      return typeof result === 'number' ? result : 0;
-    } catch {
+      if (typeof result !== 'number' || !isFinite(result)) {
+        console.warn(`[BNGLVisitor] Expression '${ctx.text}' evaluated to non-numeric: ${result}`);
+        return 0;
+      }
+      return result;
+    } catch (e: any) {
+      // MEDIUM BUG FIX: Warn instead of silently returning 0
+      console.warn(`[BNGLVisitor] Failed to evaluate expression '${ctx.text}': ${e.message || e}`);
       return 0;
     }
   }

@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea } from 'recharts';
 import { BNGLModel, SimulationResults } from '../types';
 import { CHART_COLORS } from '../constants';
 import { Card } from './ui/Card';
+import { CustomExpression, evaluateExpression } from './ExpressionInputPanel';
+import { computeDynamicObservable } from '../src/utils/dynamicObservable';
 
 interface ResultsChartProps {
   results: SimulationResults | null;
@@ -10,6 +12,7 @@ interface ResultsChartProps {
   visibleSpecies: Set<string>;
   onVisibleSpeciesChange: (species: Set<string>) => void;
   highlightedSeries?: string[];
+  expressions?: CustomExpression[];
 }
 
 type ZoomDomain = {
@@ -89,7 +92,7 @@ const CustomLegend = (props: any) => {
   );
 };
 
-export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpecies, onVisibleSpeciesChange, highlightedSeries = [] }) => {
+export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpecies, onVisibleSpeciesChange, highlightedSeries = [], expressions = [] }) => {
   const [zoomHistory, setZoomHistory] = useState<ZoomDomain[]>([]);
   const [selection, setSelection] = useState<ZoomDomain | null>(null);
   const [filterMode, setFilterMode] = useState<'all' | 'search'>('all');
@@ -100,6 +103,62 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
     setZoomHistory([]);
     setSelection(null);
   }, [results]);
+
+  // Compute chart data with expression values
+  const chartData = useMemo(() => {
+    if (!results || !results.data) return [];
+    if (expressions.length === 0) return results.data;
+
+    // Pre-compute BNGL expression values (once for all time points)
+    const bnglExpressionValues: Map<string, number[]> = new Map();
+    const bnglExpressions = expressions.filter(e => e.type === 'bngl');
+
+    if (bnglExpressions.length > 0 && results.speciesData && results.speciesHeaders) {
+      for (const expr of bnglExpressions) {
+        try {
+          const computed = computeDynamicObservable(
+            { name: expr.name, pattern: expr.expression, type: 'molecules' },
+            results,
+            results.speciesHeaders
+          );
+          bnglExpressionValues.set(expr.name, computed.values);
+        } catch (e) {
+          console.warn(`Failed to compute BNGL expression "${expr.name}":`, e);
+          // Fill with zeros on error
+          bnglExpressionValues.set(expr.name, new Array(results.data.length).fill(0));
+        }
+      }
+    } else if (bnglExpressions.length > 0) {
+      console.warn('[ResultsChart] Cannot compute BNGL expressions - missing speciesData or speciesHeaders');
+    }
+
+    return results.data.map((point, index) => {
+      const newPoint: Record<string, any> = { ...point };
+
+      // Build variables for math expression evaluation
+      const variables: Record<string, number> = { time: point.time ?? 0 };
+      Object.keys(point).forEach((key) => {
+        if (key !== 'time' && typeof point[key] === 'number') {
+          variables[key] = point[key];
+        }
+      });
+
+      // Evaluate each expression
+      expressions.forEach((expr) => {
+        if (expr.type === 'bngl') {
+          // Use pre-computed BNGL values
+          const values = bnglExpressionValues.get(expr.name);
+          newPoint[expr.name] = values ? values[index] : 0;
+        } else {
+          // Math expression: evaluate using observable variables
+          const value = evaluateExpression(expr.expression, variables);
+          newPoint[expr.name] = value ?? 0;
+        }
+      });
+
+      return newPoint;
+    });
+  }, [results, expressions]);
 
   if (!results || results.data.length === 0) {
     return (
@@ -193,7 +252,7 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
     <Card className="max-w-full overflow-hidden">
       <ResponsiveContainer width="100%" height={400}>
         <LineChart
-          data={results.data}
+          data={chartData}
           margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -212,7 +271,15 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
             label={{ value: 'Concentration', angle: -90, position: 'insideLeft' }}
             domain={currentDomain ? [currentDomain.y1, currentDomain.y2] : [0, 'dataMax']}
             allowDataOverflow={true}
-            tickFormatter={(value) => value.toFixed(0)}
+            tickFormatter={(value) => {
+              if (typeof value !== 'number') return value;
+              const abs = Math.abs(value);
+              if (abs >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+              if (abs >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+              if (abs >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+              if (abs < 0.01 && abs !== 0) return value.toExponential(1);
+              return value.toFixed(0);
+            }}
           />
           <Tooltip
             formatter={(value: any) => {
@@ -233,6 +300,20 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
               dot={false}
               hide={!visibleSpecies.has(speciesName)}
               strokeOpacity={highlightSet.size === 0 || highlightSet.has(speciesName) ? 1 : 0.35}
+            />
+          ))}
+          {/* Expression lines with dashed style to distinguish */}
+          {expressions.map((expr) => (
+            <Line
+              key={expr.id}
+              type="monotone"
+              dataKey={expr.name}
+              stroke={expr.color}
+              strokeWidth={highlightSet.has(expr.name) ? 3 : 2}
+              strokeDasharray="5 3"
+              dot={false}
+              hide={!visibleSpecies.has(expr.name)}
+              strokeOpacity={highlightSet.size === 0 || highlightSet.has(expr.name) ? 1 : 0.35}
             />
           ))}
           {selection && (

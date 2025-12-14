@@ -60,7 +60,6 @@ export function updateParameterInCode(code: string, param: Parameter, newValue: 
 
 export function perturbParameters(code: string, variationPercent: number): string {
     const params = parseParameters(code);
-    let newCode = code;
 
     // To avoid line index shifting if we modified lines directly (we aren't adding/removing lines, so indices stay valid)
     // But updating 'newCode' repeatedly is inefficient if we re-split every time.
@@ -92,15 +91,15 @@ export function perturbParameterOverrides(params: Record<string, number>, variat
     const overrides: Record<string, number> = {};
 
 
-        Object.entries(params).forEach(([name, val]) => {
-            // Avoid perturbing 0 or 1 integers if they look like flags? No, perturb everything.
-            // If value is 0, it stays 0 unless we add additive noise. 
-            // Multiplicative noise on 0 is 0.
-            // Assuming mostly Rate Constants > 0.
+    Object.entries(params).forEach(([name, val]) => {
+        // Avoid perturbing 0 or 1 integers if they look like flags? No, perturb everything.
+        // If value is 0, it stays 0 unless we add additive noise. 
+        // Multiplicative noise on 0 is 0.
+        // Assuming mostly Rate Constants > 0.
 
-            const randomFactor = (Math.random() * 2 - 1) * (variationPercent / 100);
-            overrides[name] = val * (1 + randomFactor);
-        });
+        const randomFactor = (Math.random() * 2 - 1) * (variationPercent / 100);
+        overrides[name] = val * (1 + randomFactor);
+    });
 
-        return overrides;
-    }
+    return overrides;
+}

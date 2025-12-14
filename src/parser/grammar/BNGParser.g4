@@ -57,7 +57,7 @@ parameters_block
     ;
 
 parameter_def
-    : (STRING COLON)? STRING expression?
+    : (STRING COLON)? STRING BECOMES? expression?
     ;
 
 // Molecule types block
@@ -279,10 +279,31 @@ action_arg
     ;
 
 // Allow keywords to be used as argument names in action calls
+// This includes all possible BNG2.pl action options for full compatibility
 arg_name
-    : STRING | OVERWRITE | MAX_AGG | MAX_ITER | MAX_STOICH | PRINT_ITER | CHECK_ISO
+    : STRING
+    // generate_network options
+    | OVERWRITE | MAX_AGG | MAX_ITER | MAX_STOICH | PRINT_ITER | CHECK_ISO
+    // simulate options
     | METHOD | T_START | T_END | N_STEPS | N_OUTPUT_STEPS | ATOL | RTOL | STEADY_STATE | SPARSE
     | VERBOSE | NETFILE | CONTINUE | PREFIX | SUFFIX | FORMAT | FILE
+    // Additional simulate options
+    | PRINT_CDAT | PRINT_FUNCTIONS | PRINT_NET | PRINT_END | STOP_IF | PRINT_ON_STOP
+    | SAVE_PROGRESS | MAX_SIM_STEPS | OUTPUT_STEP_INTERVAL | SAMPLE_TIMES
+    // SSA/PLA options
+    | PLA_CONFIG | PLA_OUTPUT
+    // NFsim options
+    | PARAM | COMPLEX | GET_FINAL_STATE | GML | NOCSLF | NOTF | BINARY_OUTPUT | UTL | EQUIL
+    // Parameter scan options
+    | PARAMETER | PAR_MIN | PAR_MAX | N_SCAN_PTS | LOG_SCALE | RESET_CONC
+    // Mfile options
+    | BDF | MAX_STEP | MAXORDER | STATS | MAX_NUM_STEPS | MAX_ERR_TEST_FAILS | MAX_CONV_FAILS | STIFF
+    // Read/write options
+    | ATOMIZE | BLOCKS | SKIPACTIONS | INCLUDE_MODEL | INCLUDE_NETWORK | PRETTY_FORMATTING | EVALUATE_EXPRESSIONS
+    // Visualize options
+    | TYPE | BACKGROUND | COLLAPSE | OPTS
+    // Safe/execute
+    | SAFE | EXECUTE
     ;
 
 expression_list

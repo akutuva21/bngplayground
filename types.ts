@@ -109,8 +109,14 @@ export interface BNGLModel {
 }
 
 export interface SimulationResults {
-  headers: string[];
-  data: Record<string, number>[];
+  headers: string[];  // Observable names (gdat)
+  data: Record<string, number>[];  // Observable values per timepoint
+  // Species-level data (cdat) - optional, for dynamic observable support
+  speciesHeaders?: string[];  // Canonical species names
+  speciesData?: Record<string, number>[];  // Species concentrations per timepoint
+  // Expanded network data - for flux analysis
+  expandedReactions?: BNGLReaction[];  // Concrete reactions from network expansion
+  expandedSpecies?: BNGLSpecies[];  // Concrete species from network expansion
 }
 
 export interface SimulationOptions {

@@ -356,7 +356,25 @@ export class BNGLParser {
         }
       }
 
-      // Use Function constructor for safe evaluation
+      // Convert BNGL operators to JavaScript
+    evaluable = evaluable.replace(/\^/g, '**');  // Power operator
+    
+    // Replace BNGL math constants
+    evaluable = evaluable.replace(/\b_pi\b/g, String(Math.PI));
+    evaluable = evaluable.replace(/\b_e\b/g, String(Math.E));
+    
+    // Replace BNGL math functions with JavaScript equivalents
+    evaluable = evaluable.replace(/\bexp\(/g, 'Math.exp(');
+    evaluable = evaluable.replace(/\bln\(/g, 'Math.log(');
+    evaluable = evaluable.replace(/\blog10\(/g, 'Math.log10(');
+    evaluable = evaluable.replace(/\bsqrt\(/g, 'Math.sqrt(');
+    evaluable = evaluable.replace(/\babs\(/g, 'Math.abs(');
+    evaluable = evaluable.replace(/\bsin\(/g, 'Math.sin(');
+    evaluable = evaluable.replace(/\bcos\(/g, 'Math.cos(');
+    evaluable = evaluable.replace(/\btan\(/g, 'Math.tan(');
+    evaluable = evaluable.replace(/\bpow\(/g, 'Math.pow(');
+
+    // Use Function constructor for safe evaluation
       const result = new Function(`return ${evaluable}`)();
       return typeof result === 'number' && !isNaN(result) ? result : NaN;
     } catch (e) {

@@ -4,13 +4,15 @@ import { MoonIcon } from './icons/MoonIcon';
 import { SunIcon } from './icons/SunIcon';
 import { EmailIcon } from './icons/EmailIcon';
 import { Button } from './ui/Button';
+import { ShareButton } from './ShareButton';
 
 interface HeaderProps {
   onAboutClick: (focus?: string) => void;
   onExportSBML?: () => void;
+  code?: string;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onAboutClick, onExportSBML }) => {
+export const Header: React.FC<HeaderProps> = ({ onAboutClick, onExportSBML, code }) => {
   const [theme, toggleTheme] = useTheme();
 
   return (
@@ -54,6 +56,7 @@ export const Header: React.FC<HeaderProps> = ({ onAboutClick, onExportSBML }) =>
               {theme === 'light' ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}
             </button>
             <Button onClick={onExportSBML} variant="subtle" className="text-xs">Export SBML</Button>
+            {code && <ShareButton code={code} />}
           </div>
         </div>
       </div>

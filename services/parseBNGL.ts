@@ -317,6 +317,11 @@ export function parseBNGL(code: string, options: ParseBNGLOptions = {}): BNGLMod
           evalExpr = evalExpr.replace(new RegExp(`\\b${escaped}\\b`, 'g'), resolvedValue.toString());
         }
         
+        // Convert BNGL operators to JavaScript
+        evalExpr = evalExpr.replace(/\^/g, '**');  // Power operator
+        evalExpr = evalExpr.replace(/\b_pi\b/g, String(Math.PI));
+        evalExpr = evalExpr.replace(/\b_e\b/g, String(Math.E));
+        
         try {
           const value = new Function(`return ${evalExpr}`)();
           if (typeof value === 'number' && !isNaN(value) && isFinite(value)) {

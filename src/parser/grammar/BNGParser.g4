@@ -9,9 +9,9 @@ options {
     tokenVocab = BNGLexer;
 }
 
-// Entry point
+// Entry point - support both "begin actions...end actions" and loose action commands after model
 prog
-    : LB* header_block* ((BEGIN MODEL LB+ program_block* END MODEL LB*) | program_block*) actions_block? EOF
+    : LB* header_block* ((BEGIN MODEL LB+ program_block* END MODEL LB*) | program_block*) (wrapped_actions_block | actions_block)? EOF
     ;
 
 header_block
@@ -49,6 +49,7 @@ program_block
     | compartments_block
     | energy_patterns_block
     | population_maps_block
+    | wrapped_actions_block
     ;
 
 // Parameters block
@@ -69,20 +70,23 @@ molecule_type_def
     : (STRING COLON)? molecule_def
     ;
 
+// Molecules can have optional parentheses (e.g., "dead" or "A()" are both valid)
 molecule_def
-    : STRING LPAREN component_def_list? RPAREN
+    : STRING (LPAREN component_def_list? RPAREN)?
     ;
 
+// Allow empty entries in component lists to handle double commas (,,)
 component_def_list
-    : component_def (COMMA component_def)*
+    : component_def? (COMMA component_def?)*
     ;
 
 component_def
     : STRING (TILDE state_list)?
     ;
 
+// Allow numeric states like ~0~p
 state_list
-    : STRING (TILDE STRING)*
+    : (STRING | INT) (TILDE (STRING | INT))*
     ;
 
 // Seed species block
@@ -91,27 +95,35 @@ seed_species_block
     ;
 
 seed_species_def
-    : (STRING COLON)? DOLLAR? species_def expression
+    : (STRING COLON)? DOLLAR? (AT STRING COLON)? species_def expression
     ;
 
+// Species can optionally have compartment annotation using @ (prefix @comp: or suffix @comp)
 species_def
-    : molecule_pattern (DOT molecule_pattern)* (AT STRING)?
+    : (AT STRING COLON)? molecule_pattern (DOT molecule_pattern)* (AT STRING)?
     ;
 
+// Molecule patterns can have optional parentheses (e.g., ".CK1a" is valid in reactions)
+// Molecule tagging: pattern%1, pattern%2 for identifying molecules in reactions
 molecule_pattern
-    : STRING LPAREN component_pattern_list? RPAREN
+    : STRING (LPAREN component_pattern_list? RPAREN)? molecule_tag?
     ;
 
+molecule_tag
+    : MOD INT
+    ;
+
+// Allow empty entries in component pattern lists to handle double commas (,,)
 component_pattern_list
-    : component_pattern (COMMA component_pattern)*
+    : component_pattern? (COMMA component_pattern?)*
     ;
-
+// Component patterns can have state, multiple bonds (e.g., !0!1), or bond wildcards
 component_pattern
-    : STRING (TILDE state_value)? bond_spec?
+    : STRING (TILDE state_value)? bond_spec*
     ;
 
 state_value
-    : STRING | QMARK
+    : STRING | INT | QMARK
     ;
 
 bond_spec
@@ -147,7 +159,7 @@ reaction_rules_block
     ;
 
 reaction_rule_def
-    : (label_def COLON)? reactant_patterns reaction_sign product_patterns rate_law rule_modifiers?
+    : (label_def COLON)? (LBRACKET rule_modifiers RBRACKET)? reactant_patterns reaction_sign product_patterns rate_law rule_modifiers?
     ;
 
 label_def
@@ -228,9 +240,14 @@ population_map_def
     : (STRING COLON)? species_def UNI_REACTION_SIGN STRING LPAREN param_list? RPAREN
     ;
 
-// Actions block
+// Actions block (unwrapped - for loose commands)
 actions_block
     : action_command+
+    ;
+
+// Wrapped actions block (BEGIN ACTIONS ... END ACTIONS)
+wrapped_actions_block
+    : BEGIN ACTIONS LB+ action_command* END ACTIONS LB*
     ;
 
 action_command
@@ -255,9 +272,10 @@ write_cmd
       LPAREN action_args? RPAREN SEMI? LB*
     ;
 
+// setConcentration/addConcentration: takes quoted species string and value (expression or quoted string)
 set_cmd
     : (SETCONCENTRATION | ADDCONCENTRATION | SETPARAMETER) 
-      LPAREN DBQUOTES species_def DBQUOTES COMMA expression RPAREN SEMI? LB*
+      LPAREN DBQUOTES (species_def | ~DBQUOTES+) DBQUOTES COMMA (expression | DBQUOTES (~DBQUOTES)* DBQUOTES) RPAREN SEMI? LB*
     ;
 
 other_action_cmd
@@ -267,7 +285,7 @@ other_action_cmd
     ;
 
 action_args
-    : LBRACKET action_arg_list RBRACKET
+    : LBRACKET action_arg_list? RBRACKET
     ;
 
 action_arg_list
@@ -275,7 +293,24 @@ action_arg_list
     ;
 
 action_arg
-    : arg_name ASSIGNS (expression | DBQUOTES (~DBQUOTES)* DBQUOTES | LSBRACKET expression_list RSBRACKET)
+    : arg_name ASSIGNS action_arg_value
+    ;
+
+// Action arg values can be: expression, quoted string, array, or nested hash
+action_arg_value
+    : expression
+    | DBQUOTES (~DBQUOTES)* DBQUOTES
+    | LSBRACKET expression_list RSBRACKET
+    | LBRACKET nested_hash_list? RBRACKET
+    ;
+
+// Nested hash list for things like max_stoich=>{APC=>1,AXIN=>1}
+nested_hash_list
+    : nested_hash_item (COMMA nested_hash_item)*
+    ;
+
+nested_hash_item
+    : (STRING | arg_name) ASSIGNS expression
     ;
 
 // Allow keywords to be used as argument names in action calls

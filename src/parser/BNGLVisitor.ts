@@ -131,6 +131,10 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     const compBlock = ctx.compartments_block();
     if (compBlock) { this.visitCompartments_block(compBlock); return; }
 
+    // Actions block (begin actions / end actions) - skip for model parsing
+    const actionsBlock = ctx.wrapped_actions_block();
+    if (actionsBlock) { /* Actions handled separately by bnglWorker */ return; }
+
     // energy_patterns_block and population_maps_block are less common, skip for now
   }
 
@@ -151,11 +155,11 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       if (strings && strings.length > 0) {
         name = strings[0].text;
       }
-      
+
       const value = ctx.expression() ? ctx.expression()!.text : undefined;
-      
+
       if (!name || !value) return;
-      
+
       // Store raw expression for resolution
       this.paramExpressions[name] = value;
       // Initialize with 0
@@ -215,7 +219,35 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     const speciesDefCtx = ctx.species_def();
     if (!speciesDefCtx) return;
 
-    const name = this.getSpeciesString(speciesDefCtx);
+    let name = this.getSpeciesString(speciesDefCtx);
+
+    // FIX: Check if seed_species_def matched a compartment prefix (AT STRING COLON)
+    // This happens because the grammar allows the prefix in the parent rule
+    if (ctx.AT()) {
+      // Find the compartment name associated with AT
+      // It's the STRING that comes after AT
+      // We can scan children to be sure
+      let foundAt = false;
+      for (let i = 0; i < ctx.children!.length; i++) {
+        const child = ctx.children![i];
+        if (child.text === '@') {
+          foundAt = true;
+          continue;
+        }
+        if (foundAt) {
+          // The next token/node should be the compartment name (or whitespace, but ANTLR tree usually has tokens)
+          // If it's a TerminalNode with text, use it
+          if (child.payload) { // check if it's a token
+            const tokenText = child.text;
+            if (tokenText && tokenText !== ':' && tokenText !== '$') {
+              name = `@${tokenText}:${name}`;
+              break;
+            }
+          }
+        }
+      }
+    }
+
     const exprCtx = ctx.expression();
     const concentration = exprCtx ? this.evaluateExpression(exprCtx) : 0;
 
@@ -269,7 +301,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     const productCtx = ctx.product_patterns();
     const reactionSignCtx = ctx.reaction_sign();
     const rateLawCtx = ctx.rate_law();
-    const modifiersCtx = ctx.rule_modifiers();
+
 
     if (!reactantCtx || !productCtx || !reactionSignCtx || !rateLawCtx) return;
 
@@ -294,15 +326,18 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
     const isBidirectional = !!reactionSignCtx.BI_REACTION_SIGN();
 
-    // Check modifiers
+    // Check modifiers (can be prefix or suffix, so we get an array)
     let deleteMolecules = false;
     const constraints: string[] = [];
-    
-    if (modifiersCtx) {
+
+    // rule_modifiers() returns an array in the new grammar
+    const modifiersList = ctx.rule_modifiers();
+
+    const processModifiers = (modifiersCtx: Parser.Rule_modifiersContext) => {
       if (modifiersCtx.DELETEMOLECULES() || modifiersCtx.MOVECONNECTED()) {
         deleteMolecules = true;
       }
-      
+
       const getPatternListStr = (pl?: Parser.Pattern_listContext) => {
         return pl ? pl.species_def().map(sd => this.getSpeciesString(sd)).join(',') : '';
       };
@@ -327,6 +362,12 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
         const patterns = getPatternListStr(modifiersCtx.pattern_list());
         constraints.push(`exclude_products(${idx},${patterns})`);
       }
+      // Note: MATCHONCE is valid but probably ignored by simulator currently
+      // If needed: if (modifiersCtx.MATCHONCE()) ...
+    };
+
+    if (modifiersList && modifiersList.length > 0) {
+      modifiersList.forEach(m => processModifiers(m));
     }
 
     this.reactionRules.push({
@@ -412,6 +453,32 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     if (args.max_agg !== undefined) this.networkOptions!.maxAgg = parseInt(args.max_agg);
     if (args.max_iter !== undefined) this.networkOptions!.maxIter = parseInt(args.max_iter);
     if (args.overwrite !== undefined) this.networkOptions!.overwrite = args.overwrite === '1';
+    if (args.max_stoich !== undefined) {
+        if (args.max_stoich.startsWith('{')) {
+             this.networkOptions!.maxStoich = this.parseBNGLMap(args.max_stoich);
+        } else {
+             this.networkOptions!.maxStoich = parseInt(args.max_stoich);
+        }
+    }
+  }
+
+  // Helper: Parse BNGL map string "{Key=>Val, ...}"
+  private parseBNGLMap(text: string): Record<string, number> {
+      const map: Record<string, number> = {};
+      const content = text.trim().replace(/^\{|\}$/g, '');
+      if (!content) return map;
+      
+      const parts = content.split(',');
+      for (const part of parts) {
+          const [key, valStr] = part.split('=>');
+          if (key && valStr) {
+              const val = parseFloat(valStr.trim());
+              if (!isNaN(val)) {
+                map[key.trim()] = val;
+              }
+          }
+      }
+      return map;
   }
 
   visitSimulate_cmd(ctx: Parser.Simulate_cmdContext): void {
@@ -427,6 +494,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     if (args.t_end !== undefined) this.simulationOptions.t_end = parseFloat(args.t_end);
     if (args.n_steps !== undefined) this.simulationOptions.n_steps = parseInt(args.n_steps);
     if (args.atol !== undefined) this.simulationOptions.atol = parseFloat(args.atol);
+    if (args.atoll !== undefined) this.simulationOptions.atol = parseFloat(args.atoll);
     if (args.rtol !== undefined) this.simulationOptions.rtol = parseFloat(args.rtol);
   }
 
@@ -443,10 +511,17 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       const name = argNameCtx?.text;
       if (!name) continue;
 
-      // Get value - could be expression, quoted string, or array
-      const exprCtx = argCtx.expression();
-      if (exprCtx) {
-        args[name] = this.getExpressionText(exprCtx);
+      // Get value from action_arg_value rule
+      const valueCtx = argCtx.action_arg_value();
+      if (valueCtx) {
+        // Try expression first
+        const exprCtx = valueCtx.expression();
+        if (exprCtx) {
+          args[name] = this.getExpressionText(exprCtx);
+        } else {
+          // Fall back to raw text for quoted strings, arrays, or nested hashes
+          args[name] = valueCtx.text;
+        }
       }
     }
 
@@ -455,13 +530,43 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
   // Helper: Get species pattern as string
   private getSpeciesString(ctx: Parser.Species_defContext): string {
-    const molecules = ctx.molecule_pattern().map(mp => {
-      const name = mp.STRING().text;
+    const molPatterns = ctx.molecule_pattern();
+    if (!molPatterns || molPatterns.length === 0) return '';
+
+    // DEBUG LOGGING
+
+
+    // Check for compartment prefix
+    let prefix = '';
+    // If COLON exists, we have @comp: prefix
+    if (ctx.COLON()) {
+      // The compartment name matches the STRING() rule
+      // Accessing the first STRING token at this level
+      const strings = ctx.STRING();
+      if (strings && strings.length > 0) {
+        prefix = `@${strings[0].text}:`;
+        // console.log(`[getSpeciesString] Found prefix: ${prefix}`);
+      }
+    } else {
+      // console.log(`[getSpeciesString] No COLON (prefix) found in ${speciesStr}`);
+    }
+
+
+    const molecules = molPatterns.map(mp => {
+      const nameNode = mp.STRING();
+      if (!nameNode) return '';
+      const name = nameNode.text;
       const compListCtx = mp.component_pattern_list();
 
-      if (!compListCtx) return `${name}()`;
+      // If no component list, molecule has no components (e.g., "dead" or "I")
+      if (!compListCtx) return name;
 
-      const components = compListCtx.component_pattern().map(cp => {
+
+      // Filter out undefined/empty entries (from double commas ",,")
+      const compPatterns = compListCtx.component_pattern().filter(cp => cp && cp.STRING());
+      if (compPatterns.length === 0) return `${name}()`;
+
+      const components = compPatterns.map(cp => {
         const compNode = cp.STRING();
         let comp = compNode ? compNode.text : '';
 
@@ -472,23 +577,26 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
           comp += `~${stateStr || (qmark ? '?' : '')}`;
         }
 
-        const bondCtx = cp.bond_spec();
-        if (bondCtx) {
-          if (bondCtx.bond_id()) {
-            const bondIdCtx = bondCtx.bond_id()!;
-            comp += `!${bondIdCtx.INT()?.text || bondIdCtx.STRING()?.text || ''}`;
-          } else if (bondCtx.PLUS()) {
-            comp += '!+';
-          } else if (bondCtx.QMARK()) {
-            comp += '!?';
+        // Handle multiple bond specs (bond_spec* returns array)
+        const bondSpecs = cp.bond_spec();
+        if (bondSpecs && bondSpecs.length > 0) {
+          for (const bondCtx of bondSpecs) {
+            const bondIdCtx = bondCtx.bond_id();
+            if (bondIdCtx) {
+              comp += `!${bondIdCtx.INT()?.text || bondIdCtx.STRING()?.text || ''}`;
+            } else if (bondCtx.PLUS()) {
+              comp += '!+';
+            } else if (bondCtx.QMARK()) {
+              comp += '!?';
+            }
           }
         }
 
         return comp;
-      });
+      }).filter(c => c); // Filter out empty components
 
       return `${name}(${components.join(',')})`;
-    });
+    }).filter(m => m); // Filter out empty molecules
 
     // Handle compartment (AT STRING at end)
     const atCtx = ctx.AT();
@@ -499,12 +607,25 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       const fullText = ctx.text;
       const atIndex = fullText.indexOf('@');
       if (atIndex >= 0) {
-        const compartment = fullText.substring(atIndex + 1);
-        return molecules.join('.') + '@' + compartment;
       }
     }
 
-    return molecules.join('.');
+    let res = prefix + molecules.join('.');
+
+    // Workaround for Issue where prefix is sometimes duplicated as suffix in complex patterns
+    // e.g. E2F(...)@cell:E2F(...)
+    if (res.includes('@') && res.includes(':')) {
+       const match = res.match(/^(.+)@([a-zA-Z0-9_]+):(.+)$/);
+       if (match) {
+           const [_, name1, comp, name2] = match;
+            // Check if name2 is duplication of name1 (with or without parens)
+           if (name1 === name2 || (name1 + '()' === name2) || (name1 === name2 + '()') || name2.startsWith(name1)) {
+                res = `@${comp}:${name1}`;
+           }
+       }
+    }
+
+    return res;
   }
 
   // Helper: Get expression text (preserving structure)

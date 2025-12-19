@@ -313,6 +313,9 @@ export class SpeciesGraph {
         });
       });
 
+      // Propagate compartment
+      newGraph.compartment = this.compartment;
+
       graphs.push(newGraph);
     }
 
@@ -468,7 +471,12 @@ export class SpeciesGraph {
    */
   toString(): string {
     if (this._stringExact) return this._stringExact;
-    this._stringExact = this.molecules.map(m => m.toString()).join('.');
+    const moleculesStr = this.molecules.map(m => m.toString()).join('.');
+    let str = moleculesStr;
+    if (this.compartment) {
+      str = `@${this.compartment}::${str}`;
+    }
+    this._stringExact = str;
     return this._stringExact;
   }
 

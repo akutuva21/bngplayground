@@ -210,7 +210,7 @@ export class Rosenbrock23Solver {
   // Step size control
   private lastStepRejected = false;
   private jacobianAge = 0;
-  private maxJacobianAge = 50;  // Reuse Jacobian for up to 50 steps to reduce overhead
+  private maxJacobianAge = 100;  // Reuse Jacobian for up to 100 steps (stiff systems change slowly)
 
   constructor(n: number, f: DerivativeFunction, options: Partial<SolverOptions> = {}) {
     this.n = n;

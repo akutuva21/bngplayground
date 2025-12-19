@@ -24,10 +24,12 @@ export class BNGLParser {
     let globalCompartment: string | undefined;
     let content = bnglString.trim();
 
-    const prefixMatch = content.match(/^@([A-Za-z0-9_]+):(.+)$/);
+    // Support both single colon (Web) and double colon (BNG2) separators
+    // e.g. @cell:Species or @cell::Species
+    const prefixMatch = content.match(/^@([A-Za-z0-9_]+):(:?)(.+)$/);
     if (prefixMatch) {
       globalCompartment = prefixMatch[1];
-      content = prefixMatch[2];
+      content = prefixMatch[3]; // Group 3 is the content after :: or :
       graph.compartment = globalCompartment;
     }
 
@@ -55,10 +57,8 @@ export class BNGLParser {
 
     for (const molStr of moleculeStrings) {
       const molecule = this.parseMolecule(molStr.trim());
-      // If global compartment is set and molecule doesn't have one, inherit it
-      if (globalCompartment && !molecule.compartment) {
-        molecule.compartment = globalCompartment;
-      }
+      // Logic removed: Do not force molecule.compartment = globalCompartment
+      // This prevents double tagging (prefix + suffix) in toString().
       graph.molecules.push(molecule);
     }
 

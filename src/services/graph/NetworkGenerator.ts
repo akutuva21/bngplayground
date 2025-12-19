@@ -124,7 +124,7 @@ export interface GeneratorOptions {
   maxReactions: number;
   maxIterations: number;
   maxAgg: number;
-  maxStoich: number | Map<string, number>;  // Can be a single number or per-molecule-type limits
+  maxStoich: number | Record<string, number>;  // Can be a single number or per-molecule-type limits
   checkInterval: number;
   memoryLimit: number;
 }
@@ -194,6 +194,9 @@ export class NetworkGenerator {
 
     // Initialize with seed species
     for (const sg of seedSpecies) {
+      if (sg.molecules.some(m => m.name === 'CCND')) {
+         console.log(`[generate] Seed loop CCND check: comp='${sg.compartment}'`);
+      }
       const canonical = profiledCanonicalize(sg);
       if (!speciesMap.has(canonical)) {
         const species = new Species(sg, speciesList.length);
@@ -212,6 +215,8 @@ export class NetworkGenerator {
 
         // Add each product species if not already present
         for (const productGraph of rule.products) {
+
+
           const productCanonical = profiledCanonicalize(productGraph);
           if (!speciesMap.has(productCanonical)) {
             const productSpecies = new Species(productGraph, speciesList.length);
@@ -1029,6 +1034,15 @@ export class NetworkGenerator {
 
     const productGraph = new SpeciesGraph();
 
+    // FIX: Function check priority for compartment:
+    // 1. Explicit in product pattern (@cell:P)
+    // 2. Inherited from first reactant (if any)
+    if (pattern.compartment) {
+      productGraph.compartment = pattern.compartment;
+    } else if (reactantGraphs.length > 0 && reactantGraphs[0].compartment) {
+      productGraph.compartment = reactantGraphs[0].compartment;
+    }
+
     // Track mapping: (reactantIdx, reactantMolIdx) -> productMolIdx  
     const reactantToProductMol = new Map<string, number>();
     // Track mapping: patternMolIdx -> productMolIdx
@@ -1829,6 +1843,11 @@ export class NetworkGenerator {
     signal?: AbortSignal
   ): Species {
     const canonical = profiledCanonicalize(graph);
+    // Debug logging for specific species
+    if (graph.molecules.some(m => m.name === 'CCND')) {
+       console.log(`[addOrGetSpecies] Check CCND: comp='${graph.compartment}', canonical='${canonical}'`);
+    }
+
 
     if (speciesMap.has(canonical)) {
       return speciesMap.get(canonical)!;
@@ -1907,7 +1926,7 @@ export class NetworkGenerator {
         if (typeof this.options.maxStoich === 'number') {
           limit = this.options.maxStoich;
         } else {
-          limit = this.options.maxStoich.get(typeName) ?? Infinity;
+          limit = this.options.maxStoich[typeName] ?? Infinity;
         }
         if (count > limit) {
           return false;

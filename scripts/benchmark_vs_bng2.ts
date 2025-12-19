@@ -3,7 +3,7 @@
  * 
  * This script:
  * 1. Uses models from bng2_test_report.json that pass BNG2.pl
- * 2. Compares species/reaction counts between web parser and BNG2.pl
+ * 2. Compares species/reaction counts between ANTLR parser and BNG2.pl
  * 3. Times network generation
  * 
  * Run with: npx tsx scripts/benchmark_vs_bng2.ts
@@ -11,7 +11,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { parseBNGL } from '../services/parseBNGL.ts';
+import { parseBNGLWithANTLR } from '../src/parser/BNGLParserWrapper.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,9 +84,14 @@ async function runBenchmark() {
         try {
             const start = performance.now();
             const bnglCode = fs.readFileSync(model.path, 'utf-8');
-            const parsed = parseBNGL(bnglCode);
+            const parseResult = parseBNGLWithANTLR(bnglCode);
             result.parseTime = performance.now() - start;
 
+            if (!parseResult.success || !parseResult.model) {
+                throw new Error(parseResult.errors.map(e => `Line ${e.line}: ${e.message}`).join('; ').substring(0, 100));
+            }
+
+            const parsed = parseResult.model;
             result.webSeedSpecies = parsed.species?.length ?? 0;
             result.webRules = parsed.reactionRules?.length ?? 0;
             result.status = 'success';

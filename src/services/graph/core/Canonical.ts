@@ -1,4 +1,5 @@
 // graph/core/Canonical.ts
+console.error('[Canonical.ts] LOADED VERSION V3 (STDERR)');
 import { SpeciesGraph } from './SpeciesGraph.ts';
 import { NautyService } from './NautyService.ts';
 
@@ -17,7 +18,7 @@ function simpleHash(str: string): number {
   // FNV-1a parameters for 32-bit
   let hash = 0x811c9dc5;
   const fnvPrime = 0x01000193;
-  
+
   for (let i = 0; i < str.length; i++) {
     hash ^= str.charCodeAt(i);
     hash = Math.imul(hash, fnvPrime);
@@ -48,7 +49,10 @@ export class GraphCanonicalizer {
       return '';
     }
     if (graph.molecules.length === 1) {
-      const result = this.moleculeToString(graph.molecules[0], new Map(), graph, 0);
+      let result = this.moleculeToString(graph.molecules[0], new Map(), graph, 0);
+      if (graph.compartment) {
+        result = `@${graph.compartment}::${result}`;
+      }
       graph.cachedCanonical = result;
       return result;
     }
@@ -396,9 +400,13 @@ export class GraphCanonicalizer {
       );
     });
 
-    const result = canonicalStrings.join('.');
-    graph.cachedCanonical = result;
-    return result;
+    const canonicalMolecules = canonicalStrings.join('.');
+    const finalResult = graph.compartment ? `@${graph.compartment}::${canonicalMolecules}` : canonicalMolecules;
+    // if (graph.molecules.length === 1 && graph.molecules[0].name === 'CCND') {
+    //   console.error(`[Canonical] CCND comp='${graph.compartment}' => '${finalResult}'`);
+    // }
+    graph.cachedCanonical = finalResult;
+    return finalResult;
   }
 
   /**
@@ -471,14 +479,9 @@ export class GraphCanonicalizer {
     });
     /*console.log('[Canonical Debug] After Sort:', componentData.map(c => c.str));*/
 
-    // DEBUG: Force Log if unsorted
-    const sortedStrs = componentData.map(c => c.str);
-    if (sortedStrs.length > 1 && sortedStrs[0] > sortedStrs[1]) {
-      console.log('[Canonical Debug] FAILED SORT DETECTED:', sortedStrs);
-    }
-
     const compartmentSuffix = mol.compartment ? `@${mol.compartment}` : '';
-    return `${mol.name}(${componentData.map((c: any) => c.str).join(',')})${compartmentSuffix}`;
+    const res = `${mol.name}(${componentData.map((c: any) => c.str).join(',')})${compartmentSuffix}`;
+    return res;
   }
 
   /**

@@ -102,7 +102,7 @@ export interface BNGLModel {
   networkOptions?: {
     maxAgg?: number;
     maxIter?: number;
-    maxStoich?: Record<string, number>;
+    maxStoich?: number | Record<string, number>;
     overwrite?: boolean;
   };
   simulationOptions?: Partial<SimulationOptions> & { sparse?: boolean };

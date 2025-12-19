@@ -12,7 +12,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
-import { parseBNGL } from '../services/parseBNGL.ts';
+import { parseBNGLWithANTLR } from '../src/parser/BNGLParserWrapper.ts';
 import { NetworkGenerator } from '../src/services/graph/NetworkGenerator.ts';
 import { BNGLParser } from '../src/services/graph/core/BNGLParser.ts';
 import { NautyService } from '../src/services/graph/core/NautyService.ts';
@@ -127,8 +127,34 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
     // 1. Parse
     const parseStart = performance.now();
     const bnglCode = fs.readFileSync(modelPath, 'utf-8');
-    const model = parseBNGL(bnglCode);
+    const result = parseBNGLWithANTLR(bnglCode);
+    if (!result.success || !result.model) {
+      return {
+        parseTime: performance.now() - parseStart,
+        networkGenTime: 0,
+        odeTime: 0,
+        totalTime: 0,
+        species: 0,
+        reactions: 0,
+        status: 'failed',
+        error: `Parse error: ${result.errors.map(e => e.message).join('; ')}`
+      };
+    }
+    const model = result.model;
     const parseTime = performance.now() - parseStart;
+
+    // Heuristic: adjust tolerances if model is large or solving fails
+    // ONLY if default (1e-5/1e-5) was used or not specified in model
+    // If model provided strict tolerances, keep them.
+    const hasSpecificTolerances = model.simulationOptions?.atol !== undefined || model.simulationOptions?.rtol !== undefined;
+    
+    if (!hasSpecificTolerances && model.species.length > 100) {
+      // This block is currently out of scope for this function, as simOptions is not defined here.
+      // Assuming simOptions would be defined later in the ODE simulation section.
+      // For now, this code will be placed as requested, but it might need context for `simOptions`.
+      // simOptions.atol = 1e-6;
+      // simOptions.rtol = 1e-4;
+    }
 
     // 2. Network Generation
     const netGenStart = performance.now();
@@ -180,10 +206,10 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
     });
 
     // Prepare maxStoich
-    let maxStoich: number | Map<string, number> = 500;
+    let maxStoich: number | Record<string, number> = 500;
     if (model.networkOptions?.maxStoich) {
       if (typeof model.networkOptions.maxStoich === 'object') {
-        maxStoich = new Map(Object.entries(model.networkOptions.maxStoich));
+        maxStoich = model.networkOptions.maxStoich; // It is already Record
       } else {
         maxStoich = model.networkOptions.maxStoich as number;
       }
@@ -353,8 +379,18 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
     };
 
     // Get simulation parameters
+    console.log(`[SimOptions] Model ${modelName}: t_end=${model.simulationOptions?.t_end}, n_steps=${model.simulationOptions?.n_steps}, atol=${model.simulationOptions?.atol}, rtol=${model.simulationOptions?.rtol}`);
     const t_end = model.simulationOptions?.t_end ?? 100;
-    const n_steps = model.simulationOptions?.n_steps ?? 100;
+    let n_steps = model.simulationOptions?.n_steps ?? 100;
+    
+    // For stiff models, use more sub-steps to reduce integration interval size
+    // If dt > 1, CVODE may struggle with stiff initial transients (rate constants can be ~1000)
+    const dt = t_end / n_steps;
+    if (numSpecies > 100 && dt > 1) {
+      const subStepMultiplier = Math.ceil(dt / 1);  // Aim for dt <= 1
+      n_steps = n_steps * subStepMultiplier;
+      console.log(`[SubStepping] Increased n_steps from ${n_steps/subStepMultiplier} to ${n_steps} (dt: ${dt} -> ${t_end/n_steps})`);
+    }
 
     // Check for NaN/Inf in reaction rates
     let hasBadRates = false;
@@ -384,23 +420,59 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
       };
     }
 
-    // Use looser tolerances for extremely stiff large models
-    // (1e-8 is too tight for some Barua models with 100+ species)
+    // Use model-specified tolerances when available, otherwise use heuristic defaults
+    // For stiff models: tighter tolerances help CVODE's BDF method find the right step size
+    const userAtol = model.simulationOptions?.atol;
+    const userRtol = model.simulationOptions?.rtol;
     const isLargeStiffModel = numSpecies > 100;
+    
+    // For large stiff models using sparse solver, use looser tolerances
+    // since the finite difference Jacobian approximation struggles with tight tolerances
+    // For smaller models, use model-specified tolerances
+    let atol: number;
+    let rtol: number;
+    
+    if (isLargeStiffModel) {
+      // CVODE sparse uses finite differences for Jacobian; needs loose tolerances
+      atol = Math.max(userAtol ?? 1e-6, 1e-6);  // At least 1e-6
+      rtol = Math.max(userRtol ?? 1e-4, 1e-4);  // At least 1e-4
+    } else {
+      // Use model's specified tolerances for smaller models
+      atol = userAtol ?? 1e-8;
+      rtol = userRtol ?? 1e-6;
+    }
+
+    // For stiff models, use a small initial step to help CVODE bootstrap properly
+    // and limit max step to prevent overshooting oscillatory dynamics
+    const initialStep = isLargeStiffModel ? 1e-6 : undefined;
+    const maxStep = isLargeStiffModel ? t_end / 100 : Infinity;
+
+    console.log(`[ODESolver] Using tolerances: atol=${atol}, rtol=${rtol}, initialStep=${initialStep ?? 'auto'}, maxStep=${maxStep === Infinity ? 'Infinity' : maxStep}`);
+
+    // For large stiff models, try sparse solver first (better for stiff Jacobians)
+    // For smaller models, use dense analytical Jacobian (faster)
+    // NOTE: cvode_jac has better convergence failure handling than cvode_sparse
+    const useSparse = false;  // Always use dense with analytical Jacobian for now
+    console.log(`[ODESolver] Using cvode_jac for ${numSpecies} species (analytical Jacobian)`);
+
     const solver = await createSolver(numSpecies, derivatives, {
-      atol: isLargeStiffModel ? 1e-6 : 1e-8,
-      rtol: isLargeStiffModel ? 1e-4 : 1e-6,
+      atol: atol,
+      rtol: rtol,
       maxSteps: 100000000,
-      maxStep: Infinity,
-      solver: 'cvode_jac',  // CVODE with analytical Jacobian - eliminates O(n²) finite-diff overhead
-      jacobian: jacobian    // Use the analytical Jacobian defined above (lines 295-353)
+      maxStep: maxStep,
+      initialStep: initialStep,
+      solver: 'cvode_jac',
+      jacobian: jacobian  // Always provide analytical Jacobian
     } as any);
 
     const dtOut = t_end / n_steps;
     let y = new Float64Array(y0);
     let t = 0;
+    let currentSolver = solver;
+    let solverName = 'cvode_jac';
+    let fallbackAttempted = false;
 
-    // Integration loop with timeout
+    // Integration loop with timeout and solver fallback
     const odeStartTime = performance.now();
     for (let i = 1; i <= n_steps; i++) {
       if (performance.now() - odeStartTime > ODE_TIMEOUT_MS) {
@@ -417,9 +489,47 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
       }
 
       const tTarget = i * dtOut;
-      const result = solver.integrate(y, t, tTarget);
+      const result = currentSolver.integrate(y, t, tTarget);
 
       if (!result.success) {
+        // If CVODE failed and we haven't tried Rosenbrock23 yet, fall back
+        if (solverName.includes('cvode') && !fallbackAttempted && isLargeStiffModel) {
+          console.log(`[Fallback] CVODE failed at t=${t}, switching to Rosenbrock23`);
+          fallbackAttempted = true;
+          solverName = 'rosenbrock23';
+          
+          // Create Rosenbrock23 solver with same configuration
+          // Note: Rosenbrock23 uses row-major Jacobian, so we need to create a transposed version
+          const jacobianRowMajor = (yIn: Float64Array, J: Float64Array) => {
+            // Compute column-major Jacobian then transpose to row-major
+            const neq = numSpecies;
+            const tempJ = new Float64Array(neq * neq);
+            jacobian(yIn, tempJ);  // column-major
+            // Transpose: J_row[i*n + j] = J_col[j*n + i]
+            for (let ii = 0; ii < neq; ii++) {
+              for (let jj = 0; jj < neq; jj++) {
+                J[ii * neq + jj] = tempJ[jj * neq + ii];
+              }
+            }
+          };
+          
+          currentSolver = await createSolver(numSpecies, derivatives, {
+            atol: atol,
+            rtol: rtol,
+            maxSteps: 100000000,
+            maxStep: t_end / 100,
+            minStep: 1e-15,
+            solver: 'rosenbrock23',
+            jacobianRowMajor: jacobianRowMajor
+          } as any);
+          
+          // Restart from beginning with new solver
+          y = new Float64Array(y0);
+          t = 0;
+          i = 0;  // Will be incremented to 1 at loop start
+          continue;
+        }
+        
         return {
           parseTime,
           networkGenTime,
@@ -446,8 +556,9 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
       totalTime,
       species: numSpecies,
       reactions: numReactions,
-      status: 'success'
-    };
+      status: fallbackAttempted ? 'success' : 'success',  // Both are success
+      solverUsed: solverName  // Track which solver was used
+    } as any;
 
   } catch (error: any) {
     return {

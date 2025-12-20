@@ -121,6 +121,7 @@ export interface RegulatoryEdge {
   from: string;
   to: string;
   type: 'reactant' | 'product' | 'catalyst';
+  reversible?: boolean; // If true, shows bidirectional arrows (for reversible reactions)
 }
 
 export interface RegulatoryGraph {

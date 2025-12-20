@@ -3,7 +3,6 @@ import { useTheme } from '../hooks/useTheme';
 import cytoscape from 'cytoscape';
 import dagre from 'cytoscape-dagre';
 import type { RegulatoryGraph } from '../types/visualization';
-import { Select } from './ui/Select';
 import { Button } from './ui/Button';
 import { LoadingSpinner } from './ui/LoadingSpinner';
 
@@ -14,29 +13,94 @@ interface RegulatoryGraphViewerProps {
   onSelectRule?: (ruleId: string) => void;
 }
 
-const DAGRE_LAYOUT = {
-  name: 'dagre',
-  rankDir: 'TB',
-  padding: 30,
-  spacingFactor: 1.2,
-  animate: true,
-  animationDuration: 500,
-} as const;
+// Layout type options - matching ContactMapViewer
+type LayoutType = 'hierarchical' | 'cose' | 'grid' | 'concentric' | 'breadthfirst' | 'circle';
 
-const COSE_LAYOUT = {
-  name: 'cose',
-  padding: 30,
-  componentSpacing: 100,
-  nodeRepulsion: 10000,
-  nestingFactor: 5,
-  animate: true,
-  animationDuration: 500,
-} as const;
+// Layout configurations - same as ContactMapViewer
+const LAYOUT_CONFIGS: Record<LayoutType, any> = {
+  hierarchical: {
+    name: 'dagre',
+    rankDir: 'TB',
+    nodeSep: 80,
+    rankSep: 120,
+    edgeSep: 20,
+    animate: true,
+    animationDuration: 400,
+    padding: 50,
+    fit: true,
+    spacingFactor: 1.5,
+  },
+  cose: {
+    name: 'cose',
+    animate: true,
+    animationDuration: 500,
+    padding: 50,
+    fit: true,
+    nodeRepulsion: 100000,
+    nodeOverlap: 20,
+    idealEdgeLength: 60,
+    nestingFactor: 1.2,
+    gravity: 80,
+    numIter: 1000,
+    nodeDimensionsIncludeLabels: true,
+    randomize: false,
+  },
+  grid: {
+    name: 'grid',
+    animate: true,
+    animationDuration: 300,
+    padding: 50,
+    fit: true,
+    avoidOverlap: true,
+    avoidOverlapPadding: 15,
+    condense: false,
+    nodeDimensionsIncludeLabels: true,
+  },
+  concentric: {
+    name: 'concentric',
+    animate: true,
+    animationDuration: 300,
+    padding: 50,
+    fit: true,
+    avoidOverlap: true,
+    minNodeSpacing: 50,
+    spacingFactor: 1.5,
+    nodeDimensionsIncludeLabels: true,
+    // Organize by node type (rules in center, species outer)
+    concentric: (node: any) => {
+      const type = node.data('type');
+      return type === 'rule' ? 2 : 1;
+    },
+    levelWidth: () => 1,
+  },
+  breadthfirst: {
+    name: 'breadthfirst',
+    directed: true,
+    animate: true,
+    animationDuration: 300,
+    padding: 50,
+    fit: true,
+    avoidOverlap: true,
+    spacingFactor: 1.5,
+    circle: false,
+    nodeDimensionsIncludeLabels: true,
+  },
+  circle: {
+    name: 'circle',
+    animate: true,
+    animationDuration: 300,
+    padding: 40,
+    fit: true,
+    avoidOverlap: true,
+    spacingFactor: 1.5,
+    nodeDimensionsIncludeLabels: true,
+  },
+};
 
 export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ graph, onSelectRule }) => {
   const [theme] = useTheme();
   const [isLayoutRunning, setIsLayoutRunning] = useState(false);
-  const [layoutType, setLayoutType] = useState<'dagre' | 'cose'>('dagre');
+  const [activeLayout, setActiveLayout] = useState<LayoutType>('hierarchical');
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
 
@@ -128,8 +192,30 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
             'target-arrow-shape': 'triangle', // BNG 'standard'
           },
         },
+        // Reversible edges: bidirectional arrows (BNG style for reversible reactions)
+        {
+          selector: 'edge[?reversible][type = "reactant"]',
+          style: {
+            'source-arrow-shape': 'triangle',
+            'source-arrow-color': '#000000',
+          },
+        },
+        {
+          selector: 'edge[?reversible][type = "product"]',
+          style: {
+            'source-arrow-shape': 'triangle',
+            'source-arrow-color': '#000000',
+          },
+        },
+        {
+          selector: 'edge[?reversible][type = "catalyst"]',
+          style: {
+            'source-arrow-shape': 'triangle',
+            'source-arrow-color': '#AAAAAA',
+          },
+        },
       ],
-      layout: { ...DAGRE_LAYOUT },
+      layout: { ...LAYOUT_CONFIGS.hierarchical },
     });
 
     return () => {
@@ -186,6 +272,7 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
           source: edge.from,
           target: edge.to,
           type: edge.type,
+          reversible: edge.reversible || false,
         },
       })),
     ];
@@ -202,14 +289,17 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
 
   }, [graph]);
 
-  const runLayout = () => {
+  const runLayout = (layoutType?: LayoutType) => {
     const cy = cyRef.current;
     if (!cy) return;
 
+    const targetLayout = layoutType || activeLayout;
+    if (layoutType) setActiveLayout(layoutType);
+
     setIsLayoutRunning(true);
     try {
-      const config = layoutType === 'dagre' ? DAGRE_LAYOUT : COSE_LAYOUT;
-      const layout = cy.layout(config as any);
+      const config = { ...LAYOUT_CONFIGS[targetLayout] };
+      const layout = cy.layout(config);
       layout.run();
       layout.on('layoutstop', () => setIsLayoutRunning(false));
     } catch (err) {
@@ -218,10 +308,10 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
     }
   };
 
-  // Re-run layout when type changes
+  // Re-run layout when activeLayout changes
   useEffect(() => {
     runLayout();
-  }, [layoutType]);
+  }, [activeLayout]);
 
   const handleFit = () => {
     const cy = cyRef.current;
@@ -245,27 +335,149 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
     }
   };
 
+  // Generate yED-compatible GraphML export (matching BioNetGen format exactly)
+  const handleExportGraphML = () => {
+    const cy = cyRef.current;
+    if (!cy) return;
+
+    // BioNetGen yED colors and styles for regulatory graphs
+    const nodeStyles: Record<string, { fill: string; shape: string; fontStyle: string }> = {
+      species: { fill: '#FFE9C7', shape: 'roundrectangle', fontStyle: 'plain' },
+      rule: { fill: '#CC99FF', shape: 'ellipse', fontStyle: 'plain' },
+    };
+
+    const edgeStyles: Record<string, { fill: string; sourceArrow: string; targetArrow: string }> = {
+      reactant: { fill: '#000000', sourceArrow: 'none', targetArrow: 'standard' },
+      product: { fill: '#000000', sourceArrow: 'none', targetArrow: 'standard' },
+      catalyst: { fill: '#AAAAAA', sourceArrow: 'none', targetArrow: 'standard' }, // Context edge
+      activation: { fill: '#66FF66', sourceArrow: 'none', targetArrow: 'standard' },
+      inhibition: { fill: '#FF9999', sourceArrow: 'none', targetArrow: 'standard' },
+    };
+
+    // Helper to escape XML special characters
+    const escapeXml = (str: string): string => {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    };
+
+    // Generate GraphML content (matching BioNetGen format)
+    let graphml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:java="http://www.yworks.com/xml/yfiles-common/1.0/java" xmlns:sys="http://www.yworks.com/xml/yfiles-common/markup/primitives/2.0" xmlns:x="http://www.yworks.com/xml/yfiles-common/markup/2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:y="http://www.yworks.com/xml/graphml" xmlns:yed="http://www.yworks.com/xml/yed/3" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://www.yworks.com/xml/schema/graphml/1.1/ygraphml.xsd">
+<key id="d0" for="node" yfiles.type="nodegraphics"/>
+<key id="d1" for="edge" yfiles.type="edgegraphics"/>
+  <graph edgedefault="directed" id="G">
+`;
+
+    // Map node IDs to BNG-style IDs (n0, n1, n2, ...)
+    const nodeIdMap = new Map<string, string>();
+    let nodeIndex = 0;
+    cy.nodes().forEach(node => {
+      nodeIdMap.set(node.id(), `n${nodeIndex++}`);
+    });
+
+    // Generate node XML (all nodes are ShapeNodes in regulatory graph - no hierarchy)
+    cy.nodes().forEach(node => {
+      const bngId = nodeIdMap.get(node.id()) || node.id();
+      const label = node.data('label') || '';
+      const type = node.data('type') || 'species';
+      const style = nodeStyles[type] || nodeStyles.species;
+
+      graphml += `    <node id="${bngId}">
+      <data key="d0">
+        <y:ShapeNode>
+          <y:Fill color="${style.fill}"/>
+          <y:BorderStyle color="#999999" type="line" width="1"/>
+          <y:Shape type="${style.shape}"/>
+          <y:NodeLabel alignment="c" autoSizePolicy="content" fontFamily="Dialog" fontSize="14" fontStyle="${style.fontStyle}" hasBackgroundColor="false" hasLineColor="false" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="t" textColor="#000000" verticalTextPosition="bottom" visible="true">${escapeXml(label)}</y:NodeLabel>
+        </y:ShapeNode>
+      </data>
+    </node>
+`;
+    });
+
+    // Generate edge XML
+    const edgeCountMap = new Map<string, number>();
+    cy.edges().forEach(edge => {
+      const sourceId = nodeIdMap.get(edge.source().id()) || edge.source().id();
+      const targetId = nodeIdMap.get(edge.target().id()) || edge.target().id();
+      const edgeType = edge.data('type') || 'reactant';
+      const isReversible = edge.data('reversible') || false;
+      const style = edgeStyles[edgeType] || edgeStyles.reactant;
+
+      // For reversible edges, use bidirectional arrows (source='standard')
+      const sourceArrow = isReversible ? 'standard' : style.sourceArrow;
+
+      // Generate edge ID in BNG format: source::eN
+      const edgeNum = edgeCountMap.get(sourceId) || 0;
+      edgeCountMap.set(sourceId, edgeNum + 1);
+      const edgeId = `${sourceId}::e${edgeNum}`;
+
+      graphml += `    <edge id="${edgeId}" source="${sourceId}" target="${targetId}">
+    <data key="d1">
+      <y:PolyLineEdge>
+        <y:LineStyle color="${style.fill}" type="line" width="1"/>
+        <y:Arrows source="${sourceArrow}" target="${style.targetArrow}"/>
+        <y:BendStyle smoothed="false"/>
+      </y:PolyLineEdge>
+    </data>
+    </edge>
+`;
+    });
+
+    graphml += `  </graph>
+</graphml>`;
+
+    // Download the GraphML file
+    const blob = new Blob([graphml], { type: 'application/xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'regulatory_graph.graphml';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col h-full gap-2">
       {/* Toolbar */}
-      <div className="flex justify-end items-center gap-2 bg-white dark:bg-slate-900 p-1 rounded-md border border-slate-200 dark:border-slate-700">
-        <label className="text-xs font-semibold text-slate-500 mr-2">Layout:</label>
-        <Select
-          value={layoutType}
-          onChange={(e) => setLayoutType(e.target.value as any)}
-          className="w-32 h-8 py-0 pl-2 text-xs"
-        >
-          <option value="dagre">Hierarchic</option>
-          <option value="cose">Force Based</option>
-        </Select>
-
-        <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-2" />
-
-        <Button variant="subtle" onClick={handleFit} className="text-xs h-8 px-3">Fit View</Button>
-        <Button variant="subtle" onClick={() => runLayout()} disabled={isLayoutRunning} className="text-xs h-8 px-3">
-          {isLayoutRunning ? <LoadingSpinner className="w-4 h-4" /> : 'Re-Layout'}
-        </Button>
-        <Button variant="primary" onClick={handleExportPNG} className="text-xs h-8 px-3">Export PNG</Button>
+      <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-md border border-slate-200 dark:border-slate-700">
+        {/* Layout Buttons */}
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="text-xs text-slate-500 dark:text-slate-400">Layout:</span>
+          <Button variant={activeLayout === 'hierarchical' ? 'primary' : 'subtle'} onClick={() => runLayout('hierarchical')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Hierarchical (yED-like)">
+            {isLayoutRunning && activeLayout === 'hierarchical' ? <LoadingSpinner className="w-3 h-3" /> : '↓ Hierarchy'}
+          </Button>
+          <Button variant={activeLayout === 'cose' ? 'primary' : 'subtle'} onClick={() => runLayout('cose')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Force-Directed (avoids overlaps)">
+            {isLayoutRunning && activeLayout === 'cose' ? <LoadingSpinner className="w-3 h-3" /> : '⚡ Cose'}
+          </Button>
+          <Button variant={activeLayout === 'grid' ? 'primary' : 'subtle'} onClick={() => runLayout('grid')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Grid Layout">
+            {isLayoutRunning && activeLayout === 'grid' ? <LoadingSpinner className="w-3 h-3" /> : '▦ Grid'}
+          </Button>
+          <Button variant={activeLayout === 'concentric' ? 'primary' : 'subtle'} onClick={() => runLayout('concentric')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Concentric Rings">
+            {isLayoutRunning && activeLayout === 'concentric' ? <LoadingSpinner className="w-3 h-3" /> : '◎ Rings'}
+          </Button>
+          <Button variant={activeLayout === 'breadthfirst' ? 'primary' : 'subtle'} onClick={() => runLayout('breadthfirst')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Breadth-first Tree">
+            {isLayoutRunning && activeLayout === 'breadthfirst' ? <LoadingSpinner className="w-3 h-3" /> : '⊢ Tree'}
+          </Button>
+          <Button variant={activeLayout === 'circle' ? 'primary' : 'subtle'} onClick={() => runLayout('circle')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Circle Layout">
+            {isLayoutRunning && activeLayout === 'circle' ? <LoadingSpinner className="w-3 h-3" /> : '○ Circle'}
+          </Button>
+        </div>
+        {/* Vertical Divider */}
+        <div className="w-px h-5 bg-slate-300 dark:bg-slate-600 shrink-0" />
+        {/* Actions */}
+        <div className="flex items-center gap-1 shrink-0">
+          <Button variant="subtle" onClick={handleFit} className="text-xs h-6 px-2">Fit</Button>
+          <Button variant="subtle" onClick={() => runLayout()} disabled={isLayoutRunning} className="text-xs h-6 px-2">
+            {isLayoutRunning ? <LoadingSpinner className="w-3 h-3" /> : 'Re-Layout'}
+          </Button>
+          <Button variant="subtle" onClick={handleExportPNG} className="text-xs h-6 px-2">PNG</Button>
+          <Button variant="subtle" onClick={handleExportGraphML} className="text-xs h-6 px-2" title="Export for yED Graph Editor">yED</Button>
+        </div>
       </div>
 
       {/* Graph Container */}

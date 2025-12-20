@@ -22,6 +22,7 @@ export const buildRegulatoryGraph = (
   rules.forEach((rule, ruleIndex) => {
     const ruleId = options.getRuleId?.(rule, ruleIndex) ?? rule.name ?? `rule_${ruleIndex + 1}`;
     const ruleLabel = options.getRuleLabel?.(rule, ruleIndex) ?? rule.name ?? `Rule ${ruleIndex + 1}`;
+    const isReversible = rule.isBidirectional ?? false;
 
     // Add Rule Node
     addNode(ruleId, ruleLabel, 'rule');
@@ -48,6 +49,7 @@ export const buildRegulatoryGraph = (
           from: speciesId,
           to: ruleId,
           type: 'catalyst',
+          reversible: isReversible,
         });
       } else {
         // Reactant Edge: Species -> Rule (Consumed)
@@ -55,6 +57,7 @@ export const buildRegulatoryGraph = (
           from: speciesId,
           to: ruleId,
           type: 'reactant',
+          reversible: isReversible,
         });
       }
     });
@@ -70,6 +73,7 @@ export const buildRegulatoryGraph = (
           from: ruleId,
           to: speciesId,
           type: 'product',
+          reversible: isReversible,
         });
       }
     });

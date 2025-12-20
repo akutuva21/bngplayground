@@ -503,9 +503,9 @@ ${indent}</node>
   return (
     <div className="flex flex-col h-full gap-2">
       {/* Toolbar */}
-      <div className="flex flex-wrap justify-between gap-2 bg-white dark:bg-slate-900 p-2 rounded-md border border-slate-200 dark:border-slate-700">
+      <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-md border border-slate-200 dark:border-slate-700">
         {/* Layout Buttons */}
-        <div className="flex items-center gap-1 flex-wrap">
+        <div className="flex items-center gap-1 shrink-0">
           <span className="text-xs text-slate-500 dark:text-slate-400">Layout:</span>
           <Button variant={activeLayout === 'hierarchical' ? 'primary' : 'subtle'} onClick={() => runLayout('hierarchical')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Hierarchical (yED-like)">
             {isLayoutRunning && activeLayout === 'hierarchical' ? <LoadingSpinner className="w-3 h-3" /> : '↓ Hierarchy'}
@@ -526,48 +526,16 @@ ${indent}</node>
             {isLayoutRunning && activeLayout === 'circle' ? <LoadingSpinner className="w-3 h-3" /> : '○ Circle'}
           </Button>
         </div>
-        <div className="flex items-center gap-1">
-          <Button variant="subtle" onClick={handleFit} className="text-xs h-7 px-2">Fit</Button>
-          <Button variant="subtle" onClick={handleExportPNG} className="text-xs h-7 px-2">PNG</Button>
-          <Button variant="subtle" onClick={handleExportGraphML} className="text-xs h-7 px-2" title="Export for yED Graph Editor">yED</Button>
-          <Button variant="subtle" onClick={async () => {
-            // Try to export SVG; fall back to PNG if unsupported
-            const cy = cyRef.current;
-            if (!cy) return;
-
-            try {
-              // eslint-disable-next-line @typescript-eslint/no-var-requires
-              // @ts-ignore optional dependency
-              const cySvg = await import('cytoscape-svg');
-              const plugin = (cySvg as any).default ?? cySvg;
-              if (plugin) cytoscape.use(plugin);
-              // @ts-ignore - extension introduces svg() method
-              const svgContent: string = cy.svg({ scale: 1, full: true });
-              const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = 'contact_map.svg';
-              a.click();
-              URL.revokeObjectURL(url);
-              return;
-            } catch (svgErr) {
-              // fallback to PNG
-              try {
-                const blob = cy.png({ output: 'blob', scale: 2, full: true }) as Blob;
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'contact_map.png';
-                a.click();
-                URL.revokeObjectURL(url);
-                return;
-              } catch (pngErr) {
-                // eslint-disable-next-line no-console
-                console.error('Export failed:', svgErr, pngErr);
-              }
-            }
-          }} className="text-xs h-7 px-3">Export SVG</Button>
+        {/* Vertical Divider */}
+        <div className="w-px h-5 bg-slate-300 dark:bg-slate-600 shrink-0" />
+        {/* Actions */}
+        <div className="flex items-center gap-1 shrink-0">
+          <Button variant="subtle" onClick={handleFit} className="text-xs h-6 px-2">Fit</Button>
+          <Button variant="subtle" onClick={() => runLayout()} disabled={isLayoutRunning} className="text-xs h-6 px-2">
+            {isLayoutRunning ? <LoadingSpinner className="w-3 h-3" /> : 'Re-Layout'}
+          </Button>
+          <Button variant="subtle" onClick={handleExportPNG} className="text-xs h-6 px-2">PNG</Button>
+          <Button variant="subtle" onClick={handleExportGraphML} className="text-xs h-6 px-2" title="Export for yED Graph Editor">yED</Button>
         </div>
       </div>
 

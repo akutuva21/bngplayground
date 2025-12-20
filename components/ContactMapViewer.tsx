@@ -2,12 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../hooks/useTheme';
 import cytoscape from 'cytoscape';
 import dagre from 'cytoscape-dagre';
+import fcose from 'cytoscape-fcose';
 import type { ContactMap } from '../types/visualization';
 import { Button } from './ui/Button';
 import { LoadingSpinner } from './ui/LoadingSpinner';
 
-// Register dagre layout for hierarchical display
+// Register layouts
 cytoscape.use(dagre);
+cytoscape.use(fcose);
 
 interface ContactMapViewerProps {
   contactMap: ContactMap;
@@ -15,8 +17,8 @@ interface ContactMapViewerProps {
   onSelectRule?: (ruleId: string) => void;
 }
 
-// Layout type options - all built-in Cytoscape layouts plus dagre
-type LayoutType = 'hierarchical' | 'cose' | 'grid' | 'concentric' | 'breadthfirst' | 'circle';
+// Layout type options - all built-in Cytoscape layouts plus dagre and fcose
+type LayoutType = 'hierarchical' | 'cose' | 'fcose' | 'grid' | 'concentric' | 'breadthfirst' | 'circle' | 'random' | 'preset';
 
 // Layout configurations for different algorithms
 const LAYOUT_CONFIGS: Record<LayoutType, any> = {
@@ -46,6 +48,29 @@ const LAYOUT_CONFIGS: Record<LayoutType, any> = {
     numIter: 1000,
     nodeDimensionsIncludeLabels: true,
     randomize: false,
+  },
+  fcose: {
+    name: 'fcose',
+    quality: 'proof',
+    randomize: false,
+    animate: true,
+    animationDuration: 1000,
+    fit: true,
+    padding: 30,
+    nodeDimensionsIncludeLabels: true,
+    uniformNodeDimensions: false,
+    packComponents: true,
+    step: 'all',
+    // Physics settings
+    nodeRepulsion: 4500,
+    idealEdgeLength: 50,
+    edgeElasticity: 0.45,
+    nestingFactor: 0.1,
+    gravity: 0.25,
+    numIter: 2500,
+    tile: true,
+    tilingPaddingVertical: 10,
+    tilingPaddingHorizontal: 10,
   },
   grid: {
     name: 'grid',
@@ -98,6 +123,20 @@ const LAYOUT_CONFIGS: Record<LayoutType, any> = {
     avoidOverlap: true,
     spacingFactor: 1.5,
     nodeDimensionsIncludeLabels: true,
+  },
+  random: {
+    name: 'random',
+    animate: true,
+    animationDuration: 300,
+    padding: 50,
+    fit: true,
+  },
+  preset: {
+    name: 'preset',
+    animate: true,
+    animationDuration: 300,
+    padding: 50,
+    fit: true,
   },
 };
 
@@ -308,7 +347,10 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
       const layoutConfig = LAYOUT_CONFIGS[layoutType];
       const layout = cy.layout(layoutConfig);
       layout.run();
-      layout.on('layoutstop', () => setIsLayoutRunning(false));
+      layout.on('layoutstop', () => {
+        setIsLayoutRunning(false);
+        cy.fit(undefined, 30);
+      });
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('Layout failed', err);
@@ -503,15 +545,18 @@ ${indent}</node>
   return (
     <div className="flex flex-col h-full gap-2">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-md border border-slate-200 dark:border-slate-700">
-        {/* Layout Buttons */}
-        <div className="flex items-center gap-1 shrink-0">
-          <span className="text-xs text-slate-500 dark:text-slate-400">Layout:</span>
+      <div className="flex flex-col gap-1 bg-white dark:bg-slate-900 p-2 rounded-md border border-slate-200 dark:border-slate-700">
+        {/* Row 1: Layout Buttons */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-slate-500 dark:text-slate-400 mr-1">Layout:</span>
           <Button variant={activeLayout === 'hierarchical' ? 'primary' : 'subtle'} onClick={() => runLayout('hierarchical')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Hierarchical (yED-like)">
-            {isLayoutRunning && activeLayout === 'hierarchical' ? <LoadingSpinner className="w-3 h-3" /> : '↓ Hierarchy'}
+            {isLayoutRunning && activeLayout === 'hierarchical' ? <LoadingSpinner className="w-3 h-3" /> : '↓ Hier'}
           </Button>
-          <Button variant={activeLayout === 'cose' ? 'primary' : 'subtle'} onClick={() => runLayout('cose')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Force-Directed (avoids overlaps)">
+          <Button variant={activeLayout === 'cose' ? 'primary' : 'subtle'} onClick={() => runLayout('cose')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Force-Directed (Standard)">
             {isLayoutRunning && activeLayout === 'cose' ? <LoadingSpinner className="w-3 h-3" /> : '⚡ Cose'}
+          </Button>
+          <Button variant={activeLayout === 'fcose' ? 'primary' : 'subtle'} onClick={() => runLayout('fcose')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Fast Compound Force-Directed (Better for components)">
+            {isLayoutRunning && activeLayout === 'fcose' ? <LoadingSpinner className="w-3 h-3" /> : '✨ Smart'}
           </Button>
           <Button variant={activeLayout === 'grid' ? 'primary' : 'subtle'} onClick={() => runLayout('grid')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Grid Layout">
             {isLayoutRunning && activeLayout === 'grid' ? <LoadingSpinner className="w-3 h-3" /> : '▦ Grid'}
@@ -525,16 +570,47 @@ ${indent}</node>
           <Button variant={activeLayout === 'circle' ? 'primary' : 'subtle'} onClick={() => runLayout('circle')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Circle Layout">
             {isLayoutRunning && activeLayout === 'circle' ? <LoadingSpinner className="w-3 h-3" /> : '○ Circle'}
           </Button>
+          <Button variant={activeLayout === 'random' ? 'primary' : 'subtle'} onClick={() => runLayout('random')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Random Layout">
+            {isLayoutRunning && activeLayout === 'random' ? <LoadingSpinner className="w-3 h-3" /> : '🎲 Rand'}
+          </Button>
         </div>
-        {/* Vertical Divider */}
-        <div className="w-px h-5 bg-slate-300 dark:bg-slate-600 shrink-0" />
-        {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0">
+        {/* Row 2: Actions */}
+        <div className="flex items-center gap-1">
           <Button variant="subtle" onClick={handleFit} className="text-xs h-6 px-2">Fit</Button>
           <Button variant="subtle" onClick={() => runLayout()} disabled={isLayoutRunning} className="text-xs h-6 px-2">
-            {isLayoutRunning ? <LoadingSpinner className="w-3 h-3" /> : 'Re-Layout'}
+            {isLayoutRunning ? <LoadingSpinner className="w-3 h-3" /> : 'Redo'}
           </Button>
+          <div className="w-px h-4 bg-slate-300 dark:bg-slate-600 mx-1" />
+          <span className="text-xs text-slate-500 dark:text-slate-400">Export:</span>
           <Button variant="subtle" onClick={handleExportPNG} className="text-xs h-6 px-2">PNG</Button>
+          <Button variant="subtle" onClick={async () => {
+            const cy = cyRef.current;
+            if (!cy) return;
+            try {
+              // @ts-ignore optional dependency
+              const cySvg = await import('cytoscape-svg');
+              const plugin = (cySvg as any).default ?? cySvg;
+              if (plugin) cytoscape.use(plugin);
+              // @ts-ignore - extension introduces svg() method
+              const svgContent: string = cy.svg({ scale: 1, full: true });
+              const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'contact_map.svg';
+              a.click();
+              URL.revokeObjectURL(url);
+            } catch {
+              // fallback to PNG
+              const blob = cy.png({ output: 'blob', scale: 2, full: true }) as Blob;
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'contact_map.png';
+              a.click();
+              URL.revokeObjectURL(url);
+            }
+          }} className="text-xs h-6 px-2">SVG</Button>
           <Button variant="subtle" onClick={handleExportGraphML} className="text-xs h-6 px-2" title="Export for yED Graph Editor">yED</Button>
         </div>
       </div>

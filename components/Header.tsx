@@ -10,9 +10,11 @@ interface HeaderProps {
   onAboutClick: (focus?: string) => void;
   onExportSBML?: () => void;
   code?: string;
+  viewMode: 'code' | 'design';
+  onViewModeChange: (mode: 'code' | 'design') => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onAboutClick, onExportSBML, code }) => {
+export const Header: React.FC<HeaderProps> = ({ onAboutClick, onExportSBML, code, viewMode, onViewModeChange }) => {
   const [theme, toggleTheme] = useTheme();
 
   return (
@@ -33,6 +35,31 @@ export const Header: React.FC<HeaderProps> = ({ onAboutClick, onExportSBML, code
               <p className="text-sm text-slate-500 dark:text-slate-300 sm:text-base">Write BNGL, parse models, simulate ODE/SSA, and visualize the results.</p>
             </div>
           </div>
+
+          {/* Mode Switcher */}
+          <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+            <button
+              onClick={() => onViewModeChange('code')}
+              className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${
+                viewMode === 'code'
+                  ? 'bg-white dark:bg-slate-600 text-teal-600 dark:text-teal-400 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+              Code Editor
+            </button>
+            <button
+              onClick={() => onViewModeChange('design')}
+              className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${
+                viewMode === 'design'
+                  ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+               ✨ Designer
+            </button>
+          </div>
+
           <div className="flex items-center gap-3">
             <Button onClick={() => onAboutClick('bngl')} variant="ghost">
               What is BNGL?

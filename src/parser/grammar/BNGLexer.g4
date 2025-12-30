@@ -26,6 +26,9 @@ FUNCTIONS: 'functions';
 REACTION: 'reaction';
 REACTIONS: REACTION 's';
 RULES: 'rules';
+// Support underscore variants: reaction_rules, molecule_types
+REACTION_RULES: 'reaction_rules';
+MOLECULE_TYPES: 'molecule_types';
 GROUPS: 'groups';
 ACTIONS: 'actions';
 POPULATION: 'population';
@@ -103,6 +106,7 @@ PLA_CONFIG: 'pla_config';
 PLA_OUTPUT: 'pla_output';
 
 SIMULATE_NF: 'simulate_nf';
+SIMULATE_RM: 'simulate_rm';
 PARAM: 'param';
 COMPLEX: 'complex';
 GET_FINAL_STATE: 'get_final_state';
@@ -145,6 +149,7 @@ WRITEXML: 'writeXML';
 WRITENETWORK: 'writeNetwork';
 WRITESBML: 'writeSBML';
 WRITEMDL: 'writeMDL';
+WRITELATEX: 'writeLatex';
 INCLUDE_MODEL: 'include_model';
 INCLUDE_NETWORK: 'include_network';
 PRETTY_FORMATTING: 'pretty_formatting';
@@ -171,6 +176,10 @@ SETPARAMETER: 'setParameter';
 SAVEPARAMETERS: 'saveParameters';
 RESETPARAMETERS: 'resetParameters';
 QUIT: 'quit';
+
+// Boolean literals (text form only - 0/1 handled as INT in expressions)
+TRUE: 'true';
+FALSE: 'false';
 
 // Math functions
 SAT: 'Sat';
@@ -206,8 +215,14 @@ SUM: 'sum';
 AVG: 'avg';
 TIME: 'time';
 
-// Literals
-FLOAT: DIGIT+ '.' DIGIT+ EXPONENT? | DIGIT+ EXPONENT;
+// Literals - FLOAT supports: 1.0, .5, 1e-5, 1.0e5, .01
+// Support bare 1. only if not followed by letter (to avoid matching 1.EGFR as float)
+FLOAT
+    : DIGIT+ '.' DIGIT+ EXPONENT?
+    | '.' DIGIT+ EXPONENT?
+    | DIGIT+ EXPONENT
+    | DIGIT+ '.' { !(/^[a-zA-Z_]$/.test(String.fromCharCode(this._input.LA(1)))) }?
+    ;
 INT: DIGIT+;
 STRING: (LETTER | '_') (LETTER | DIGIT | '_')*;
 
@@ -244,6 +259,7 @@ PIPE: '|';
 QMARK: '?';
 EMARK: '!';
 DBQUOTES: '"';
+SQUOTE: '\'';
 AMPERSAND: '&';
 
 // Fragments

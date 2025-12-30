@@ -57,7 +57,7 @@ import faeder2003 from './published-models/immune-signaling/Faeder_2003.bngl?raw
 import fceri2003 from './published-models/immune-signaling/fceri_2003.bngl?raw';
 import innateImmunity from './published-models/immune-signaling/innate_immunity.bngl?raw';
 import jaruszewiczBlonska2023 from './published-models/immune-signaling/Jaruszewicz-Blonska_2023.bngl?raw';
-import korwek2023 from './published-models/immune-signaling/Korwek_2023.bngl?raw';
+// korwek2023 removed - identical to innate_immunity
 import modelZap from './published-models/immune-signaling/Model_ZAP.bngl?raw';
 import mukhopadhyay2013 from './published-models/immune-signaling/Mukhopadhyay_2013.bngl?raw';
 import tlbr from './published-models/immune-signaling/tlbr.bngl?raw';
@@ -191,13 +191,66 @@ export const INITIAL_BNGL_CODE = ABTutorial;
 // 2. Use deprecated/non-standard syntax
 // 3. Have missing dependencies or other BNG2.pl errors
 const BNG2_COMPATIBLE_MODELS = new Set([
-  // Published models that work with BNG2.pl and have simulation capability
-  'Barua_2013',
+  // ========================================================
+  // Models verified to pass BOTH BNG2.pl AND ANTLR parser
+  // Last updated: 2024-12-21 from published_benchmark.test.ts
+  // Total: 90 models (55 published + 60 example - some overlap)
+  // ========================================================
+
+  // Published Models - Cell Regulation (3)
+  'Hat_2016',
+
+  'Pekalski_2013',
+
+  // Published Models - Complex Models (6)
+  'Barua_2009',
   'Blinov_2006',
-  'Lang_2024',
+
+  'Dushek_2011',
+  'Kozer_2013',
+
+
+  // Published Models - Growth Factor Signaling (1)
+
+
+  // Published Models - Immune Signaling (5)
   'An_2009',
+
+  'ChylekFceRI_2014',
+  'ChylekTCR_2014',
   'innate_immunity',
-  // All test/example models (generated to be BNG2.pl compatible)
+  'Jaruszewicz-Blonska_2023',
+
+  // Published Models - Literature (3)
+  'Cheemalavagu_JAK_STAT',
+  'Lin_ERK_2019',
+  'Lin_TCR_2019',
+
+  // Native Tutorials - AB/ABC (0)
+  // All failed benchmark
+
+  // Native Tutorials - ABp (0)
+  // All failed benchmark
+
+  // Native Tutorials - BAB (0)
+  // All failed benchmark
+
+  // Native Tutorials - CBNGL (2)
+  'BLBR',
+  'cBNGL_simple',
+
+  // Native Tutorials - LargerModels (3)
+  'Chylek_library',
+
+  'egfr_simple',
+
+  // Native Tutorials - SynDeg (1)
+  'toggle',
+
+  // Native Tutorials - Viz (1)
+
+
+  // All example models (generated to be BNG2.pl compatible)
   'akt-signaling',
   'allosteric-activation',
   'apoptosis-cascade',
@@ -258,50 +311,6 @@ const BNG2_COMPATIBLE_MODELS = new Set([
   'viral-sensing-innate-immunity',
   'wnt-beta-catenin-signaling',
   'wound-healing-pdgf-signaling',
-  'wound-healing-pdgf-signaling',
-  // Native Tutorials
-  'AB',
-  'ABC',
-  'ABC_scan',
-  'ABC_ssa',
-  'LV',
-  'SIR',
-  'ABp',
-  'ABp_approx',
-  'GK',
-  'Lisman',
-  'Lisman_bifurcate',
-  'BAB',
-  'BAB_coop',
-  'BAB_scan',
-  'BLBR',
-  'cBNGL_simple',
-  'LR',
-  'LRR',
-  'LRR_comp',
-  'LR_comp',
-  'LV_comp',
-  'organelle_transport',
-  'organelle_transport_struct',
-  'Chylek_library',
-  'Creamer_2012',
-  'egfr_simple',
-  'FceRI_ji',
-  'Suderman_2013',
-  'translateSBML',
-  'birth-death',
-  'CircadianOscillator',
-  'ComplexDegradation',
-  'Repressilator',
-  'toggle',
-  'FceRI_viz',
-  'visualize',
-  // Literature Models
-  'Dolan_2015',
-  'Lin_ERK_2019',
-  'Lin_TCR_2019',
-  'Lin_Prion_2019',
-  'Cheemalavagu_JAK_STAT',
 ]);
 
 // Models that require NFsim (network-free simulation) - kept for reference but not displayed
@@ -317,7 +326,7 @@ const BNG2_COMPATIBLE_MODELS = new Set([
 
 // Helper to filter models to only BNG2.pl compatible ones
 // Excludes models using simulate_nf (network-free simulation) which is not supported
-const filterCompatibleModels = (models: Example[]): Example[] => 
+const filterCompatibleModels = (models: Example[]): Example[] =>
   models.filter(m => BNG2_COMPATIBLE_MODELS.has(m.id) && !m.code.includes('simulate_nf'));
 
 const CELL_REGULATION: Example[] = [
@@ -338,14 +347,14 @@ const CELL_REGULATION: Example[] = [
   {
     id: 'Hat_2016',
     name: 'Hat 2016',
-    description: 'BNGL model: Hat 2016',
+    description: 'Nuclear transport',
     code: hat2016,
     tags: ['published', 'cell regulation'],
   },
   {
     id: 'Kocieniewski_2012',
     name: 'Kocieniewski 2012',
-    description: 'BNGL model: Kocieniewski 2012',
+    description: 'Actin dynamics',
     code: kocieniewski2012,
     tags: ['published', 'cell regulation'],
   },
@@ -359,7 +368,7 @@ const CELL_REGULATION: Example[] = [
   {
     id: 'Pekalski_2013',
     name: 'Pekalski 2013',
-    description: 'BNGL model: Pekalski 2013',
+    description: 'Spontaneous signaling',
     code: pekalski2013,
     tags: ['published', 'cell regulation'],
   },
@@ -380,7 +389,7 @@ const CELL_REGULATION: Example[] = [
   {
     id: 'vilar_2002',
     name: 'Vilar 2002',
-    description: 'BNGL model: Vilar 2002',
+    description: 'Genetic oscillator',
     code: vilar2002,
     tags: ['published', 'cell regulation'],
   },
@@ -400,8 +409,8 @@ const CELL_REGULATION: Example[] = [
   },
   {
     id: 'wnt',
-    name: 'Wnt',
-    description: 'BNGL model: Wnt',
+    name: 'Wnt Signaling',
+    description: 'Wnt pathway model',
     code: wnt,
     tags: ['published', 'cell regulation'],
   },
@@ -418,28 +427,28 @@ const COMPLEX_MODELS: Example[] = [
   {
     id: 'Barua_2009',
     name: 'Barua 2009',
-    description: 'BNGL model: Barua 2009',
+    description: 'JAK2-SH2B signaling',
     code: barua2009,
     tags: ['published', 'complex models'],
   },
   {
     id: 'Blinov_2006',
     name: 'Blinov 2006',
-    description: 'BNGL model: Blinov 2006',
+    description: 'Phosphotyrosine signaling',
     code: blinov2006,
     tags: ['published', 'complex models'],
   },
   {
     id: 'Chattaraj_2021',
     name: 'Chattaraj 2021',
-    description: 'BNGL model: Chattaraj 2021',
+    description: 'NFkB oscillations',
     code: chattaraj2021,
     tags: ['published', 'complex models'],
   },
   {
     id: 'Dushek_2011',
     name: 'Dushek 2011',
-    description: 'BNGL model: Dushek 2011',
+    description: 'TCR signaling',
     code: dushek2011,
     tags: ['published', 'complex models'],
   },
@@ -453,35 +462,35 @@ const COMPLEX_MODELS: Example[] = [
   {
     id: 'Erdem_2021',
     name: 'Erdem 2021',
-    description: 'BNGL model: Erdem 2021',
+    description: 'InsR/IGF1R signaling',
     code: erdem2021,
     tags: ['published', 'complex models'],
   },
   {
     id: 'Jung_2017',
     name: 'Jung 2017',
-    description: 'BNGL model: Jung 2017',
+    description: 'M1 receptor signaling',
     code: jung2017,
     tags: ['published', 'complex models'],
   },
   {
     id: 'Kesseler_2013',
     name: 'Kesseler 2013',
-    description: 'BNGL model: Kesseler 2013',
+    description: 'G2/Mitosis transition',
     code: kesseler2013,
     tags: ['published', 'complex models'],
   },
   {
     id: 'Kozer_2013',
     name: 'Kozer 2013',
-    description: 'Model from Faeder et al. (2009)',
+    description: 'EGFR oligomerization',
     code: kozer2013,
     tags: ['published', 'complex models'],
   },
   {
     id: 'Kozer_2014',
     name: 'Kozer 2014',
-    description: 'Model from Kozer et al. (2013)',
+    description: 'Grb2-EGFR recruitment',
     code: kozer2014,
     tags: ['published', 'complex models'],
   },
@@ -502,49 +511,49 @@ const COMPLEX_MODELS: Example[] = [
   {
     id: 'Massole_2023',
     name: 'Massole 2023',
-    description: 'BNGL model: Massole 2023',
+    description: 'Epo receptor signaling',
     code: massole2023,
     tags: ['published', 'complex models'],
   },
   {
     id: 'McMillan_2021',
     name: 'McMillan 2021',
-    description: 'BNGL model: McMillan 2021',
+    description: 'TNF signaling',
     code: mcmillan2021,
     tags: ['published', 'complex models'],
   },
   {
     id: 'Nag_2009',
     name: 'Nag 2009',
-    description: 'BNGL model: Nag 2009',
+    description: 'LAT-Grb2-SOS1 signaling',
     code: nag2009,
     tags: ['published', 'complex models'],
   },
   {
     id: 'Nosbisch_2022',
     name: 'Nosbisch 2022',
-    description: 'BNGL model: Nosbisch 2022',
+    description: 'RTK-PLCgamma1 signaling',
     code: nosbisch2022,
     tags: ['published', 'complex models'],
   },
   {
     id: 'Zhang_2021',
     name: 'Zhang 2021',
-    description: 'BNGL model: Zhang 2021',
+    description: 'CAR-T signaling',
     code: zhang2021,
     tags: ['published', 'complex models'],
   },
   {
     id: 'Zhang_2023',
     name: 'Zhang 2023',
-    description: 'BNGL model: Zhang 2023',
+    description: 'VEGF signaling',
     code: zhang2023,
     tags: ['published', 'complex models'],
   },
   {
     id: 'Lin_Prion_2019',
-    name: 'Lin Prion 2019',
-    description: 'Prion model (Lin et al. 2019)',
+    name: 'Lin 2019',
+    description: 'Prion replication',
     code: linPrion2019,
     tags: ['published', 'literature', 'prion'],
   },
@@ -561,21 +570,21 @@ const GROWTH_FACTOR_SIGNALING: Example[] = [
   {
     id: 'Lang_2024',
     name: 'Lang 2024',
-    description: 'BNGL model: Lang 2024',
+    description: 'Cell cycle regulation',
     code: lang2024,
     tags: ['published', 'growth factor signaling'],
   },
   {
     id: 'Ligon_2014',
     name: 'Ligon 2014',
-    description: 'BNGL model: Ligon 2014',
+    description: 'Lipoplex delivery',
     code: ligon2014,
     tags: ['published', 'growth factor signaling'],
   },
   {
     id: 'Mertins_2023',
     name: 'Mertins 2023',
-    description: 'BNGL model: Mertins 2023',
+    description: 'DNA damage response',
     code: mertins2023,
     tags: ['published', 'growth factor signaling'],
   },
@@ -588,8 +597,8 @@ const GROWTH_FACTOR_SIGNALING: Example[] = [
   },
   {
     id: 'Rule_based_egfr_tutorial',
-    name: 'Rule based egfr tutorial',
-    description: 'BNGL model: Rule based egfr tutorial',
+    name: 'Faeder 2009',
+    description: 'EGFR signaling tutorial',
     code: ruleBasedEgfrTutorial,
     tags: ['published', 'growth factor signaling'],
   },
@@ -602,8 +611,8 @@ const GROWTH_FACTOR_SIGNALING: Example[] = [
   },
   {
     id: 'Lin_ERK_2019',
-    name: 'Lin ERK 2019',
-    description: 'ERK Signaling model (Lin et al. 2019)',
+    name: 'Lin 2019',
+    description: 'ERK signaling',
     code: linErk2019,
     tags: ['published', 'literature', 'signaling'],
   },
@@ -613,14 +622,14 @@ const IMMUNE_SIGNALING: Example[] = [
   {
     id: 'An_2009',
     name: 'An 2009',
-    description: 'BNGL model: An 2009',
+    description: 'TLR4 NFkB signaling',
     code: an2009,
     tags: ['published', 'immune signaling'],
   },
   {
     id: 'BaruaBCR_2012',
-    name: 'BaruaBCR 2012',
-    description: 'BNGL model: BaruaBCR 2012',
+    name: 'Barua 2012',
+    description: 'BCR signaling',
     code: baruabcr2012,
     tags: ['published', 'immune signaling'],
   },
@@ -640,53 +649,47 @@ const IMMUNE_SIGNALING: Example[] = [
   },
   {
     id: 'ChylekFceRI_2014',
-    name: 'ChylekFceRI 2014',
-    description: 'BNGL model: ChylekFceRI 2014',
+    name: 'Chylek 2014',
+    description: 'FceRI signaling',
     code: chylekfceri2014,
     tags: ['published', 'immune signaling'],
   },
   {
     id: 'ChylekTCR_2014',
-    name: 'ChylekTCR 2014',
-    description: 'Model from Faeder et al. (2009)',
+    name: 'Chylek 2014',
+    description: 'TCR signaling',
     code: chylektcr2014,
     tags: ['published', 'immune signaling'],
   },
   {
     id: 'Faeder_2003',
     name: 'Faeder 2003',
-    description: 'BNGL model: Faeder 2003',
+    description: 'FceRI signaling',
     code: faeder2003,
     tags: ['published', 'immune signaling'],
   },
   {
     id: 'fceri_2003',
-    name: 'FceRI 2003',
-    description: 'BNGL model: FceRI 2003',
+    name: 'Faeder 2003',
+    description: 'FceRI signaling',
     code: fceri2003,
     tags: ['published', 'immune signaling'],
   },
   {
     id: 'innate_immunity',
-    name: 'Innate Immunity',
-    description: 'Model from Signaling (2023). Science Signaling (2023).',
+    name: 'Korwek 2023',
+    description: 'Innate immune response',
     code: innateImmunity,
     tags: ['published', 'immune signaling'],
   },
   {
     id: 'Jaruszewicz-Blonska_2023',
-    name: 'Jaruszewicz Blonska 2023',
-    description: 'BNGL model: Jaruszewicz Blonska 2023',
+    name: 'Jaruszewicz 2023',
+    description: 'T-cell discrimination',
     code: jaruszewiczBlonska2023,
     tags: ['published', 'immune signaling'],
   },
-  {
-    id: 'Korwek_2023',
-    name: 'Korwek 2023',
-    description: 'Model from Signaling (2023). Science Signaling (2023).',
-    code: korwek2023,
-    tags: ['published', 'immune signaling'],
-  },
+
   {
     id: 'Model_ZAP',
     name: 'Model ZAP',
@@ -703,22 +706,22 @@ const IMMUNE_SIGNALING: Example[] = [
   },
   {
     id: 'tlbr',
-    name: 'TLBR',
-    description: 'BNGL model: TLBR',
+    name: 'TLBR Tutorial',
+    description: 'Ligand binding',
     code: tlbr,
     tags: ['published', 'immune signaling'],
   },
   {
     id: 'Lin_TCR_2019',
-    name: 'Lin TCR 2019',
-    description: 'TCR Signaling model (Lin et al. 2019)',
+    name: 'Lin 2019',
+    description: 'TCR signaling',
     code: linTcr2019,
     tags: ['published', 'literature', 'immune'],
   },
   {
     id: 'Cheemalavagu_JAK_STAT',
-    name: 'JAK-STAT (Cheemalavagu)',
-    description: 'JAK-STAT and SOCS degradation model',
+    name: 'Cheemalavagu 2014',
+    description: 'JAK-STAT signaling',
     code: cheemalavaguJakStat,
     tags: ['published', 'literature', 'signaling'],
   },

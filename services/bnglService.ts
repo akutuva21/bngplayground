@@ -90,8 +90,15 @@ class BnglService {
   private warningListeners = new Set<(payload: any) => void>();
 
   constructor() {
+    this.initWorker();
+  }
+
+  private initWorker() {
     // Vite needs the URL construction inline so it treats this import as a worker entry.
     this.worker = new Worker(new URL('./bnglWorker.ts', import.meta.url), { type: 'module' });
+    this.terminated = false;
+    this.messageId = 0;
+    this.promises = new Map();
 
     this.worker.addEventListener('message', (event: MessageEvent<WorkerResponse>) => {
       const { id, type, payload } = event.data ?? {};
@@ -188,6 +195,12 @@ class BnglService {
       console.error('[BnglService] Worker failed to deserialize message:', event.data);
       this.rejectAllPending('Worker posted an unserializable message');
     });
+  }
+
+  public restart() {
+    console.warn('[BnglService] Restarting worker...');
+    this.terminate('Restarting');
+    this.initWorker();
   }
 
   private sendCancel(targetId: number) {

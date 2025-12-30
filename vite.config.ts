@@ -22,7 +22,8 @@ export default defineConfig(() => {
         'recharts',
         'cytoscape',
         'cytoscape-cose-bilkent',
-        'd3'
+        'd3',
+        'antlr4ts'
       ],
       force: true
     },

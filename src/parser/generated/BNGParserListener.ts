@@ -12,12 +12,14 @@ import { Set_model_nameContext } from "./BNGParser";
 import { Program_blockContext } from "./BNGParser";
 import { Parameters_blockContext } from "./BNGParser";
 import { Parameter_defContext } from "./BNGParser";
+import { Param_nameContext } from "./BNGParser";
 import { Molecule_types_blockContext } from "./BNGParser";
 import { Molecule_type_defContext } from "./BNGParser";
 import { Molecule_defContext } from "./BNGParser";
 import { Component_def_listContext } from "./BNGParser";
 import { Component_defContext } from "./BNGParser";
 import { State_listContext } from "./BNGParser";
+import { State_nameContext } from "./BNGParser";
 import { Seed_species_blockContext } from "./BNGParser";
 import { Seed_species_defContext } from "./BNGParser";
 import { Species_defContext } from "./BNGParser";
@@ -32,6 +34,7 @@ import { Observables_blockContext } from "./BNGParser";
 import { Observable_defContext } from "./BNGParser";
 import { Observable_typeContext } from "./BNGParser";
 import { Observable_pattern_listContext } from "./BNGParser";
+import { Observable_patternContext } from "./BNGParser";
 import { Reaction_rules_blockContext } from "./BNGParser";
 import { Reaction_rule_defContext } from "./BNGParser";
 import { Label_defContext } from "./BNGParser";
@@ -52,6 +55,7 @@ import { Population_maps_blockContext } from "./BNGParser";
 import { Population_map_defContext } from "./BNGParser";
 import { Actions_blockContext } from "./BNGParser";
 import { Wrapped_actions_blockContext } from "./BNGParser";
+import { Begin_actions_blockContext } from "./BNGParser";
 import { Action_commandContext } from "./BNGParser";
 import { Generate_network_cmdContext } from "./BNGParser";
 import { Simulate_cmdContext } from "./BNGParser";
@@ -62,6 +66,7 @@ import { Action_argsContext } from "./BNGParser";
 import { Action_arg_listContext } from "./BNGParser";
 import { Action_argContext } from "./BNGParser";
 import { Action_arg_valueContext } from "./BNGParser";
+import { Keyword_as_valueContext } from "./BNGParser";
 import { Nested_hash_listContext } from "./BNGParser";
 import { Nested_hash_itemContext } from "./BNGParser";
 import { Arg_nameContext } from "./BNGParser";
@@ -187,6 +192,17 @@ export interface BNGParserListener extends ParseTreeListener {
 	exitParameter_def?: (ctx: Parameter_defContext) => void;
 
 	/**
+	 * Enter a parse tree produced by `BNGParser.param_name`.
+	 * @param ctx the parse tree
+	 */
+	enterParam_name?: (ctx: Param_nameContext) => void;
+	/**
+	 * Exit a parse tree produced by `BNGParser.param_name`.
+	 * @param ctx the parse tree
+	 */
+	exitParam_name?: (ctx: Param_nameContext) => void;
+
+	/**
 	 * Enter a parse tree produced by `BNGParser.molecule_types_block`.
 	 * @param ctx the parse tree
 	 */
@@ -251,6 +267,17 @@ export interface BNGParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitState_list?: (ctx: State_listContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `BNGParser.state_name`.
+	 * @param ctx the parse tree
+	 */
+	enterState_name?: (ctx: State_nameContext) => void;
+	/**
+	 * Exit a parse tree produced by `BNGParser.state_name`.
+	 * @param ctx the parse tree
+	 */
+	exitState_name?: (ctx: State_nameContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `BNGParser.seed_species_block`.
@@ -405,6 +432,17 @@ export interface BNGParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitObservable_pattern_list?: (ctx: Observable_pattern_listContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `BNGParser.observable_pattern`.
+	 * @param ctx the parse tree
+	 */
+	enterObservable_pattern?: (ctx: Observable_patternContext) => void;
+	/**
+	 * Exit a parse tree produced by `BNGParser.observable_pattern`.
+	 * @param ctx the parse tree
+	 */
+	exitObservable_pattern?: (ctx: Observable_patternContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `BNGParser.reaction_rules_block`.
@@ -627,6 +665,17 @@ export interface BNGParserListener extends ParseTreeListener {
 	exitWrapped_actions_block?: (ctx: Wrapped_actions_blockContext) => void;
 
 	/**
+	 * Enter a parse tree produced by `BNGParser.begin_actions_block`.
+	 * @param ctx the parse tree
+	 */
+	enterBegin_actions_block?: (ctx: Begin_actions_blockContext) => void;
+	/**
+	 * Exit a parse tree produced by `BNGParser.begin_actions_block`.
+	 * @param ctx the parse tree
+	 */
+	exitBegin_actions_block?: (ctx: Begin_actions_blockContext) => void;
+
+	/**
 	 * Enter a parse tree produced by `BNGParser.action_command`.
 	 * @param ctx the parse tree
 	 */
@@ -735,6 +784,17 @@ export interface BNGParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitAction_arg_value?: (ctx: Action_arg_valueContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `BNGParser.keyword_as_value`.
+	 * @param ctx the parse tree
+	 */
+	enterKeyword_as_value?: (ctx: Keyword_as_valueContext) => void;
+	/**
+	 * Exit a parse tree produced by `BNGParser.keyword_as_value`.
+	 * @param ctx the parse tree
+	 */
+	exitKeyword_as_value?: (ctx: Keyword_as_valueContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `BNGParser.nested_hash_list`.

@@ -38,16 +38,23 @@ export const ExampleGalleryModal: React.FC<ExampleGalleryModalProps> = ({ isOpen
   }, [selectedCategory]);
 
   const filteredExamples = useMemo(() => {
+    if (searchTerm) {
+      // Global search across all categories
+      const allModels = MODEL_CATEGORIES.flatMap(cat => cat.models);
+      return allModels.filter(example => {
+        const term = searchTerm.toLowerCase();
+        return (
+          example.name.toLowerCase().includes(term) ||
+          example.description.toLowerCase().includes(term) ||
+          example.id.toLowerCase().includes(term) ||
+          example.tags?.some(tag => tag.toLowerCase().includes(term))
+        );
+      });
+    }
+
+    // Category-scoped list when not searching
     if (!currentCategory) return [];
-    
-    if (!searchTerm) return currentCategory.models;
-    
-    return currentCategory.models.filter(example => {
-      const searchMatch =
-        example.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        example.description.toLowerCase().includes(searchTerm.toLowerCase());
-      return searchMatch;
-    });
+    return currentCategory.models;
   }, [searchTerm, currentCategory]);
 
   React.useEffect(() => {

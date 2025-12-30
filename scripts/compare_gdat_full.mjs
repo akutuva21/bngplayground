@@ -20,16 +20,15 @@ async function main() {
   console.log('=== GDAT Comparison: Web Simulator vs BNG2.pl ===\n');
 
   // Read the test report to get model list
-  const reportPath = path.join(projectRoot, 'bng2_test_report.json');
+  const reportPath = path.join(projectRoot, 'bng2_reference_report.json');
   if (!fs.existsSync(reportPath)) {
-    console.error('Error: bng2_test_report.json not found. Run the BNG2.pl test first.');
+    console.error('Error: bng2_reference_report.json not found. Run compare_gdat_output.mjs first.');
     process.exit(1);
   }
 
   const report = JSON.parse(fs.readFileSync(reportPath, 'utf-8'));
 
   // Get models that passed BNG2.pl simulation (have gdat output)
-  // Report structure: { passed: [{model, hasGdat, ...}], failed: [...] }
   const modelsWithGdat = report.passed.filter(r =>
     r.hasGdat === true
   );
@@ -77,8 +76,8 @@ async function main() {
   let available = 0;
 
   for (const model of modelsWithGdat) {
-    const modelName = model.model; // Report uses 'model' field, not 'modelName'
-    const bng2GdatPath = path.join(gdatDir, `${modelName}_bng2.gdat`);
+    const modelName = model.model;
+    const bng2GdatPath = model.gdatFile || path.join(gdatDir, `${modelName}_bng2.gdat`);
 
     if (fs.existsSync(bng2GdatPath)) {
       available++;

@@ -33,6 +33,17 @@ export class BNGLParser {
       graph.compartment = globalCompartment;
     }
 
+    // Handle suffix compartment notation like R(l,tf~Y)@PM (after last closing paren)
+    // This is common in cBNGL models
+    if (!globalCompartment) {
+      const suffixMatch = content.match(/^(.+\))@([A-Za-z0-9_]+)$/);
+      if (suffixMatch) {
+        globalCompartment = suffixMatch[2];
+        content = suffixMatch[1];
+        graph.compartment = globalCompartment;
+      }
+    }
+
     // Helper to split by dot outside parentheses
     const splitMolecules = (str: string) => {
       const parts: string[] = [];
@@ -165,7 +176,7 @@ export class BNGLParser {
     const states = stateParts.slice(1);
     const component = new Component(name, states);
     if (states.length > 0) component.state = states[0];
-    
+
     // Handle ALL bonds (for multi-site bonding like !1!2)
     for (const bondPart of bondParts) {
       if (bondPart === '+' || bondPart === '?' || bondPart === '-') {
@@ -178,7 +189,7 @@ export class BNGLParser {
       }
     }
     if (compStr.includes('!+')) {
-       if (shouldLogParser) console.log(`[BNGLParser] Parsing component '${compStr}': wildcard='${component.wildcard}'`);
+      if (shouldLogParser) console.log(`[BNGLParser] Parsing component '${compStr}': wildcard='${component.wildcard}'`);
     }
     return component;
   }
@@ -189,7 +200,7 @@ export class BNGLParser {
    * Also handles synthesis rules: "0 -> A()" or "" -> A()
    * Also handles degradation rules: "A() -> 0"
    */
-  static parseRxnRule(ruleStr: string, rateConstant: number, name?: string): RxnRule {
+  static parseRxnRule(ruleStr: string, rateConstant: number | string, name?: string): RxnRule {
     // Detect arrow robustly (->, <-, <->, ~>) and split around the first arrow
     const arrowRegex = /(?:<->|->|<-|~>)/;
     const arrowMatch = ruleStr.match(arrowRegex);
@@ -251,7 +262,23 @@ export class BNGLParser {
     const reactants = reactantsList.map(s => this.parseSpeciesGraph(s.trim(), true));
     const products = productsList.map(s => this.parseSpeciesGraph(s.trim(), true));
 
-    return new RxnRule(name || '', reactants, products, rateConstant);
+    let rateNum: number;
+    let rateExpr: string | undefined;
+
+    if (typeof rateConstant === 'number') {
+      rateNum = rateConstant;
+    } else {
+      // It's a string
+      const parsed = parseFloat(rateConstant);
+      if (!isNaN(parsed) && isFinite(parsed) && !rateConstant.match(/[a-zA-Z_]/)) {
+        rateNum = parsed;
+      } else {
+        rateNum = 0; // Or NaN? 0 allows simulation to proceed (rate expression used instead)
+        rateExpr = rateConstant;
+      }
+    }
+
+    return new RxnRule(name || '', reactants, products, rateNum, { rateExpression: rateExpr });
   }
 
   /**
@@ -315,7 +342,7 @@ export class BNGLParser {
    * @returns The evaluated number, or NaN if evaluation fails or expression is invalid
    */
   static evaluateExpression(
-    expr: string, 
+    expr: string,
     parameters: Map<string, number>,
     observables?: Map<string, number> | Set<string>
   ): number {
@@ -341,40 +368,41 @@ export class BNGLParser {
       // If observables are provided, replace observable names with placeholder values (1)
       // This allows rate expressions with observables to validate syntactically
       if (observables) {
-        const obsNames = observables instanceof Set 
-          ? Array.from(observables) 
+        const obsNames = observables instanceof Set
+          ? Array.from(observables)
           : Array.from(observables.keys());
-        
+
         // Sort by length (longest first)
         obsNames.sort((a, b) => b.length - a.length);
-        
+
         for (const name of obsNames) {
           const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const regex = new RegExp(`\\b${escapedName}\\b`, 'g');
+          // Match observable name, optionally followed by ()
+          const regex = new RegExp(`\\b${escapedName}\\b(?:\\s*\\(\\s*\\))?`, 'g');
           // Use 1 as placeholder to avoid division by zero issues
           evaluable = evaluable.replace(regex, '1');
         }
       }
 
       // Convert BNGL operators to JavaScript
-    evaluable = evaluable.replace(/\^/g, '**');  // Power operator
-    
-    // Replace BNGL math constants
-    evaluable = evaluable.replace(/\b_pi\b/g, String(Math.PI));
-    evaluable = evaluable.replace(/\b_e\b/g, String(Math.E));
-    
-    // Replace BNGL math functions with JavaScript equivalents
-    evaluable = evaluable.replace(/\bexp\(/g, 'Math.exp(');
-    evaluable = evaluable.replace(/\bln\(/g, 'Math.log(');
-    evaluable = evaluable.replace(/\blog10\(/g, 'Math.log10(');
-    evaluable = evaluable.replace(/\bsqrt\(/g, 'Math.sqrt(');
-    evaluable = evaluable.replace(/\babs\(/g, 'Math.abs(');
-    evaluable = evaluable.replace(/\bsin\(/g, 'Math.sin(');
-    evaluable = evaluable.replace(/\bcos\(/g, 'Math.cos(');
-    evaluable = evaluable.replace(/\btan\(/g, 'Math.tan(');
-    evaluable = evaluable.replace(/\bpow\(/g, 'Math.pow(');
+      evaluable = evaluable.replace(/\^/g, '**');  // Power operator
 
-    // Use Function constructor for safe evaluation
+      // Replace BNGL math constants
+      evaluable = evaluable.replace(/\b_pi\b/g, String(Math.PI));
+      evaluable = evaluable.replace(/\b_e\b/g, String(Math.E));
+
+      // Replace BNGL math functions with JavaScript equivalents
+      evaluable = evaluable.replace(/\bexp\(/g, 'Math.exp(');
+      evaluable = evaluable.replace(/\bln\(/g, 'Math.log(');
+      evaluable = evaluable.replace(/\blog10\(/g, 'Math.log10(');
+      evaluable = evaluable.replace(/\bsqrt\(/g, 'Math.sqrt(');
+      evaluable = evaluable.replace(/\babs\(/g, 'Math.abs(');
+      evaluable = evaluable.replace(/\bsin\(/g, 'Math.sin(');
+      evaluable = evaluable.replace(/\bcos\(/g, 'Math.cos(');
+      evaluable = evaluable.replace(/\btan\(/g, 'Math.tan(');
+      evaluable = evaluable.replace(/\bpow\(/g, 'Math.pow(');
+
+      // Use Function constructor for safe evaluation
       const result = new Function(`return ${evaluable}`)();
       return typeof result === 'number' && !isNaN(result) ? result : NaN;
     } catch (e) {

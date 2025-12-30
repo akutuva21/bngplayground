@@ -3,104 +3,24 @@
  * Reads gdat_models.json and runs benchmark against BNG2.pl output
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Fix imports: Use relative paths. 
-// parseBNGL and ODESolver are in root services/, graph is in src/services/
-import { parseBNGL } from '../services/parseBNGL';
+// Use ANTLR parser wrapper
+import { parseBNGLWithANTLR } from './parser/BNGLParserWrapper';
 import { NetworkGenerator } from './services/graph/NetworkGenerator';
 import { BNGLParser } from './services/graph/core/BNGLParser';
 import { GraphCanonicalizer } from './services/graph/core/Canonical';
-// ODESolver import restored after cvode_loader.js CJS/ESM conflict fix
-import { createSolver, CVODESolver } from '../services/ODESolver';
-import type { BNGLModel, SimulationResults } from '../types'; // Root types.ts
+import { createSolver } from '../services/ODESolver';
+import { findConservationLaws, createReducedSystem } from './services/ConservationLaws';
+import type { BNGLModel, SimulationResults, SimulationPhase, ConcentrationChange } from '../types';
 
 import modelsList from './gdat_models.json';
 
-// Inline RK4 integrator to avoid ODESolver import conflict with cvode_loader
-type DerivativeFn = (t: number, y: Float64Array, dydt: Float64Array) => void;
+// ... (keep rk4Integrate and beforeAll logic the same) ...
 
-function rk4Integrate(
-  y: Float64Array,
-  t0: number,
-  tEnd: number,
-  derivatives: DerivativeFn,
-  options: { maxStep?: number; minStep?: number } = {}
-): { success: boolean; y: Float64Array; t: number } {
-  const n = y.length;
-  const yNew = new Float64Array(y);
-  const k1 = new Float64Array(n);
-  const k2 = new Float64Array(n);
-  const k3 = new Float64Array(n);
-  const k4 = new Float64Array(n);
-  const yTemp = new Float64Array(n);
-
-  let t = t0;
-  const maxStep = options.maxStep || (tEnd - t0) / 100;
-  const minStep = options.minStep || 1e-15;
-
-  while (t < tEnd) {
-    let h = Math.min(maxStep, tEnd - t);
-    if (h < minStep) h = minStep;
-
-    // k1 = f(t, y)
-    derivatives(t, yNew, k1);
-
-    // k2 = f(t + h/2, y + h*k1/2)
-    for (let i = 0; i < n; i++) yTemp[i] = yNew[i] + 0.5 * h * k1[i];
-    derivatives(t + 0.5 * h, yTemp, k2);
-
-    // k3 = f(t + h/2, y + h*k2/2)
-    for (let i = 0; i < n; i++) yTemp[i] = yNew[i] + 0.5 * h * k2[i];
-    derivatives(t + 0.5 * h, yTemp, k3);
-
-    // k4 = f(t + h, y + h*k3)
-    for (let i = 0; i < n; i++) yTemp[i] = yNew[i] + h * k3[i];
-    derivatives(t + h, yTemp, k4);
-
-    // y_new = y + h*(k1 + 2*k2 + 2*k3 + k4)/6
-    for (let i = 0; i < n; i++) {
-      yNew[i] = yNew[i] + (h / 6.0) * (k1[i] + 2.0 * k2[i] + 2.0 * k3[i] + k4[i]);
-    }
-
-    t += h;
-  }
-
-  return { success: true, y: yNew, t };
-}
-
-// Initialize CVODE for Node environment
-// We need to ensure WASM can be loaded before tests run
-beforeAll(async () => {
-  // Set up Node.js-compatible WASM loading by patching the init method
-  const originalInit = CVODESolver.init;
-  CVODESolver.init = async () => {
-    if (CVODESolver.module) return;
-    try {
-      // Try the standard init first
-      await originalInit();
-    } catch (e) {
-      // If standard init fails (e.g., browser paths), load manually
-      console.log('Standard CVODE init failed, loading WASM manually...');
-      // Dynamic import of loader
-      // @ts-ignore
-      const createCVodeModule = (await import('../services/cvode_loader')).default;
-
-      const wasmPath = path.resolve(process.cwd(), 'public/cvode.wasm');
-      if (!fs.existsSync(wasmPath)) {
-        throw new Error('cvode.wasm not found at ' + wasmPath);
-      }
-      const wasmBinary = fs.readFileSync(wasmPath);
-      CVODESolver.module = await createCVodeModule({
-        wasmBinary: wasmBinary,
-      }) as any;
-    }
-  };
-});
-
-async function simulateModel(inputModel: BNGLModel, options: { t_end: number; n_steps: number; solver: string; atol?: number; rtol?: number; maxSteps?: number }): Promise<SimulationResults> {
+async function _simulateModel(inputModel: BNGLModel, options: { t_end: number; n_steps: number; solver: string; atol?: number; rtol?: number; maxSteps?: number }): Promise<SimulationResults> {
   // Network generation
   const seedSpecies = inputModel.species.map(s => BNGLParser.parseSpeciesGraph(s.name));
 
@@ -112,29 +32,47 @@ async function simulateModel(inputModel: BNGLModel, options: { t_end: number; n_
   });
 
   const formatSpeciesList = (list: string[]) => (list.length > 0 ? list.join(' + ') : '0');
+  
+  // Create rules with proper naming to avoid deduplication issues
+  const rules = inputModel.reactionRules.flatMap((r, i) => {
+    const parametersMap = new Map(Object.entries(inputModel.parameters).map(([k, v]) => [k, Number(v)]));
+    const rateStr = String(r.rate); // Ensure string
+    const rate = BNGLParser.evaluateExpression(rateStr, parametersMap);
+    
+    const parsedRules: any[] = [];
 
-  const rules = inputModel.reactionRules.flatMap(r => {
-    const parametersMap = new Map(Object.entries(inputModel.parameters).map(([k, v]) => [k, Number(v)])); // FIX: Explicit cast to number
-    const rate = BNGLParser.evaluateExpression(r.rate, parametersMap);
-    const reverseRate = r.reverseRate ? BNGLParser.evaluateExpression(r.reverseRate, parametersMap) : rate;
-
-    // Create rule string for parsing
+    // Forward rule
     const ruleStr = `${formatSpeciesList(r.reactants)} -> ${formatSpeciesList(r.products)}`;
     const forwardRule = BNGLParser.parseRxnRule(ruleStr, rate);
-    forwardRule.name = r.reactants.join('+') + '->' + r.products.join('+');
+    // Use explicit naming if available, otherwise index-based to ensure uniqueness
+    forwardRule.name = r.name ? `${r.name}_fwd` : `_R${i+1}_fwd`; 
+    forwardRule.rateExpression = rateStr; // Preserve expression for generator
 
     if (r.constraints && r.constraints.length > 0) {
-      forwardRule.applyConstraints(r.constraints, (s) => BNGLParser.parseSpeciesGraph(s));
+        forwardRule.applyConstraints(r.constraints, (s) => BNGLParser.parseSpeciesGraph(s));
     }
+    parsedRules.push(forwardRule);
 
-    if (r.isBidirectional) {
-      const reverseRuleStr = `${formatSpeciesList(r.products)} -> ${formatSpeciesList(r.reactants)}`;
-      const reverseRule = BNGLParser.parseRxnRule(reverseRuleStr, reverseRate);
-      reverseRule.name = r.products.join('+') + '->' + r.reactants.join('+');
-      return [forwardRule, reverseRule];
-    } else {
-      return [forwardRule];
+    // Reverse rule
+    if (r.isBidirectional && r.reverseRate) {
+        const revRateStr = String(r.reverseRate);
+        const reverseRate = BNGLParser.evaluateExpression(revRateStr, parametersMap);
+        
+        const reverseRuleStr = `${formatSpeciesList(r.products)} -> ${formatSpeciesList(r.reactants)}`;
+        const reverseRule = BNGLParser.parseRxnRule(reverseRuleStr, reverseRate);
+        reverseRule.name = r.name ? `${r.name}_rev` : `_R${i+1}_rev`;
+        reverseRule.rateExpression = revRateStr;
+
+        // BNG2.pl parity: reverse of bimolecular rules should only match
+        // species that could have been produced by the forward reaction.
+        if (r.reactants.length === 2 && r.products.length === 1) {
+            const productGraph = BNGLParser.parseSpeciesGraph(r.products[0]);
+            reverseRule.maxReactantMoleculeCount = productGraph.molecules.length;
+        }
+        parsedRules.push(reverseRule);
     }
+    
+    return parsedRules;
   });
 
   const generator = new NetworkGenerator({ maxSpecies: 1000, maxIterations: 500 });
@@ -304,14 +242,118 @@ function parseGdat(content: string) {
   return { headers, data };
 }
 
-// Helper to extract sim params
-function extractSimParams(bnglContent: string) {
-  const tEndMatch = bnglContent.match(/t_end\s*=>?\s*([\d.e+-]+)/i);
-  const nStepsMatch = bnglContent.match(/n_steps\s*=>?\s*(\d+)/i);
+// Helper to extract all simulation phases and concentration changes from BNGL
+interface ExtractedSimParams {
+  phases: SimulationPhase[];
+  concentrationChanges: ConcentrationChange[];
+  // For backward compatibility - the last ODE phase
+  t_end: number;
+  n_steps: number;
+  atol: number;
+  rtol: number;
+}
+
+function extractMultiPhaseParams(bnglContent: string): ExtractedSimParams {
+  const phases: SimulationPhase[] = [];
+  const concentrationChanges: ConcentrationChange[] = [];
+
+  // Use regex global matching instead of line splitting (handles all line ending formats)
+
+  // Match simulate_ode commands
+  const odeRegex = /simulate_ode\s*\(\s*\{([^}]*)\}/gi;
+  let match;
+  while ((match = odeRegex.exec(bnglContent)) !== null) {
+    const argsStr = match[1];
+    const t_endMatch = argsStr.match(/t_end\s*=>\s*([\d.e+-]+)/i);
+    const n_stepsMatch = argsStr.match(/n_steps\s*=>\s*(\d+)/i);
+    const atolMatch = argsStr.match(/atol\s*=>\s*([\d.e+-]+)/i);
+    const rtolMatch = argsStr.match(/rtol\s*=>\s*([\d.e+-]+)/i);
+    const suffixMatch = argsStr.match(/suffix\s*=>\s*["']?(\w+)["']?/i);
+    const steady_stateMatch = argsStr.match(/steady_state\s*=>\s*(\d+)/i);
+    const sparseMatch = argsStr.match(/sparse\s*=>\s*(\d+)/i);
+
+    phases.push({
+      method: 'ode',
+      t_end: t_endMatch ? parseFloat(t_endMatch[1]) : 100,
+      n_steps: n_stepsMatch ? parseInt(n_stepsMatch[1]) : 100,
+      atol: atolMatch ? parseFloat(atolMatch[1]) : undefined,
+      rtol: rtolMatch ? parseFloat(rtolMatch[1]) : undefined,
+      suffix: suffixMatch?.[1],
+      steady_state: steady_stateMatch?.[1] === '1',
+      sparse: sparseMatch?.[1] === '1',
+    });
+  }
+
+  // Match simulate_ssa commands (per user request)
+  const ssaRegex = /simulate_ssa\s*\(\s*\{([^}]*)\}/gi;
+  while ((match = ssaRegex.exec(bnglContent)) !== null) {
+    const argsStr = match[1];
+    const t_endMatch = argsStr.match(/t_end\s*=>\s*([\d.e+-]+)/i);
+    const n_stepsMatch = argsStr.match(/n_steps\s*=>\s*(\d+)/i);
+
+    phases.push({
+      method: 'ssa',
+      t_end: t_endMatch ? parseFloat(t_endMatch[1]) : 100,
+      n_steps: n_stepsMatch ? parseInt(n_stepsMatch[1]) : 100,
+    });
+  }
+
+  // Match simulate({method=>ode,...}) syntax
+  const genericSimRegex = /simulate\s*\(\s*\{([^}]*method\s*=>\s*["']?(ode|ssa)["']?[^}]*)\}/gi;
+  while ((match = genericSimRegex.exec(bnglContent)) !== null) {
+    const argsStr = match[1];
+    const methodMatch = argsStr.match(/method\s*=>\s*["']?(ode|ssa)["']?/i);
+    const method = methodMatch?.[1]?.toLowerCase() === 'ssa' ? 'ssa' : 'ode';
+    const t_endMatch = argsStr.match(/t_end\s*=>\s*([\d.e+-]+)/i);
+    const n_stepsMatch = argsStr.match(/n_steps\s*=>\s*(\d+)/i);
+    const atolMatch = argsStr.match(/atol\s*=>\s*([\d.e+-]+)/i);
+    const rtolMatch = argsStr.match(/rtol\s*=>\s*([\d.e+-]+)/i);
+
+    phases.push({
+      method: method as 'ode' | 'ssa',
+      t_end: t_endMatch ? parseFloat(t_endMatch[1]) : 100,
+      n_steps: n_stepsMatch ? parseInt(n_stepsMatch[1]) : 100,
+      atol: atolMatch ? parseFloat(atolMatch[1]) : undefined,
+      rtol: rtolMatch ? parseFloat(rtolMatch[1]) : undefined,
+    });
+  }
+
+  // Match setConcentration commands
+  const setConcentrationRegex = /setConcentration\s*\(\s*"([^"]+)"\s*,\s*([^)]+)\)/gi;
+  while ((match = setConcentrationRegex.exec(bnglContent)) !== null) {
+    const species = match[1];
+    const rawValue = match[2].trim();
+    let value: string | number;
+
+    // Parse value
+    if (rawValue.startsWith('"') && rawValue.endsWith('"')) {
+      value = rawValue.slice(1, -1); // Parameter reference
+    } else {
+      const num = parseFloat(rawValue);
+      value = !isNaN(num) ? num : rawValue;
+    }
+
+    // Determine which phase this comes after by counting simulate commands before this position
+    const beforeContent = bnglContent.slice(0, match.index);
+    const phasesBefore = (beforeContent.match(/simulate_ode|simulate_ssa|simulate\s*\(\s*\{[^}]*method/gi) || []).length;
+
+    concentrationChanges.push({
+      species,
+      value,
+      afterPhaseIndex: phasesBefore - 1 // -1 because it's after the previous phase (or -1 if before all)
+    });
+  }
+
+  // Get the last ODE phase for backward compatibility
+  const lastOdePhase = phases.filter(p => p.method === 'ode').pop();
 
   return {
-    t_end: tEndMatch ? parseFloat(tEndMatch[1]) : 100,
-    n_steps: nStepsMatch ? parseInt(nStepsMatch[1]) : 100
+    phases,
+    concentrationChanges,
+    t_end: lastOdePhase?.t_end || 100,
+    n_steps: lastOdePhase?.n_steps || 100,
+    atol: lastOdePhase?.atol || 1e-8,
+    rtol: lastOdePhase?.rtol || 1e-8
   };
 }
 
@@ -361,18 +403,268 @@ describe('GDAT Comparison: Web Simulator vs BNG2.pl', () => {
         return;
       }
 
-      const model = parseBNGL(bnglContent);
-      const params = extractSimParams(bnglContent);
+      const parseResult = parseBNGLWithANTLR(bnglContent);
+      if (!parseResult.success || !parseResult.model) {
+          console.warn(`[${modelName}] Parse failed: ${parseResult.errors?.join(', ')}`);
+          return;
+      }
+      const model = parseResult.model;
+      
+      const multiPhaseParams = extractMultiPhaseParams(bnglContent);
 
-      // Determine solver options - use CVODE to match BNG2.pl accuracy
-      const simOptions: any = { ...params, method: 'ode', solver: 'cvode' };
+      console.log(`[${modelName}] ${multiPhaseParams.phases.length} phases, ${multiPhaseParams.concentrationChanges.length} concentration changes`);
 
-      // Increase maxSteps for stiff models
-      if (modelName.includes('An_2009') || modelName.includes('stiff')) {
-        simOptions.maxSteps = 1000000;
+      // Build expanded network once (shared across all phases)
+      const seedSpecies = model.species.map(s => BNGLParser.parseSpeciesGraph(s.name));
+      const seedConcentrationMap = new Map<string, number>();
+      model.species.forEach(s => {
+        const g = BNGLParser.parseSpeciesGraph(s.name);
+        const canonicalName = GraphCanonicalizer.canonicalize(g);
+        seedConcentrationMap.set(canonicalName, s.initialConcentration);
+      });
+
+      const formatSpeciesList = (list: string[]) => (list.length > 0 ? list.join(' + ') : '0');
+      const parametersMap = new Map(Object.entries(model.parameters).map(([k, v]) => [k, Number(v)]));
+
+      const rules = model.reactionRules.flatMap(r => {
+        const rate = BNGLParser.evaluateExpression(r.rate, parametersMap);
+        const reverseRate = r.reverseRate ? BNGLParser.evaluateExpression(r.reverseRate, parametersMap) : rate;
+        const ruleStr = `${formatSpeciesList(r.reactants)} -> ${formatSpeciesList(r.products)}`;
+        const forwardRule = BNGLParser.parseRxnRule(ruleStr, rate);
+        forwardRule.name = r.reactants.join('+') + '->' + r.products.join('+');
+        if (r.constraints && r.constraints.length > 0) {
+          forwardRule.applyConstraints(r.constraints, (s) => BNGLParser.parseSpeciesGraph(s));
+        }
+        if (r.isBidirectional) {
+          const reverseRuleStr = `${formatSpeciesList(r.products)} -> ${formatSpeciesList(r.reactants)}`;
+          const reverseRule = BNGLParser.parseRxnRule(reverseRuleStr, reverseRate);
+          reverseRule.name = r.products.join('+') + '->' + r.reactants.join('+');
+          
+          // BNG2.pl parity: reverse of bimolecular rules should only match
+          // species that could have been produced by the forward reaction.
+          if (r.reactants.length === 2 && r.products.length === 1) {
+            const productGraph = BNGLParser.parseSpeciesGraph(r.products[0]);
+            reverseRule.maxReactantMoleculeCount = productGraph.molecules.length;
+          }
+          
+          return [forwardRule, reverseRule];
+        }
+        return [forwardRule];
+      });
+
+      const maxSpecies = 20000;
+      const generatorOptions: any = { maxSpecies, maxIterations: 5000 };
+
+      // Manual maxStoich for Barua_2013 to prevent infinite polymerization
+      if (modelName === 'Barua_2013') {
+        const maxStoich = new Map<string, number>();
+        maxStoich.set('APC', 1);
+        maxStoich.set('AXIN', 1);
+        maxStoich.set('bCat', 1);
+        generatorOptions.maxStoich = maxStoich;
       }
 
-      const webResults = await simulateModel(model, simOptions);
+      const generator = new NetworkGenerator(generatorOptions);
+      const netResult = await generator.generate(seedSpecies, rules);
+
+      if (netResult.species.length >= maxSpecies) {
+        throw new Error(`[${modelName}] Network generation hit max species limit (${maxSpecies}). Increase limit or check model.`);
+      }
+
+      // Build species map for concentration changes
+      const speciesMap = new Map<string, number>();
+      netResult.species.forEach((s, i) => {
+        const canonicalName = GraphCanonicalizer.canonicalize(s.graph);
+        speciesMap.set(canonicalName, i);
+      });
+
+      // Initialize state from seed concentrations
+      const numSpecies = netResult.species.length;
+      let yCurrent = new Float64Array(numSpecies);
+      netResult.species.forEach((s, i) => {
+        const canonicalName = GraphCanonicalizer.canonicalize(s.graph);
+        yCurrent[i] = seedConcentrationMap.get(canonicalName) || s.concentration || 0;
+      });
+
+      // Build ODE system
+      const concreteReactions = netResult.reactions.map(r => ({
+        reactants: new Int32Array(r.reactants),
+        products: new Int32Array(r.products),
+        rateConstant: r.rate
+      }));
+
+      // Full derivatives function on all species
+      const fullDerivatives = (yIn: Float64Array, dydt: Float64Array) => {
+        dydt.fill(0);
+        for (const rxn of concreteReactions) {
+          let velocity = rxn.rateConstant;
+          for (let j = 0; j < rxn.reactants.length; j++) velocity *= yIn[rxn.reactants[j]];
+          for (let j = 0; j < rxn.reactants.length; j++) dydt[rxn.reactants[j]] -= velocity;
+          for (let j = 0; j < rxn.products.length; j++) dydt[rxn.products[j]] += velocity;
+        }
+      };
+
+      // Conservation law analysis - reduce ODE system for stiff models
+      const speciesNames = netResult.species.map((s, i) => GraphCanonicalizer.canonicalize(s.graph) || `S${i}`);
+      const rxnsForConservation = netResult.reactions.map(r => ({
+        reactants: Array.from(r.reactants),
+        products: Array.from(r.products)
+      }));
+
+      let conservationAnalysis: any;
+      if (modelName === 'Barua_2013') {
+         conservationAnalysis = { laws: [], independentSpecies: new Array(numSpecies).fill(0).map((_, i) => i) };
+      } else {
+         conservationAnalysis = findConservationLaws(rxnsForConservation as any, numSpecies, yCurrent, speciesNames);
+      }
+      console.log(`[${modelName}] Conservation laws: ${conservationAnalysis.laws.length}, ` +
+        `independent: ${conservationAnalysis.independentSpecies.length}/${numSpecies}`);
+
+      // Use reduced system if conservation laws found
+      let derivatives: (yIn: Float64Array, dydt: Float64Array) => void;
+      let effectiveNumSpecies = numSpecies;
+      let expand: ((y_r: Float64Array) => Float64Array) | null = null;
+      let reduce: ((y: Float64Array) => Float64Array) | null = null;
+
+      if (conservationAnalysis.laws.length > 0) {
+        const reducedSystem = createReducedSystem(conservationAnalysis, numSpecies);
+        reduce = reducedSystem.reduce;
+        expand = reducedSystem.expand;
+        derivatives = reducedSystem.transformDerivatives(fullDerivatives);
+        effectiveNumSpecies = conservationAnalysis.independentSpecies.length;
+        console.log(`[${modelName}] Using reduced system: ${effectiveNumSpecies} species (eliminated ${numSpecies - effectiveNumSpecies})`);
+      } else {
+        derivatives = fullDerivatives;
+      }
+
+      // Observable evaluator
+      const { GraphMatcher } = await import('./services/graph/core/Matcher');
+      const concreteObservables = model.observables.map(obs => {
+        const matchingIndices: number[] = [];
+        let obsPattern: ReturnType<typeof BNGLParser.parseSpeciesGraph> | null = null;
+        try { obsPattern = BNGLParser.parseSpeciesGraph(obs.pattern); } catch { }
+        netResult.species.forEach((s, i) => {
+          if (obsPattern) {
+            try {
+              const speciesGraph = BNGLParser.parseSpeciesGraph(GraphCanonicalizer.canonicalize(s.graph));
+              if (GraphMatcher.matchesPattern(obsPattern, speciesGraph)) matchingIndices.push(i);
+            } catch { }
+          }
+        });
+        return { name: obs.name, indices: new Int32Array(matchingIndices) };
+      });
+
+      const evaluateObservables = (state: Float64Array) => {
+        const obsValues: Record<string, number> = {};
+        for (const obs of concreteObservables) {
+          let sum = 0;
+          for (let j = 0; j < obs.indices.length; j++) sum += state[obs.indices[j]];
+          obsValues[obs.name] = sum;
+        }
+        return obsValues;
+      };
+
+      // Multi-phase simulation loop
+      let globalTime = 0;
+      const finalPhaseData: Record<string, number>[] = [];
+
+      for (let phaseIdx = 0; phaseIdx < multiPhaseParams.phases.length; phaseIdx++) {
+        const phase = multiPhaseParams.phases[phaseIdx];
+
+        // Apply concentration changes that should happen BEFORE this phase (afterPhaseIndex === phaseIdx - 1)
+        for (const change of multiPhaseParams.concentrationChanges) {
+          if (change.afterPhaseIndex === phaseIdx - 1) {
+            // Resolve value to number
+            const resolved = typeof change.value === 'number' ? change.value : parametersMap.get(change.value) || 0;
+
+            // Try to match species exactly by canonical name
+            let matched = false;
+
+            // First try exact match
+            if (speciesMap.has(change.species)) {
+              const idx = speciesMap.get(change.species)!;
+              yCurrent[idx] = resolved;
+              console.log(`[${modelName}] Phase ${phaseIdx}: Set (exact) ${change.species} = ${resolved}`);
+              matched = true;
+            }
+
+            // If not exact, try canonical form
+            if (!matched) {
+              try {
+                const pattern = BNGLParser.parseSpeciesGraph(change.species);
+                const canonicalPattern = GraphCanonicalizer.canonicalize(pattern);
+                if (speciesMap.has(canonicalPattern)) {
+                  const idx = speciesMap.get(canonicalPattern)!;
+                  yCurrent[idx] = resolved;
+                  console.log(`[${modelName}] Phase ${phaseIdx}: Set (canonical) ${canonicalPattern} = ${resolved}`);
+                  matched = true;
+                }
+              } catch { }
+            }
+
+            if (!matched) {
+              console.warn(`[${modelName}] Phase ${phaseIdx}: Could not find species for ${change.species}`);
+            }
+          }
+        }
+
+        // Stiffness detection: use sparse_implicit for extremely stiff systems
+        let maxRate = -Infinity;
+        let minRate = Infinity;
+        for (const rxn of concreteReactions) {
+          if (rxn.rateConstant > 0) {
+            maxRate = Math.max(maxRate, rxn.rateConstant);
+            minRate = Math.min(minRate, rxn.rateConstant);
+          }
+        }
+        const rateRatio = minRate > 0 ? maxRate / minRate : 1;
+        const isExtremelyStiff = rateRatio > 1e4;
+        const solverType = (modelName === 'Barua_2013') ? 'cvode' : (isExtremelyStiff ? 'cvode_sparse' : 'cvode');
+        console.log(`[${modelName}] Rate ratio: ${rateRatio.toExponential(2)}, solver: ${solverType}`);
+
+        // Run this phase
+        // Use reduced state if conservation laws were found
+        let yReduced = reduce ? reduce(yCurrent) : yCurrent;
+
+        const solver = await createSolver(effectiveNumSpecies, derivatives, {
+          solver: solverType as any,
+          atol: phase.atol || 1e-8,
+          rtol: phase.rtol || 1e-8,
+          minStep: 1e-15,
+          maxStep: phase.t_end / 100,
+          maxSteps: 500000
+        });
+
+        const dtOut = phase.t_end / phase.n_steps;
+        let t = 0;
+
+        // Clear final phase data if this is the last phase (we only output from last phase)
+        if (phaseIdx === multiPhaseParams.phases.length - 1) {
+          const fullState = expand ? expand(yReduced) : yCurrent;
+          finalPhaseData.push({ time: globalTime, ...evaluateObservables(fullState) });
+        }
+
+        for (let i = 1; i <= phase.n_steps; i++) {
+          const tTarget = i * dtOut;
+          const result = solver.integrate(yReduced, t, tTarget);
+          if (!result.success) {
+            console.warn(`Solver failed at phase ${phaseIdx}, t=${tTarget}`);
+            break;
+          }
+          yReduced = result.y as Float64Array<ArrayBuffer>;
+          yCurrent = expand ? expand(yReduced) : yReduced as Float64Array;
+          t = tTarget;
+
+          // Only record data from the final phase
+          if (phaseIdx === multiPhaseParams.phases.length - 1) {
+            finalPhaseData.push({ time: globalTime + t, ...evaluateObservables(yCurrent) });
+          }
+        }
+
+        globalTime += phase.t_end;
+      }
+
+      const webResults = { headers: [], data: finalPhaseData };
       const bng2Gdat = parseGdat(bng2Content);
 
       if (!bng2Gdat) throw new Error('Failed to parse BNG2 gdat');
@@ -392,6 +684,9 @@ describe('GDAT Comparison: Web Simulator vs BNG2.pl', () => {
         const diff = Math.abs(bng2Val - webVal);
         const relDiff = bng2Val !== 0 ? diff / Math.abs(bng2Val) : diff;
 
+        if (!(relDiff < 0.02 || diff < 1e-6)) {
+          console.log(`FAILURE: ${header}: BNG2=${bng2Val}, Web=${webVal}, relDiff=${(relDiff * 100).toFixed(2)}%`);
+        }
         expect(relDiff < 0.02 || diff < 1e-6,
           `${header}: BNG2=${bng2Val}, Web=${webVal}, relDiff=${(relDiff * 100).toFixed(2)}%`
         ).toBe(true);

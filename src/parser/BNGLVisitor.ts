@@ -15,7 +15,10 @@ import type {
   BNGLCompartment,
   BNGLFunction,
   ReactionRule,
-  SimulationOptions
+  SimulationOptions,
+  SimulationPhase,
+  ConcentrationChange,
+  ParameterChange
 } from '../../types';
 
 export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements BNGParserVisitor<any> {
@@ -29,6 +32,10 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
   private networkOptions: BNGLModel['networkOptions'] = {};
   private simulationOptions: Partial<SimulationOptions> = {};
   private paramExpressions: Record<string, string> = {};
+  // Multi-phase simulation support
+  private simulationPhases: SimulationPhase[] = [];
+  private concentrationChanges: ConcentrationChange[] = [];
+  private parameterChanges: ParameterChange[] = [];
 
   protected defaultResult(): BNGLModel {
     return {
@@ -42,6 +49,10 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       functions: this.functions,
       networkOptions: this.networkOptions,
       simulationOptions: this.simulationOptions,
+      simulationPhases: this.simulationPhases,
+      concentrationChanges: this.concentrationChanges,
+      parameterChanges: this.parameterChanges,
+      paramExpressions: { ...this.paramExpressions },  // Export for setParameter recalculation
     };
   }
 
@@ -150,11 +161,13 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
   // Parameter definition
   visitParameter_def(ctx: Parser.Parameter_defContext): void {
     try {
-      const strings = ctx.STRING();
-      let name = '';
-      if (strings && strings.length > 0) {
-        name = strings[0].text;
-      }
+      // parameter_def uses param_name rules: (param_name COLON)? param_name BECOMES? expression?
+      const paramNames = ctx.param_name();
+      if (!paramNames || paramNames.length === 0) return;
+
+      // The actual parameter name is the last param_name (first one is optional label)
+      const nameCtx = paramNames[paramNames.length > 1 && ctx.COLON() ? 1 : 0];
+      const name = nameCtx?.text || '';
 
       const value = ctx.expression() ? ctx.expression()!.text : undefined;
 
@@ -195,12 +208,10 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
         const compName = compNameNode.text;
         const stateList = compDef.state_list();
         if (stateList) {
-          // state_list can contain both STRING and INT tokens (e.g., Y~0~P where 0 is INT and P is STRING)
-          const stringNodes = stateList.STRING() as any[] || [];
-          const intNodes = stateList.INT() as any[] || [];
-          // Merge both arrays and extract text
-          const allStateNodes = [...stringNodes, ...intNodes];
-          const states = allStateNodes.map(s => s.text);
+          // state_list now uses state_name rules: state_name (TILDE state_name)*
+          // state_name can be STRING | INT STRING?
+          const stateNames = stateList.state_name();
+          const states = stateNames.map(sn => sn.text);
           components.push(`${compName}~${states.join('~')}`);
         } else {
           components.push(compName);
@@ -277,8 +288,15 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     // Get observable name - skip label if present
     const name = ctx.COLON() && strings.length >= 2 ? strings[1].text : strings[0].text;
 
-    // Get patterns
-    const patterns = patternListCtx.species_def().map(sd => this.getSpeciesString(sd));
+    // Get patterns - observable_pattern wraps species_def
+    const patterns = patternListCtx.observable_pattern().map(op => {
+      const speciesDef = op.species_def();
+      if (speciesDef) {
+        return this.getSpeciesString(speciesDef);
+      }
+      // For stoichiometry comparisons like R==1, just return the text
+      return op.text;
+    });
 
     this.observables.push({ type, name, pattern: patterns.join(', ') });
   }
@@ -308,7 +326,12 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
     if (!reactantCtx || !productCtx || !reactionSignCtx || !rateLawCtx) return;
 
-    const name = labelCtx ? (labelCtx.STRING()?.text || labelCtx.INT()?.text) : undefined;
+    // label_def can have STRING or INT, handle both single nodes and arrays
+    const labelStr = labelCtx?.STRING();
+    const labelInt = labelCtx?.INT();
+    const strNode = Array.isArray(labelStr) ? labelStr[0] : labelStr;
+    const intNode = Array.isArray(labelInt) ? labelInt[0] : labelInt;
+    const name = labelCtx ? (strNode?.text || intNode?.text) : undefined;
 
     // Get reactants
     const reactantSpecies = reactantCtx.species_def();
@@ -374,10 +397,11 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     }
 
     this.reactionRules.push({
-      name,
+      name: name || `_R${this.reactionRules.length + 1}`,
       reactants,
       products,
       rate,
+      rateExpression: rate, // Always preserve the rate expression string
       reverseRate,
       isBidirectional,
       deleteMolecules,
@@ -457,31 +481,31 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     if (args.max_iter !== undefined) this.networkOptions!.maxIter = parseInt(args.max_iter);
     if (args.overwrite !== undefined) this.networkOptions!.overwrite = args.overwrite === '1';
     if (args.max_stoich !== undefined) {
-        if (args.max_stoich.startsWith('{')) {
-             this.networkOptions!.maxStoich = this.parseBNGLMap(args.max_stoich);
-        } else {
-             this.networkOptions!.maxStoich = parseInt(args.max_stoich);
-        }
+      if (args.max_stoich.startsWith('{')) {
+        this.networkOptions!.maxStoich = this.parseBNGLMap(args.max_stoich);
+      } else {
+        this.networkOptions!.maxStoich = parseInt(args.max_stoich);
+      }
     }
   }
 
   // Helper: Parse BNGL map string "{Key=>Val, ...}"
   private parseBNGLMap(text: string): Record<string, number> {
-      const map: Record<string, number> = {};
-      const content = text.trim().replace(/^\{|\}$/g, '');
-      if (!content) return map;
-      
-      const parts = content.split(',');
-      for (const part of parts) {
-          const [key, valStr] = part.split('=>');
-          if (key && valStr) {
-              const val = parseFloat(valStr.trim());
-              if (!isNaN(val)) {
-                map[key.trim()] = val;
-              }
-          }
+    const map: Record<string, number> = {};
+    const content = text.trim().replace(/^\{|\}$/g, '');
+    if (!content) return map;
+
+    const parts = content.split(',');
+    for (const part of parts) {
+      const [key, valStr] = part.split('=>');
+      if (key && valStr) {
+        const val = parseFloat(valStr.trim());
+        if (!isNaN(val)) {
+          map[key.trim()] = val;
+        }
       }
-      return map;
+    }
+    return map;
   }
 
   visitSimulate_cmd(ctx: Parser.Simulate_cmdContext): void {
@@ -490,6 +514,46 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
     const args = this.parseActionArgs(argsCtx);
 
+    // Helper to evaluate numeric expression arguments (e.g., "14*24*60*60")
+    const evalNumericArg = (val: string | undefined, defaultVal: number): number => {
+      if (val === undefined) return defaultVal;
+      // Try simple number first
+      const num = parseFloat(val);
+      if (!isNaN(num) && !val.includes('*') && !val.includes('/') && !val.includes('+') && !val.includes('-') && !val.includes('^')) {
+        return num;
+      }
+      // Evaluate as expression
+      try {
+        const paramMap = new Map(Object.entries(this.parameters));
+        const result = CoreBNGLParser.evaluateExpression(val, paramMap);
+        return isNaN(result) ? defaultVal : result;
+      } catch (e) {
+        return num; // Fall back to simple parse
+      }
+    };
+
+    // Determine method from command name or args
+    let method: 'ode' | 'ssa' | 'nf' = 'ode';
+    const cmdText = ctx.text.toLowerCase();
+    if (cmdText.includes('simulate_nf')) method = 'nf';
+    else if (cmdText.includes('simulate_ssa') || args.method === 'ssa') method = 'ssa';
+    else if (args.method) method = args.method === 'ssa' ? 'ssa' : 'ode';
+
+    // Build simulation phase
+    const phase: SimulationPhase = {
+      method,
+      t_end: evalNumericArg(args.t_end, 100),
+      n_steps: args.n_steps !== undefined ? parseInt(args.n_steps) : 100,
+      atol: args.atol !== undefined ? evalNumericArg(args.atol, 1e-8) : (args.atoll !== undefined ? evalNumericArg(args.atoll, 1e-8) : undefined),
+      rtol: args.rtol !== undefined ? evalNumericArg(args.rtol, 1e-8) : undefined,
+      suffix: args.suffix?.replace(/["']/g, ''),
+      sparse: args.sparse === '1' || args.sparse === 'true',
+      steady_state: args.steady_state === '1' || args.steady_state === 'true',
+    };
+
+    this.simulationPhases.push(phase);
+
+    // Also update global simulationOptions for backward compatibility (uses last phase)
     if (args.method) {
       if (args.method === 'ssa') this.simulationOptions.method = 'ssa';
       else this.simulationOptions.method = 'ode';
@@ -499,6 +563,108 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     if (args.atol !== undefined) this.simulationOptions.atol = parseFloat(args.atol);
     if (args.atoll !== undefined) this.simulationOptions.atol = parseFloat(args.atoll);
     if (args.rtol !== undefined) this.simulationOptions.rtol = parseFloat(args.rtol);
+  }
+
+  // Explicitly ignore write commands (writeXML, writeSBML, etc)
+  visitWrite_cmd(_ctx: Parser.Write_cmdContext): void {
+    return;
+  }
+
+  // Handle setConcentration/addConcentration/setParameter commands
+  visitSet_cmd(ctx: Parser.Set_cmdContext): void {
+    // Grammar: SETCONCENTRATION/SETPARAMETER LPAREN DBQUOTES ... DBQUOTES COMMA (expression | DBQUOTES...) RPAREN
+
+    const text = ctx.text;
+
+    // Handle setConcentration("Species", value)
+    const concMatch = text.match(/setConcentration\s*\(\s*"([^"]+)"\s*,\s*(.+?)\s*\)/i);
+    if (concMatch) {
+      const species = concMatch[1];
+      let value: string | number = concMatch[2].trim();
+
+      // Try to parse as number
+      if (value.startsWith('"') && value.endsWith('"')) {
+        value = value.slice(1, -1); // Keep as parameter reference
+      } else {
+        const num = parseFloat(value);
+        if (!isNaN(num)) {
+          value = num;
+        }
+      }
+
+      // afterPhaseIndex is the number of simulation phases already parsed - 1
+      const afterPhaseIndex = this.simulationPhases.length - 1;
+
+      this.concentrationChanges.push({
+        species,
+        value,
+        afterPhaseIndex
+      });
+      return;
+    }
+
+    // Handle setParameter("ParamName", value)
+    const paramMatch = text.match(/setParameter\s*\(\s*"([^"]+)"\s*,\s*(.+?)\s*\)/i);
+    if (paramMatch) {
+      const parameter = paramMatch[1];
+      let value: string | number = paramMatch[2].trim();
+
+      // Try to parse as number or expression
+      if (value.startsWith('"') && value.endsWith('"')) {
+        value = value.slice(1, -1); // Keep as expression string (e.g., "10*60")
+      } else {
+        const num = parseFloat(value);
+        if (!isNaN(num)) {
+          value = num;
+        }
+      }
+
+      // afterPhaseIndex is the number of simulation phases already parsed - 1
+      const afterPhaseIndex = this.simulationPhases.length - 1;
+
+      this.parameterChanges.push({
+        parameter,
+        value,
+        afterPhaseIndex
+      });
+      return;
+    }
+
+    // Handle addConcentration (similar to setConcentration but additive)
+    const addMatch = text.match(/addConcentration\s*\(\s*"([^"]+)"\s*,\s*(.+?)\s*\)/i);
+    if (addMatch) {
+      // For now, treat addConcentration same as setConcentration
+      const species = addMatch[1];
+      let value: string | number = addMatch[2].trim();
+
+      if (value.startsWith('"') && value.endsWith('"')) {
+        value = value.slice(1, -1);
+      } else {
+        const num = parseFloat(value);
+        if (!isNaN(num)) {
+          value = num;
+        }
+      }
+
+      const afterPhaseIndex = this.simulationPhases.length - 1;
+
+      this.concentrationChanges.push({
+        species,
+        value,
+        afterPhaseIndex
+      });
+    }
+  }
+
+  // Handle other action commands
+  visitOther_action_cmd(ctx: Parser.Other_action_cmdContext): void {
+    // Explicitly ignore visualize commands
+    if (ctx.VISUALIZE()) {
+      return;
+    }
+
+    // For other commands (e.g. saveConcentrations), default to visiting children
+    this.visitChildren(ctx);
   }
 
   // Helper: Parse action arguments
@@ -573,11 +739,13 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
         const compNode = cp.STRING();
         let comp = compNode ? compNode.text : '';
 
-        const stateCtx = cp.state_value();
-        if (stateCtx) {
-          const stateStr = stateCtx.STRING()?.text;
-          const qmark = stateCtx.QMARK();
-          comp += `~${stateStr || (qmark ? '?' : '')}`;
+        const stateCtxs = cp.state_value();
+        if (stateCtxs && stateCtxs.length > 0) {
+          for (const stateCtx of stateCtxs) {
+            const stateStr = stateCtx.STRING()?.text || stateCtx.INT()?.text;
+            const qmark = stateCtx.QMARK();
+            comp += `~${stateStr || (qmark ? '?' : '')}`;
+          }
         }
 
         // Handle multiple bond specs (bond_spec* returns array)
@@ -601,31 +769,34 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       return `${name}(${components.join(',')})`;
     }).filter(m => m); // Filter out empty molecules
 
-    // Handle compartment (AT STRING at end)
+    let res = prefix + molecules.join('.');
+
+    // Handle suffix compartment (AT STRING at end) - e.g., R(l,tf~Y)@PM
     const atCtx = ctx.AT();
-    if (atCtx) {
-      // The compartment name comes after the AT token
-      // In the grammar: (AT STRING)?
-      // We need to get the text after AT
+    if (atCtx && !prefix) {  // Only apply suffix if no prefix was already set
+      // Find the compartment name from the AT token's sibling
+      // The grammar: (AT STRING)?
       const fullText = ctx.text;
-      const atIndex = fullText.indexOf('@');
+      const atIndex = fullText.lastIndexOf('@');
       if (atIndex >= 0) {
+        const suffixComp = fullText.substring(atIndex + 1);
+        if (suffixComp && /^[A-Za-z0-9_]+$/.test(suffixComp)) {
+          res = res + '@' + suffixComp;
+        }
       }
     }
-
-    let res = prefix + molecules.join('.');
 
     // Workaround for Issue where prefix is sometimes duplicated as suffix in complex patterns
     // e.g. E2F(...)@cell:E2F(...)
     if (res.includes('@') && res.includes(':')) {
-       const match = res.match(/^(.+)@([a-zA-Z0-9_]+):(.+)$/);
-       if (match) {
-           const [_, name1, comp, name2] = match;
-            // Check if name2 is duplication of name1 (with or without parens)
-           if (name1 === name2 || (name1 + '()' === name2) || (name1 === name2 + '()') || name2.startsWith(name1)) {
-                res = `@${comp}:${name1}`;
-           }
-       }
+      const match = res.match(/^(.+)@([a-zA-Z0-9_]+):(.+)$/);
+      if (match) {
+        const [_, name1, comp, name2] = match;
+        // Check if name2 is duplication of name1 (with or without parens)
+        if (name1 === name2 || (name1 + '()' === name2) || (name1 === name2 + '()') || name2.startsWith(name1)) {
+          res = `@${comp}:${name1}`;
+        }
+      }
     }
 
     return res;

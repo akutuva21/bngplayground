@@ -115,8 +115,14 @@ function profiledDegeneracy(pattern: SpeciesGraph, target: SpeciesGraph, match: 
  * Generate a reaction key for fast duplicate detection.
  * Uses sorted reactant and product indices for canonical comparison.
  */
-function getReactionKey(reactants: number[], products: number[]): string {
-  return `${reactants.slice().sort().join(',')}:${products.slice().sort().join(',')}`;
+function getReactionKey(reactants: number[], products: number[], ruleName: string): string {
+  return `${reactants.slice().sort().join(',')}:${products.slice().sort().join(',')}:${ruleName}`;
+}
+
+export interface CompartmentInfo {
+  name: string;
+  dimension: number;  // 2 for surface, 3 for volume
+  size: number;       // evaluated volume/area
 }
 
 export interface GeneratorOptions {
@@ -124,9 +130,10 @@ export interface GeneratorOptions {
   maxReactions: number;
   maxIterations: number;
   maxAgg: number;
-  maxStoich: number | Record<string, number>;  // Can be a single number or per-molecule-type limits
+  maxStoich: number | Record<string, number> | Map<string, number>;  // Can be a single number or per-molecule-type limits
   checkInterval: number;
   memoryLimit: number;
+  compartments?: CompartmentInfo[];  // Compartment definitions for volume scaling
 }
 
 export interface GeneratorProgress {
@@ -159,6 +166,71 @@ export class NetworkGenerator {
       ...options
     };
     this.currentRuleName = null;
+  }
+
+  /**
+   * Calculate volume scaling factor for bimolecular reactions.
+   * For reactions in 3D compartments, rate is scaled by 1/volume.
+   * For heterogeneous reactions (3D+2D), use the 3D compartment's volume.
+   * Returns 1 if no compartments defined or reactants not in 3D compartment.
+   * 
+   * @param reactant1 First reactant species
+   * @param reactant2 Second reactant species (optional for unimolecular)
+   */
+  private getVolumeScale(reactant1: Species, reactant2?: Species): number {
+    if (!this.options.compartments || this.options.compartments.length === 0) {
+      return 1;  // No compartments defined, no scaling
+    }
+
+    // Get compartment from species graph or first molecule
+    const getSpeciesCompartment = (species: Species): string | null => {
+      // First check species-level compartment
+      if (species.graph.compartment) {
+        return species.graph.compartment;
+      }
+      // Then check first molecule's compartment
+      if (species.graph.molecules.length > 0 && species.graph.molecules[0].compartment) {
+        return species.graph.molecules[0].compartment;
+      }
+      return null;
+    };
+
+    const comp1Name = getSpeciesCompartment(reactant1);
+    const comp2Name = reactant2 ? getSpeciesCompartment(reactant2) : null;
+
+    // Get compartment details
+    const comp1 = comp1Name ? this.options.compartments.find(c => c.name === comp1Name) : null;
+    const comp2 = comp2Name ? this.options.compartments.find(c => c.name === comp2Name) : null;
+
+    // For heterogeneous reactions (3D + 2D), use the 3D compartment's volume
+    // This matches BioNetGen semantics where adsorption reactions scale by bulk volume
+    let scalingCompartment: { name: string; dimension: number; size: number } | null = null;
+    
+    if (comp1 && comp2) {
+      // Bimolecular: pick the higher-dimensional compartment (3D over 2D)
+      if (comp1.dimension >= 3 && comp2.dimension < 3) {
+        scalingCompartment = comp1;  // Use 3D volume
+      } else if (comp2.dimension >= 3 && comp1.dimension < 3) {
+        scalingCompartment = comp2;  // Use 3D volume
+      } else if (comp1.dimension >= 3 && comp2.dimension >= 3) {
+        // Both 3D: use first (should be same compartment typically)
+        scalingCompartment = comp1;
+      } else {
+        // Both 2D: use first (surface reaction)
+        scalingCompartment = comp1;
+      }
+    } else if (comp1) {
+      scalingCompartment = comp1;
+    } else if (comp2) {
+      scalingCompartment = comp2;
+    }
+
+    if (!scalingCompartment || scalingCompartment.size <= 0) {
+      return 1;
+    }
+
+    // Scale by 1/size (volume for 3D, area for 2D)
+    return 1 / scalingCompartment.size;
   }
 
   async generate(
@@ -195,7 +267,7 @@ export class NetworkGenerator {
     // Initialize with seed species
     for (const sg of seedSpecies) {
       if (sg.molecules.some(m => m.name === 'CCND')) {
-         console.log(`[generate] Seed loop CCND check: comp='${sg.compartment}'`);
+        console.log(`[generate] Seed loop CCND check: comp='${sg.compartment}'`);
       }
       const canonical = profiledCanonicalize(sg);
       if (!speciesMap.has(canonical)) {
@@ -233,7 +305,9 @@ export class NetworkGenerator {
           return speciesMap.get(canonical)!.index;
         });
 
-        const rxn = new Rxn([], productIndices, rule.rateConstant, rule.name);
+        const rxn = new Rxn([], productIndices, rule.rateConstant, rule.name, {
+          rateExpression: rule.rateExpression
+        });
         reactionsList.push(rxn);
 
         debugNetworkLog(`[NetworkGenerator] Added synthesis reaction: 0 -> [${productIndices.join(', ')}]`);
@@ -244,7 +318,6 @@ export class NetworkGenerator {
     let lastLoggedSpeciesCount = speciesList.length;
     const logInterval = 50; // Log every 50 new species
     let lastProgressCallback = Date.now();
-    const progressCallbackInterval = 2000; // Call progress callback at least every 2 seconds
 
     progressLog(`[NetworkGenerator] Starting with ${speciesList.length} seed species, ${rules.length} rules`);
 
@@ -374,12 +447,25 @@ export class NetworkGenerator {
           }
 
           this.currentRuleName = null;
+
+          // Progress update check inside batch loop for smoother UI
+          const now = Date.now();
+          if (onProgress && (now - lastProgressCallback >= 100)) { // Update every 100ms
+            lastProgressCallback = now;
+            onProgress({
+              species: speciesList.length,
+              reactions: reactionsList.length,
+              iteration,
+              memoryUsed: (performance as any).memory?.usedJSHeapSize || 0,
+              timeElapsed: Date.now() - this.startTime
+            });
+          }
         } // End of batch for-loop
 
-        // Call progress callback every 10 iterations OR every 2 seconds
-        const now = Date.now();
-        if (onProgress && (iteration % 10 === 0 || now - lastProgressCallback >= progressCallbackInterval)) {
-          lastProgressCallback = now;
+        // Ensure final update at end of iteration if not just updated
+        const now2 = Date.now();
+        if (onProgress && now2 - lastProgressCallback > 50) {
+          lastProgressCallback = now2;
           onProgress({
             species: speciesList.length,
             reactions: reactionsList.length,
@@ -515,6 +601,12 @@ export class NetworkGenerator {
       return;
     }
 
+    // Note: maxReactantMoleculeCount constraint was considered but found to be incorrect.
+    // BNG2.pl semantics allow unbinding patterns to match within larger complexes.
+    // For example, "bCat.AXIN -> bCat + AXIN" pattern can match "APC.bCat.AXIN" ternary complex
+    // and produce "APC.bCat + AXIN". This is confirmed by reference .net file having such reactions.
+    // The 32 extra reactions issue needs a different solution.
+
     const matches = profiledFindAllMaps(pattern, reactantSpecies.graph);
 
     // Debug: log match count for phosphorylation rule
@@ -589,6 +681,20 @@ export class NetworkGenerator {
         continue;
       }
 
+      // BNG2.pl parity check (RxnRule.pm lines 3156-3170):
+      // Number of product graphs must equal number of product patterns.
+      // For example, reverse unbind "A.B -> A + B" has 2 product patterns.
+      // If applied to a ternary complex where breaking one bond leaves the complex
+      // still connected (e.g., by another bond), result is 1 connected product.
+      // Reaction is rejected because 1 != 2.
+      const expectedProductCount = rule.products.length;
+      if (products.length !== expectedProductCount) {
+        if (shouldLogNetworkGenerator) {
+          debugNetworkLog(`[applyUnimolecularRule] Rejecting rule ${rule.name}: product count ${products.length} != expected ${expectedProductCount}`);
+        }
+        continue;
+      }
+
       // Add all products to network
       const productSpeciesIndices: number[] = [];
       for (const product of products) {
@@ -599,16 +705,27 @@ export class NetworkGenerator {
       // Create reaction
       // Scale rate by multiplicity (number of symmetric matches)
       const effectiveRate = (rule.rateConstant / Math.max(degeneracy, 1)) * multiplicity;
+      // Build effective rate expression if rule has symbolic rate
+      let rateExpression = undefined;
+      if (rule.rateExpression) {
+        // Construct expression: (base_rate) * multiplicity / degeneracy
+        // Simplification: if degeneracy is 1, omit division.
+        rateExpression = `(${rule.rateExpression}) * ${multiplicity}`;
+        if (degeneracy > 1) {
+          rateExpression += ` / ${degeneracy}`;
+        }
+      }
+
       const rxn = new Rxn(
         [reactantSpecies.index],
         productSpeciesIndices,
         effectiveRate,
         rule.name,
-        { degeneracy }
+        { degeneracy, rateExpression }
       );
 
       // Fast O(1) duplicate detection using Set
-      const rxnKey = getReactionKey(rxn.reactants, rxn.products);
+      const rxnKey = getReactionKey(rxn.reactants, rxn.products, rule.name);
       if (!reactionKeys.has(rxnKey)) {
         reactionKeys.add(rxnKey);
         reactionsList.push(rxn);
@@ -914,8 +1031,24 @@ export class NetworkGenerator {
 
             const totalDegeneracy = Math.max(firstDegeneracy * secondDegeneracy, 1);
             const multiplicity = countFirst * countSecond;
-            const effectiveRate = (rule.rateConstant / totalDegeneracy) * multiplicity;
+            // For bimolecular reactions, scale by 1/volume for 3D compartments (cBNGL)
+            const volumeScale = this.getVolumeScaleRevised(reactant1Species, reactant2Species);
+            const effectiveRate = (rule.rateConstant / totalDegeneracy) * multiplicity * volumeScale;
+            console.log(`[applyBimolecularRule] Rule=${rule.name} RateConst=${rule.rateConstant} Scale=${volumeScale} Multiplicity=${multiplicity} Effective=${effectiveRate}`);
             const propensityFactor = identicalSpecies ? 0.5 : 1;
+
+            // Build effective rate expression if rule has symbolic rate
+            let rateExpression = undefined;
+            if (rule.rateExpression) {
+              // Construct expression: (base_rate) * multiplicity / degeneracy * volumeScale
+              rateExpression = `(${rule.rateExpression}) * ${multiplicity}`;
+              if (totalDegeneracy > 1) {
+                rateExpression += ` / ${totalDegeneracy}`;
+              }
+              if (volumeScale !== 1) {
+                rateExpression += ` * ${volumeScale}`;
+              }
+            }
 
             const reactantIndices = [reactant1Species.index, reactant2Species.index];
             const rxn = new Rxn(
@@ -925,12 +1058,13 @@ export class NetworkGenerator {
               rule.name,
               {
                 degeneracy: totalDegeneracy,
-                propensityFactor
+                propensityFactor,
+                rateExpression
               }
             );
 
             // Fast O(1) duplicate detection using Set
-            const rxnKey = getReactionKey(rxn.reactants, rxn.products);
+            const rxnKey = getReactionKey(rxn.reactants, rxn.products, rule.name);
             if (!reactionKeys.has(rxnKey)) {
               reactionKeys.add(rxnKey);
               reactionsList.push(rxn);
@@ -975,13 +1109,16 @@ export class NetworkGenerator {
     }
 
     const productGraphs: SpeciesGraph[] = [];
+    const usedReactantMolsInReaction = new Set<string>(); // Tracks reactant graph molecules (for deduplication)
+    const usedReactantPatternMols = new Set<string>(); // Tracks reactant pattern molecules (for mapping correctness)
 
     for (const productPattern of rule.products) {
       const productGraph = this.buildProductGraph(
         productPattern,
         reactantPatterns,
         reactantGraphs,
-        matches
+        matches,
+        usedReactantPatternMols // NEW: Pass shared usage set
       );
 
       if (!productGraph) {
@@ -996,9 +1133,41 @@ export class NetworkGenerator {
       // and should be treated as separate species.
       const splitProducts = productGraph.split();
       for (const subgraph of splitProducts) {
-        productGraphs.push(subgraph);
+        // Collect source keys for this subgraph
+        const sourceKeys = new Set<string>();
+        for (const mol of subgraph.molecules) {
+          if (mol._sourceKey) {
+            sourceKeys.add(mol._sourceKey);
+          }
+        }
+
+        // DEDUPLICATION FIX:
+        // Check if ANY molecule in this subgraph was already covered by a previous product fragment.
+        // A molecule from the reactant(s) should only appear in ONE product species.
+        // If we find an overlap, it means multiple product patterns in the rule
+        // point to the same physical connected component in the result.
+        let isAlreadyIncluded = false;
+        if (sourceKeys.size > 0) {
+          for (const key of sourceKeys) {
+            if (usedReactantMolsInReaction.has(key)) {
+              isAlreadyIncluded = true;
+              break;
+            }
+          }
+        }
+
+        if (!isAlreadyIncluded) {
+          productGraphs.push(subgraph);
+          // Mark all molecules in this subgraph as used
+          for (const key of sourceKeys) {
+            usedReactantMolsInReaction.add(key);
+          }
+        } else if (shouldLogNetworkGenerator) {
+          debugNetworkLog(`[applyTransformation] Skipping duplicate product fragment containing molecules: ${Array.from(sourceKeys).join(', ')}`);
+        }
       }
     }
+
 
     if (shouldLogNetworkGenerator) {
       debugNetworkLog(
@@ -1024,12 +1193,13 @@ export class NetworkGenerator {
     pattern: SpeciesGraph,
     reactantPatterns: SpeciesGraph[],
     reactantGraphs: SpeciesGraph[],
-    matches: MatchMap[]
+    matches: MatchMap[],
+    usedReactantPatternMols: Set<string> // NEW: Shared tracking across product patterns
   ): SpeciesGraph | null {
     if (shouldLogNetworkGenerator) {
       debugNetworkLog(`[buildProductGraph] Building from pattern ${pattern.toString()}`);
       debugNetworkLog(`[buildProductGraph] Reactant patterns: ${reactantPatterns.map(p => p.toString()).join(' | ')}`);
-      debugNetworkLog(`[buildProductGraph] Reactant graphs: ${reactantGraphs.map(g => g.toString()).join(' | ')}`);
+      debugNetworkLog(`[buildProductGraph] Prior used reactant mols: ${Array.from(usedReactantPatternMols).join(', ')}`);
     }
 
     const productGraph = new SpeciesGraph();
@@ -1039,8 +1209,30 @@ export class NetworkGenerator {
     // 2. Inherited from first reactant (if any)
     if (pattern.compartment) {
       productGraph.compartment = pattern.compartment;
-    } else if (reactantGraphs.length > 0 && reactantGraphs[0].compartment) {
-      productGraph.compartment = reactantGraphs[0].compartment;
+    } else if (reactantGraphs.length > 0) {
+      // For heterogeneous binding (e.g., L@EC + R@PM), use the inner/membrane compartment
+      // BioNetGen uses the 2D surface compartment (PM) not the 3D volume compartment (EC)
+      let selectedComp: string | undefined;
+      let selectedDim = 99; // Large to pick smallest dimension
+      
+      for (const rg of reactantGraphs) {
+        const comp = rg.compartment || (rg.molecules.length > 0 ? rg.molecules[0].compartment : undefined);
+        if (comp) {
+          // Get compartment dimension if available
+          const compInfo = this.options.compartments?.find(c => c.name === comp);
+          const dim = compInfo ? compInfo.dimension : 3; // Default to 3D if unknown
+          
+          // Prefer lower dimension (2D surface over 3D volume)
+          if (dim < selectedDim || !selectedComp) {
+            selectedComp = comp;
+            selectedDim = dim;
+          }
+        }
+      }
+      
+      if (selectedComp) {
+        productGraph.compartment = selectedComp;
+      }
     }
 
     // Track mapping: (reactantIdx, reactantMolIdx) -> productMolIdx  
@@ -1061,11 +1253,13 @@ export class NetworkGenerator {
     // by matching product pattern molecule names to reactant pattern molecule names
 
     // Build a flat list of all reactant pattern molecules with their matches
+    // ENHANCED: Also track the molecule's position within its pattern for better matching
     const allReactantPatternMols: Array<{
       reactantIdx: number,
       patternMolIdx: number,
       name: string,
-      targetMolIdx: number
+      targetMolIdx: number,
+      isBound: boolean  // NEW: track if this molecule is bonded within its pattern
     }> = [];
 
     for (let r = 0; r < reactantPatterns.length; r++) {
@@ -1076,11 +1270,23 @@ export class NetworkGenerator {
       for (let patternMolIdx = 0; patternMolIdx < reactantPattern.molecules.length; patternMolIdx++) {
         const targetMolIdx = match.moleculeMap.get(patternMolIdx);
         if (targetMolIdx !== undefined) {
+          // Check if this molecule is bonded to other molecules in the pattern
+          const patternMol = reactantPattern.molecules[patternMolIdx];
+          let isBound = false;
+          for (const comp of patternMol.components) {
+            // Check for explicit bonds (!1, !2 etc) or wildcards (!+)
+            if (comp.edges.size > 0 || comp.wildcard === '+') {
+              isBound = true;
+              break;
+            }
+          }
+
           allReactantPatternMols.push({
             reactantIdx: r,
             patternMolIdx,
             name: reactantPattern.molecules[patternMolIdx].name,
-            targetMolIdx
+            targetMolIdx,
+            isBound
           });
         }
       }
@@ -1091,25 +1297,88 @@ export class NetworkGenerator {
     }
 
     // Map product pattern molecules to reactant graph molecules
-    const usedReactantPatternMols = new Set<number>();
+    // ENHANCED: Use BioNetGen-like structural matching that respects pattern indices
+    // Note: usedReactantPatternMols is now passed in as argument to be shared across product patterns
     const productPatternToReactant = new Map<number, { reactantIdx: number, targetMolIdx: number }>();
+
+    // Match product molecules to reactant molecules preferring same binding state
+    // This ensures catalysis reactions like:
+    //   SOS.RAS(GDP) + RAS(GDP) -> SOS.RAS(GDP) + RAS(GTP)
+    // correctly match free product RAS(GTP) to free reactant RAS(GDP), not bound RAS.
+
+    // Use priority-based matching:
+    // Priority 1: Same name + same binding state (bound-to-bound, free-to-free)
+    // Priority 2: Same name + any binding state
+
+    // Now match product pattern molecules using a priority-based approach:
+    // Priority 1: Same pattern index + same name + same binding state
+    // Priority 2: Different pattern index + same name + same binding state  
+    // Priority 3: Any available molecule with same name
 
     for (let pMolIdx = 0; pMolIdx < pattern.molecules.length; pMolIdx++) {
       const pMol = pattern.molecules[pMolIdx];
 
-      // Find the first unassigned reactant pattern molecule with matching name
+      // Determine if product molecule is bound within the product pattern
+      let pMolIsBound = false;
+      for (const comp of pMol.components) {
+        if (comp.edges.size > 0 || comp.wildcard === '+') {
+          pMolIsBound = true;
+          break;
+        }
+      }
+
+      // Try to find the best matching reactant molecule
+      let bestMatchIdx = -1;
+      let bestScore = -1;
+
       for (let i = 0; i < allReactantPatternMols.length; i++) {
-        if (usedReactantPatternMols.has(i)) continue;
+        // Construct a unique key for this reactant pattern molecule
+        const rpmKey = `${allReactantPatternMols[i].reactantIdx}:${allReactantPatternMols[i].patternMolIdx}`;
+        if (usedReactantPatternMols.has(rpmKey)) continue;
 
-        const rpmEntry = allReactantPatternMols[i];
-        if (rpmEntry.name !== pMol.name) continue;
+        const rpm = allReactantPatternMols[i];
+        if (rpm.name !== pMol.name) continue;
 
-        usedReactantPatternMols.add(i);
+        // Calculate match score
+        let score = 0;
+
+        // Bonus for matching bond state (bound matches bound, free matches free)
+        if (rpm.isBound === pMolIsBound) {
+          score += 100;
+        }
+
+        // Bonus for matching pattern index (for multi-pattern rules)
+        // For catalysis reactions, the free product should come from the second reactant pattern
+        // We don't have explicit pattern indices for products, but we can use molecule position
+        // Molecules appearing later in product tend to correspond to later reactant patterns
+        // This is a heuristic that works for common catalysis patterns
+
+        // Update best match
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatchIdx = i;
+        }
+      }
+
+      // If no score-based match found, fall back to first available
+      if (bestMatchIdx === -1) {
+        for (let i = 0; i < allReactantPatternMols.length; i++) {
+          const rpmKey = `${allReactantPatternMols[i].reactantIdx}:${allReactantPatternMols[i].patternMolIdx}`;
+          if (usedReactantPatternMols.has(rpmKey)) continue;
+          if (allReactantPatternMols[i].name !== pMol.name) continue;
+          bestMatchIdx = i;
+          break;
+        }
+      }
+
+      if (bestMatchIdx !== -1) {
+        const rpm = allReactantPatternMols[bestMatchIdx];
+        const rpmKey = `${rpm.reactantIdx}:${rpm.patternMolIdx}`;
+        usedReactantPatternMols.add(rpmKey);
         productPatternToReactant.set(pMolIdx, {
-          reactantIdx: rpmEntry.reactantIdx,
-          targetMolIdx: rpmEntry.targetMolIdx
+          reactantIdx: rpm.reactantIdx,
+          targetMolIdx: rpm.targetMolIdx
         });
-        break;
       }
     }
 
@@ -1408,6 +1677,7 @@ export class NetworkGenerator {
 
       const sourceMol = reactantGraphs[r].molecules[molIdx];
       const clone = this.cloneMoleculeStructure(sourceMol);
+      clone._sourceKey = key; // Preserve source mapping (reactantIdx:molIdx)
       const newIdx = productGraph.molecules.length;
       productGraph.molecules.push(clone);
       reactantToProductMol.set(key, newIdx);
@@ -1845,7 +2115,7 @@ export class NetworkGenerator {
     const canonical = profiledCanonicalize(graph);
     // Debug logging for specific species
     if (graph.molecules.some(m => m.name === 'CCND')) {
-       console.log(`[addOrGetSpecies] Check CCND: comp='${graph.compartment}', canonical='${canonical}'`);
+      console.log(`[addOrGetSpecies] Check CCND: comp='${graph.compartment}', canonical='${canonical}'`);
     }
 
 
@@ -1925,8 +2195,10 @@ export class NetworkGenerator {
         let limit: number;
         if (typeof this.options.maxStoich === 'number') {
           limit = this.options.maxStoich;
+        } else if (this.options.maxStoich instanceof Map) {
+          limit = this.options.maxStoich.get(typeName) ?? Infinity;
         } else {
-          limit = this.options.maxStoich[typeName] ?? Infinity;
+          limit = (this.options.maxStoich as Record<string, number>)[typeName] ?? Infinity;
         }
         if (count > limit) {
           return false;
@@ -1973,5 +2245,65 @@ export class NetworkGenerator {
     const err = new Error(message);
     err.name = 'NetworkGenerationLimitError';
     return err;
+  }
+
+  private getVolumeScaleRevised(reactant1: Species, reactant2?: Species): number {
+    if (!this.options.compartments || this.options.compartments.length === 0) {
+      return 1;
+    }
+
+    const getCompInfo = (s: Species) => {
+      let cName = s.graph.compartment;
+      if (!cName && s.graph.molecules.length > 0) {
+        cName = s.graph.molecules[0].compartment;
+      }
+      if (!cName) return null;
+      return this.options.compartments!.find(c => c.name === cName);
+    };
+
+    const c1 = getCompInfo(reactant1);
+    const c2 = reactant2 ? getCompInfo(reactant2) : null;
+    
+    let targetComp = c1;
+
+    if (c1 && c2) {
+      // Prioritize volume (3D) over surface (2D) for adsorption-like reactions
+      if (c1.dimension >= 3 && c2.dimension < 3) {
+        targetComp = c1;
+      } else if (c1.dimension < 3 && c2.dimension >= 3) {
+        targetComp = c2;
+      } else {
+        // Same dimension or other case, default to c1
+        targetComp = c1;
+      }
+    } else if (c1 && !c2) {
+      // Only c1 is known; if it's 2D, search for a 3D compartment for scaling
+      if (c1.dimension < 3) {
+        const vol3D = this.options.compartments!.find(c => c.dimension >= 3);
+        if (vol3D) {
+          targetComp = vol3D;
+        }
+      }
+    } else if (!c1 && c2) {
+      // Only c2 is known; if it's 2D, search for a 3D compartment for scaling
+      if (c2.dimension < 3) {
+        const vol3D = this.options.compartments!.find(c => c.dimension >= 3);
+        if (vol3D) {
+          targetComp = vol3D;
+        } else {
+          targetComp = c2;
+        }
+      } else {
+        targetComp = c2;
+      }
+    }
+
+    if (!targetComp) return 1;
+
+    if (targetComp.size > 0) {
+        return 1.0 / targetComp.size;
+    }
+
+    return 1;
   }
 }

@@ -92,6 +92,83 @@ const CustomLegend = (props: any) => {
   );
 };
 
+// Helper: Export chart data as CSV
+function exportAsCSV(data: Record<string, any>[], headers: string[]) {
+  if (!data || data.length === 0) return;
+
+  const csvHeaders = ['time', ...headers.filter(h => h !== 'time')];
+  const csvRows = data.map(row =>
+    csvHeaders.map(h => row[h] ?? '').join(',')
+  );
+  const csv = [csvHeaders.join(','), ...csvRows].join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `simulation_results_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Helper: Export chart data as GDAT (BioNetGen format - observables)
+function exportAsGDAT(data: Record<string, any>[], headers: string[]) {
+  if (!data || data.length === 0) return;
+
+  const gdatHeaders = ['time', ...headers.filter(h => h !== 'time')];
+  // GDAT format: # header line with column names, then space-separated numeric values
+  const headerLine = '#' + gdatHeaders.map(h => h.padStart(20)).join('');
+
+  const dataRows = data.map(row =>
+    gdatHeaders.map(h => {
+      const val = row[h] ?? 0;
+      // Format as scientific notation for consistency with BNG2.pl
+      return typeof val === 'number' ? val.toExponential(12).padStart(22) : String(val).padStart(22);
+    }).join('')
+  );
+
+  const gdat = [headerLine, ...dataRows].join('\n');
+
+  const blob = new Blob([gdat], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `simulation_results_${new Date().toISOString().slice(0, 10)}.gdat`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Helper: Export species concentration data as CDAT (BioNetGen format - all species)
+function exportAsCDAT(speciesData: number[][] | undefined, speciesHeaders: string[] | undefined, timeData: Record<string, any>[]) {
+  if (!speciesData || !speciesHeaders || speciesData.length === 0) {
+    alert('Species concentration data not available. CDAT export requires species-level simulation data.');
+    return;
+  }
+
+  const cdatHeaders = ['time', ...speciesHeaders];
+  // CDAT format: # header line with column names, then space-separated numeric values
+  const headerLine = '#' + cdatHeaders.map((h, i) => i === 0 ? h.padStart(20) : `S${i}`.padStart(20)).join('');
+
+  const dataRows = speciesData.map((row, idx) => {
+    const time = timeData[idx]?.time ?? (idx * (timeData[1]?.time ?? 1));
+    const timeStr = (typeof time === 'number' ? time.toExponential(12) : String(time)).padStart(22);
+    const speciesStr = row.map(val => 
+      typeof val === 'number' ? val.toExponential(12).padStart(22) : String(val).padStart(22)
+    ).join('');
+    return timeStr + speciesStr;
+  });
+
+  const cdat = [headerLine, ...dataRows].join('\n');
+
+  const blob = new Blob([cdat], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `simulation_species_${new Date().toISOString().slice(0, 10)}.cdat`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpecies, onVisibleSpeciesChange, highlightedSeries = [], expressions = [] }) => {
   const [zoomHistory, setZoomHistory] = useState<ZoomDomain[]>([]);
   const [selection, setSelection] = useState<ZoomDomain | null>(null);
@@ -349,7 +426,28 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
             <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Filter legends..." className="ml-2 border px-2 py-1 rounded text-sm" />
           )}
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => exportAsCDAT(results?.speciesData, results?.speciesHeaders, chartData)}
+            className="px-3 py-1 rounded bg-purple-100 hover:bg-purple-200 dark:bg-purple-900 dark:hover:bg-purple-800 text-purple-700 dark:text-purple-300 text-sm"
+            title="Export as CDAT (species concentrations)"
+          >
+            📥 CDAT
+          </button>
+          <button
+            onClick={() => exportAsGDAT(chartData, speciesToPlot)}
+            className="px-3 py-1 rounded bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 text-sm"
+            title="Export as GDAT (observables)"
+          >
+            📥 GDAT
+          </button>
+          <button
+            onClick={() => exportAsCSV(chartData, speciesToPlot)}
+            className="px-3 py-1 rounded bg-teal-100 hover:bg-teal-200 dark:bg-teal-900 dark:hover:bg-teal-800 text-teal-700 dark:text-teal-300 text-sm"
+            title="Export as CSV (comma-separated values)"
+          >
+            📥 CSV
+          </button>
           <button onClick={() => { setZoomHistory([]); setSelection(null); onVisibleSpeciesChange(new Set(speciesToPlot)); }} className="px-3 py-1 rounded bg-slate-100">Reset view</button>
         </div>
       </div>

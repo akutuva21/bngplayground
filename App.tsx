@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { EditorPanel } from './components/EditorPanel';
+import { DesignerPanel } from './components/DesignerPanel';
 import { VisualizationPanel } from './components/VisualizationPanel';
 import { Header } from './components/Header';
 import { exportToSBML } from './services/exportSBML';
@@ -30,6 +31,9 @@ function App() {
   const [loadedModelName, setLoadedModelName] = useState<string | null>(null);
 
   const [editorSelection] = useState<{ startLineNumber: number; endLineNumber: number } | undefined>(undefined);
+  const [viewMode, setViewMode] = useState<'code' | 'design'>('code');
+  // Store designer text separately so switching modes doesn't lose content
+  const [designerText, setDesignerText] = useState<string>('');
 
   const parseAbortRef = useRef<AbortController | null>(null);
   const simulateAbortRef = useRef<AbortController | null>(null);
@@ -55,6 +59,12 @@ function App() {
       clearModelFromUrl(); // Clean up URL
       setStatus({ type: 'success', message: 'Model loaded from shared link!' });
     }
+
+    // Expose batch runner for automation
+    import('./src/utils/batchRunner').then(({ runAllModels }) => {
+      (window as any).runAllModels = runAllModels;
+      console.log('🤖 batch runner loaded. Run `window.runAllModels()` to start.');
+    });
   }, []);
 
   const handleParse = useCallback(async () => {
@@ -240,6 +250,8 @@ function App() {
           }
         }}
         code={code}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       <main className="flex-1 min-h-0 overflow-hidden">
@@ -250,20 +262,29 @@ function App() {
 
           <div className="grid flex-1 min-h-0 grid-cols-1 gap-6 items-start lg:grid-cols-2">
             <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden" style={{ maxHeight: PANEL_MAX_HEIGHT }}>
-              <EditorPanel
-                code={code}
-                onCodeChange={handleCodeChange}
-                onParse={handleParse}
-                onSimulate={handleSimulate}
+              {viewMode === 'code' ? (
+                <EditorPanel
+                  code={code}
+                  onCodeChange={handleCodeChange}
+                  onParse={handleParse}
+                  onSimulate={handleSimulate}
 
-                isSimulating={isSimulating}
-                modelExists={!!model}
-                validationWarnings={validationWarnings}
-                editorMarkers={editorMarkers}
-                loadedModelName={loadedModelName}
-                onModelNameChange={setLoadedModelName}
-                selection={editorSelection}
-              />
+                  isSimulating={isSimulating}
+                  modelExists={!!model}
+                  validationWarnings={validationWarnings}
+                  editorMarkers={editorMarkers}
+                  loadedModelName={loadedModelName}
+                  onModelNameChange={setLoadedModelName}
+                  selection={editorSelection}
+                />
+              ) : (
+                <DesignerPanel
+                  text={designerText}
+                  onTextChange={setDesignerText}
+                  onCodeChange={handleCodeChange}
+                  onParse={handleParse}
+                />
+              )}
             </div>
             <div className="flex min-w-0 flex-col">
               <VisualizationPanel

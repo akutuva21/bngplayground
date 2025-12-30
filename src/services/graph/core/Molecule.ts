@@ -6,6 +6,7 @@ export class Molecule {
   components: Component[];
   compartment?: string;
   label?: string;  // for pattern matching (e.g., A1, A2 in rules)
+  _sourceKey?: string; // Internal property for tracking reactant source
   hasExplicitEmptyComponentList: boolean;
 
   constructor(
@@ -66,6 +67,7 @@ export class Molecule {
       this.hasExplicitEmptyComponentList
     );
     cloned.label = this.label;
+    cloned._sourceKey = this._sourceKey;
     return cloned;
   }
 }

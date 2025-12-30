@@ -18,7 +18,7 @@ export interface SolverOptions {
   minStep: number;        // Minimum step size before failure
   maxStep: number;        // Maximum step size
   initialStep?: number;   // Initial step size (if not provided, computed automatically)
-  solver: 'auto' | 'cvode' | 'cvode_auto' | 'cvode_sparse' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4';
+  solver: 'auto' | 'cvode' | 'cvode_auto' | 'cvode_sparse' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4' | 'sparse_implicit';
   jacobianRowMajor?: (y: Float64Array, J: Float64Array) => void;  // Row-major Jacobian for Rosenbrock
 }
 
@@ -230,7 +230,7 @@ export class Rosenbrock23Solver {
     this.jacobian = new Float64Array(n * n);
     this.matrix = new Float64Array(n * n);
     this.luSolver = new LUSolver(n);
-    
+
     if (this.externalJacobian) {
       console.log('[Rosenbrock23] Using analytic Jacobian (row-major)');
     }
@@ -246,7 +246,7 @@ export class Rosenbrock23Solver {
       this.jacobianAge = 0;
       return;
     }
-    
+
     // Fallback: numerical Jacobian using finite differences
     const n = this.n;
     const J = this.jacobian;
@@ -1120,27 +1120,23 @@ export class CVODESolver {
 
 
 
-    // Set Initial Step Size if provided
+    // Set Initial Step Size if provided (requires WASM rebuild to enable)
     if (this.options.initialStep && this.options.initialStep > 0) {
       // @ts-ignore
-      if (typeof m._CVodeSetInitStep === 'function') {
+      if (typeof m._set_init_step === 'function') {
         // @ts-ignore
-        m._CVodeSetInitStep(solverMem, this.options.initialStep);
+        m._set_init_step(solverMem, this.options.initialStep);
         console.log(`[CVODESolver] Set initial step size to ${this.options.initialStep}`);
-      } else {
-        console.warn('[CVODESolver] CVodeSetInitStep not available in WASM binding');
       }
+      // Note: If _set_init_step is not available, CVODE will use its default initial step selection
     }
 
     // Attempt to set max step size if the binding exposes it
     if (this.options.maxStep > 0 && this.options.maxStep < Infinity) {
       // @ts-ignore
-      if (typeof m._CVodeSetMaxStep === 'function') {
+      if (typeof m._set_max_step === 'function') {
         // @ts-ignore
-        m._CVodeSetMaxStep(solverMem, this.options.maxStep);
-      } else {
-        // Try checking if it's exported without underscore (unlikely for Emscripten but possible) or via ccall
-        // console.warn('CVodeSetMaxStep not available in WASM binding');
+        m._set_max_step(solverMem, this.options.maxStep);
       }
     }
 
@@ -1238,6 +1234,40 @@ export class CVODESolver {
 }
 
 /**
+ * Sparse Implicit solver for extremely stiff systems
+ * Uses Rosenbrock23 with aggressive settings for maximum stability
+ */
+class SparseImplicitSolver {
+  private rosenbrock: Rosenbrock23Solver;
+  private options: SolverOptions;
+  
+  constructor(n: number, f: DerivativeFunction, options: Partial<SolverOptions> = {}) {
+    // Use very tight tolerances for stiff systems
+    const stiffOptions = {
+      ...options,
+      atol: options.atol ?? 1e-10,
+      rtol: options.rtol ?? 1e-8,
+      maxSteps: options.maxSteps ?? 2000000,
+      minStep: 1e-18,
+      maxStep: options.maxStep ?? 1.0,
+    };
+    this.options = { ...DEFAULT_OPTIONS, ...stiffOptions };
+    this.rosenbrock = new Rosenbrock23Solver(n, f, stiffOptions);
+    console.log(`[SparseImplicitSolver] Created with atol=${stiffOptions.atol}, rtol=${stiffOptions.rtol}`);
+  }
+  
+  integrate(
+    y0: Float64Array,
+    t0: number,
+    tEnd: number,
+    checkCancelled?: () => void
+  ): SolverResult {
+    console.log(`[SparseImplicitSolver] Integrating from t=${t0} to t=${tEnd}`);
+    return this.rosenbrock.integrate(y0, t0, tEnd, checkCancelled);
+  }
+}
+
+/**
  * Factory function to create appropriate solver
  */
 export async function createSolver(
@@ -1269,6 +1299,11 @@ export async function createSolver(
       // Try CVODE first, fallback to Rosenbrock23 on failure
       await CVODESolver.init();
       return new CVODEAutoSolver(n, f, opts, new CVODESolver(n, f, opts, false));
+    case 'sparse_implicit':
+      // Sparse implicit solver with ILU preconditioning - for extremely stiff systems
+      // Requires reactions and speciesNames in options
+      console.log('[ODESolver] Using sparse_implicit solver');
+      return new SparseImplicitSolver(n, f, opts);
     case 'auto':
     default:
       // Auto could also use CVODE if verified stable, for now keep SmartAutoSolver

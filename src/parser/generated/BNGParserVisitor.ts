@@ -12,12 +12,14 @@ import { Set_model_nameContext } from "./BNGParser";
 import { Program_blockContext } from "./BNGParser";
 import { Parameters_blockContext } from "./BNGParser";
 import { Parameter_defContext } from "./BNGParser";
+import { Param_nameContext } from "./BNGParser";
 import { Molecule_types_blockContext } from "./BNGParser";
 import { Molecule_type_defContext } from "./BNGParser";
 import { Molecule_defContext } from "./BNGParser";
 import { Component_def_listContext } from "./BNGParser";
 import { Component_defContext } from "./BNGParser";
 import { State_listContext } from "./BNGParser";
+import { State_nameContext } from "./BNGParser";
 import { Seed_species_blockContext } from "./BNGParser";
 import { Seed_species_defContext } from "./BNGParser";
 import { Species_defContext } from "./BNGParser";
@@ -32,6 +34,7 @@ import { Observables_blockContext } from "./BNGParser";
 import { Observable_defContext } from "./BNGParser";
 import { Observable_typeContext } from "./BNGParser";
 import { Observable_pattern_listContext } from "./BNGParser";
+import { Observable_patternContext } from "./BNGParser";
 import { Reaction_rules_blockContext } from "./BNGParser";
 import { Reaction_rule_defContext } from "./BNGParser";
 import { Label_defContext } from "./BNGParser";
@@ -52,6 +55,7 @@ import { Population_maps_blockContext } from "./BNGParser";
 import { Population_map_defContext } from "./BNGParser";
 import { Actions_blockContext } from "./BNGParser";
 import { Wrapped_actions_blockContext } from "./BNGParser";
+import { Begin_actions_blockContext } from "./BNGParser";
 import { Action_commandContext } from "./BNGParser";
 import { Generate_network_cmdContext } from "./BNGParser";
 import { Simulate_cmdContext } from "./BNGParser";
@@ -62,6 +66,7 @@ import { Action_argsContext } from "./BNGParser";
 import { Action_arg_listContext } from "./BNGParser";
 import { Action_argContext } from "./BNGParser";
 import { Action_arg_valueContext } from "./BNGParser";
+import { Keyword_as_valueContext } from "./BNGParser";
 import { Nested_hash_listContext } from "./BNGParser";
 import { Nested_hash_itemContext } from "./BNGParser";
 import { Arg_nameContext } from "./BNGParser";
@@ -154,6 +159,13 @@ export interface BNGParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitParameter_def?: (ctx: Parameter_defContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by `BNGParser.param_name`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitParam_name?: (ctx: Param_nameContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by `BNGParser.molecule_types_block`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -194,6 +206,13 @@ export interface BNGParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitState_list?: (ctx: State_listContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `BNGParser.state_name`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitState_name?: (ctx: State_nameContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `BNGParser.seed_species_block`.
@@ -292,6 +311,13 @@ export interface BNGParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitObservable_pattern_list?: (ctx: Observable_pattern_listContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `BNGParser.observable_pattern`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitObservable_pattern?: (ctx: Observable_patternContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `BNGParser.reaction_rules_block`.
@@ -434,6 +460,13 @@ export interface BNGParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitWrapped_actions_block?: (ctx: Wrapped_actions_blockContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by `BNGParser.begin_actions_block`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitBegin_actions_block?: (ctx: Begin_actions_blockContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by `BNGParser.action_command`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -502,6 +535,13 @@ export interface BNGParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitAction_arg_value?: (ctx: Action_arg_valueContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `BNGParser.keyword_as_value`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitKeyword_as_value?: (ctx: Keyword_as_valueContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `BNGParser.nested_hash_list`.

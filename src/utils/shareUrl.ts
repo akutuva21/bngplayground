@@ -31,8 +31,11 @@ export function decodeModelFromUrl(encoded: string): string {
 // Generate a shareable URL for the current model
 export function generateShareUrl(code: string): string {
   const encoded = encodeModelForUrl(code);
-  const baseUrl = window.location.origin + window.location.pathname;
-  return `${baseUrl}#model=${encoded}`;
+  // Use current URL but strip any existing hash, then add our model hash
+  // This handles GitHub Pages paths like /bngplayground/ correctly
+  const url = new URL(window.location.href);
+  url.hash = `model=${encoded}`;
+  return url.toString();
 }
 
 // Extract model from URL hash if present

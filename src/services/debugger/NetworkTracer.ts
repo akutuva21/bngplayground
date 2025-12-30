@@ -166,6 +166,14 @@ export class NetworkTracer {
       const reverse = BNGLParser.parseRxnRule(`${rule.products.join(' + ')} -> ${rule.reactants.join(' + ')}`, reverseRateConstant);
       reverse.name = `${name} (reverse)`;
       reverse.allowsIntramolecular = rule.allowsIntramolecular ?? false;
+
+      // BNG2.pl parity: reverse of bimolecular rules should only match
+      // species that could have been produced by the forward reaction.
+      if (rule.reactants.length === 2 && rule.products.length === 1) {
+        const productGraph = BNGLParser.parseSpeciesGraph(rule.products[0]);
+        reverse.maxReactantMoleculeCount = productGraph.molecules.length;
+      }
+
       return [forward, reverse];
     });
 

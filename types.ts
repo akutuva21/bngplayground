@@ -79,6 +79,7 @@ export interface ReactionRule {
   reactants: string[];
   products: string[];
   rate: string;
+  rateExpression?: string;
   reverseRate?: string;
   isBidirectional: boolean;
   constraints?: string[];
@@ -106,6 +107,38 @@ export interface BNGLModel {
     overwrite?: boolean;
   };
   simulationOptions?: Partial<SimulationOptions> & { sparse?: boolean };
+  // Multi-phase simulation support - actions block commands
+  simulationPhases?: SimulationPhase[];
+  concentrationChanges?: ConcentrationChange[];
+  parameterChanges?: ParameterChange[];
+  // Original parameter expressions for recalculating derived parameters after setParameter
+  paramExpressions?: Record<string, string>;
+}
+
+// Represents a single simulate_* action
+export interface SimulationPhase {
+  method: 'ode' | 'ssa' | 'nf';
+  t_end: number;
+  n_steps: number;
+  atol?: number;
+  rtol?: number;
+  suffix?: string;
+  sparse?: boolean;
+  steady_state?: boolean;
+}
+
+// Represents a setConcentration() call between simulation phases
+export interface ConcentrationChange {
+  species: string;           // Species pattern or name
+  value: number | string;    // New concentration (can be parameter reference)
+  afterPhaseIndex: number;   // Execute after this simulation phase (-1 = before first)
+}
+
+// Represents a setParameter() call between simulation phases
+export interface ParameterChange {
+  parameter: string;         // Parameter name
+  value: number | string;    // New value (can be expression referencing other params)
+  afterPhaseIndex: number;   // Execute after this simulation phase (-1 = before first)
 }
 
 export interface SimulationResults {

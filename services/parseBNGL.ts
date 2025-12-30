@@ -1,3 +1,14 @@
+/**
+ * @deprecated This regex-based BNGL parser is DEPRECATED.
+ * 
+ * Use the ANTLR-based parser instead:
+ *   import { parseBNGLWithANTLR } from '@/parser/BNGLParserWrapper'
+ * 
+ * The regex parser is kept for backward compatibility but the ANTLR parser
+ * provides more accurate parsing and better error handling.
+ * 
+ * A copy of this file is also available at: old/parsers/regex/parseBNGL.ts
+ */
 
 import type { BNGLModel } from '../types.ts';
 import { BNGLParser } from '../src/services/graph/core/BNGLParser.ts';

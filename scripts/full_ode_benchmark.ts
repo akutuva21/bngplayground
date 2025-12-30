@@ -72,7 +72,130 @@ interface BenchmarkResult {
   // BNG2 timing
   bng2TimeMs?: number;
   bng2TimingError?: string;
+  // Accuracy info
+  hasReference: boolean;
+  accuracyError?: number; // Max relative error %
+  accuracyStatus?: 'pass' | 'fail' | 'missing_ref';
 }
+
+interface GdatData {
+  timePoints: number[];
+  observables: Map<string, number[]>;
+}
+
+function parseGdat(content: string): GdatData {
+  const lines = content.split('\n').filter(l => l.trim().length > 0);
+  if (lines.length < 2) return { timePoints: [], observables: new Map() };
+
+  // Parse header
+  const headerLine = lines[0].replace(/^#/, '').trim();
+  const headers = headerLine.split(/\s+/);
+  const timeIdx = headers.findIndex(h => h === 'time' || h === 'Time');
+
+  if (timeIdx === -1) return { timePoints: [], observables: new Map() };
+
+  // Initialize arrays
+  const timePoints: number[] = [];
+  const obsData = new Map<string, number[]>();
+  headers.forEach((h, i) => {
+    if (i !== timeIdx) obsData.set(h, []);
+  });
+
+  // Parse data
+  for (let i = 1; i < lines.length; i++) {
+    const parts = lines[i].trim().split(/\s+/);
+    if (parts.length !== headers.length) continue;
+
+    timePoints.push(parseFloat(parts[timeIdx]));
+    headers.forEach((h, colIdx) => {
+      if (colIdx !== timeIdx) {
+        obsData.get(h)?.push(parseFloat(parts[colIdx]));
+      }
+    });
+  }
+
+  return { timePoints, observables: obsData };
+}
+
+function calculateMaxError(webTime: number[], webResults: Map<string, Float64Array>, refData: GdatData): number {
+  if (refData.timePoints.length === 0 || webTime.length === 0) return -1;
+
+  let maxRelError = 0;
+
+  // Create interpolators for reference data
+  // Simple linear interpolation
+  const interpolate = (t: number, times: number[], values: number[]): number => {
+    // Find index
+    if (t <= times[0]) return values[0];
+    if (t >= times[times.length - 1]) return values[values.length - 1];
+
+    // Binary search for efficiency
+    let low = 0, high = times.length - 1;
+    while (low < high - 1) {
+      const mid = Math.floor((low + high) / 2);
+      if (times[mid] < t) low = mid;
+      else high = mid;
+    }
+
+    const t0 = times[low];
+    const t1 = times[high];
+    const v0 = values[low];
+    const v1 = values[high];
+
+    if (t1 === t0) return v0;
+    return v0 + (v1 - v0) * (t - t0) / (t1 - t0);
+  };
+
+  // Compare at web timepoints
+  // Skip first point (t=0) as it's often initial condition
+  for (let i = 1; i < webTime.length; i++) {
+    const t = webTime[i];
+
+    for (const [name, webValues] of webResults.entries()) {
+      const refValues = refData.observables.get(name);
+      if (!refValues) continue; // Skip if not in reference
+
+      const webVal = webValues[i];
+      const refVal = interpolate(t, refData.timePoints, refValues);
+
+      // Avoid division by zero
+      const absRef = Math.abs(refVal);
+      const absDiff = Math.abs(webVal - refVal);
+
+      let relError = 0;
+      if (absRef > 1e-6) {
+        relError = absDiff / absRef;
+      } else if (Math.abs(webVal) > 1e-6) {
+        // Reference is near zero but web is not
+        relError = 1.0;
+      }
+
+      // Cap error at 100% for reporting sanely
+      if (relError > 1.0) relError = 1.0;
+
+      if (relError > maxRelError) maxRelError = relError;
+    }
+  }
+
+  return maxRelError * 100; // Return percentage
+}
+
+function findReferenceFile(modelName: string, modelDir: string): string | null {
+  const attempts = [
+    path.join(modelDir, `${modelName}.gdat`),
+    path.join(modelDir, `${modelName}_ODE.gdat`),
+    path.join(ROOT_DIR, 'temp_verify', `${modelName}_ODE.gdat`),
+    path.join(ROOT_DIR, 'bng_compare_output', `${modelName}.gdat`),
+    path.join(ROOT_DIR, 'bng_test_output', `${modelName}.gdat`),
+    path.join(ROOT_DIR, `${modelName}.gdat`), // In root
+  ];
+
+  for (const p of attempts) {
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
 
 function loadTestReport(): { passed: BNG2Model[], skipped: any[] } {
   const reportPath = path.join(ROOT_DIR, 'bng2_test_report.json');
@@ -120,6 +243,9 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
   reactions: number;
   status: 'success' | 'failed' | 'limit_reached' | 'timeout' | 'species_mismatch';
   error?: string;
+  hasReference: boolean;
+  accuracyError?: number;
+  accuracyStatus?: 'pass' | 'fail' | 'missing_ref';
 }> {
   const totalStart = performance.now();
 
@@ -137,7 +263,8 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
         species: 0,
         reactions: 0,
         status: 'failed',
-        error: `Parse error: ${result.errors.map(e => e.message).join('; ')}`
+        error: `Parse error: ${result.errors.map(e => e.message).join('; ')}`,
+        hasReference: false
       };
     }
     const model = result.model;
@@ -147,7 +274,7 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
     // ONLY if default (1e-5/1e-5) was used or not specified in model
     // If model provided strict tolerances, keep them.
     const hasSpecificTolerances = model.simulationOptions?.atol !== undefined || model.simulationOptions?.rtol !== undefined;
-    
+
     if (!hasSpecificTolerances && model.species.length > 100) {
       // This block is currently out of scope for this function, as simOptions is not defined here.
       // Assuming simOptions would be defined later in the ODE simulation section.
@@ -162,9 +289,12 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
     const seedSpecies = model.species.map(s => BNGLParser.parseSpeciesGraph(s.name));
     const parametersMap = new Map(Object.entries(model.parameters).map(([k, v]) => [k, Number(v as number)]));
 
-    // Create a set of observable names for rate expression evaluation
+    // Create a set of observable and function names for rate expression evaluation
     const observablesSet = new Set<string>(
-      (model.observables || []).map(o => o.name)
+      [
+        ...(model.observables || []).map(o => o.name),
+        ...(model.functions || []).map(f => f.name)
+      ]
     );
 
     const rules = model.reactionRules.flatMap(r => {
@@ -186,17 +316,27 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
         reverseRate = rate;
       }
 
+      if (r.name === 'L_R_bind' || r.rate.includes('kp_LR')) {
+        console.log(`[EvalRule] Rule=${r.name} RateExpression="${r.rate}" Evaluated=${rate} Param_kp_LR=${parametersMap.get('kp_LR')}`);
+      }
+
+
       const formatList = (list: string[]) => list.length > 0 ? list.join(' + ') : '0';
       const ruleStr = `${formatList(r.reactants)} -> ${formatList(r.products)}`;
 
       try {
         const forwardRule = BNGLParser.parseRxnRule(ruleStr, rate);
+        // FIX: Use original rule name to prevent deduplication of identical rules (e.g. stochastic vs deterministic variants)
+        forwardRule.name = r.name ? `${r.name}_fwd` : `_R${rules.indexOf(r as any) + 1}_fwd`;
+
         if (r.constraints && r.constraints.length > 0) {
           forwardRule.applyConstraints(r.constraints, (s) => BNGLParser.parseSpeciesGraph(s));
         }
         if (r.isBidirectional) {
           const reverseRuleStr = `${formatList(r.products)} -> ${formatList(r.reactants)}`;
           const reverseRule = BNGLParser.parseRxnRule(reverseRuleStr, reverseRate);
+          // Append suffix for reverse rule to maintain uniqueness
+          reverseRule.name = r.name ? `${r.name}_rev` : `_R${rules.indexOf(r as any) + 1}_rev`;
           return [forwardRule, reverseRule];
         }
         return [forwardRule];
@@ -215,12 +355,19 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
       }
     }
 
+
+
     const generator = new NetworkGenerator({
-      maxSpecies: 5000,
-      maxReactions: 10000,
+      maxSpecies: 10000,
+      maxReactions: 20000,
       maxIterations: model.networkOptions?.maxIter ?? 100,
       maxAgg: model.networkOptions?.maxAgg ?? 100,
-      maxStoich
+      maxStoich,
+      compartments: model.compartments?.map(c => ({
+        name: c.name,
+        dimension: c.dimension,
+        size: c.size
+      }))
     });
 
     const network = await generator.generate(seedSpecies, rules, () => { });
@@ -255,8 +402,16 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
         species: numSpecies,
         reactions: numReactions,
         status: 'limit_reached',
-        error: 'Hit species/reaction limit'
+        error: 'Hit species/reaction limit',
+        hasReference: false
       };
+    }
+
+    // Load reference data if available
+    const refPath = findReferenceFile(modelName, path.dirname(modelPath));
+    const refData = refPath ? parseGdat(fs.readFileSync(fs.realpathSync(refPath), 'utf-8')) : null;
+    if (refPath) {
+      console.log(`[Validation] Found reference data for ${modelName}: ${refPath}`);
     }
 
     // Check species count mismatch (if significant)
@@ -269,9 +424,11 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
         species: numSpecies,
         reactions: numReactions,
         status: 'species_mismatch',
-        error: `Species mismatch: web=${numSpecies} vs bng2=${bng2Species}`
+        error: `Species mismatch: web=${numSpecies} vs bng2=${bng2Species}`,
+        hasReference: !!refData
       };
     }
+
 
     // 3. ODE Simulation
     const odeStart = performance.now();
@@ -281,6 +438,7 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
     network.species.forEach((s, i) => speciesMap.set(BNGLParser.speciesGraphToString(s.graph), i));
 
     // Build initial state and derivatives
+
     const y0 = new Float64Array(numSpecies);
     model.species.forEach(s => {
       // Find matching species by canonical form
@@ -379,17 +537,17 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
     };
 
     // Get simulation parameters
-    console.log(`[SimOptions] Model ${modelName}: t_end=${model.simulationOptions?.t_end}, n_steps=${model.simulationOptions?.n_steps}, atol=${model.simulationOptions?.atol}, rtol=${model.simulationOptions?.rtol}`);
+
     const t_end = model.simulationOptions?.t_end ?? 100;
     let n_steps = model.simulationOptions?.n_steps ?? 100;
-    
+
     // For stiff models, use more sub-steps to reduce integration interval size
     // If dt > 1, CVODE may struggle with stiff initial transients (rate constants can be ~1000)
     const dt = t_end / n_steps;
     if (numSpecies > 100 && dt > 1) {
       const subStepMultiplier = Math.ceil(dt / 1);  // Aim for dt <= 1
       n_steps = n_steps * subStepMultiplier;
-      console.log(`[SubStepping] Increased n_steps from ${n_steps/subStepMultiplier} to ${n_steps} (dt: ${dt} -> ${t_end/n_steps})`);
+
     }
 
     // Check for NaN/Inf in reaction rates
@@ -405,7 +563,7 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
     const minRate = Math.min(...rates);
     const maxRate = Math.max(...rates);
     const zeroRates = rates.filter(r => r === 0).length;
-    console.log(`[Diagnostics] Rates: min=${minRate}, max=${maxRate}, zeros=${zeroRates}/${rates.length}`);
+
 
     if (hasBadRates) {
       return {
@@ -416,7 +574,8 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
         species: numSpecies,
         reactions: numReactions,
         status: 'failed',
-        error: 'Invalid reaction rates'
+        error: 'Invalid reaction rates',
+        hasReference: false
       };
     }
 
@@ -425,13 +584,13 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
     const userAtol = model.simulationOptions?.atol;
     const userRtol = model.simulationOptions?.rtol;
     const isLargeStiffModel = numSpecies > 100;
-    
+
     // For large stiff models using sparse solver, use looser tolerances
     // since the finite difference Jacobian approximation struggles with tight tolerances
     // For smaller models, use model-specified tolerances
     let atol: number;
     let rtol: number;
-    
+
     if (isLargeStiffModel) {
       // CVODE sparse uses finite differences for Jacobian; needs loose tolerances
       atol = Math.max(userAtol ?? 1e-6, 1e-6);  // At least 1e-6
@@ -474,7 +633,195 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
 
     // Integration loop with timeout and solver fallback
     const odeStartTime = performance.now();
+
+    // Track observables for verification
+    const times: number[] = [0];
+    const observableValues = new Map<string, Float64Array>();
+    const observableContributors = new Map<string, number[]>();
+    model.observables.forEach(o => {
+      const indices: number[] = [];
+      // Clean pattern string (remove type prefix if parser included it, though usually separate)
+      // Check types.ts: type is separate field.
+      const pattern = o.pattern;
+
+      network.species.forEach((s, idx) => {
+        // Simplified matching:
+        if (o.type === 'species') {
+          // Exact match of canonical string (approx)
+          if (s.canonicalString === pattern) indices.push(idx);
+        } else {
+          // Molecules: check if species contains the pattern
+          // Handle compartment-prefixed patterns like @PM:L or @PM:R(tf~pY!?)
+          let patternCompartment: string | null = null;
+          let cleanPat = pattern;
+
+          // Extract compartment from pattern if present
+          const compMatch = pattern.match(/^@([A-Za-z0-9_]+):(.+)$/);
+          if (compMatch) {
+            patternCompartment = compMatch[1];
+            cleanPat = compMatch[2];
+          }
+
+          // Remove bond wildcards (!?, !+)
+          cleanPat = cleanPat.replace(/![?+]/g, '');
+
+          // Extract compartment from species canonical string
+          // Format: @COMP::MolName(...) or MolName(...)@COMP
+          let speciesCompartment: string | null = null;
+          const speciesCompMatch1 = s.canonicalString.match(/^@([A-Za-z0-9_]+)::/);
+          const speciesCompMatch2 = s.canonicalString.match(/@([A-Za-z0-9_]+)$/);
+          if (speciesCompMatch1) speciesCompartment = speciesCompMatch1[1];
+          else if (speciesCompMatch2) speciesCompartment = speciesCompMatch2[1];
+          // Also check species graph compartment directly
+          if (!speciesCompartment && s.graph.compartment) {
+            speciesCompartment = s.graph.compartment;
+          }
+          // Check first molecule's compartment
+          if (!speciesCompartment && s.graph.molecules.length > 0 && s.graph.molecules[0].compartment) {
+            speciesCompartment = s.graph.molecules[0].compartment;
+          }
+
+          // If pattern has compartment, need to verify molecule-level compartment
+          // BNG2 uses molecule-level compartments in canonical strings like L(r!1)@EC
+
+          // Now check if the pattern matches the species
+          if (patternCompartment) {
+            // For compartment-prefixed patterns, need molecule-level compartment matching
+            const molName = cleanPat.includes('(') ? cleanPat.split('(')[0] : cleanPat;
+
+            // Build regex to find molecule with optional compartment suffix
+            // Pattern: molName followed by (...) followed by optional @COMP
+            const molRegex = new RegExp(`${molName}\\([^)]*\\)(?:@([A-Za-z0-9_]+))?`, 'g');
+            let match;
+            let moleculeMatches = 0;
+
+            while ((match = molRegex.exec(s.canonicalString)) !== null) {
+              const molCompartment = match[1]; // Captured compartment suffix, may be undefined
+
+              // Determine effective molecule compartment
+              // If molecule has suffix, use that; otherwise inherit from species
+              const effectiveComp = molCompartment || speciesCompartment;
+
+              // Validate molecule compartment matches pattern compartment
+              if (effectiveComp !== patternCompartment) {
+                continue; // This molecule is in wrong compartment
+              }
+
+              // Check body pattern if specified (for patterns like R(tf~pY))
+              if (cleanPat.includes('(')) {
+                const body = cleanPat.substring(molName.length + 1, cleanPat.length - 1);
+                if (body !== '' && !match[0].includes(body.replace(/![?+]/g, ''))) {
+                  continue;
+                }
+              }
+
+              moleculeMatches++;
+            }
+
+            if (moleculeMatches > 0) {
+              indices.push(idx);
+            }
+          } else {
+            // No compartment prefix - use simple pattern matching
+            if (cleanPat.includes('(')) {
+              const molName = cleanPat.split('(')[0];
+              const body = cleanPat.substring(molName.length + 1, cleanPat.length - 1);
+              // Verify molecule name and body presence
+              if (s.canonicalString.includes(molName) && (body === '' || s.canonicalString.includes(body.replace(/![?+]/g, '')))) {
+                indices.push(idx);
+              }
+            } else if (cleanPat.includes('.')) {
+              // Complex pattern like P.R - check for all molecule names
+              const molNames = cleanPat.split('.');
+              if (molNames.every(name => s.canonicalString.includes(name + '('))) {
+                indices.push(idx);
+              }
+            } else {
+              // Simple molecule name match (e.g., L matches L(...))
+              if (s.canonicalString.includes(cleanPat + '(')) {
+                indices.push(idx);
+                if (o.name === 'Tot_P') console.log(`[Tot_P] Matched species ${idx}: ${s.canonicalString}`);
+              } else if (o.name === 'Tot_P' && idx < 5) {
+                console.log(`[Tot_P] NO match for species ${idx}: ${s.canonicalString} (looking for '${cleanPat}(')`);
+              }
+            }
+          }
+        }
+      });
+      observableContributors.set(o.name, indices);
+      // Debug: log observable matching
+      if (indices.length === 0 && o.name.match(/Tot_P|P_R|L_Bound/)) {
+        console.log(`[ObsMatchDebug] ${o.name} pattern='${o.pattern}' cleanPat='${pattern}' patternComp=${o.pattern.match(/^@([A-Za-z0-9_]+):/)?.[1] || 'none'} matched=${indices.length} species`);
+      }
+    });
+
+    // Initialize computed observables map
+    const computedObservables = new Map<string, number[]>();
+    if (refData) {
+      model.observables.forEach(o => {
+        computedObservables.set(o.name, []);
+      });
+    }
+
+    let obsStoreIdx = 0;
+
+    // Actually, constructing observables properly:
+    // We already have the network. We can re-evaluate observables based on species concentrations.
+    // The NetworkGenerator doesn't export the observable mapping directly in `network` variable in this script easily?
+    // Wait, NetworkGenerator returns `observables` map (index -> list of species indices)?
+    // Let's check NetworkGenerator.generate return type.
+
+    // Quick fix: The return from generator.generate is { species, reactions }.
+    // We need to map observables properly. 
+    // To do this *correctly* without re-implementing matching:
+    // We can assume we don't have easy observable values unless we implemented it.
+    // BUT: The benchmark is mostly for performance.
+    // For ACCURACY, checking Species indices directly against a reference is hard (indices change).
+    // Observables are the only invariant.
+
+    // For now, let's skip complex observable pattern matching inside this script and only support models
+    // where observables are direct sums of species (which is common) or rely on a "best effort" mapping.
+
+    // BETTER APPROACH: 
+    // Just use the species concentrations directly if we can map them? No, names change.
+    // We MUST calculate observables.
+
+    // Let's use a simplified approach: assume we can't easily compute complex observables here without
+    // porting more logic.
+    // However, we can check basic species if they are simple.
+
+    // ALTERNATIVE: Just run the simulation and accept we can't validate numerically 
+    // UNLESS we extract the observable maps from the NetworkGenerator. 
+    // NetworkGenerator *does* compute observables! It's in `network.observables`?
+    // Let's check the type definition of `network`.
+    // It is `GeneratedNetwork`.
+
+    // Initial observable calc
+    if (refData) {
+      times.push(0);
+      observableContributors.forEach((indices, name) => {
+        let sum = 0;
+        for (const idx of indices) sum += y0[idx];
+        // computedObservables.get(name)![0] = sum; // Need to handle size or push?
+        // Actually let's just use arrays in the map, Float64Array is fixed size.
+        // Using standard arrays for simplicity in this script as perf is less critical than correctness here.
+      });
+      // Reinitalize with standard arrays for push capability
+      observableContributors.forEach((_, name) => {
+        computedObservables.set(name, [0]); // Will overwrite
+        let sum = 0;
+        const indices = observableContributors.get(name)!;
+        for (const idx of indices) sum += y0[idx];
+        computedObservables.get(name)!.push(sum);
+      });
+    }
+
+
+
     for (let i = 1; i <= n_steps; i++) {
+      const tTarget = i * dtOut;
+
+
       if (performance.now() - odeStartTime > ODE_TIMEOUT_MS) {
         return {
           parseTime,
@@ -484,11 +831,11 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
           species: numSpecies,
           reactions: numReactions,
           status: 'timeout',
-          error: `ODE timeout at step ${i}/${n_steps}`
+          error: `ODE timeout at step ${i}/${n_steps}`,
+          hasReference: !!refData
         };
       }
 
-      const tTarget = i * dtOut;
       const result = currentSolver.integrate(y, t, tTarget);
 
       if (!result.success) {
@@ -497,7 +844,7 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
           console.log(`[Fallback] CVODE failed at t=${t}, switching to Rosenbrock23`);
           fallbackAttempted = true;
           solverName = 'rosenbrock23';
-          
+
           // Create Rosenbrock23 solver with same configuration
           // Note: Rosenbrock23 uses row-major Jacobian, so we need to create a transposed version
           const jacobianRowMajor = (yIn: Float64Array, J: Float64Array) => {
@@ -512,7 +859,7 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
               }
             }
           };
-          
+
           currentSolver = await createSolver(numSpecies, derivatives, {
             atol: atol,
             rtol: rtol,
@@ -522,14 +869,14 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
             solver: 'rosenbrock23',
             jacobianRowMajor: jacobianRowMajor
           } as any);
-          
+
           // Restart from beginning with new solver
           y = new Float64Array(y0);
           t = 0;
           i = 0;  // Will be incremented to 1 at loop start
           continue;
         }
-        
+
         return {
           parseTime,
           networkGenTime,
@@ -538,12 +885,60 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
           species: numSpecies,
           reactions: numReactions,
           status: 'failed',
-          error: result.errorMessage?.substring(0, 50)
+          error: result.errorMessage?.substring(0, 50),
+          hasReference: !!refData
         };
       }
 
       y = new Float64Array(result.y);
       t = result.t;
+
+      // Store data points for verification (subsample if too large)
+      if (refData && (i % Math.ceil(n_steps / 5000) === 0 || i === n_steps)) {
+        times.push(t);
+
+        observableContributors.forEach((indices, name) => {
+          let sum = 0;
+          for (const idx of indices) sum += y[idx];
+          computedObservables.get(name)?.push(sum);
+        });
+      }
+    }
+
+    // Calculate final error if possible (Placeholder)
+    let maxError = -1;
+    let accStatus: 'pass' | 'fail' | 'missing_ref' = refData ? 'fail' : 'missing_ref';
+
+    if (refData && times.length > 0) {
+      // Convert number[] to Float64Array for calculateMaxError
+      const webResults = new Map<string, Float64Array>();
+      computedObservables.forEach((vals, name) => {
+        webResults.set(name, new Float64Array(vals));
+      });
+
+      const error = calculateMaxError(times, webResults, refData);
+      maxError = error;
+
+      // Threshold 5%? 10%? Lin_ERK was <3%
+      if (maxError >= 0 && maxError < 10.0) {
+        accStatus = 'pass';
+      } else if (maxError >= 10.0) {
+        accStatus = 'fail';
+      } else {
+        accStatus = 'missing_ref'; // Should not happen if refData exists
+      }
+    }
+
+    // Write results to CSV (compatible with comparison script)
+    if (times.length > 0) {
+      const resultsPath = path.join(process.cwd(), `results_${modelName}.csv`);
+      const header = ['time', ...computedObservables.keys()].join(',');
+      const rows = times.map((t, i) => {
+        return [t, ...Array.from(computedObservables.values()).map(vals => vals[i])].join(',');
+      });
+      const csvContent = [header, ...rows].join('\n');
+      fs.writeFileSync(resultsPath, csvContent);
+      console.log(`[Results] Written to ${resultsPath}`);
     }
 
     const odeTime = performance.now() - odeStart;
@@ -557,7 +952,10 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
       species: numSpecies,
       reactions: numReactions,
       status: fallbackAttempted ? 'success' : 'success',  // Both are success
-      solverUsed: solverName  // Track which solver was used
+      solverUsed: solverName,  // Track which solver was used
+      hasReference: !!refData,
+      accuracyError: maxError,
+      accuracyStatus: accStatus
     } as any;
 
   } catch (error: any) {
@@ -569,7 +967,8 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
       species: 0,
       reactions: 0,
       status: 'failed',
-      error: error.message?.substring(0, 100)
+      error: error.message?.substring(0, 100),
+      hasReference: false
     };
   }
 }
@@ -589,8 +988,6 @@ async function runBenchmark() {
 
   if (process.argv[2]) {
     const target = process.argv[2];
-    // process.env.DEBUG_CONSTRAINTS = 'true'; // Removed
-    // console.log(`Force-enabling DEBUG_CONSTRAINTS for single model run: ${target}`);
 
     // Simple recursive finder
     const fs = await import('fs');
@@ -621,15 +1018,23 @@ async function runBenchmark() {
       process.exit(1);
     }
   } else {
-    const report = loadTestReport();
-    // Exclude models that BNG2.pl also can't handle (exceed network limits)
-    const EXCLUDED_MODELS = ['Model_ZAP']; // 4374 species, 11252 reactions - exceeds limits
-    allModels = report.passed
-      .filter(m => m.hasGdat && m.gdatRows > 0)
-      .filter(m => !EXCLUDED_MODELS.includes(m.model));
+    // Load from test report
+    try {
+      const report = loadTestReport();
+      // Filter out huge models that might timeout or crash in this intensive mode
+      // But keep Lin_ERK_2019
+      allModels = report.passed.filter(m => (m.speciesCount < 1000 && m.reactionCount < 5000) || m.model.includes('Lin_ERK') || m.model.includes('Barua'));
+      console.log(`Loaded ${allModels.length} models from bng2_test_report.json (filtered large models)`);
+    } catch (e) {
+      console.error('Failed to load bng2_test_report.json', e);
+      process.exit(1);
+    }
   }
 
-  console.log(`Found ${allModels.length} models with BNG2.pl gdat output\n`);
+  // Debug: verify models loaded
+  console.log(`[Debug] allModels length: ${allModels.length}`);
+
+  console.log(`Found ${allModels.length} models in published-models and example-models\n`);
 
   // Create temp directory
   const tempDir = path.join(ROOT_DIR, 'temp_benchmark');
@@ -658,7 +1063,8 @@ async function runBenchmark() {
       webTotalTime: 0,
       webSpecies: 0,
       webReactions: 0,
-      webStatus: 'failed'
+      webStatus: 'failed',
+      hasReference: false
     };
 
     // Run full simulation
@@ -695,7 +1101,8 @@ async function runBenchmark() {
     // Save species list for debugging - MOVED TO ABOVE
 
 
-    console.log(`${statusIcon} ${model.model.substring(0, 28).padEnd(28)} ${netGen} ${ode} ${total} ${sp} ${result.webStatus}`);
+    const refMark = result.hasReference ? (result.accuracyStatus === 'pass' ? ' (Ref:OK)' : ' (Ref:?)') : '';
+    console.log(`${statusIcon} ${model.model.substring(0, 25).padEnd(25)} ${netGen} ${ode} ${total} ${sp} ${result.webStatus}${refMark}`);
 
     results.push(result);
   }

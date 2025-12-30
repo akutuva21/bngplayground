@@ -7,6 +7,7 @@ export class RxnRule {
   reactants: SpeciesGraph[];
   products: SpeciesGraph[];
   rateConstant: number;
+  rateExpression?: string;
   allowsIntramolecular: boolean;
 
   // Transformation operations
@@ -19,13 +20,17 @@ export class RxnRule {
   includeReactants: Array<{ reactantIndex: number; pattern: SpeciesGraph }>;
   isDeleteMolecules: boolean;
   isMoveConnected: boolean;
+  
+  // For reverse bimolecular rules: max allowed molecules in reactant species
+  // Prevents reverse rules from matching complexes larger than forward can produce
+  maxReactantMoleculeCount?: number;
 
   constructor(
     name: string,
     reactants: SpeciesGraph[],
     products: SpeciesGraph[],
     rateConstant: number,
-    options: { allowsIntramolecular?: boolean } = {}
+    options: { allowsIntramolecular?: boolean; rateExpression?: string } = {}
   ) {
     this.name = name;
     this.reactants = reactants;
@@ -33,6 +38,7 @@ export class RxnRule {
     this.rateConstant = rateConstant;
     // Default to true to match native BNG behavior (allows intramolecular binding)
     this.allowsIntramolecular = options.allowsIntramolecular ?? true;
+    this.rateExpression = options.rateExpression;
     this.deleteBonds = [];
     this.addBonds = [];
     this.changeStates = [];
@@ -50,7 +56,8 @@ export class RxnRule {
   toString(): string {
     const reactantStr = this.reactants.map(r => r.toString()).join(' + ');
     const productStr = this.products.map(p => p.toString()).join(' + ');
-    return `${reactantStr} -> ${productStr} ${this.rateConstant}`;
+    const rateStr = this.rateExpression || this.rateConstant;
+    return `${reactantStr} -> ${productStr} ${rateStr}`;
   }
 
   /**

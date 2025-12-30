@@ -30,8 +30,8 @@ substance_def
     ;
 
 set_option
-    : SET_OPTION LPAREN DBQUOTES STRING DBQUOTES COMMA (DBQUOTES STRING DBQUOTES | INT | FLOAT)
-      (COMMA DBQUOTES STRING DBQUOTES COMMA (DBQUOTES STRING DBQUOTES | INT | FLOAT))* RPAREN SEMI? LB+
+    : SET_OPTION LPAREN DBQUOTES (~DBQUOTES)* DBQUOTES COMMA DBQUOTES (~DBQUOTES)* DBQUOTES
+      (COMMA DBQUOTES (~DBQUOTES)* DBQUOTES COMMA DBQUOTES (~DBQUOTES)* DBQUOTES)* RPAREN SEMI? LB+
     ;
 
 set_model_name
@@ -50,6 +50,7 @@ program_block
     | energy_patterns_block
     | population_maps_block
     | wrapped_actions_block
+    | begin_actions_block  // NEW: Support "begin actions ... end actions"
     ;
 
 // Parameters block
@@ -57,13 +58,21 @@ parameters_block
     : BEGIN PARAMETERS LB+ (parameter_def LB+)* END PARAMETERS LB*
     ;
 
+// Parameter names can be STRING or arg_name keywords (t_end, n_steps, etc.)
+// Support numbered parameters like: 1 L0 1.0
 parameter_def
-    : (STRING COLON)? STRING BECOMES? expression?
+    : INT? (param_name COLON)? param_name BECOMES? expression?
     ;
 
-// Molecule types block
+param_name
+    : STRING | arg_name
+    ;
+
+// Molecule types block - supports "molecule types", "molecules", and "molecule_types"
 molecule_types_block
     : BEGIN MOLECULE TYPES LB+ (molecule_type_def LB+)* END MOLECULE TYPES LB*
+    | BEGIN MOLECULES LB+ (molecule_type_def LB+)* END MOLECULES LB*
+    | BEGIN MOLECULE_TYPES LB+ (molecule_type_def LB+)* END MOLECULE_TYPES LB*
     ;
 
 molecule_type_def
@@ -84,9 +93,15 @@ component_def
     : STRING (TILDE state_list)?
     ;
 
-// Allow numeric states like ~0~p
+// Allow numeric states like ~0~p and mixed like ~2P~10P (INT followed by STRING)
 state_list
-    : (STRING | INT) (TILDE (STRING | INT))*
+    : state_name (TILDE state_name)*
+    ;
+
+// State name can be: STRING, INT, or INT+STRING combined (like 2P, 10P)
+state_name
+    : STRING
+    | INT STRING?
     ;
 
 // Seed species block
@@ -94,8 +109,9 @@ seed_species_block
     : BEGIN (SEED SPECIES | SPECIES) LB+ (seed_species_def LB+)* END (SEED SPECIES | SPECIES) LB*
     ;
 
+// Support: "1 @c0:Species(...) concentration" or just species without concentration
 seed_species_def
-    : (STRING COLON)? DOLLAR? (AT STRING COLON)? species_def expression
+    : INT? (STRING COLON)? DOLLAR? (AT STRING COLON)? species_def expression?
     ;
 
 // Species can optionally have compartment annotation using @ (prefix @comp: or suffix @comp)
@@ -118,18 +134,21 @@ component_pattern_list
     : component_pattern? (COMMA component_pattern?)*
     ;
 // Component patterns can have state, multiple bonds (e.g., !0!1), or bond wildcards
+// Component patterns can have state, multiple bonds (e.g., !0!1), or bond wildcards
+// Support mixed/interleaved state and bond attributes (e.g. site!?~?)
 component_pattern
-    : STRING (TILDE state_value)? bond_spec*
+    : STRING (TILDE state_value | bond_spec)*
     ;
 
 state_value
-    : STRING | INT | QMARK
+    : STRING | INT STRING? | QMARK
     ;
 
 bond_spec
     : EMARK bond_id
     | EMARK PLUS
     | EMARK QMARK
+    | EMARK MINUS  // !- means unbound (no bond)
     ;
 
 bond_id
@@ -141,29 +160,43 @@ observables_block
     : BEGIN OBSERVABLES LB+ (observable_def LB+)* END OBSERVABLES LB*
     ;
 
+// Observable definition - type is optional (can be just "Name Pattern")
 observable_def
-    : (STRING COLON)? observable_type STRING observable_pattern_list
+    : (STRING COLON)? observable_type? STRING observable_pattern_list
     ;
 
 observable_type
     : MOLECULES | SPECIES | STRING  // Molecules, Species, or custom type
     ;
 
+// Support both comma-separated and space-separated patterns
+// Also support stoichiometry expressions like R==1, R>20
 observable_pattern_list
-    : species_def (COMMA species_def)*
+    : observable_pattern (COMMA? observable_pattern)*
     ;
 
-// Reaction rules block
+// Observable pattern can be a species or a stoichiometry comparison (R==1, R>5, etc.)
+observable_pattern
+    : species_def
+    | STRING (EQUALS | GT | GTE | LT | LTE) INT  // Stoichiometry comparison: R==1, R>5
+    ;
+
+// Reaction rules block - supports both "reaction rules" and "reaction_rules"
 reaction_rules_block
     : BEGIN REACTION RULES LB+ (reaction_rule_def LB+)* END REACTION RULES LB*
+    | BEGIN REACTION_RULES LB+ (reaction_rule_def LB+)* END REACTION_RULES LB*
     ;
 
 reaction_rule_def
-    : (label_def COLON)? (LBRACKET rule_modifiers RBRACKET)? reactant_patterns reaction_sign product_patterns rate_law rule_modifiers?
+    : label_def? (LBRACKET rule_modifiers RBRACKET)? reactant_patterns reaction_sign product_patterns rate_law rule_modifiers?
     ;
 
+// Labels can be: "ruleName:", "1:", "1 Description:", or just inline before the rule
+// The multi-word format is: INT (STRING | INT | LPAREN | RPAREN)* COLON
+// Also support bare INT labels without colon (e.g. "1 A->B")
 label_def
-    : STRING | INT
+    : (INT | STRING) (STRING | INT | LPAREN STRING? RPAREN)* COLON
+    | INT
     ;
 
 reactant_patterns
@@ -205,8 +238,9 @@ functions_block
     : BEGIN FUNCTIONS LB+ (function_def LB+)* END FUNCTIONS LB*
     ;
 
+// Support both "funcName() = expr" and "funcName expr" formats
 function_def
-    : (STRING COLON)? STRING LPAREN param_list? RPAREN BECOMES? expression
+    : (STRING COLON)? STRING (LPAREN param_list? RPAREN)? BECOMES? expression
     ;
 
 param_list
@@ -250,6 +284,11 @@ wrapped_actions_block
     : BEGIN ACTIONS LB+ action_command* END ACTIONS LB*
     ;
 
+// Alias for wrapped_actions_block (already referenced in program_block)
+begin_actions_block
+    : BEGIN ACTIONS LB+ action_command* END ACTIONS LB*
+    ;
+
 action_command
     : generate_network_cmd
     | simulate_cmd
@@ -263,12 +302,12 @@ generate_network_cmd
     ;
 
 simulate_cmd
-    : (SIMULATE | SIMULATE_ODE | SIMULATE_SSA | SIMULATE_PLA | SIMULATE_NF) 
+    : (SIMULATE | SIMULATE_ODE | SIMULATE_SSA | SIMULATE_PLA | SIMULATE_NF | SIMULATE_RM) 
       LPAREN action_args? RPAREN SEMI? LB*
     ;
 
 write_cmd
-    : (WRITEFILE | WRITEXML | WRITESBML | WRITENETWORK | WRITEMODEL | WRITEMFILE | WRITEMEXFILE)
+    : (WRITEFILE | WRITEXML | WRITESBML | WRITENETWORK | WRITEMODEL | WRITEMFILE | WRITEMEXFILE | WRITELATEX)
       LPAREN action_args? RPAREN SEMI? LB*
     ;
 
@@ -284,8 +323,10 @@ other_action_cmd
       LPAREN action_args? RPAREN SEMI? LB*
     ;
 
+// Action arguments can be: {key=>val,...} or simple quoted string
 action_args
     : LBRACKET action_arg_list? RBRACKET
+    | DBQUOTES (~DBQUOTES)* DBQUOTES  // Simple quoted string like saveConcentrations("A20_KO")
     ;
 
 action_arg_list
@@ -296,12 +337,21 @@ action_arg
     : arg_name ASSIGNS action_arg_value
     ;
 
-// Action arg values can be: expression, quoted string, array, or nested hash
+// Action arg values can be: expression, quoted string (double or single), array, nested hash, or keyword
 action_arg_value
     : expression
+    | keyword_as_value  // NEW: Allow keywords like 'ode', 'ssa' as unquoted values
     | DBQUOTES (~DBQUOTES)* DBQUOTES
+    | SQUOTE (~SQUOTE)* SQUOTE
     | LSBRACKET expression_list RSBRACKET
     | LBRACKET nested_hash_list? RBRACKET
+    ;
+
+// Keywords that can be used as action argument values (e.g., suffix=>ode)
+keyword_as_value
+    : ODE | SSA | NF | PLA | SPARSE | VERBOSE | OVERWRITE | CONTINUE
+    | SAFE | EXECUTE | BINARY_OUTPUT | STEADY_STATE | BDF | STIFF
+    | METHOD | TRUE | FALSE
     ;
 
 // Nested hash list for things like max_stoich=>{APC=>1,AXIN=>1}
@@ -310,7 +360,7 @@ nested_hash_list
     ;
 
 nested_hash_item
-    : (STRING | arg_name) ASSIGNS expression
+    : (STRING | arg_name) ASSIGNS action_arg_value
     ;
 
 // Allow keywords to be used as argument names in action calls
@@ -338,7 +388,9 @@ arg_name
     // Visualize options
     | TYPE | BACKGROUND | COLLAPSE | OPTS
     // Safe/execute
+    // Safe/execute
     | SAFE | EXECUTE
+    | TEXTREACTION | TEXTSPECIES
     ;
 
 expression_list
@@ -391,7 +443,7 @@ primary_expr
     | function_call
     | observable_ref
     | literal
-    | STRING
+    | arg_name  // Allow keywords like t_end to be used as variable identifiers
     ;
 
 function_call
@@ -402,7 +454,7 @@ function_call
     ;
 
 observable_ref
-    : STRING LPAREN expression RPAREN
+    : STRING LPAREN expression? RPAREN
     ;
 
 literal

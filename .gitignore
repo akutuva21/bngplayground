@@ -130,3 +130,12 @@ scripts/comparison_report.json
 
 
 .agent
+
+bionetgen/*
+
+gdat_temp/
+
+simulation_results_*.csv
+
+web_output/
+

@@ -1,78 +1,51 @@
 [
   {
-    "modelName": "Barua_2013",
-    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Barua_2013_bng2.gdat",
+    "modelName": "Hat_2016",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Hat_2016_ode_3_relax.gdat",
     "bng2Headers": [
       "time",
-      "bcat_tot",
-      "bCat_pS45",
-      "bCat_pS33S37",
-      "APC_p20a",
-      "BCat_Axin"
+      "p53_tot",
+      "Mdm2_tot",
+      "Mdm2_mRNA_tot"
     ],
-    "bng2DataPoints": 2501,
+    "bng2DataPoints": 101,
     "status": "ready_for_comparison"
   },
   {
-    "modelName": "Barua_2007",
-    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Barua_2007_bng2.gdat",
+    "modelName": "Lin_ERK_2019",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\temp_verify\\Lin_ERK_2019_ODE.gdat",
     "bng2Headers": [
       "time",
-      "pYR"
+      "Species8",
+      "Species12",
+      "Species14",
+      "Species18"
     ],
-    "bng2DataPoints": 12,
+    "bng2DataPoints": 1001,
     "status": "ready_for_comparison"
   },
   {
-    "modelName": "Barua_2009",
-    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Barua_2009_bng2.gdat",
+    "modelName": "akt-signaling",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\akt-signaling_bng2.gdat",
     "bng2Headers": [
       "time",
-      "J_mono",
-      "JS",
-      "JSS",
-      "JSSJ",
-      "J_active",
-      "J_inactive"
+      "Active_RTK",
+      "Active_PI3K",
+      "Phospho_AKT"
     ],
-    "bng2DataPoints": 10001,
+    "bng2DataPoints": 201,
     "status": "ready_for_comparison"
   },
   {
-    "modelName": "Blinov_2006",
-    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Blinov_2006_bng2.gdat",
+    "modelName": "allosteric-activation",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\allosteric-activation_bng2.gdat",
     "bng2Headers": [
       "time",
-      "Dimers",
-      "Sos_act",
-      "RP",
-      "Shc_Grb",
-      "Shc_Grb_Sos",
-      "R_Grb2",
-      "R_Shc",
-      "R_ShcP",
-      "ShcP",
-      "R_G_S",
-      "R_S_G_S",
-      "Efgr_total",
-      "Shc_total",
-      "Sos_total",
-      "Grb2_total"
+      "Active_enzyme",
+      "Inactive_enzyme",
+      "Product"
     ],
-    "bng2DataPoints": 121,
-    "status": "ready_for_comparison"
-  },
-  {
-    "modelName": "Lang_2024",
-    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Lang_2024_bng2.gdat",
-    "bng2Headers": [
-      "time",
-      "tCCNE",
-      "tCCNA",
-      "tCCNB",
-      "tCDKN1A"
-    ],
-    "bng2DataPoints": 5001,
+    "bng2DataPoints": 151,
     "status": "ready_for_comparison"
   },
   {
@@ -104,158 +77,6 @@
     "status": "ready_for_comparison"
   },
   {
-    "modelName": "innate_immunity",
-    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\innate_immunity_bng2.gdat",
-    "bng2Headers": [
-      "time",
-      "RIG_I_total",
-      "PKR_total",
-      "OAS3_total",
-      "RNaseL_total",
-      "RNaseL_a",
-      "eIF2a_total",
-      "eIF2a_p",
-      "RIGI_mRNA",
-      "PKR_mRNA",
-      "OAS3_mRNA",
-      "RNaseL_mRNA",
-      "TAK1_a",
-      "NFkB_nuc_free",
-      "NFkB_nuc_total",
-      "NFkB_total",
-      "IkBa_total",
-      "IkBa_nuc_total",
-      "IkBa_cyt_total",
-      "IkBa_cyt_free",
-      "IkBa_p_cyt",
-      "IkBa_nuc_free",
-      "A20",
-      "IKK_a",
-      "IkBa_mRNA",
-      "A20_mRNA",
-      "IRF3_total",
-      "IRF3_p",
-      "IFNAR_total",
-      "IFNAR_a",
-      "IFNb_ext",
-      "IFNb_cyt",
-      "IFNAR_mRNA",
-      "IFNb_mRNA",
-      "STAT1_total",
-      "STAT2_total",
-      "STAT1_p",
-      "STAT2_p",
-      "STAT1_u",
-      "STAT2_u",
-      "STAT12_dimer",
-      "STAT1_mRNA",
-      "STAT2_mRNA"
-    ],
-    "bng2DataPoints": 4321,
-    "status": "ready_for_comparison"
-  },
-  {
-    "modelName": "Korwek_2023",
-    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Korwek_2023_bng2.gdat",
-    "bng2Headers": [
-      "time",
-      "RIG_I_total",
-      "PKR_total",
-      "OAS3_total",
-      "RNaseL_total",
-      "RNaseL_a",
-      "eIF2a_total",
-      "eIF2a_p",
-      "RIGI_mRNA",
-      "PKR_mRNA",
-      "OAS3_mRNA",
-      "RNaseL_mRNA",
-      "TAK1_a",
-      "NFkB_nuc_free",
-      "NFkB_nuc_total",
-      "NFkB_total",
-      "IkBa_total",
-      "IkBa_nuc_total",
-      "IkBa_cyt_total",
-      "IkBa_cyt_free",
-      "IkBa_p_cyt",
-      "IkBa_nuc_free",
-      "A20",
-      "IKK_a",
-      "IkBa_mRNA",
-      "A20_mRNA",
-      "IRF3_total",
-      "IRF3_p",
-      "IFNAR_total",
-      "IFNAR_a",
-      "IFNb_ext",
-      "IFNb_cyt",
-      "IFNAR_mRNA",
-      "IFNb_mRNA",
-      "STAT1_total",
-      "STAT2_total",
-      "STAT1_p",
-      "STAT2_p",
-      "STAT1_u",
-      "STAT2_u",
-      "STAT12_dimer",
-      "STAT1_mRNA",
-      "STAT2_mRNA"
-    ],
-    "bng2DataPoints": 4321,
-    "status": "ready_for_comparison"
-  },
-  {
-    "modelName": "Model_ZAP",
-    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Model_ZAP_bng2.gdat",
-    "bng2Headers": [
-      "time",
-      "pSYK_total",
-      "pSYK_free",
-      "pSYK_bound",
-      "PZAP_total",
-      "PZAP_free",
-      "PZAP_bound",
-      "tot_bound_ZAP",
-      "tot_bound_SYK",
-      "bound_phosph_zeta",
-      "open_U_zeta",
-      "bound_U_zeta",
-      "total_phosph_zeta",
-      "tot_bound_SHP",
-      "lig_receptor_complex",
-      "Receptor",
-      "zeta",
-      "Lig"
-    ],
-    "bng2DataPoints": 1001,
-    "status": "ready_for_comparison"
-  },
-  {
-    "modelName": "akt-signaling",
-    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\akt-signaling_bng2.gdat",
-    "bng2Headers": [
-      "time",
-      "Active_RTK",
-      "Active_PI3K",
-      "Phospho_AKT"
-    ],
-    "bng2DataPoints": 201,
-    "status": "ready_for_comparison"
-  },
-  {
-    "modelName": "allosteric-activation",
-    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\allosteric-activation_bng2.gdat",
-    "bng2Headers": [
-      "time",
-      "Active_enzyme",
-      "Inactive_enzyme",
-      "Product"
-    ],
-    "bng2DataPoints": 151,
-    "status": "ready_for_comparison"
-  },
-  {
     "modelName": "apoptosis-cascade",
     "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\apoptosis-cascade_bng2.gdat",
     "bng2Headers": [
@@ -276,6 +97,45 @@
       "Effector"
     ],
     "bng2DataPoints": 151,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "Barua_2007",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Barua_2007_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "pYR"
+    ],
+    "bng2DataPoints": 12,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "Barua_2009",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Barua_2009_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "J_mono",
+      "JS",
+      "JSS",
+      "JSSJ",
+      "J_active",
+      "J_inactive"
+    ],
+    "bng2DataPoints": 10001,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "Barua_2013",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Barua_2013_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "bcat_tot",
+      "bCat_pS45",
+      "bCat_pS33S37",
+      "APC_p20a",
+      "BCat_Axin"
+    ],
+    "bng2DataPoints": 2501,
     "status": "ready_for_comparison"
   },
   {
@@ -301,6 +161,30 @@
       "GeneR_bound"
     ],
     "bng2DataPoints": 251,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "Blinov_2006",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Blinov_2006_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "Dimers",
+      "Sos_act",
+      "RP",
+      "Shc_Grb",
+      "Shc_Grb_Sos",
+      "R_Grb2",
+      "R_Shc",
+      "R_ShcP",
+      "ShcP",
+      "R_G_S",
+      "R_S_G_S",
+      "Efgr_total",
+      "Shc_total",
+      "Sos_total",
+      "Grb2_total"
+    ],
+    "bng2DataPoints": 121,
     "status": "ready_for_comparison"
   },
   {
@@ -536,6 +420,57 @@
     "status": "ready_for_comparison"
   },
   {
+    "modelName": "innate_immunity",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\innate_immunity_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "RIG_I_total",
+      "PKR_total",
+      "OAS3_total",
+      "RNaseL_total",
+      "RNaseL_a",
+      "eIF2a_total",
+      "eIF2a_p",
+      "RIGI_mRNA",
+      "PKR_mRNA",
+      "OAS3_mRNA",
+      "RNaseL_mRNA",
+      "TAK1_a",
+      "NFkB_nuc_free",
+      "NFkB_nuc_total",
+      "NFkB_total",
+      "IkBa_total",
+      "IkBa_nuc_total",
+      "IkBa_cyt_total",
+      "IkBa_cyt_free",
+      "IkBa_p_cyt",
+      "IkBa_nuc_free",
+      "A20",
+      "IKK_a",
+      "IkBa_mRNA",
+      "A20_mRNA",
+      "IRF3_total",
+      "IRF3_p",
+      "IFNAR_total",
+      "IFNAR_a",
+      "IFNb_ext",
+      "IFNb_cyt",
+      "IFNAR_mRNA",
+      "IFNb_mRNA",
+      "STAT1_total",
+      "STAT2_total",
+      "STAT1_p",
+      "STAT2_p",
+      "STAT1_u",
+      "STAT2_u",
+      "STAT12_dimer",
+      "STAT1_mRNA",
+      "STAT2_mRNA"
+    ],
+    "bng2DataPoints": 4321,
+    "status": "ready_for_comparison"
+  },
+  {
     "modelName": "insulin-glucose-homeostasis",
     "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\insulin-glucose-homeostasis_bng2.gdat",
     "bng2Headers": [
@@ -586,6 +521,19 @@
     "status": "ready_for_comparison"
   },
   {
+    "modelName": "Lang_2024",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Lang_2024_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "tCCNE",
+      "tCCNA",
+      "tCCNB",
+      "tCDKN1A"
+    ],
+    "bng2DataPoints": 5001,
+    "status": "ready_for_comparison"
+  },
+  {
     "modelName": "lipid-mediated-pip3-signaling",
     "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\lipid-mediated-pip3-signaling_bng2.gdat",
     "bng2Headers": [
@@ -619,6 +567,32 @@
       "obs_ES_Complex"
     ],
     "bng2DataPoints": 51,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "Model_ZAP",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Model_ZAP_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "pSYK_total",
+      "pSYK_free",
+      "pSYK_bound",
+      "PZAP_total",
+      "PZAP_free",
+      "PZAP_bound",
+      "tot_bound_ZAP",
+      "tot_bound_SYK",
+      "bound_phosph_zeta",
+      "open_U_zeta",
+      "bound_U_zeta",
+      "total_phosph_zeta",
+      "tot_bound_SHP",
+      "lig_receptor_complex",
+      "Receptor",
+      "zeta",
+      "Lig"
+    ],
+    "bng2DataPoints": 1001,
     "status": "ready_for_comparison"
   },
   {
@@ -961,6 +935,279 @@
       "Migratory_Fibroblast"
     ],
     "bng2DataPoints": 181,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "AB",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\AB_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "A",
+      "B",
+      "C"
+    ],
+    "bng2DataPoints": 201,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "ABC",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\ABC_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "A",
+      "B",
+      "C"
+    ],
+    "bng2DataPoints": 201,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "ABp",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\ABp_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "Bu",
+      "Bp",
+      "AB"
+    ],
+    "bng2DataPoints": 1001,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "ABp_approx",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\ABp_approx_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "Bu",
+      "Bp"
+    ],
+    "bng2DataPoints": 1001,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "BAB",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\BAB_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "FreeAsites",
+      "FreeB",
+      "ABbonds",
+      "BAB"
+    ],
+    "bng2DataPoints": 201,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "BAB_coop",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\BAB_coop_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "AB",
+      "BAB"
+    ],
+    "bng2DataPoints": 201,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "birth-death",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\birth-death_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "Atot"
+    ],
+    "bng2DataPoints": 501,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "BLBR",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\BLBR_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "R1",
+      "R2",
+      "R3",
+      "R4",
+      "R5",
+      "Rbig"
+    ],
+    "bng2DataPoints": 1001,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "CircadianOscillator",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\CircadianOscillator_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "Afree",
+      "Rfree",
+      "Atot",
+      "Rtot"
+    ],
+    "bng2DataPoints": 1001,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "FceRI_ji",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\FceRI_ji_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "LynFree",
+      "RecMon",
+      "RecDim",
+      "RecPbeta",
+      "RecPgamma",
+      "RecSyk",
+      "RecSykPS"
+    ],
+    "bng2DataPoints": 1001,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "FceRI_viz",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\FceRI_viz_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "pLat",
+      "LynFree",
+      "FcRMon",
+      "FcRDim",
+      "FcRPbeta",
+      "FcRPgamma",
+      "FcRSyk",
+      "FcRSykPS",
+      "SykTest",
+      "LynTest",
+      "FcRTest"
+    ],
+    "bng2DataPoints": 501,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "GK",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\GK_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "Bu",
+      "Bp"
+    ],
+    "bng2DataPoints": 201,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "Lisman",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Lisman_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "K1p",
+      "Input"
+    ],
+    "bng2DataPoints": 601,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "LR",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\LR_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "FreeR",
+      "Bound"
+    ],
+    "bng2DataPoints": 501,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "LR_comp",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\LR_comp_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "FreeR",
+      "Bound",
+      "test"
+    ],
+    "bng2DataPoints": 501,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "LRR_comp",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\LRR_comp_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "FreeR",
+      "Bound",
+      "Dimers"
+    ],
+    "bng2DataPoints": 501,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "LV",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\LV_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "Stot",
+      "Wtot"
+    ],
+    "bng2DataPoints": 1001,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "organelle_transport",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\organelle_transport_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "bng2DataPoints": 1001,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "Repressilator",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Repressilator_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "pTetR",
+      "pCI",
+      "pLacI"
+    ],
+    "bng2DataPoints": 401,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "SIR",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\SIR_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "S",
+      "I",
+      "R"
+    ],
+    "bng2DataPoints": 201,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "Cheemalavagu_JAK_STAT",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\Cheemalavagu_JAK_STAT_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "total_pS3",
+      "total_pS1"
+    ],
+    "bng2DataPoints": 92,
+    "status": "ready_for_comparison"
+  },
+  {
+    "modelName": "ABC_ssa",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\ABC_ssa_bng2.gdat",
+    "bng2Headers": [
+      "time",
+      "A",
+      "B",
+      "C"
+    ],
+    "bng2DataPoints": 501,
     "status": "ready_for_comparison"
   }
 ]

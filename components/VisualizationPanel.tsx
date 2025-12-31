@@ -156,6 +156,10 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
               <ParameterScanTab model={model} />
             </TabPanel>
             <TabPanel>
+              <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">Parameter Estimation – fit parameters to experimental data using variational inference</div>
+              <ParameterEstimationTab model={model} />
+            </TabPanel>
+            <TabPanel>
               <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">Flux Analysis – visualize reaction flux contributions</div>
               <FluxAnalysisTab model={model} results={results} />
             </TabPanel>

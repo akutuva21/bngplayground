@@ -130,30 +130,12 @@ export class VariationalParameterEstimator {
       // log p(y|theta) = -0.5 * sum((y - f(theta))^2 / sigma^2)
       const observationNoise = 0.1; // Assume known observation noise
       
-<<<<<<< Updated upstream
-      let totalLogLik = tf.scalar(0);
-=======
       let totalLogLik = 0;
->>>>>>> Stashed changes
       
       // Compare predictions with observations for each observable
       for (const [obsName, obsData] of this.data.observables) {
         if (predicted.has(obsName)) {
           const predData = predicted.get(obsName)!;
-<<<<<<< Updated upstream
-          const obsTensor = tf.tensor1d(obsData);
-          const predTensor = tf.tensor1d(predData);
-          
-          const residuals = tf.sub(obsTensor, predTensor);
-          const squaredError = tf.sum(tf.square(residuals));
-          const logLik = tf.div(squaredError, -2 * observationNoise * observationNoise);
-          
-          totalLogLik = tf.add(totalLogLik, logLik);
-        }
-      }
-      
-      return totalLogLik as tf.Scalar;
-=======
           
           // Compute squared errors
           for (let i = 0; i < obsData.length; i++) {
@@ -164,7 +146,6 @@ export class VariationalParameterEstimator {
       }
       
       return tf.scalar(totalLogLik);
->>>>>>> Stashed changes
     });
   }
   
@@ -174,11 +155,7 @@ export class VariationalParameterEstimator {
    */
   private computeKLDivergence(): tf.Scalar {
     return tf.tidy(() => {
-<<<<<<< Updated upstream
-      let totalKL = tf.scalar(0);
-=======
       let totalKL = 0;
->>>>>>> Stashed changes
       
       for (let i = 0; i < this.nParams; i++) {
         const paramName = this.parameterNames[i];
@@ -186,35 +163,6 @@ export class VariationalParameterEstimator {
         
         if (!prior) continue;
         
-<<<<<<< Updated upstream
-        const priorMu = Math.log(prior.mean);
-        const priorSigma = prior.std / prior.mean; // Log-space std
-        
-        const muSlice = this.mu.slice([i], [1]);
-        const logSigmaSlice = this.logSigma.slice([i], [1]);
-        const sigma = tf.exp(logSigmaSlice);
-        
-        // KL = log(sigma_prior/sigma_post) + (sigma_post^2 + (mu_post - mu_prior)^2)/(2*sigma_prior^2) - 0.5
-        const logSigmaRatio = Math.log(priorSigma) - logSigmaSlice.dataSync()[0];
-        const muDiff = tf.sub(muSlice, priorMu);
-        const variance = tf.square(sigma);
-        
-        const kl = tf.add(
-          logSigmaRatio,
-          tf.sub(
-            tf.div(
-              tf.add(variance, tf.square(muDiff)),
-              2 * priorSigma * priorSigma
-            ),
-            0.5
-          )
-        );
-        
-        totalKL = tf.add(totalKL, kl);
-      }
-      
-      return totalKL as tf.Scalar;
-=======
         const priorMu = Math.log(Math.max(prior.mean, 1e-10));
         const priorSigma = Math.max(prior.std / Math.max(prior.mean, 1e-10), 0.01);
         
@@ -234,7 +182,6 @@ export class VariationalParameterEstimator {
       }
       
       return tf.scalar(totalKL);
->>>>>>> Stashed changes
     });
   }
   
@@ -270,21 +217,6 @@ export class VariationalParameterEstimator {
     const elboHistory: number[] = [];
     
     for (let iter = 0; iter < nIterations; iter++) {
-<<<<<<< Updated upstream
-      // Minimize negative ELBO
-      const loss = this.optimizer.minimize(() => {
-        const elbo = this.computeELBO(5);
-        return tf.neg(elbo);
-      }, true, [this.mu, this.logSigma]);
-      
-      if (loss) {
-        const elboValue = -(loss.dataSync()[0]);
-        elboHistory.push(elboValue);
-        
-        if (verbose && iter % 100 === 0) {
-          console.log(`Iteration ${iter}, ELBO: ${elboValue.toFixed(4)}`);
-        }
-=======
       // Compute loss and gradients manually
       const { value, grads } = tf.variableGrads(() => {
         // Sample from variational distribution
@@ -345,7 +277,6 @@ export class VariationalParameterEstimator {
       
       if (verbose && iter % 100 === 0) {
         console.log(`Iteration ${iter}, ELBO: ${elboValue.toFixed(4)}`);
->>>>>>> Stashed changes
       }
     }
     
@@ -360,11 +291,7 @@ export class VariationalParameterEstimator {
     // Check convergence (ELBO stabilized)
     const recentElbo = elboHistory.slice(-100);
     const elboStd = this.computeStd(recentElbo);
-<<<<<<< Updated upstream
-    const convergence = elboStd < 0.01;
-=======
     const convergence = elboStd < 0.01 * Math.abs(recentElbo[recentElbo.length - 1] || 1);
->>>>>>> Stashed changes
     
     return {
       posteriorMean: meanOriginal,

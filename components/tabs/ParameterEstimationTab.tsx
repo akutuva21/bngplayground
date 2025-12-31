@@ -27,12 +27,14 @@ interface ExperimentalDataPoint {
 }
 
 interface EstimationResult {
+  parameters: string[];
   posteriorMean: number[];
   posteriorStd: number[];
   elbo: number[];
   convergence: boolean;
   iterations: number;
   credibleIntervals: { lower: number; upper: number }[];
+  priorMeans: number[];
 }
 
 const EXAMPLE_DATA = `# Example experimental data format:
@@ -208,6 +210,14 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
   };
   
   const canRun = selectedParams.length > 0 && parsedData.length > 0 && !isRunning;
+
+  const formatNumber = (value: unknown): string => {
+    const n = typeof value === 'number' ? value : Number.NaN;
+    if (!Number.isFinite(n)) return '—';
+    const abs = Math.abs(n);
+    if (abs !== 0 && (abs < 1e-3 || abs >= 1e4)) return n.toExponential(4);
+    return n.toPrecision(6);
+  };
   
   const handleRunEstimation = async () => {
     if (!canRun || !model) return;
@@ -219,6 +229,13 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
     
     const controller = new AbortController();
     abortControllerRef.current = controller;
+
+    // Snapshot the selected parameters (and prior means) used for this run.
+    // This avoids UI crashes if the user changes selections after estimation finishes.
+    const paramsSnapshot = [...selectedParams];
+    const priorMeansSnapshot = paramsSnapshot.map(
+      (name) => priors.find((p) => p.name === name)?.mean ?? 0
+    );
     
     try {
       // Dynamically import TensorFlow.js and estimation module
@@ -254,7 +271,7 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
       const estimator = new VariationalParameterEstimator(
         model,
         simulationData,
-        selectedParams,
+        paramsSnapshot,
         priorsMap
       );
       
@@ -270,7 +287,7 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
       
       // Compute credible intervals from posterior
       const posteriorSamples = await estimator.samplePosterior(1000);
-      const credibleIntervals = selectedParams.map((_, i) => {
+      const credibleIntervals = paramsSnapshot.map((_, i) => {
         const values = posteriorSamples.map(s => s[i]).sort((a, b) => a - b);
         return {
           lower: values[Math.floor(0.025 * values.length)],
@@ -281,6 +298,8 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
       if (isMountedRef.current) {
         setResult({
           ...result,
+          parameters: paramsSnapshot,
+          priorMeans: priorMeansSnapshot,
           credibleIntervals
         });
       }
@@ -319,16 +338,29 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
   // Format results for chart
   const posteriorChartData = useMemo(() => {
     if (!result) return [];
-    
-    return selectedParams.map((name, i) => ({
-      name,
-      mean: result.posteriorMean[i],
-      std: result.posteriorStd[i],
-      lower: result.credibleIntervals[i]?.lower ?? result.posteriorMean[i] - 2 * result.posteriorStd[i],
-      upper: result.credibleIntervals[i]?.upper ?? result.posteriorMean[i] + 2 * result.posteriorStd[i],
-      prior: priors.find(p => p.name === name)?.mean ?? 0
-    }));
-  }, [result, selectedParams, priors]);
+
+    const clampPositive = (value: unknown, fallback: number): number => {
+      const n = typeof value === 'number' ? value : Number.NaN;
+      if (!Number.isFinite(n) || n <= 0) return fallback;
+      return n;
+    };
+
+    return result.parameters.map((name, i) => {
+      const mean = clampPositive(result.posteriorMean[i], 1e-12);
+      const lower = clampPositive(result.credibleIntervals[i]?.lower, mean);
+      const upper = clampPositive(result.credibleIntervals[i]?.upper, mean);
+
+      return {
+        name,
+        mean,
+        lower,
+        upper,
+        // Recharts ErrorBar supports [low, high] bounds.
+        ci: [lower, upper] as [number, number],
+        prior: result.priorMeans[i] ?? 0
+      };
+    });
+  }, [result]);
   
   const elboChartData = useMemo(() => {
     if (!result?.elbo) return [];
@@ -586,16 +618,29 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
                 <div className="text-sm text-slate-600 dark:text-slate-400">
                   Completed {result.iterations} iterations
                 </div>
+
+                <div className="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-md p-3 space-y-1">
+                  <div className="font-medium text-slate-700 dark:text-slate-200">What this means</div>
+                  <div>
+                    <span className="font-medium">Posterior mean/std</span>: estimated parameter value and uncertainty after fitting the time-course data.
+                  </div>
+                  <div>
+                    <span className="font-medium">95% credible interval</span>: range that contains ~95% of the posterior probability (Bayesian uncertainty interval).
+                  </div>
+                  <div>
+                    <span className="font-medium">ELBO</span>: a training objective; it should generally improve and then stabilize. “May not have converged” usually means it’s still noisy or drifting.
+                  </div>
+                </div>
                 
                 <DataTable
                   headers={['Parameter', 'Posterior Mean', 'Posterior Std', '95% CI Lower', '95% CI Upper', 'Prior Mean']}
-                  rows={selectedParams.map((name, i) => [
+                  rows={result.parameters.map((name, i) => [
                     name,
-                    result.posteriorMean[i].toExponential(4),
-                    result.posteriorStd[i].toExponential(4),
-                    result.credibleIntervals[i].lower.toExponential(4),
-                    result.credibleIntervals[i].upper.toExponential(4),
-                    (priors.find(p => p.name === name)?.mean ?? 0).toExponential(4)
+                    formatNumber(result.posteriorMean[i]),
+                    formatNumber(result.posteriorStd[i]),
+                    formatNumber(result.credibleIntervals[i]?.lower),
+                    formatNumber(result.credibleIntervals[i]?.upper),
+                    formatNumber(result.priorMeans[i])
                   ])}
                 />
               </Card>
@@ -622,16 +667,11 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
                       tickFormatter={(v) => v.toExponential(1)}
                     />
                     <Tooltip 
-                      formatter={(value: number) => value.toExponential(4)}
+                      formatter={(value: number) => formatNumber(value)}
                       labelFormatter={(label) => `Parameter: ${label}`}
                     />
                     <Bar dataKey="mean" fill={CHART_COLORS[0]} name="Posterior Mean">
-                      <ErrorBar 
-                        dataKey="std" 
-                        width={4} 
-                        strokeWidth={2}
-                        stroke={CHART_COLORS[1]}
-                      />
+                      <ErrorBar dataKey="ci" width={4} strokeWidth={2} stroke={CHART_COLORS[1]} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -663,7 +703,7 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
                   onClick={() => {
                     const csv = [
                       ['Parameter', 'Posterior Mean', 'Posterior Std', '95% CI Lower', '95% CI Upper'].join(','),
-                      ...selectedParams.map((name, i) => 
+                      ...result.parameters.map((name, i) => 
                         [name, result.posteriorMean[i], result.posteriorStd[i], result.credibleIntervals[i].lower, result.credibleIntervals[i].upper].join(',')
                       )
                     ].join('\n');
@@ -682,14 +722,17 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
                   variant="subtle" 
                   onClick={() => {
                     const exportData = {
-                      parameters: selectedParams,
+                      parameters: result.parameters,
                       posteriorMean: result.posteriorMean,
                       posteriorStd: result.posteriorStd,
                       credibleIntervals: result.credibleIntervals,
                       elbo: result.elbo,
                       convergence: result.convergence,
                       iterations: result.iterations,
-                      priors: priors
+                      priors: result.parameters.map((name, i) => ({
+                        name,
+                        mean: result.priorMeans[i]
+                      }))
                     };
                     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
                     const url = URL.createObjectURL(blob);

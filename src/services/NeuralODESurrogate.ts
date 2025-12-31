@@ -12,6 +12,7 @@ export interface SurrogateTrainingConfig {
   earlyStopping?: boolean;
   patience?: number;
   verbose?: boolean;
+  onEpochEnd?: (epoch: number, logs?: tf.Logs) => void | Promise<void>;
 }
 
 export interface TrainingDataset {
@@ -136,29 +137,39 @@ export class NeuralODESurrogate {
     normalizedConc: tf.Tensor3D
   ): { inputs: tf.Tensor2D; outputs: tf.Tensor2D } {
     return tf.tidy(() => {
-      const nSamples = normalizedParams.shape[0];
-      const nTimePoints = normalizedTime.shape[0];
-      const totalExamples = nSamples * nTimePoints;
-      
-      // Create all (param, time) combinations
-      const inputs: number[][] = [];
-      const outputs: number[][] = [];
-      
-      const paramsArray = normalizedParams.arraySync() as number[][];
-      const timeArray = normalizedTime.arraySync() as number[][];
-      const concArray = normalizedConc.arraySync() as number[][][];
-      
-      for (let i = 0; i < nSamples; i++) {
-        for (let t = 0; t < nTimePoints; t++) {
-          inputs.push([...paramsArray[i], timeArray[t][0]]);
-          outputs.push(concArray[i][t]);
-        }
+      // Defensive alignment: dataset sources may disagree on dimensions.
+      // Concentrations define the authoritative [nSamples, nTimePoints, nSpecies] shape.
+      const nSamples = Math.min(normalizedParams.shape[0], normalizedConc.shape[0]);
+      const nTimePoints = Math.min(normalizedTime.shape[0], normalizedConc.shape[1]);
+
+      if (nSamples <= 0 || nTimePoints <= 0) {
+        throw new Error(
+          `Invalid training data dimensions: params=${normalizedParams.shape}, time=${normalizedTime.shape}, conc=${normalizedConc.shape}`
+        );
       }
-      
-      return {
-        inputs: tf.tensor2d(inputs),
-        outputs: tf.tensor2d(outputs)
-      };
+
+      // Slice to common shapes:
+      // params2d: [nSamples, nParams]
+      // time2d:   [nTimePoints, 1]
+      // conc3d:   [nSamples, nTimePoints, nSpecies]
+      const params2d = normalizedParams.slice([0, 0], [nSamples, this.nParams]);
+      const time2d = normalizedTime.slice([0, 0], [nTimePoints, 1]);
+      const conc3d = normalizedConc.slice([0, 0, 0], [nSamples, nTimePoints, this.nSpecies]);
+
+      // Expand params across time: [nSamples, 1, nParams] -> tile -> [nSamples, nTimePoints, nParams]
+      const paramsTiled = params2d.expandDims(1).tile([1, nTimePoints, 1]);
+
+      // Expand time across samples: [1, nTimePoints, 1] -> tile -> [nSamples, nTimePoints, 1]
+      const timeTiled = time2d.expandDims(0).tile([nSamples, 1, 1]);
+
+      // Concat along last axis: [nSamples, nTimePoints, nParams + 1]
+      const inputs3d = tf.concat([paramsTiled, timeTiled], 2);
+
+      // Flatten for training: [nSamples * nTimePoints, nParams + 1]
+      const inputs = inputs3d.reshape([nSamples * nTimePoints, this.nParams + 1]) as tf.Tensor2D;
+      const outputs = conc3d.reshape([nSamples * nTimePoints, this.nSpecies]) as tf.Tensor2D;
+
+      return { inputs, outputs };
     });
   }
   
@@ -176,7 +187,8 @@ export class NeuralODESurrogate {
       learningRate = 0.001,
       earlyStopping = true,
       patience = 10,
-      verbose = true
+      verbose = true,
+      onEpochEnd
     } = config;
     
     // Build model if not already built
@@ -203,34 +215,39 @@ export class NeuralODESurrogate {
     
     // Training callbacks
     const callbacks: tf.CustomCallbackArgs = {};
-    
-    if (earlyStopping) {
-      let bestLoss = Infinity;
-      let patienceCounter = 0;
-      
-      callbacks.onEpochEnd = async (epoch, logs) => {
-        if (logs && logs.val_loss !== undefined) {
-          if (logs.val_loss < bestLoss) {
-            bestLoss = logs.val_loss;
-            patienceCounter = 0;
-          } else {
-            patienceCounter++;
-            if (patienceCounter >= patience) {
-              console.log(`Early stopping at epoch ${epoch}`);
-              this.model!.stopTraining = true;
-            }
+
+    let bestLoss = Infinity;
+    let patienceCounter = 0;
+
+    callbacks.onEpochEnd = async (epoch, logs) => {
+      // Yield to keep UI responsive and avoid long synchronous stalls.
+      await tf.nextFrame();
+
+      if (earlyStopping && logs && logs.val_loss !== undefined) {
+        const valLoss = logs.val_loss as number;
+        if (valLoss < bestLoss) {
+          bestLoss = valLoss;
+          patienceCounter = 0;
+        } else {
+          patienceCounter++;
+          if (patienceCounter >= patience) {
+            console.log(`Early stopping at epoch ${epoch}`);
+            this.model!.stopTraining = true;
           }
         }
-        
-        if (verbose && epoch % 10 === 0) {
-          console.log(
-            `Epoch ${epoch}: loss=${logs?.loss.toFixed(4)}, ` +
-            `val_loss=${logs?.val_loss?.toFixed(4)}, ` +
-            `mae=${logs?.mae.toFixed(4)}`
-          );
-        }
-      };
-    }
+      }
+
+      if (onEpochEnd) {
+        await onEpochEnd(epoch, logs);
+      }
+
+      if (verbose && epoch % 10 === 0) {
+        const loss = typeof logs?.loss === 'number' ? logs.loss.toFixed(4) : String(logs?.loss);
+        const valLoss = typeof logs?.val_loss === 'number' ? logs.val_loss.toFixed(4) : String(logs?.val_loss);
+        const mae = typeof logs?.mae === 'number' ? logs.mae.toFixed(4) : String(logs?.mae);
+        console.log(`Epoch ${epoch}: loss=${loss}, val_loss=${valLoss}, mae=${mae}`);
+      }
+    };
     
     // Train model
     const history = await this.model.fit(inputs, outputs, {

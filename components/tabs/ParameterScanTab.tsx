@@ -108,9 +108,18 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
   // Neural ODE Surrogate state
   const [useSurrogate, setUseSurrogate] = useState(false);
   const [surrogateStatus, setSurrogateStatus] = useState<'none' | 'training' | 'ready' | 'error'>('none');
-  const [surrogateProgress, setSurrogateProgress] = useState({ epoch: 0, totalEpochs: 0, loss: 0 });
+  const [surrogateProgress, setSurrogateProgress] = useState<{
+    phase: 'data' | 'train';
+    current: number;
+    total: number;
+    loss: number;
+  }>({ phase: 'data', current: 0, total: 0, loss: 0 });
   const [surrogateMetrics, setSurrogateMetrics] = useState<{ mse: number; mae: number; r2: number[] } | null>(null);
   const surrogateRef = useRef<any>(null); // Will hold NeuralODESurrogate instance
+
+  // Surrogate training controls (defaults enabled)
+  const [surrogateTrainingSims, setSurrogateTrainingSims] = useState('200');
+  const [surrogateTrainingEpochs, setSurrogateTrainingEpochs] = useState('100');
   
   // Use refs for lifecycle-bound cancellers and mounts to avoid setState-after-unmount races
   const scanAbortControllerRef = useRef<AbortController | null>(null);
@@ -209,9 +218,12 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
   // Train Neural ODE Surrogate
   const handleTrainSurrogate = useCallback(async () => {
     if (!model || !parameter1) return;
-    
+
+    const nTrainingSamples = Math.max(20, Math.min(2000, Math.floor(Number(surrogateTrainingSims) || 200)));
+    const trainingEpochs = Math.max(10, Math.min(500, Math.floor(Number(surrogateTrainingEpochs) || 100)));
+
     setSurrogateStatus('training');
-    setSurrogateProgress({ epoch: 0, totalEpochs: 50, loss: 0 });
+    setSurrogateProgress({ phase: 'data', current: 0, total: nTrainingSamples, loss: 0 });
     setError(null);
     
     try {
@@ -229,11 +241,16 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
       });
       
       // Generate training data using ODE solver
-      const nTrainingSamples = 100;
       const timePoints = Array.from({ length: 51 }, (_, i) => i * 2); // 0 to 100
-      
-      // Create sample parameter sets
-      const parameterSets = SurrogateDatasetGenerator.latinHypercubeSample(paramRanges, nTrainingSamples);
+
+      // Create sample parameter sets.
+      // If ranges are strictly positive and span orders of magnitude, sample in log-space.
+      const shouldLogSample = paramRanges.every(([min, max]) => min > 0 && max / Math.max(min, 1e-12) >= 50);
+      const parameterSets = shouldLogSample
+        ? SurrogateDatasetGenerator
+            .latinHypercubeSample(paramRanges.map(([min, max]) => [Math.log(min), Math.log(max)]), nTrainingSamples)
+            .map((row) => row.map((v) => Math.exp(v)))
+        : SurrogateDatasetGenerator.latinHypercubeSample(paramRanges, nTrainingSamples);
       
       // Run simulations for training data
       const concentrations: number[][][] = [];
@@ -259,7 +276,17 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
         concentrations.push(trajectory);
         
         if (isMountedRef.current) {
-          setSurrogateProgress(prev => ({ ...prev, epoch: Math.floor((i / nTrainingSamples) * 25) }));
+          setSurrogateProgress((prev) => ({
+            ...prev,
+            phase: 'data',
+            current: i + 1,
+            total: nTrainingSamples
+          }));
+        }
+
+        // Yield occasionally to keep the browser responsive.
+        if (i % 2 === 0) {
+          await tf.nextFrame();
         }
       }
       
@@ -274,20 +301,44 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
       
       // Create and train surrogate
       const surrogate = new NeuralODESurrogate(paramsToVary.length, observableNames.length);
+
+      if (isMountedRef.current) {
+        setSurrogateProgress((prev) => ({
+          ...prev,
+          phase: 'train',
+          current: 0,
+          total: trainingEpochs
+        }));
+      }
       
       await surrogate.train(trainingData, {
-        epochs: 50,
+        epochs: trainingEpochs,
         batchSize: 16,
         validationSplit: 0.1,
         learningRate: 0.001,
         earlyStopping: true,
-        patience: 10,
-        verbose: false
+        patience: Math.max(10, Math.floor(trainingEpochs / 10)),
+        verbose: false,
+        onEpochEnd: async (epoch, logs) => {
+          if (!isMountedRef.current) return;
+          const loss = typeof logs?.loss === 'number' ? (logs.loss as number) : undefined;
+          setSurrogateProgress((prev) => ({
+            ...prev,
+            phase: 'train',
+            current: Math.max(prev.current, epoch + 1),
+            total: trainingEpochs,
+            loss: loss ?? prev.loss
+          }));
+        }
       });
       
       // Evaluate surrogate
       const testData = {
-        parameters: SurrogateDatasetGenerator.latinHypercubeSample(paramRanges, 20),
+        parameters: shouldLogSample
+          ? SurrogateDatasetGenerator
+              .latinHypercubeSample(paramRanges.map(([min, max]) => [Math.log(min), Math.log(max)]), 20)
+              .map((row) => row.map((v) => Math.exp(v)))
+          : SurrogateDatasetGenerator.latinHypercubeSample(paramRanges, 20),
         timePoints,
         concentrations: [] as number[][][]
       };
@@ -817,6 +868,35 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
             />
             Use surrogate for scans
           </label>
+
+          <div className="grid grid-cols-2 gap-3 items-end">
+            <label className="text-xs text-slate-600 dark:text-slate-300">
+              Training sims
+              <Input
+                type="number"
+                min={20}
+                max={2000}
+                step={10}
+                value={surrogateTrainingSims}
+                onChange={(e) => setSurrogateTrainingSims(e.target.value)}
+                disabled={surrogateStatus === 'training'}
+                className="mt-1"
+              />
+            </label>
+            <label className="text-xs text-slate-600 dark:text-slate-300">
+              Epochs
+              <Input
+                type="number"
+                min={10}
+                max={500}
+                step={10}
+                value={surrogateTrainingEpochs}
+                onChange={(e) => setSurrogateTrainingEpochs(e.target.value)}
+                disabled={surrogateStatus === 'training'}
+                className="mt-1"
+              />
+            </label>
+          </div>
           
           <Button 
             variant="subtle" 
@@ -846,12 +926,14 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
         {surrogateStatus === 'training' && (
           <div className="w-full">
             <div className="text-xs text-slate-500 mb-1">
-              Training progress: Epoch {surrogateProgress.epoch} / {surrogateProgress.totalEpochs}
+              {surrogateProgress.phase === 'data'
+                ? `Generating training data: ${surrogateProgress.current} / ${surrogateProgress.total}`
+                : `Training surrogate: Epoch ${surrogateProgress.current} / ${surrogateProgress.total}`}
             </div>
             <div className="w-full bg-slate-200 rounded-full h-1.5 dark:bg-slate-700">
               <div
                 className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
-                style={{ width: `${(surrogateProgress.epoch / Math.max(1, surrogateProgress.totalEpochs)) * 100}%` }}
+                style={{ width: `${(surrogateProgress.current / Math.max(1, surrogateProgress.total)) * 100}%` }}
               />
             </div>
           </div>

@@ -39,44 +39,78 @@ export interface SimulationData {
  * Implements stochastic variational inference (SVI) for parameter estimation
  */
 export class VariationalParameterEstimator {
-  private model: any; // BNGLModel from root types.ts
   private data: SimulationData;
   private parameterNames: string[];
   private priors: Map<string, ParameterPrior>;
+  private logMinBounds: number[];
+  private logMaxBounds: number[];
   
   // Variational parameters
   private mu: tf.Variable;
   private logSigma: tf.Variable;
   
   private nParams: number;
-  private optimizer: tf.Optimizer;
   
   constructor(
-    model: any, // BNGLModel
+    _model: any, // BNGLModel (reserved for future integration)
     data: SimulationData,
     parameterNames: string[],
     priors: Map<string, ParameterPrior>
   ) {
-    this.model = model;
     this.data = data;
     this.parameterNames = parameterNames;
     this.priors = priors;
     this.nParams = parameterNames.length;
-    
-    // Initialize variational parameters from priors
-    const initialMu = parameterNames.map(name => {
+
+    const safeLog = (x: number): number => Math.log(Math.max(x, 1e-12));
+
+    const clamp = (x: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, x));
+
+    const deriveBounds = (prior: ParameterPrior | undefined): { logMin: number; logMax: number } => {
+      const mean = Math.max(prior?.mean ?? 1, 1e-12);
+      const min = Math.max(prior?.min ?? mean * 0.1, 1e-12);
+      const max = Math.max(prior?.max ?? mean * 10, min * 1.000001);
+      // Keep log-bounds numerically safe.
+      const logMin = clamp(safeLog(min), -30, 30);
+      const logMax = clamp(safeLog(max), -30, 30);
+      return {
+        logMin: Math.min(logMin, logMax),
+        logMax: Math.max(logMin, logMax)
+      };
+    };
+
+    // Convert (mean,std) on original scale to lognormal (mu,sigma) in log-space.
+    // sigma_log = sqrt(log(1 + (std/mean)^2))
+    // mu_log = log(mean) - 0.5*sigma_log^2
+    const priorToLogNormal = (prior: ParameterPrior | undefined): { muLog: number; sigmaLog: number } => {
+      const mean = Math.max(prior?.mean ?? 1, 1e-12);
+      const std = Math.max(prior?.std ?? mean * 0.5, 1e-12);
+      const cv = std / mean;
+      const sigmaLog = Math.sqrt(Math.log(1 + cv * cv));
+      const muLog = safeLog(mean) - 0.5 * sigmaLog * sigmaLog;
+      // Bound sigma in log-space to avoid explosive sampling.
+      const sigmaLogClamped = clamp(sigmaLog, 0.02, 1.0);
+      return { muLog, sigmaLog: sigmaLogClamped };
+    };
+
+    // Initialize variational parameters from priors (lognormal in log-space)
+    const initialMu = parameterNames.map((name) => {
       const prior = priors.get(name);
-      return prior ? Math.log(prior.mean) : 0; // Log-space for positive parameters
+      return priorToLogNormal(prior).muLog;
     });
-    
-    const initialLogSigma = parameterNames.map(name => {
+
+    const initialLogSigma = parameterNames.map((name) => {
       const prior = priors.get(name);
-      return prior ? Math.log(prior.std) : -1; // Small initial uncertainty
+      const sigmaLog = priorToLogNormal(prior).sigmaLog;
+      return safeLog(sigmaLog);
     });
+
+    const bounds = parameterNames.map((name) => deriveBounds(priors.get(name)));
+    this.logMinBounds = bounds.map((b) => b.logMin);
+    this.logMaxBounds = bounds.map((b) => b.logMax);
     
     this.mu = tf.variable(tf.tensor1d(initialMu));
     this.logSigma = tf.variable(tf.tensor1d(initialLogSigma));
-    this.optimizer = tf.train.adam(0.01);
   }
   
   /**
@@ -86,104 +120,18 @@ export class VariationalParameterEstimator {
     return tf.tidy(() => {
       const eps = tf.randomNormal([this.nParams]);
       const sigma = tf.exp(this.logSigma);
-      return tf.add(this.mu, tf.mul(sigma, eps)) as tf.Tensor1D;
+      const logParams = tf.add(this.mu, tf.mul(sigma, eps)) as tf.Tensor1D;
+
+      // Clamp in log-space to avoid extreme exponentiation.
+      const minT = tf.tensor1d(this.logMinBounds);
+      const maxT = tf.tensor1d(this.logMaxBounds);
+      const clamped = tf.minimum(tf.maximum(logParams, minT), maxT) as tf.Tensor1D;
+      minT.dispose();
+      maxT.dispose();
+      return clamped;
     });
   }
   
-  /**
-   * Compute Evidence Lower Bound (ELBO)
-   * ELBO = E_q[log p(y|theta)] - KL[q(theta) || p(theta)]
-   */
-  private computeELBO(nSamples: number = 5): tf.Scalar {
-    return tf.tidy(() => {
-      let totalLogLik = tf.scalar(0);
-      
-      // Monte Carlo estimate of expected log likelihood
-      for (let i = 0; i < nSamples; i++) {
-        const logParams = this.sampleParameters();
-        const params = tf.exp(logParams); // Transform back to positive space
-        
-        const logLik = this.computeLogLikelihood(params);
-        totalLogLik = tf.add(totalLogLik, logLik);
-      }
-      
-      const avgLogLik = tf.div(totalLogLik, nSamples);
-      
-      // KL divergence from prior
-      const kl = this.computeKLDivergence();
-      
-      // ELBO = log likelihood - KL divergence
-      return tf.sub(avgLogLik, kl) as tf.Scalar;
-    });
-  }
-  
-  /**
-   * Compute log likelihood of observed data given parameters
-   */
-  private computeLogLikelihood(params: tf.Tensor1D): tf.Scalar {
-    return tf.tidy(() => {
-      // Simulate model with given parameters
-      const paramsArray = params.arraySync() as number[];
-      const predicted = this.simulateWithParams(paramsArray);
-      
-      // Compute Gaussian log likelihood
-      // log p(y|theta) = -0.5 * sum((y - f(theta))^2 / sigma^2)
-      const observationNoise = 0.1; // Assume known observation noise
-      
-      let totalLogLik = 0;
-      
-      // Compare predictions with observations for each observable
-      for (const [obsName, obsData] of this.data.observables) {
-        if (predicted.has(obsName)) {
-          const predData = predicted.get(obsName)!;
-          
-          // Compute squared errors
-          for (let i = 0; i < obsData.length; i++) {
-            const residual = obsData[i] - (predData[i] || 0);
-            totalLogLik -= (residual * residual) / (2 * observationNoise * observationNoise);
-          }
-        }
-      }
-      
-      return tf.scalar(totalLogLik);
-    });
-  }
-  
-  /**
-   * Compute KL divergence between variational posterior and prior
-   * KL[q(theta) || p(theta)] for Gaussian distributions
-   */
-  private computeKLDivergence(): tf.Scalar {
-    return tf.tidy(() => {
-      let totalKL = 0;
-      
-      for (let i = 0; i < this.nParams; i++) {
-        const paramName = this.parameterNames[i];
-        const prior = this.priors.get(paramName);
-        
-        if (!prior) continue;
-        
-        const priorMu = Math.log(Math.max(prior.mean, 1e-10));
-        const priorSigma = Math.max(prior.std / Math.max(prior.mean, 1e-10), 0.01);
-        
-        // Get current variational parameters as numbers
-        const muVal = this.mu.slice([i], [1]).dataSync()[0];
-        const logSigmaVal = this.logSigma.slice([i], [1]).dataSync()[0];
-        const sigmaVal = Math.exp(logSigmaVal);
-        
-        // KL divergence for Gaussians (analytical form)
-        // KL = log(sigma_prior/sigma_post) + (sigma_post^2 + (mu_post - mu_prior)^2)/(2*sigma_prior^2) - 0.5
-        const logSigmaRatio = Math.log(priorSigma) - logSigmaVal;
-        const muDiff = muVal - priorMu;
-        const variance = sigmaVal * sigmaVal;
-        
-        const kl = logSigmaRatio + (variance + muDiff * muDiff) / (2 * priorSigma * priorSigma) - 0.5;
-        totalKL += kl;
-      }
-      
-      return tf.scalar(totalKL);
-    });
-  }
   
   /**
    * Simulate model with given parameters
@@ -191,16 +139,60 @@ export class VariationalParameterEstimator {
    */
   private simulateWithParams(params: number[]): Map<string, number[]> {
     // TODO: Integrate with actual ODESolver
-    // For now, return dummy predictions
+    // For now, return deterministic dummy predictions (no randomness) so optimizers converge.
     const result = new Map<string, number[]>();
+
+    // Deterministic scale/shape based on parameters
+    const paramSum = params.reduce((a, b) => a + b, 0);
+    const scale = 0.9 + 0.2 * (1 / (1 + Math.exp(-(paramSum / Math.max(1, params.length)) * 0.01)));
+    const phase = (paramSum % 1000) * 0.001;
     
     for (const [obsName, obsData] of this.data.observables) {
-      // Simple placeholder: slightly perturbed observations
-      const pred = obsData.map(v => v * (0.9 + Math.random() * 0.2));
+      // Simple placeholder: smooth deterministic modulation of observations
+      const pred = obsData.map((v, i) => {
+        const wobble = 1 + 0.02 * Math.sin(phase + i * 0.1);
+        return v * scale * wobble;
+      });
       result.set(obsName, pred);
     }
     
     return result;
+  }
+
+  private computeObjective(params: number[]): number {
+    // Negative log-likelihood proxy + weak prior regularization.
+    const predicted = this.simulateWithParams(params);
+
+    let dataTerm = 0;
+    const observationNoise = 10.0; // Keep large noise for stability with placeholder simulator
+
+    for (const [obsName, obsData] of this.data.observables) {
+      const predData = predicted.get(obsName);
+      if (!predData) continue;
+      for (let i = 0; i < obsData.length; i++) {
+        const residual = obsData[i] - (predData[i] ?? 0);
+        dataTerm += (residual * residual) / (2 * observationNoise * observationNoise);
+      }
+    }
+
+    // Prior penalty in log-space (Gaussian)
+    let priorPenalty = 0;
+    for (let i = 0; i < this.nParams; i++) {
+      const name = this.parameterNames[i];
+      const prior = this.priors.get(name);
+      if (!prior) continue;
+
+      const mean = Math.max(prior.mean, 1e-12);
+      const std = Math.max(prior.std, 1e-12);
+      const cv = std / mean;
+      const sigmaLog = Math.max(0.02, Math.min(1.0, Math.sqrt(Math.log(1 + cv * cv))));
+      const muLog = Math.log(mean) - 0.5 * sigmaLog * sigmaLog;
+      const x = Math.log(Math.max(params[i], 1e-12));
+      const z = (x - muLog) / sigmaLog;
+      priorPenalty += 0.5 * z * z;
+    }
+
+    return dataTerm + 0.01 * priorPenalty;
   }
   
   /**
@@ -210,83 +202,86 @@ export class VariationalParameterEstimator {
     const {
       nIterations = 1000,
       learningRate = 0.01,
+      batchSize = 16,
       verbose = true
     } = config;
-    
-    this.optimizer = tf.train.adam(learningRate);
+
+    // Gradient-free update: sample candidates from current variational distribution,
+    // pick the best objective, and nudge (mu, logSigma) toward it.
     const elboHistory: number[] = [];
-    
+    let mu = this.mu.arraySync() as number[];
+    let logSigma = this.logSigma.arraySync() as number[];
+
+    const candidatesPerIter = Math.max(2, batchSize);
+    const step = Math.max(0.001, Math.min(0.2, learningRate));
+
+    const clamp = (x: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, x));
+    const logSigmaMin = Math.log(0.02);
+    const logSigmaMax = Math.log(1.0);
+
     for (let iter = 0; iter < nIterations; iter++) {
-      // Compute loss and gradients manually
-      const { value, grads } = tf.variableGrads(() => {
-        // Sample from variational distribution
-        const eps = tf.randomNormal([this.nParams]);
-        const sigma = tf.exp(this.logSigma);
-        const logParams = tf.add(this.mu, tf.mul(sigma, eps));
-        const params = tf.exp(logParams);
-        
-        // Compute log likelihood (simplified - using L2 loss as proxy)
-        const paramsArray = params.arraySync() as number[];
-        const predicted = this.simulateWithParams(paramsArray);
-        
-        let logLikValue = 0;
-        const observationNoise = 10.0; // Larger noise for stability
-        
-        for (const [obsName, obsData] of this.data.observables) {
-          if (predicted.has(obsName)) {
-            const predData = predicted.get(obsName)!;
-            for (let i = 0; i < obsData.length; i++) {
-              const residual = obsData[i] - (predData[i] || 0);
-              logLikValue -= (residual * residual) / (2 * observationNoise * observationNoise);
-            }
-          }
+      let bestParams: number[] | null = null;
+      let bestObjective = Number.POSITIVE_INFINITY;
+
+      for (let k = 0; k < candidatesPerIter; k++) {
+        const eps = tf.randomNormal([this.nParams]).arraySync() as number[];
+        const candidateLogParams = mu.map((m, i) => {
+          const sigmaLog = Math.exp(clamp(logSigma[i], logSigmaMin, logSigmaMax));
+          const raw = m + sigmaLog * eps[i];
+          return clamp(raw, this.logMinBounds[i], this.logMaxBounds[i]);
+        });
+        const candidateParams = candidateLogParams.map((x) => Math.exp(x));
+
+        const obj = this.computeObjective(candidateParams);
+        if (obj < bestObjective) {
+          bestObjective = obj;
+          bestParams = candidateParams;
         }
-        
-        // Compute KL divergence
-        let klValue = 0;
-        for (let i = 0; i < this.nParams; i++) {
-          const paramName = this.parameterNames[i];
-          const prior = this.priors.get(paramName);
-          if (!prior) continue;
-          
-          const priorMu = Math.log(Math.max(prior.mean, 1e-10));
-          const priorSigma = Math.max(prior.std / Math.max(prior.mean, 1e-10), 0.1);
-          
-          const muVal = this.mu.slice([i], [1]).dataSync()[0];
-          const logSigmaVal = this.logSigma.slice([i], [1]).dataSync()[0];
-          const sigmaVal = Math.exp(logSigmaVal);
-          
-          const logSigmaRatio = Math.log(priorSigma) - logSigmaVal;
-          const muDiff = muVal - priorMu;
-          const variance = sigmaVal * sigmaVal;
-          
-          klValue += logSigmaRatio + (variance + muDiff * muDiff) / (2 * priorSigma * priorSigma) - 0.5;
-        }
-        
-        // ELBO = log_lik - KL, so negative ELBO = KL - log_lik
-        const negElbo = klValue - logLikValue;
-        return tf.scalar(negElbo);
-      });
-      
-      // Apply gradients
-      this.optimizer.applyGradients(grads);
-      
-      const elboValue = -value.dataSync()[0];
+      }
+
+      // Record an ELBO-like score (higher is better)
+      const elboValue = -bestObjective;
       elboHistory.push(elboValue);
-      value.dispose();
-      
-      if (verbose && iter % 100 === 0) {
-        console.log(`Iteration ${iter}, ELBO: ${elboValue.toFixed(4)}`);
+
+      if (bestParams) {
+        const targetMu = bestParams.map((p) => Math.log(Math.max(p, 1e-12)));
+        mu = mu.map((m, i) => (1 - step) * m + step * targetMu[i]);
+
+        // Anneal uncertainty slowly to encourage convergence
+        logSigma = logSigma.map((ls) => clamp(ls - 0.002, logSigmaMin, logSigmaMax));
+
+        this.mu.assign(tf.tensor1d(mu));
+        this.logSigma.assign(tf.tensor1d(logSigma));
+      }
+
+      if (verbose && iter % 50 === 0) {
+        console.log(`Iteration ${iter}, score=${elboValue.toFixed(4)}`);
+      }
+
+      // Keep the UI responsive in browsers
+      if (iter % 25 === 0) {
+        await tf.nextFrame();
       }
     }
     
     // Extract posterior parameters
-    const posteriorMean = this.mu.arraySync() as number[];
-    const posteriorStd = tf.exp(this.logSigma).arraySync() as number[];
-    
-    // Transform from log-space to original space
-    const meanOriginal = posteriorMean.map(v => Math.exp(v));
-    const stdOriginal = posteriorStd.map((s, i) => Math.exp(posteriorMean[i]) * s);
+    const posteriorMu = this.mu.arraySync() as number[];
+    const posteriorSigma = tf.exp(this.logSigma).arraySync() as number[];
+
+    // Transform from log-space to original space assuming a lognormal posterior
+    // mean = exp(mu + 0.5*sigma^2)
+    // std  = sqrt((exp(sigma^2)-1) * exp(2*mu + sigma^2))
+    const meanOriginal = posteriorMu.map((muVal, i) => {
+      const s = posteriorSigma[i];
+      const mean = Math.exp(muVal + 0.5 * s * s);
+      return clamp(mean, Math.exp(this.logMinBounds[i]), Math.exp(this.logMaxBounds[i]));
+    });
+    const stdOriginal = posteriorMu.map((muVal, i) => {
+      const s = posteriorSigma[i];
+      const v = (Math.exp(s * s) - 1) * Math.exp(2 * muVal + s * s);
+      const std = Math.sqrt(Math.max(v, 0));
+      return Number.isFinite(std) ? std : 0;
+    });
     
     // Check convergence (ELBO stabilized)
     const recentElbo = elboHistory.slice(-100);
@@ -330,65 +325,5 @@ export class VariationalParameterEstimator {
   dispose(): void {
     this.mu.dispose();
     this.logSigma.dispose();
-  }
-}
-
-/**
- * Simple parameter sweep using TensorFlow.js for parallel evaluation
- */
-export class ParameterSweeper {
-  private model: any; // BNGLModel
-  
-  constructor(model: any) { // BNGLModel
-    this.model = model;
-  }
-  
-  /**
-   * Perform grid search over parameter space
-   */
-  async gridSearch(
-    paramRanges: Map<string, [number, number]>,
-    nPointsPerParam: number = 10
-  ): Promise<Map<string, number[]>> {
-    // Latin hypercube sampling for efficient space coverage
-    const paramNames = Array.from(paramRanges.keys());
-    const samples = this.latinHypercubeSample(paramRanges, nPointsPerParam ** paramNames.length);
-    
-    // TODO: Evaluate model at each parameter set
-    // Return best parameters based on some objective function
-    
-    return samples;
-  }
-  
-  /**
-   * Latin Hypercube Sampling for efficient parameter space exploration
-   */
-  private latinHypercubeSample(
-    paramRanges: Map<string, [number, number]>,
-    nSamples: number
-  ): Map<string, number[]> {
-    const result = new Map<string, number[]>();
-    
-    for (const [param, [min, max]] of paramRanges) {
-      const samples: number[] = [];
-      const interval = (max - min) / nSamples;
-      
-      // Generate stratified random samples
-      for (let i = 0; i < nSamples; i++) {
-        const lower = min + i * interval;
-        const upper = min + (i + 1) * interval;
-        samples.push(lower + Math.random() * (upper - lower));
-      }
-      
-      // Shuffle to break correlation between parameters
-      for (let i = samples.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [samples[i], samples[j]] = [samples[j], samples[i]];
-      }
-      
-      result.set(param, samples);
-    }
-    
-    return result;
   }
 }

@@ -178,20 +178,11 @@ function getMoleculeCompartment(mol: string): { compartment: string | null; clea
 // --- Helper: Match Single Molecule Pattern ---
 function matchMolecule(patMol: string, specMol: string): boolean {
   // patMol and specMol are "Name(components)" strings, no compartments.
-  const DEBUG_MATCH = patMol.includes('p53') && patMol.includes('S15');
 
   const patMatch = patMol.match(/^([A-Za-z0-9_]+)(?:\(([^)]*)\))?$/);
   const specMatch = specMol.match(/^([A-Za-z0-9_]+)(?:\(([^)]*)\))?$/);
 
   if (!patMatch || !specMatch) {
-    if (DEBUG_MATCH) {
-      console.log(`[DEBUG matchMolecule] Regex failed!`);
-      console.log(`[DEBUG matchMolecule]   patMol="${patMol}" (len=${patMol.length})`);
-      console.log(`[DEBUG matchMolecule]   specMol="${specMol}" (len=${specMol.length})`);
-      console.log(`[DEBUG matchMolecule]   patMatch=${!!patMatch}, specMatch=${!!specMatch}`);
-      // Show character codes to identify invisible characters
-      console.log(`[DEBUG matchMolecule]   patMol charCodes: [${patMol.split('').map(c => c.charCodeAt(0)).join(',')}]`);
-    }
     return false;
   }
 
@@ -199,7 +190,6 @@ function matchMolecule(patMol: string, specMol: string): boolean {
   const specName = specMatch[1];
 
   if (patName !== specName) {
-    if (DEBUG_MATCH) console.log(`[DEBUG matchMolecule] Name mismatch: "${patName}" !== "${specName}"`);
     return false;
   }
 
@@ -212,15 +202,10 @@ function matchMolecule(patMol: string, specMol: string): boolean {
   const patComps = patCompsStr.split(',').map(s => s.trim()).filter(Boolean);
   const specComps = specCompsStr.split(',').map(s => s.trim()).filter(Boolean);
 
-  if (DEBUG_MATCH) {
-    console.log(`[DEBUG matchMolecule] patComps=[${patComps.join(', ')}], specComps=[${specComps.join(', ')}]`);
-  }
-
   // Every component in pattern must be satisfied by species
   return patComps.every(pCompStr => {
     const pM = pCompStr.match(/^([A-Za-z0-9_]+)(?:~([A-Za-z0-9_?]+))?(?:!([0-9]+|\+|\?))?$/);
     if (!pM) {
-      if (DEBUG_MATCH) console.log(`[DEBUG matchMolecule] Pattern component regex failed: "${pCompStr}"`);
       return false;
     }
     const [_, pName, pState, pBond] = pM;
@@ -231,20 +216,17 @@ function matchMolecule(patMol: string, specMol: string): boolean {
     });
 
     if (!sCompStr) {
-      if (DEBUG_MATCH) console.log(`[DEBUG matchMolecule] Component "${pName}" not found in species`);
       return false;
     }
 
     // BUG FIX: Handle !+ and !? wildcards in species string too
     const sM = sCompStr.match(/^([A-Za-z0-9_]+)(?:~([A-Za-z0-9_]+))?(?:!([0-9]+|\+|\?))?$/);
     if (!sM) {
-      if (DEBUG_MATCH) console.log(`[DEBUG matchMolecule] Species component regex failed: "${sCompStr}"`);
       return false;
     }
     const [__, _sName, sState, sBond] = sM;
 
     if (pState && pState !== sState) {
-      if (DEBUG_MATCH) console.log(`[DEBUG matchMolecule] State mismatch: pattern="${pState}", species="${sState}"`);
       return false;
     }
 
@@ -554,20 +536,7 @@ async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Pr
     const g = BNGLParser.parseSpeciesGraph(s.name);
     const canonicalName = GraphCanonicalizer.canonicalize(g);
     seedConcentrationMap.set(canonicalName, s.initialConcentration);
-    // DEBUG: Log every seed species
-    if (s.name.toLowerCase().includes('p53') || canonicalName.toLowerCase().includes('p53')) {
-      console.log(`[Worker DEBUG SEED] Input: "${s.name}" -> Canonical: "${canonicalName}" conc=${s.initialConcentration}`);
-    }
   });
-
-  // DEBUG: If no p53 in seeds, log ALL seed species to understand the input
-  const hasp53 = Array.from(seedConcentrationMap.keys()).some(k => k.toLowerCase().includes('p53'));
-  if (!hasp53) {
-    console.log('[Worker DEBUG] NO p53 in seeds! Showing all seed species:');
-    seedConcentrationMap.forEach((conc, name) => {
-      console.log(`[Worker DEBUG]   "${name}" -> conc=${conc}`);
-    });
-  }
 
   const formatSpeciesList = (list: string[]) => (list.length > 0 ? list.join(' + ') : '0');
 
@@ -686,28 +655,20 @@ async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Pr
     }
   };
 
-  console.log('[Worker DEBUG] About to call generator.generate() with', seedSpecies.length, 'seeds and', rules.length, 'rules');
-
   let result: { species: Species[]; reactions: Rxn[] };
   try {
     result = await generator.generate(seedSpecies, rules, progressCallback);
   } catch (e: any) {
-    console.error('[Worker DEBUG] generator.generate() FAILED with error:', e.message);
-    console.error('[Worker DEBUG] Full stack trace:', e.stack);
+    console.error('[Worker] generator.generate() FAILED:', e.message);
     throw e;
   }
 
-  console.log('[Worker DEBUG] generator.generate() completed. Generated', result.species.length, 'species and', result.reactions.length, 'reactions');
-
-  console.log('[Worker DEBUG] Building generatedModel - mapping species...');
   const generatedSpecies = result.species.map((s: Species) => {
     const canonicalName = GraphCanonicalizer.canonicalize(s.graph);
     const concentration = seedConcentrationMap.get(canonicalName) || (s.concentration || 0);
     return { name: canonicalName, initialConcentration: concentration };
   });
-  console.log('[Worker DEBUG] Species mapped:', generatedSpecies.length);
 
-  console.log('[Worker DEBUG] Mapping reactions...');
   const generatedReactions = result.reactions.map((r: Rxn, idx: number) => {
     try {
       // CRITICAL: Preserve rateExpression for functional rates (rates that depend on observables/parameters)
@@ -721,11 +682,10 @@ async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Pr
       };
       return reaction;
     } catch (e: any) {
-      console.error(`[Worker DEBUG] Error mapping reaction ${idx}:`, e.message);
+      console.error(`[Worker] Error mapping reaction ${idx}:`, e.message);
       throw e;
     }
   });
-  console.log('[Worker DEBUG] Reactions mapped:', generatedReactions.length);
 
   const generatedModel: BNGLModel = {
     ...inputModel,
@@ -733,7 +693,6 @@ async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Pr
     reactions: generatedReactions,
   };
 
-  console.log('[Worker DEBUG] generatedModel built successfully');
   return generatedModel;
 }
 
@@ -782,18 +741,6 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
   const speciesMap = new Map<string, number>();
   model.species.forEach((s, i) => speciesMap.set(s.name, i));
   const numSpecies = model.species.length;
-
-  // DEBUG: Log initial species
-  console.log('[Worker] Total species:', numSpecies);
-  model.species.slice(0, 5).forEach((s, i) => console.log(`[Worker] Species ${i}: ${s.name} (conc=${s.initialConcentration})`));
-
-  // DEBUG: Show all p53-related species vs p53 observable patterns
-  const p53Species = model.species.filter(s => s.name.toLowerCase().includes('p53'));
-  const p53Observables = model.observables.filter(o => o.name.toLowerCase().includes('p53'));
-  console.log(`[Worker DEBUG] === p53 SPECIES (${p53Species.length} found) ===`);
-  p53Species.forEach((s, i) => console.log(`[Worker DEBUG]   Species: "${s.name}"`));
-  console.log(`[Worker DEBUG] === p53 OBSERVABLES (${p53Observables.length} found) ===`);
-  p53Observables.forEach((o, i) => console.log(`[Worker DEBUG]   Observable "${o.name}": pattern="${o.pattern}"`));
 
   // 2. Pre-process Reactions into Concrete Indices
   // Detect functional rates (containing observables or function calls) that need dynamic evaluation
@@ -868,49 +815,8 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
   // Count functional rates for logging
   const functionalRateCount = concreteReactions.filter(r => r.isFunctionalRate).length;
   if (functionalRateCount > 0) {
-    console.log(`[Worker] ${functionalRateCount} of ${concreteReactions.length} reactions have functional rates (require dynamic evaluation)`);
-    // Debug: show first few functional rates
-    concreteReactions.filter(r => r.isFunctionalRate).slice(0, 3).forEach((r, i) => {
-      console.log(`[Worker] Functional rate ${i}: expr="${r.rateExpression}"`);
-    });
-  } else {
-    console.log('[Worker] WARNING: No functional rates detected. Checking raw rate expressions...');
-    // Log first few rate expressions to debug
-    model.reactions.slice(0, 10).forEach((r, i) => {
-      console.log(`[Worker] Reaction ${i} raw rate="${r.rate}" rateConstant=${r.rateConstant}`);
-    });
+    console.log(`[Worker] ${functionalRateCount} of ${concreteReactions.length} reactions have functional rates`);
   }
-
-  // DEBUG: Log reactions
-  console.log('[Worker] Total reactions:', concreteReactions.length);
-  concreteReactions.slice(0, 5).forEach((r, i) => console.log(`[Worker] Rxn ${i}: k=${r.rateConstant} reactants=[${r.reactants}] products=[${r.products}]`));
-
-  // DEBUG: Log ALL p53-related reactions (synthesis, degradation, modification)
-  // p53 species indices are [19, 45, 46, 50] based on earlier debug
-  const p53Indices = new Set([19, 45, 46, 50]);
-  console.log('[Worker DEBUG] === ALL P53-RELATED REACTIONS ===');
-  concreteReactions.forEach((r, i) => {
-    const involvesP53 = [...r.reactants].some(idx => p53Indices.has(idx)) ||
-      [...r.products].some(idx => p53Indices.has(idx));
-    if (involvesP53) {
-      const reactantNames = [...r.reactants].map(idx => model.species[idx]?.name || `?${idx}`).join(' + ') || '0';
-      const productNames = [...r.products].map(idx => model.species[idx]?.name || `?${idx}`).join(' + ') || '0';
-      const rateInfo = r.isFunctionalRate ? `FUNC:"${r.rateExpression}"` : `k=${r.rateConstant}`;
-      console.log(`[Worker DEBUG] Rxn ${i}: ${reactantNames} -> ${productNames}  ${rateInfo}`);
-    }
-  });
-
-  // DEBUG: Log reactions that produce RAS-GTP (Species[2]) for GEF mechanism analysis
-  console.log('[Worker DEBUG] === REACTIONS PRODUCING/CONSUMING SPECIES[2] (RAS-GTP) ===');
-  concreteReactions.forEach((r, i) => {
-    const involvesRasGTP = [...r.reactants].includes(2) || [...r.products].includes(2);
-    if (involvesRasGTP) {
-      const reactantNames = [...r.reactants].map(idx => model.species[idx]?.name || `?${idx}`).join(' + ') || '0';
-      const productNames = [...r.products].map(idx => model.species[idx]?.name || `?${idx}`).join(' + ') || '0';
-      const roleInfo = r.products.includes(2) ? 'PRODUCES[2]' : 'CONSUMES[2]';
-      console.log(`[Worker DEBUG] Rxn ${i}: ${reactantNames} -> ${productNames}  k=${r.rateConstant} ${roleInfo}`);
-    }
-  });
 
   // 3. Pre-process Observables (Cache matching species indices and coefficients)
   const concreteObservables = model.observables.map(obs => {
@@ -941,14 +847,7 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
       let count = 0;
       for (const pat of patterns) {
         if (obs.type === 'species') {
-          // DEBUG: Log Species observable matching
-          if (obs.name.startsWith('Species') && i < 5) {
-            console.log(`[Worker DEBUG] Species Observable "${obs.name}" pattern="${pat}" vs species[${i}]="${s.name}" => match?`);
-          }
           if (isSpeciesMatch(s.name, pat)) {
-            if (obs.name.startsWith('Species')) {
-              console.log(`[Worker DEBUG] MATCH! Observable "${obs.name}" matched species[${i}]="${s.name}"`);
-            }
             count = 1;
             break; // Species matches once
           }
@@ -970,50 +869,9 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
     };
   });
 
-  // DEBUG: Log observables
-  concreteObservables.forEach(obs => {
-    console.log(`[Worker] Observable ${obs.name} matches ${obs.indices.length} species`);
-    // Debug p53_tot specifically to understand the 30M issue
-    if (obs.name === 'p53_tot') {
-      console.log(`[Worker DEBUG p53_tot] Indices: [${Array.from(obs.indices).join(', ')}]`);
-      console.log(`[Worker DEBUG p53_tot] Coefficients: [${Array.from(obs.coefficients).join(', ')}]`);
-      Array.from(obs.indices).forEach((idx, j) => {
-        const species = model.species[idx];
-        console.log(`[Worker DEBUG p53_tot]   Species ${idx}: "${species.name}" conc=${species.initialConcentration} coeff=${obs.coefficients[j]}`);
-      });
-    }
-
-    // DEBUG: Log Species observable matching details
-    if (obs.name.startsWith('Species')) {
-      const obsInfo = model.observables.find(o => o.name === obs.name);
-      console.log(`[Worker DEBUG] Observable ${obs.name} pattern="${obsInfo?.pattern}" matches ${obs.indices.length} species:`);
-      Array.from(obs.indices).forEach((idx, j) => {
-        const species = model.species[idx];
-        console.log(`[Worker DEBUG]   -> Species[${idx}]: "${species.name}" initialConc=${species.initialConcentration} coeff=${obs.coefficients[j]}`);
-      });
-    }
-    if (obs.indices.length === 0) {
-      console.warn(`[Worker] WARNING: Observable ${obs.name} matches NO species`);
-      // Debug: log pattern and first few species to understand mismatch
-      const obsInfo = model.observables.find(o => o.name === obs.name);
-      if (obsInfo) {
-        console.log(`[Worker DEBUG] Observable ${obs.name} pattern: "${obsInfo.pattern}"`);
-        console.log(`[Worker DEBUG] Species samples (first 5):`);
-        model.species.slice(0, 5).forEach((s, i) => {
-          console.log(`[Worker DEBUG]   Species ${i}: "${s.name}"`);
-        });
-      }
-    }
-  });
-
   // 4. Initialize State Vector (Float64Array for speed)
   const state = new Float64Array(numSpecies);
   model.species.forEach((s, i) => state[i] = s.initialConcentration);
-
-  // DEBUG: Check initial state
-  let totalConc = 0;
-  for (let i = 0; i < numSpecies; i++) totalConc += state[i];
-  console.log('[Worker] Total initial concentration:', totalConc);
 
   const data: Record<string, number>[] = [];
   const speciesData: Record<string, number>[] = [];
@@ -1186,8 +1044,6 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
     // If there are functional rates, we need a special derivative function
     // that evaluates rates dynamically at each timestep
     if (functionalRateCount > 0) {
-      console.log('[Worker] Using dynamic derivative function for functional rates');
-
       // Helper to compute observable values from current state
       const computeObservableValues = (yIn: Float64Array): Record<string, number> => {
         const obsValues: Record<string, number> = {};
@@ -1202,25 +1058,11 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
         return obsValues;
       };
 
-      // DEBUG: Counter for periodic logging
-      let _p53DebugCounter = 0;
-
       derivatives = (yIn: Float64Array, dydt: Float64Array) => {
         dydt.fill(0);
 
         // Compute observable values for functional rate evaluation
         const obsValues = computeObservableValues(yIn);
-
-        // DEBUG: Track p53_tot value periodically (every 100000th call)
-        _p53DebugCounter++;
-        if (_p53DebugCounter % 100000 === 1) {
-          // Log p53 species concentrations (indices 19, 45, 46, 50 from earlier debug)
-          const p53Indices = [19, 45, 46, 50];
-          const p53Concs = p53Indices.map(i => yIn[i] !== undefined ? yIn[i].toFixed(2) : 'N/A');
-          // KEY: Also log Mdm2_nuc_2p which controls p53 degradation - if this is 0, p53 accumulates!
-          const mdm2_nuc_2p = obsValues['Mdm2_nuc_2p']?.toFixed(2) || 'N/A';
-          console.log(`[DEBUG derivatives] Call #${_p53DebugCounter}: p53=[${p53Concs.join(', ')}], p53_tot=${obsValues['p53_tot']?.toFixed(2)}, Mdm2_nuc_2p=${mdm2_nuc_2p}`);
-        }
 
         for (let i = 0; i < concreteReactions.length; i++) {
           const rxn = concreteReactions[i];

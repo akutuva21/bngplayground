@@ -10,6 +10,7 @@ import { CartoonTab } from './tabs/CartoonTab';
 import { RegulatoryTab } from './tabs/RegulatoryTab';
 import { VerificationTab } from './tabs/VerificationTab';
 import { ParameterScanTab } from './tabs/ParameterScanTab';
+import { ParameterEstimationTab } from './tabs/ParameterEstimationTab';
 import { FluxAnalysisTab } from './tabs/FluxAnalysisTab';
 import { ExpressionInputPanel, CustomExpression } from './ExpressionInputPanel';
 

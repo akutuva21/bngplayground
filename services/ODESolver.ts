@@ -870,7 +870,6 @@ export class FastRK4Solver {
     // yNew = y + h/6 * (k1 + 2*k2 + 2*k3 + k4)
     for (let i = 0; i < n; i++) {
       yNew[i] = y[i] + (h / 6) * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
-      if (yNew[i] < 0) yNew[i] = 0;  // Clamp to non-negative
     }
 
     return yNew;
@@ -886,9 +885,18 @@ export class FastRK4Solver {
     let h = maxH;
 
     for (let i = 0; i < n; i++) {
-      const deriv = Math.abs(dydt[i]);
+      const derivSigned = dydt[i];
+      const deriv = Math.abs(derivSigned);
       if (deriv > 1e-12) {
         const conc = y[i];
+
+        // If a species is ~0 and is being PRODUCED, don't let it dominate
+        // the step-size limiter. The relative-change heuristic otherwise
+        // forces h ~ 1e-14 and can trip maxSteps on benign models.
+        if (conc < minConc && derivSigned > 0) {
+          continue;
+        }
+
         const limit = Math.max(conc, minConc) * maxChange;
         const maxStep = limit / deriv;
         if (maxStep < h) h = maxStep;
@@ -964,6 +972,24 @@ export class FastRK4Solver {
 
       // RK4 step
       const yNew = this.step(y, h);
+
+      // Positivity handling:
+      // - Tiny negative values can happen from floating point / interpolation; clamp them.
+      // - Larger negative overshoots indicate instability; signal auto-switch to implicit solver.
+      const NEG_TOL = 1e-6;
+      for (let i = 0; i < yNew.length; i++) {
+        const v = yNew[i];
+        if (v < -NEG_TOL) {
+          return {
+            success: false,
+            t,
+            y,
+            steps,
+            errorMessage: 'STIFF_DETECTED',
+          };
+        }
+        if (v < 0) yNew[i] = 0;
+      }
 
       // Check for invalid values
       if (this.hasInvalidValues(yNew)) {
@@ -1079,12 +1105,23 @@ export class CVODESolver {
     const neq = this.n;
     const { atol, rtol } = this.options;
 
-    // Set callback (reusing module buffers)
+    // Set callback. CVODE will call this very frequently; avoid allocating new TypedArray
+    // views on each call when pointers and memory buffer are stable.
+    let cachedYPtr = 0;
+    let cachedYdotPtr = 0;
+    let cachedBuffer: ArrayBuffer | null = null;
+    let yView: Float64Array | null = null;
+    let dydtView: Float64Array | null = null;
+
     m.derivativeCallback = (_t: number, yPtr: number, ydotPtr: number) => {
-      // Create views on the heap. Note: HEAPF64.buffer might change if memory grows,
-      // but inside this sync callback it should be stable or accessible via Module.HEAPF64
-      const yView = new Float64Array(m.HEAPF64.buffer, yPtr, neq);
-      const dydtView = new Float64Array(m.HEAPF64.buffer, ydotPtr, neq);
+      const buf = m.HEAPF64.buffer;
+      if (!yView || !dydtView || cachedBuffer !== buf || cachedYPtr !== yPtr || cachedYdotPtr !== ydotPtr) {
+        cachedBuffer = buf;
+        cachedYPtr = yPtr;
+        cachedYdotPtr = ydotPtr;
+        yView = new Float64Array(buf, yPtr, neq);
+        dydtView = new Float64Array(buf, ydotPtr, neq);
+      }
       this.f(yView, dydtView);
     };
 
@@ -1101,10 +1138,22 @@ export class CVODESolver {
     let solverMem: number;
     if (this.jacobian && m._init_solver_jac) {
       // Set Jacobian callback (column-major dense matrix)
+      // Same idea: reuse views if pointers/buffer are stable.
+      let cachedJacYPtr = 0;
+      let cachedJPtr = 0;
+      let cachedJacBuffer: ArrayBuffer | null = null;
+      let jacYView: Float64Array | null = null;
+      let jacJView: Float64Array | null = null;
       m.jacobianCallback = (_t: number, yPtr: number, _fyPtr: number, JPtr: number, neqVal: number) => {
-        const yView = new Float64Array(m.HEAPF64.buffer, yPtr, neqVal);
-        const JView = new Float64Array(m.HEAPF64.buffer, JPtr, neqVal * neqVal);
-        this.jacobian!(yView, JView);
+        const buf = m.HEAPF64.buffer;
+        if (!jacYView || !jacJView || cachedJacBuffer !== buf || cachedJacYPtr !== yPtr || cachedJPtr !== JPtr) {
+          cachedJacBuffer = buf;
+          cachedJacYPtr = yPtr;
+          cachedJPtr = JPtr;
+          jacYView = new Float64Array(buf, yPtr, neqVal);
+          jacJView = new Float64Array(buf, JPtr, neqVal * neqVal);
+        }
+        this.jacobian!(jacYView, jacJView);
       };
       solverMem = m._init_solver_jac(neq, t0, yPtr, rtol, atol, this.options.maxSteps);
     } else if (this.useSparse) {
@@ -1276,7 +1325,6 @@ export async function createSolver(
   options: Partial<SolverOptions> = {}
 ): Promise<{ integrate: (y0: Float64Array, t0: number, tEnd: number, checkCancelled?: () => void) => SolverResult }> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  console.log('[ODESolver] createSolver called with:', opts.solver);
 
   switch (opts.solver) {
     case 'cvode':

@@ -1,5 +1,20 @@
 import { BioSentence, InteractionSentence, DefinitionSentence, InitializationSentence, SimulationSentence } from './types';
 
+// Maps action types to the site/state modifications they require
+const ACTION_SITE_CONFIG: Record<string, { site: string, states: string[], modFrom: string, modTo: string }> = {
+  phosphorylates: { site: 'y', states: ['u', 'p'], modFrom: 'u', modTo: 'p' },
+  dephosphorylates: { site: 'y', states: ['u', 'p'], modFrom: 'p', modTo: 'u' },
+  ubiquitinates: { site: 'ub', states: ['n', 'u'], modFrom: 'n', modTo: 'u' },
+  deubiquitinates: { site: 'ub', states: ['n', 'u'], modFrom: 'u', modTo: 'n' },
+  methylates: { site: 'me', states: ['n', 'm'], modFrom: 'n', modTo: 'm' },
+  demethylates: { site: 'me', states: ['n', 'm'], modFrom: 'm', modTo: 'n' },
+  acetylates: { site: 'ac', states: ['n', 'a'], modFrom: 'n', modTo: 'a' },
+  deacetylates: { site: 'ac', states: ['n', 'a'], modFrom: 'a', modTo: 'n' },
+  activates: { site: 'act', states: ['i', 'a'], modFrom: 'i', modTo: 'a' },
+  inhibits: { site: 'act', states: ['i', 'a'], modFrom: 'a', modTo: 'i' },
+  cleaves: { site: 'cl', states: ['i', 'c'], modFrom: 'i', modTo: 'c' },
+};
+
 export class BNGLGenerator {
   static generate(sentences: BioSentence[]): string {
     const definitions = sentences.filter(s => s.type === 'DEFINITION' && s.isValid) as DefinitionSentence[];
@@ -29,45 +44,79 @@ export class BNGLGenerator {
       const subName = int.subject.name;
       const objName = int.object.name;
 
+      // Ensure molecules exist (except Null for degradation)
       [subName, objName].forEach(name => {
-        if (!moleculeMap.has(name)) {
+        if (name !== 'Null' && !moleculeMap.has(name)) {
           moleculeMap.set(name, { sites: new Set(), states: {} });
         }
       });
 
-      if (int.action === 'binds') {
-        // Implicit binding site 'b' if no sites exist, or use 'b' convention
-        moleculeMap.get(subName)!.sites.add('b');
-        moleculeMap.get(objName)!.sites.add('b');
-      } else if (int.action === 'phosphorylates' || int.action === 'dephosphorylates') {
-        // Target needs a site that can be phosphorylated. Convention: 'y' or infer site
-        // For now, add 'y' and states u, p if not present
-        const targetEntry = moleculeMap.get(objName)!;
-        targetEntry.sites.add('y');
-        if (!targetEntry.states['y']) targetEntry.states['y'] = new Set();
-        targetEntry.states['y'].add('u');
-        targetEntry.states['y'].add('p');
+      if (int.action === 'binds' || int.action === 'dimerizes') {
+        // Binding site 'b'
+        if (subName !== 'Null') moleculeMap.get(subName)!.sites.add('b');
+        if (objName !== 'Null') moleculeMap.get(objName)!.sites.add('b');
+      } else if (int.action === 'synthesizes') {
+        // Object is created - ensure it exists
+        if (!moleculeMap.has(objName)) {
+          moleculeMap.set(objName, { sites: new Set(), states: {} });
+        }
+      } else if (int.action === 'degrades') {
+        // Target is degraded - no special sites needed
+      } else if (int.action === 'translocates') {
+        // Target gets a location/compartment marker
+        const targetEntry = moleculeMap.get(subName)!;
+        targetEntry.sites.add('loc');
+        if (!targetEntry.states['loc']) targetEntry.states['loc'] = new Set();
+        targetEntry.states['loc'].add('cyt');
+        if (int.targetCompartment) {
+          targetEntry.states['loc'].add(int.targetCompartment.substring(0, 3).toLowerCase());
+        }
+      } else {
+        // Modification actions (phosphorylation, ubiquitination, etc.)
+        const config = ACTION_SITE_CONFIG[int.action];
+        if (config && objName !== 'Null') {
+          const targetEntry = moleculeMap.get(objName)!;
+          const siteToUse = int.site || config.site;
+          targetEntry.sites.add(siteToUse);
+          if (!targetEntry.states[siteToUse]) targetEntry.states[siteToUse] = new Set();
+          config.states.forEach(st => targetEntry.states[siteToUse].add(st));
+        }
       }
+    });
+
+    // Collect all defined rates for parameters block
+    const customRates = new Set<string>();
+    interactions.forEach(int => {
+      if (int.rate && !/^[0-9.e-]+$/.test(int.rate)) customRates.add(int.rate);
+      if (int.reverseRate && !/^[0-9.e-]+$/.test(int.reverseRate)) customRates.add(int.reverseRate);
     });
 
     // 3. Generate BNGL Blocks
     const lines: string[] = ['begin model'];
 
-    // Parameters (Auto-generated defaults)
+    // Parameters
     lines.push('begin parameters');
+    lines.push('  # Auto-generated rate constants');
     lines.push('  k_on 0.1');
-    lines.push('  k_off 0.1');
+    lines.push('  k_off 0.01');
     lines.push('  k_cat 1.0');
-    lines.push('  k_dephos 1.0');
-    // Add explicitly mentioned rates
-    interactions.forEach(int => {
-      if (int.rate && !['k_on', 'k_cat', 'k_dephos'].includes(int.rate)) {
-        if (!isNaN(parseFloat(int.rate))) {
-          // It's a number, inline usage is fine, but maybe define param?
-          // For strictness, let's just use it inline in rules
-        }
-      }
-    });
+    lines.push('  k_dephos 0.5');
+    lines.push('  k_syn 0.1');
+    lines.push('  k_deg 0.01');
+    lines.push('  k_dim 0.1');
+    lines.push('  k_undim 0.01');
+    lines.push('  k_trans 0.1');
+    lines.push('  k_act 1.0');
+    lines.push('  k_inhib 1.0');
+    lines.push('  k_cleave 0.5');
+    lines.push('  k_ubiq 0.5');
+    lines.push('  k_deubiq 0.5');
+    lines.push('  k_meth 0.5');
+    lines.push('  k_demeth 0.5');
+    lines.push('  k_acet 0.5');
+    lines.push('  k_deacet 0.5');
+    lines.push('  k_fwd 1.0');
+    lines.push('  k_rev 0.1');
     lines.push('end parameters');
 
     // Molecule Types
@@ -77,7 +126,6 @@ export class BNGLGenerator {
       data.sites.forEach(site => {
         const states = data.states[site];
         if (states && states.size > 0) {
-          // e.g. y~u~p
           siteStrParts.push(`${site}~${Array.from(states).join('~')}`);
         } else {
           siteStrParts.push(site);
@@ -85,34 +133,42 @@ export class BNGLGenerator {
       });
       lines.push(`  ${name}(${siteStrParts.join(',')})`);
     });
+    // Add Trash() for degradation sink
+    if (interactions.some(i => i.action === 'degrades')) {
+      lines.push('  Trash()');
+    }
     lines.push('end molecule types');
 
     // Seed Species
     lines.push('begin species');
     if (initializations.length > 0) {
       initializations.forEach(init => {
-        // Simple case: A(all sites unbound/default)
-        // Construct default state string
         const name = init.molecule.name;
         const entry = moleculeMap.get(name);
         if (entry) {
           const sitesStr = Array.from(entry.sites).map(s => {
             const states = entry.states[s];
+            // Pick "inactive" or "unmodified" state as default
             if (states && states.has('u')) return `${s}~u`;
-            if (states && states.size > 0) return `${s}~${Array.from(states)[0]}`; // pick first
+            if (states && states.has('n')) return `${s}~n`;
+            if (states && states.has('i')) return `${s}~i`;
+            if (states && states.has('cyt')) return `${s}~cyt`;
+            if (states && states.size > 0) return `${s}~${Array.from(states)[0]}`;
             return s;
           }).join(',');
           lines.push(`  ${name}(${sitesStr}) ${init.count}`);
         }
       });
     } else {
-      // Default initialization if none provided
       lines.push('  # Default seeds generated by Designer');
       moleculeMap.forEach((_, name) => {
         const entry = moleculeMap.get(name)!;
         const sitesStr = Array.from(entry.sites).map(s => {
           const states = entry.states[s];
           if (states && states.has('u')) return `${s}~u`;
+          if (states && states.has('n')) return `${s}~n`;
+          if (states && states.has('i')) return `${s}~i`;
+          if (states && states.has('cyt')) return `${s}~cyt`;
           if (states && states.size > 0) return `${s}~${Array.from(states)[0]}`;
           return s;
         }).join(',');
@@ -121,11 +177,20 @@ export class BNGLGenerator {
     }
     lines.push('end species');
 
-    // Observables (Simple defaults for now)
+    // Observables
     lines.push('begin observables');
     lines.push('  # Auto-generated observables');
-    moleculeMap.forEach((_, name) => {
-      lines.push(`  Molecules ${name}_tot ${name}()`);
+    moleculeMap.forEach((data, name) => {
+      lines.push(`  Molecules ${name}_total ${name}()`);
+      // Add state-specific observables for modified sites
+      data.sites.forEach(site => {
+        const states = data.states[site];
+        if (states && states.size > 1) {
+          states.forEach(state => {
+            lines.push(`  Molecules ${name}_${site}_${state} ${name}(${site}~${state})`);
+          });
+        }
+      });
     });
     lines.push('end observables');
 
@@ -133,24 +198,81 @@ export class BNGLGenerator {
     lines.push('begin reaction rules');
     interactions.forEach((int, idx) => {
       const ruleName = `rule${idx + 1}`;
-      if (int.action === 'binds') {
-        const s = int.subject.name;
-        const o = int.object.name;
-        // Assume 'b' site for binding context
-        lines.push(`  ${ruleName}: ${s}(b) + ${o}(b) <-> ${s}(b!1).${o}(b!1) ${int.rate}, ${int.reverseRate}`);
-      } else if (int.action === 'phosphorylates') {
-        const kinase = int.subject.name;
-        const target = int.object.name;
-        // Kinase assumed to be active/bound? For logic simplicity:
-        // Kinase(b) + Target(y~u) -> Kinase(b) + Target(y~p)
-        // Note: Needs context! Usually binding first. 
-        // For "Grammar", assume Michaelis-Menten-like or simple collision if not binding specified
-        // Let's do simple collision for robustness
-        lines.push(`  ${ruleName}: ${kinase}() + ${target}(y~u) -> ${kinase}() + ${target}(y~p) ${int.rate}`);
-      } else if (int.action === 'dephosphorylates') {
-        const phos = int.subject.name;
-        const target = int.object.name;
-        lines.push(`  ${ruleName}: ${phos}() + ${target}(y~p) -> ${phos}() + ${target}(y~u) ${int.rate}`);
+      const s = int.subject.name;
+      const o = int.object.name;
+      const rate = int.rate || 'k_fwd';
+      const revRate = int.reverseRate || 'k_rev';
+
+      switch (int.action) {
+        case 'binds':
+          lines.push(`  ${ruleName}: ${s}(b) + ${o}(b) <-> ${s}(b!1).${o}(b!1) ${rate}, ${revRate}`);
+          break;
+
+        case 'dimerizes':
+          if (s === o) {
+            // Homodimerization
+            lines.push(`  ${ruleName}: ${s}(b) + ${s}(b) <-> ${s}(b!1).${s}(b!1) ${rate}, ${revRate}`);
+          } else {
+            // Heterodimerization
+            lines.push(`  ${ruleName}: ${s}(b) + ${o}(b) <-> ${s}(b!1).${o}(b!1) ${rate}, ${revRate}`);
+          }
+          break;
+
+        case 'phosphorylates':
+        case 'dephosphorylates':
+        case 'ubiquitinates':
+        case 'deubiquitinates':
+        case 'methylates':
+        case 'demethylates':
+        case 'acetylates':
+        case 'deacetylates':
+        case 'activates':
+        case 'inhibits':
+        case 'cleaves': {
+          const config = ACTION_SITE_CONFIG[int.action];
+          if (config) {
+            const siteToUse = int.site || config.site;
+            lines.push(`  ${ruleName}: ${s}() + ${o}(${siteToUse}~${config.modFrom}) -> ${s}() + ${o}(${siteToUse}~${config.modTo}) ${rate}`);
+          }
+          break;
+        }
+
+        case 'synthesizes':
+          // Source produces target from nothing
+          const objEntry = moleculeMap.get(o);
+          if (objEntry) {
+            const objSitesStr = Array.from(objEntry.sites).map(site => {
+              const states = objEntry.states[site];
+              if (states && states.has('u')) return `${site}~u`;
+              if (states && states.has('n')) return `${site}~n`;
+              if (states && states.has('i')) return `${site}~i`;
+              if (states && states.size > 0) return `${site}~${Array.from(states)[0]}`;
+              return site;
+            }).join(',');
+            lines.push(`  ${ruleName}: 0 -> ${o}(${objSitesStr}) ${rate}`);
+          }
+          break;
+
+        case 'degrades':
+          // Target is degraded to nothing
+          if (s === 'Null') {
+            // Spontaneous degradation
+            lines.push(`  ${ruleName}: ${o}() -> 0 ${rate}`);
+          } else {
+            // Enzyme-mediated degradation
+            lines.push(`  ${ruleName}: ${s}() + ${o}() -> ${s}() ${rate}`);
+          }
+          break;
+
+        case 'translocates': {
+          const fromLoc = 'cyt';
+          const toLoc = int.targetCompartment?.substring(0, 3).toLowerCase() || 'mem';
+          lines.push(`  ${ruleName}: ${s}(loc~${fromLoc}) -> ${s}(loc~${toLoc}) ${rate}`);
+          break;
+        }
+
+        default:
+          lines.push(`  # ${ruleName}: Unhandled action '${int.action}' for ${s} -> ${o}`);
       }
     });
     lines.push('end reaction rules');

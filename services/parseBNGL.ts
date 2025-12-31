@@ -1,17 +1,14 @@
 /**
- * @deprecated This regex-based BNGL parser is DEPRECATED.
- * 
- * Use the ANTLR-based parser instead:
- *   import { parseBNGLWithANTLR } from '@/parser/BNGLParserWrapper'
- * 
- * The regex parser is kept for backward compatibility but the ANTLR parser
- * provides more accurate parsing and better error handling.
- * 
- * A copy of this file is also available at: old/parsers/regex/parseBNGL.ts
+ * Default BNGL parser entrypoint.
+ *
+ * IMPORTANT:
+ * - `parseBNGL()` uses the ANTLR-based parser (BNG2.pl parity).
+ * - `parseBNGLRegexDeprecated()` keeps the legacy regex parser for comparison/debug.
  */
 
 import type { BNGLModel } from '../types.ts';
 import { BNGLParser } from '../src/services/graph/core/BNGLParser.ts';
+import { parseBNGLWithANTLR } from '../src/parser/BNGLParserWrapper.ts';
 
 const speciesPattern = /^[A-Za-z0-9_]+(?:\([^)]*\))?(?:\.[A-Za-z0-9_]+(?:\([^)]*\))?)*$/;
 
@@ -244,6 +241,29 @@ export interface ParseBNGLOptions {
 }
 
 export function parseBNGL(code: string, options: ParseBNGLOptions = {}): BNGLModel {
+  if (options.checkCancelled) {
+    options.checkCancelled();
+  }
+
+  const result = parseBNGLWithANTLR(code);
+  if (!result.model) {
+    const errorMsg = result.errors.map(e => `Line ${e.line}:${e.column}: ${e.message}`).join('\n');
+    throw new Error(`BNGL parse error:\n${errorMsg}`);
+  }
+
+  if (!result.success && options.debug) {
+    const errorMsg = result.errors.map(e => `Line ${e.line}:${e.column}: ${e.message}`).join('\n');
+    console.warn(`[parseBNGL] ANTLR parse reported errors (best-effort model returned):\n${errorMsg}`);
+  }
+
+  return result.model;
+}
+
+/**
+ * @deprecated Legacy regex-based BNGL parser.
+ * Prefer `parseBNGL()` (ANTLR).
+ */
+export function parseBNGLRegexDeprecated(code: string, options: ParseBNGLOptions = {}): BNGLModel {
   const { checkCancelled, debug } = options;
   const logDebug = (...args: unknown[]) => {
     if (debug) {

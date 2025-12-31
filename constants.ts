@@ -226,8 +226,8 @@ const BNG2_COMPATIBLE_MODELS = new Set([
   'Lin_ERK_2019',
   'Lin_TCR_2019',
 
-  // Native Tutorials - AB/ABC (0)
-  // All failed benchmark
+  // Native Tutorials - AB/ABC (1 - AB is default initial template)
+  'AB',
 
   // Native Tutorials - ABp (0)
   // All failed benchmark
@@ -1198,8 +1198,8 @@ const TEST_MODELS: Example[] = [
 const NATIVE_TUTORIALS: Example[] = [
   {
     id: 'AB',
-    name: 'AB',
-    description: 'Native BNGL Tutorial: AB',
+    name: 'AB Tutorial',
+    description: 'Native BNGL Tutorial: AB - Simple bivalent binding model',
     code: ABTutorial,
     tags: ['published', 'tutorial', 'native'],
   },

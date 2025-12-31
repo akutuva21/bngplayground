@@ -187,6 +187,16 @@ MM: 'MM';
 HILL: 'Hill';
 ARRHENIUS: 'Arrhenius';
 
+// BNG2 parity: mratio (Kummer's function), TFUN (table function), FunctionProduct
+MRATIO: 'mratio';
+TFUN: 'TFUN';
+FUNCTIONPRODUCT: 'FunctionProduct';
+
+// BNG2 parity: reaction priority modifier
+PRIORITY: 'priority';
+
+// POPULATION already defined above at line 34
+
 IF: 'if';
 EXP: 'exp';
 LN: 'ln';
@@ -215,12 +225,12 @@ SUM: 'sum';
 AVG: 'avg';
 TIME: 'time';
 
-// Literals - FLOAT supports: 1.0, .5, 1e-5, 1.0e5, .01
+// Literals - FLOAT supports: 1.0, .5, 1e-5, 1.0e5, .01, 1D-10 (Fortran)
 // Support bare 1. only if not followed by letter (to avoid matching 1.EGFR as float)
 FLOAT
-    : DIGIT+ '.' DIGIT+ EXPONENT?
-    | '.' DIGIT+ EXPONENT?
-    | DIGIT+ EXPONENT
+    : DIGIT+ '.' DIGIT+ EXPONENT_ALL?
+    | '.' DIGIT+ EXPONENT_ALL?
+    | DIGIT+ EXPONENT_ALL
     | DIGIT+ '.' { !(/^[a-zA-Z_]$/.test(String.fromCharCode(this._input.LA(1)))) }?
     ;
 INT: DIGIT+;
@@ -248,12 +258,16 @@ LTE: '<=';
 LT: '<';
 ASSIGNS: '=>';
 EQUALS: '==';
+NOT_EQUALS: '!=' | '~=';
 BECOMES: '=';
+LOGICAL_AND: '&&';
+LOGICAL_OR: '||';
+// Note: '!' is EMARK (used for bonds and logical NOT - context dependent)
 DIV: '/';
 TIMES: '*';
 MINUS: '-';
 PLUS: '+';
-POWER: '^';
+POWER: '^' | '**';
 MOD: '%';
 PIPE: '|';
 QMARK: '?';
@@ -266,6 +280,7 @@ AMPERSAND: '&';
 fragment DIGIT: [0-9];
 fragment LETTER: [a-zA-Z];
 fragment EXPONENT: [eE] [+-]? DIGIT+;
+fragment EXPONENT_ALL: [eEdDfFgG] [+-]? DIGIT+;  // Includes Fortran-style exponents
 
 // Version number
 VERSION_NUMBER: INT '.' INT '.' INT [+-]?;

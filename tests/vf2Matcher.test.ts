@@ -93,7 +93,9 @@ describe('GraphMatcher VF2++ integration', () => {
     expect(matches.length).toBe(0);
   });
 
-  it('rejects bonds that would cross target compartments', () => {
+  it('matches bonds across compartments when pattern has no compartment constraints (cBNGL)', () => {
+    // In cBNGL, molecules can be bonded across adjacent compartments (e.g., L@EC bound to R@PM)
+    // A pattern without compartment annotations should match such targets
     const pattern = new SpeciesGraph([
       new Molecule('A', [createComponent('bind')]),
       new Molecule('B', [createComponent('bind')])
@@ -106,8 +108,10 @@ describe('GraphMatcher VF2++ integration', () => {
     ]);
     target.addBond(0, 0, 1, 0, 1);
 
+    // Pattern without compartment constraints should match target with molecules in different compartments
+    // Compartment adjacency validation is done at the NetworkGenerator level, not the Matcher level
     const matches = GraphMatcher.findAllMaps(pattern, target);
-    expect(matches.length).toBe(0);
+    expect(matches.length).toBe(1);
   });
 
   it('matches multi-site phosphorylation patterns without starving candidates', () => {

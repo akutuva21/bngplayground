@@ -44,6 +44,19 @@ export class BNGLParser {
       }
     }
 
+    // Handle suffix compartment notation for single-molecule species WITHOUT parentheses,
+    // e.g. "mRNA@NU" or "mRNA@CP" (common in cBNGL). Normalize to "mRNA()".
+    // Without this, "mRNA@NU" and "mRNA()@NU" produce different graphs and break
+    // reactions like transport/translation.
+    if (!globalCompartment) {
+      const bareSuffixMatch = content.match(/^([A-Za-z_][A-Za-z0-9_]*)@([A-Za-z0-9_]+)$/);
+      if (bareSuffixMatch) {
+        globalCompartment = bareSuffixMatch[2];
+        content = `${bareSuffixMatch[1]}()`;
+        graph.compartment = globalCompartment;
+      }
+    }
+
     // Helper to split by dot outside parentheses
     const splitMolecules = (str: string) => {
       const parts: string[] = [];
@@ -68,8 +81,14 @@ export class BNGLParser {
 
     for (const molStr of moleculeStrings) {
       const molecule = this.parseMolecule(molStr.trim());
-      // Logic removed: Do not force molecule.compartment = globalCompartment
-      // This prevents double tagging (prefix + suffix) in toString().
+      // For single-molecule species without explicit molecule-level compartment,
+      // inherit the graph-level compartment. This ensures proper tracking when
+      // molecules from different compartments bind to form complexes.
+      // E.g., L(r)@EC -> L has compartment EC, so when binding R@PM,
+      // we know L came from EC and can generate correct canonical: @PM::L(r!1)@EC.R(l!1)
+      if (!molecule.compartment && globalCompartment && moleculeStrings.length === 1) {
+        molecule.compartment = globalCompartment;
+      }
       graph.molecules.push(molecule);
     }
 
@@ -306,27 +325,33 @@ export class BNGLParser {
       const line = raw.split('#')[0].trim();
       if (!line) continue;
 
-      // Split by whitespace
-      const parts = line.split(/\s+/);
-      if (parts.length < 2) continue;
-
-      const concentrationStr = parts.pop()!;
-
-      // Determine start index for species pattern
-      let startIndex = 0;
-      if (/^\d+$/.test(parts[0])) {
-        // Starts with number (index)
-        startIndex = 1;
-      } else if (parts[0].endsWith(':')) {
-        // Starts with Label:
-        startIndex = 1;
+      // Handle format: [index] [label:] species_pattern concentration_expression
+      // The species pattern is a BNGL molecule pattern (contains letters, digits, parens, dots, bangs, tildes, underscores)
+      // The concentration expression follows and can contain spaces (e.g., "a + b", "func(x)")
+      
+      // First, skip optional leading index (pure digits)
+      let remaining = line;
+      const leadingMatch = remaining.match(/^(\d+)\s+/);
+      if (leadingMatch) {
+        remaining = remaining.slice(leadingMatch[0].length);
       }
-
-      // Join remaining parts to form species pattern
-      // Use join('') because BNGL patterns usually don't have spaces, 
-      // but if they were split by space, we reconstruct.
-      // However, if we have "A . B", split gives "A", ".", "B". join('') gives "A.B". Correct.
-      const speciesStr = parts.slice(startIndex).join('');
+      
+      // Skip optional label (ends with colon)
+      const labelMatch = remaining.match(/^(\S+:)\s+/);
+      if (labelMatch) {
+        remaining = remaining.slice(labelMatch[0].length);
+      }
+      
+      // Now we have: species_pattern concentration_expression
+      // The species pattern is a contiguous BNGL pattern (no spaces)
+      // It ends at the first whitespace, then the rest is the concentration expression
+      const firstSpace = remaining.search(/\s/);
+      if (firstSpace === -1) continue;  // No concentration specified
+      
+      const speciesStr = remaining.slice(0, firstSpace);
+      const concentrationStr = remaining.slice(firstSpace).trim();
+      
+      if (!speciesStr || !concentrationStr) continue;
 
       const amt = this.evaluateExpression(concentrationStr, parameters);
       seed.set(speciesStr, amt);

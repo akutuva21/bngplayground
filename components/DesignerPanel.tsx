@@ -13,18 +13,29 @@ interface DesignerPanelProps {
 }
 
 const DEFAULT_TEXT = `# Welcome to Bio-Designer
+# Write biology in natural language!
+
 # Define your molecules
 Define Lck
 Define TCR with sites itam
 Define Zap70
+Define SHP1
 
-# Describe interactions
+# Describe interactions (many synonyms work!)
 Lck binds TCR
 Lck phosphorylates TCR at itam
 
-# Initialize
+# The parser understands flexible phrasing:
+# "binds", "interacts with", "associates with", "recruits" all work!
+
+# Initialize molecules
 Start with 100 of Lck
 Start with 100 of TCR
+Start with 50 of Zap70
+Start with 20 of SHP1
+
+# Run simulation
+Simulate for 100s with 200 steps
 `;
 
 export const DesignerPanel: React.FC<DesignerPanelProps> = ({ text, onTextChange, onCodeChange, onParse }) => {

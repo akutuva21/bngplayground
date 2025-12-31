@@ -450,11 +450,12 @@ export class GraphCanonicalizer {
 
   /**
    * Convert a molecule to string with canonical bond IDs (single molecule case)
+   * BNG2 convention: Only include molecule compartment when it differs from graph compartment
    */
   private static moleculeToString(
     mol: any,
     _bondMapping: Map<string, number>,
-    _graph: SpeciesGraph,
+    graph: SpeciesGraph,
     _molOrigIdx: number
   ): string {
     // Build component strings with their original indices
@@ -479,7 +480,8 @@ export class GraphCanonicalizer {
     });
     /*console.log('[Canonical Debug] After Sort:', componentData.map(c => c.str));*/
 
-    const compartmentSuffix = mol.compartment ? `@${mol.compartment}` : '';
+    // BNG2 convention: Only include molecule compartment when it differs from graph compartment
+    const compartmentSuffix = (mol.compartment && mol.compartment !== graph.compartment) ? `@${mol.compartment}` : '';
     const res = `${mol.name}(${componentData.map((c: any) => c.str).join(',')})${compartmentSuffix}`;
     return res;
   }
@@ -487,6 +489,7 @@ export class GraphCanonicalizer {
   /**
    * Convert a molecule to string with canonical bond IDs (multi-molecule case)
    * Components are sorted alphabetically to match BNG2 canonical form
+   * BNG2 convention: Only include molecule compartment when it differs from graph compartment
    */
   private static moleculeToStringNew(
     mol: any,
@@ -544,7 +547,8 @@ export class GraphCanonicalizer {
     // Sort components alphabetically by their base string (name + state, without bond)
     componentData.sort((a: any, b: any) => a.baseStr < b.baseStr ? -1 : a.baseStr > b.baseStr ? 1 : 0);
 
-    const compartmentSuffix = mol.compartment ? `@${mol.compartment}` : '';
+    // BNG2 convention: Only include molecule compartment when it differs from graph compartment
+    const compartmentSuffix = (mol.compartment && mol.compartment !== graph.compartment) ? `@${mol.compartment}` : '';
     return `${mol.name}(${componentData.map((c: any) => c.baseStr + c.bondStr).join(',')})${compartmentSuffix}`;
   }
 

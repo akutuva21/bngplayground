@@ -4,6 +4,17 @@ export type ActionType =
   | 'dephosphorylates'
   | 'synthesizes'
   | 'degrades'
+  | 'dimerizes'
+  | 'translocates'
+  | 'activates'
+  | 'inhibits'
+  | 'cleaves'
+  | 'ubiquitinates'
+  | 'deubiquitinates'
+  | 'methylates'
+  | 'demethylates'
+  | 'acetylates'
+  | 'deacetylates'
   | 'unknown';
 
 export interface Agent {
@@ -46,6 +57,9 @@ export interface InteractionSentence extends BaseSentence {
   isBidirectional?: boolean; // For binding
   rate?: string; // "k_on", "0.1"
   reverseRate?: string; // "k_off"
+  site?: string; // Target site for modifications
+  compartment?: string; // For translocation
+  targetCompartment?: string; // For translocation destination
 }
 
 export interface InitializationSentence extends BaseSentence {

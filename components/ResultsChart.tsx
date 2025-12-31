@@ -139,7 +139,7 @@ function exportAsGDAT(data: Record<string, any>[], headers: string[]) {
 }
 
 // Helper: Export species concentration data as CDAT (BioNetGen format - all species)
-function exportAsCDAT(speciesData: number[][] | undefined, speciesHeaders: string[] | undefined, timeData: Record<string, any>[]) {
+function exportAsCDAT(speciesData: Record<string, number>[] | undefined, speciesHeaders: string[] | undefined, timeData: Record<string, any>[]) {
   if (!speciesData || !speciesHeaders || speciesData.length === 0) {
     alert('Species concentration data not available. CDAT export requires species-level simulation data.');
     return;
@@ -152,9 +152,10 @@ function exportAsCDAT(speciesData: number[][] | undefined, speciesHeaders: strin
   const dataRows = speciesData.map((row, idx) => {
     const time = timeData[idx]?.time ?? (idx * (timeData[1]?.time ?? 1));
     const timeStr = (typeof time === 'number' ? time.toExponential(12) : String(time)).padStart(22);
-    const speciesStr = row.map(val => 
-      typeof val === 'number' ? val.toExponential(12).padStart(22) : String(val).padStart(22)
-    ).join('');
+    const speciesStr = speciesHeaders.map(name => {
+      const val = row[name] ?? 0;
+      return typeof val === 'number' ? val.toExponential(12).padStart(22) : String(val).padStart(22);
+    }).join('');
     return timeStr + speciesStr;
   });
 

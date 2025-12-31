@@ -123,6 +123,7 @@ export interface CompartmentInfo {
   name: string;
   dimension: number;  // 2 for surface, 3 for volume
   size: number;       // evaluated volume/area
+  parent?: string;    // enclosing compartment (for adjacency checks)
 }
 
 export interface GeneratorOptions {
@@ -143,6 +144,9 @@ export interface GeneratorProgress {
   memoryUsed: number;
   timeElapsed: number;
 }
+
+// Debug flag for volume scaling
+const DEBUG_VOLUME_SCALE = false; // TEMP: disabled for now
 
 export class NetworkGenerator {
   private options: GeneratorOptions;
@@ -198,6 +202,10 @@ export class NetworkGenerator {
     const comp1Name = getSpeciesCompartment(reactant1);
     const comp2Name = reactant2 ? getSpeciesCompartment(reactant2) : null;
 
+    if (DEBUG_VOLUME_SCALE) {
+      console.log(`[VolumeScale] ${reactant1.toString()} (comp=${comp1Name}) + ${reactant2?.toString()} (comp=${comp2Name})`);
+    }
+
     // Get compartment details
     const comp1 = comp1Name ? this.options.compartments.find(c => c.name === comp1Name) : null;
     const comp2 = comp2Name ? this.options.compartments.find(c => c.name === comp2Name) : null;
@@ -226,11 +234,95 @@ export class NetworkGenerator {
     }
 
     if (!scalingCompartment || scalingCompartment.size <= 0) {
+      if (DEBUG_VOLUME_SCALE) {
+        console.log(`[VolumeScale] → No scaling compartment, returning 1`);
+      }
       return 1;
     }
 
+    const scale = 1 / scalingCompartment.size;
+    if (DEBUG_VOLUME_SCALE) {
+      console.log(`[VolumeScale] → Using ${scalingCompartment.name} (dim=${scalingCompartment.dimension}, size=${scalingCompartment.size}) → scale=${scale}`);
+    }
     // Scale by 1/size (volume for 3D, area for 2D)
-    return 1 / scalingCompartment.size;
+    return scale;
+  }
+
+  /**
+   * Check if two compartments are adjacent (BNG2: Compartment::adjacent).
+   * Two compartments are adjacent if one is the parent (outside) of the other.
+   * Returns true if adjacent, false otherwise.
+   */
+  private areCompartmentsAdjacent(comp1Name: string | null, comp2Name: string | null): boolean {
+    // If either is null/undefined, can't check adjacency - allow (for backward compatibility)
+    if (!comp1Name || !comp2Name) return true;
+    
+    // Same compartment is always OK
+    if (comp1Name === comp2Name) return true;
+    
+    // No compartments defined in model - allow
+    if (!this.options.compartments || this.options.compartments.length === 0) return true;
+    
+    const comp1 = this.options.compartments.find(c => c.name === comp1Name);
+    const comp2 = this.options.compartments.find(c => c.name === comp2Name);
+    
+    // If compartments not found, allow (backward compatibility)
+    if (!comp1 || !comp2) return true;
+    
+    // Check if comp1 is parent of comp2, or comp2 is parent of comp1
+    return comp1.parent === comp2Name || comp2.parent === comp1Name;
+  }
+
+  /**
+   * Check if a set of species form an "interacting set" for bimolecular reactions.
+   * BNG2: SpeciesGraph::interactingSet
+   * 
+   * Rules:
+   * 1. All surface (2D) compartments must be the same
+   * 2. All volume (3D) compartments must be the same  
+   * 3. If there's both surface and volume, they must be adjacent
+   */
+  private isInteractingSet(reactant1: Species, reactant2: Species): boolean {
+    if (!this.options.compartments || this.options.compartments.length === 0) {
+      return true;  // No compartments defined, allow all
+    }
+
+    // Get compartment from species graph or first molecule
+    const getSpeciesCompartment = (species: Species): string | null => {
+      if (species.graph.compartment) return species.graph.compartment;
+      if (species.graph.molecules.length > 0 && species.graph.molecules[0].compartment) {
+        return species.graph.molecules[0].compartment;
+      }
+      return null;
+    };
+
+    const comp1Name = getSpeciesCompartment(reactant1);
+    const comp2Name = getSpeciesCompartment(reactant2);
+
+    // If either has no compartment, allow (sloppy mode)
+    if (!comp1Name || !comp2Name) return true;
+
+    const comp1 = this.options.compartments.find(c => c.name === comp1Name);
+    const comp2 = this.options.compartments.find(c => c.name === comp2Name);
+
+    // If compartments not found in definitions, allow
+    if (!comp1 || !comp2) return true;
+
+    // Same compartment - always OK
+    if (comp1Name === comp2Name) return true;
+
+    // Both surfaces (2D) - must be the same (already checked above, so return false)
+    if (comp1.dimension === 2 && comp2.dimension === 2) {
+      return false;  // Different surfaces can't interact
+    }
+
+    // Both volumes (3D) - must be the same (already checked above, so return false)
+    if (comp1.dimension === 3 && comp2.dimension === 3) {
+      return false;  // Different volumes can't interact
+    }
+
+    // One surface, one volume - must be adjacent
+    return this.areCompartmentsAdjacent(comp1Name, comp2Name);
   }
 
   async generate(
@@ -266,9 +358,6 @@ export class NetworkGenerator {
 
     // Initialize with seed species
     for (const sg of seedSpecies) {
-      if (sg.molecules.some(m => m.name === 'CCND')) {
-        console.log(`[generate] Seed loop CCND check: comp='${sg.compartment}'`);
-      }
       const canonical = profiledCanonicalize(sg);
       if (!speciesMap.has(canonical)) {
         const species = new Species(sg, speciesList.length);
@@ -609,8 +698,8 @@ export class NetworkGenerator {
 
     const matches = profiledFindAllMaps(pattern, reactantSpecies.graph);
 
-    // Debug: log match count for phosphorylation rule
-    if (shouldLogNetworkGenerator && rule.name?.includes('s45~U') && rule.name?.includes('CK1a')) {
+    // Debug: log match count for any unimolecular rule
+    if (shouldLogNetworkGenerator) {
       debugNetworkLog(`[applyUnimolecularRule] Rule ${rule.name}: found ${matches.length} matches in species ${reactantSpecies.graph.toString()}`);
       if (matches.length > 0) {
         debugNetworkLog(`[applyUnimolecularRule] First match: moleculeMap=${JSON.stringify(Array.from(matches[0].moleculeMap.entries()))}`);
@@ -915,6 +1004,11 @@ export class NetworkGenerator {
           continue;
         }
 
+        // Check compartment adjacency for cBNGL - species must be in same or adjacent compartments
+        if (!this.isInteractingSet(reactant1Species, reactant2Species)) {
+          continue;
+        }
+
         const matchesSecond = profiledFindAllMaps(secondPattern, reactant2Species.graph);
 
 
@@ -1032,9 +1126,8 @@ export class NetworkGenerator {
             const totalDegeneracy = Math.max(firstDegeneracy * secondDegeneracy, 1);
             const multiplicity = countFirst * countSecond;
             // For bimolecular reactions, scale by 1/volume for 3D compartments (cBNGL)
-            const volumeScale = this.getVolumeScaleRevised(reactant1Species, reactant2Species);
+            const volumeScale = this.getVolumeScale(reactant1Species, reactant2Species);
             const effectiveRate = (rule.rateConstant / totalDegeneracy) * multiplicity * volumeScale;
-            console.log(`[applyBimolecularRule] Rule=${rule.name} RateConst=${rule.rateConstant} Scale=${volumeScale} Multiplicity=${multiplicity} Effective=${effectiveRate}`);
             const propensityFactor = identicalSpecies ? 0.5 : 1;
 
             // Build effective rate expression if rule has symbolic rate
@@ -1215,12 +1308,22 @@ export class NetworkGenerator {
       let selectedComp: string | undefined;
       let selectedDim = 99; // Large to pick smallest dimension
       
-      for (const rg of reactantGraphs) {
+      // DEBUG: Log the compartment selection process
+      if (shouldLogNetworkGenerator) {
+        debugNetworkLog(`[buildProductGraph] Compartment selection - available compartments: ${JSON.stringify(this.options.compartments)}`);
+      }
+      
+      for (let ri = 0; ri < reactantGraphs.length; ri++) {
+        const rg = reactantGraphs[ri];
         const comp = rg.compartment || (rg.molecules.length > 0 ? rg.molecules[0].compartment : undefined);
         if (comp) {
           // Get compartment dimension if available
           const compInfo = this.options.compartments?.find(c => c.name === comp);
           const dim = compInfo ? compInfo.dimension : 3; // Default to 3D if unknown
+          
+          if (shouldLogNetworkGenerator) {
+            debugNetworkLog(`[buildProductGraph] Reactant ${ri}: comp=${comp}, dim=${dim}, selectedComp=${selectedComp}, selectedDim=${selectedDim}`);
+          }
           
           // Prefer lower dimension (2D surface over 3D volume)
           if (dim < selectedDim || !selectedComp) {
@@ -1228,6 +1331,10 @@ export class NetworkGenerator {
             selectedDim = dim;
           }
         }
+      }
+      
+      if (shouldLogNetworkGenerator) {
+        debugNetworkLog(`[buildProductGraph] Final selected compartment: ${selectedComp} (dim=${selectedDim})`);
       }
       
       if (selectedComp) {
@@ -1678,12 +1785,19 @@ export class NetworkGenerator {
       const sourceMol = reactantGraphs[r].molecules[molIdx];
       const clone = this.cloneMoleculeStructure(sourceMol);
       clone._sourceKey = key; // Preserve source mapping (reactantIdx:molIdx)
+      
+      // CRITICAL FIX: If molecule doesn't have its own compartment, inherit from its reactant graph
+      // This ensures that when L@EC.R@PM unbinds, L gets EC and R gets PM (not both PM)
+      if (!clone.compartment && reactantGraphs[r].compartment) {
+        clone.compartment = reactantGraphs[r].compartment;
+      }
+      
       const newIdx = productGraph.molecules.length;
       productGraph.molecules.push(clone);
       reactantToProductMol.set(key, newIdx);
 
       if (shouldLogNetworkGenerator) {
-        debugNetworkLog(`[buildProductGraph] Cloned reactant ${r} mol ${molIdx} (${sourceMol.name}) -> product mol ${newIdx}`);
+        debugNetworkLog(`[buildProductGraph] Cloned reactant ${r} mol ${molIdx} (${sourceMol.name}@${clone.compartment || 'none'}) -> product mol ${newIdx}`);
       }
     }
 
@@ -1717,6 +1831,164 @@ export class NetworkGenerator {
         if (shouldLogNetworkGenerator) {
           debugNetworkLog(`[buildProductGraph] Pattern mol ${pMolIdx} (${pattern.molecules[pMolIdx].name}) -> product mol ${productMolIdx}`);
         }
+      }
+    }
+
+    // CRITICAL FIX: Override molecule compartments from product pattern
+    // This handles transport rules like "mRNA@NU -> mRNA@CP" where the product
+    // pattern explicitly specifies a new compartment for the molecule.
+    for (let pMolIdx = 0; pMolIdx < pattern.molecules.length; pMolIdx++) {
+      const pMol = pattern.molecules[pMolIdx];
+      const productMolIdx = patternToProductMol.get(pMolIdx);
+      
+      if (productMolIdx === undefined) continue;
+      
+      // If product pattern molecule has explicit compartment, use it
+      if (pMol.compartment) {
+        productGraph.molecules[productMolIdx].compartment = pMol.compartment;
+        if (shouldLogNetworkGenerator) {
+          debugNetworkLog(`[buildProductGraph] Overriding product mol ${productMolIdx} compartment to ${pMol.compartment} from pattern`);
+        }
+      } else if (pattern.compartment && !productGraph.molecules[productMolIdx].compartment) {
+        // If no molecule-level compartment but pattern has graph compartment, inherit it
+        productGraph.molecules[productMolIdx].compartment = pattern.compartment;
+        if (shouldLogNetworkGenerator) {
+          debugNetworkLog(`[buildProductGraph] Inheriting product mol ${productMolIdx} compartment from pattern graph: ${pattern.compartment}`);
+        }
+      }
+    }
+
+    // INDUCED COMPARTMENT TRANSPORT: When a surface molecule moves to another surface,
+    // bound volume molecules should move to the corresponding adjacent volume.
+    // E.g., when R moves PM->EM, L (in EC=Outside(PM)) should move to EN=Inside(EM)
+    if (this.options.compartments && this.options.compartments.length > 0) {
+      const compartmentMap = new Map(this.options.compartments.map(c => [c.name, c]));
+      
+      // Build a map of which compartments are "inside" or "outside" of each surface
+      const getOutside = (surface: string): string | undefined => {
+        const comp = compartmentMap.get(surface);
+        return comp?.parent; // Parent is the "outside" compartment
+      };
+      
+      const getInside = (surface: string): string | undefined => {
+        // Find compartment whose parent is this surface
+        for (const [name, comp] of compartmentMap) {
+          if (comp.parent === surface && comp.dimension === 3) {
+            return name;
+          }
+        }
+        return undefined;
+      };
+      
+      // Build map from sourceKey to product molecule for quick lookup
+      const sourceKeyToProductMol = new Map<string, typeof productGraph.molecules[0]>();
+      for (const mol of productGraph.molecules) {
+        if (mol._sourceKey) {
+          sourceKeyToProductMol.set(mol._sourceKey, mol);
+        }
+      }
+      
+      // For each product molecule, check if it changed compartment from reactant
+      for (const productMol of productGraph.molecules) {
+        const sourceKey = productMol._sourceKey;
+        if (!sourceKey) continue;
+        
+        const [rStr, molIdxStr] = sourceKey.split(':');
+        const rIdx = Number(rStr);
+        const sourceMolIdx = Number(molIdxStr);
+        
+        if (rIdx >= reactantGraphs.length) continue;
+        const reactantGraph = reactantGraphs[rIdx];
+        const sourceMol = reactantGraph.molecules[sourceMolIdx];
+        if (!sourceMol) continue;
+        
+        // Get source and target compartments
+        const sourceComp = sourceMol.compartment || reactantGraph.compartment;
+        const targetComp = productMol.compartment;
+        
+        if (!sourceComp || !targetComp || sourceComp === targetComp) continue;
+        
+        // Check if both are surfaces (2D)
+        const sourceCompInfo = compartmentMap.get(sourceComp);
+        const targetCompInfo = compartmentMap.get(targetComp);
+        
+        if (!sourceCompInfo || !targetCompInfo) continue;
+        if (sourceCompInfo.dimension !== 2 || targetCompInfo.dimension !== 2) continue;
+        
+        // Surface to surface transport - update bound volume partners
+        const sourceOutside = getOutside(sourceComp);
+        const sourceInside = getInside(sourceComp);
+        const targetOutside = getOutside(targetComp);
+        const targetInside = getInside(targetComp);
+        
+        if (shouldLogNetworkGenerator) {
+          debugNetworkLog(`[buildProductGraph] Surface transport: ${sourceComp} -> ${targetComp}`);
+          debugNetworkLog(`  Source: Outside=${sourceOutside}, Inside=${sourceInside}`);
+          debugNetworkLog(`  Target: Outside=${targetOutside}, Inside=${targetInside}`);
+        }
+        
+        // Find molecules bound to this one in the REACTANT graph
+        for (let compIdx = 0; compIdx < sourceMol.components.length; compIdx++) {
+          const adjKey = `${sourceMolIdx}.${compIdx}`;
+          const partnerKeys = reactantGraph.adjacency.get(adjKey);
+          if (!partnerKeys) continue;
+          
+          for (const partnerKey of partnerKeys) {
+            const [partnerMolIdxStr] = partnerKey.split('.');
+            const partnerMolIdx = Number(partnerMolIdxStr);
+            
+            // Find the corresponding product molecule
+            const partnerSourceKey = `${rIdx}:${partnerMolIdx}`;
+            const partnerProductMol = sourceKeyToProductMol.get(partnerSourceKey);
+            if (!partnerProductMol || partnerProductMol === productMol) continue;
+            
+            // Check if partner is in an adjacent volume and needs transport
+            const partnerComp = partnerProductMol.compartment;
+            if (!partnerComp) continue;
+            
+            if (partnerComp === sourceOutside) {
+              // Outside(source) -> Inside(target)
+              if (targetInside) {
+                if (shouldLogNetworkGenerator) {
+                  debugNetworkLog(`  Moving bound ${partnerProductMol.name} from ${partnerComp} to ${targetInside} (Outside->Inside)`);
+                }
+                partnerProductMol.compartment = targetInside;
+              }
+            } else if (partnerComp === sourceInside) {
+              // Inside(source) -> Outside(target)
+              if (targetOutside) {
+                if (shouldLogNetworkGenerator) {
+                  debugNetworkLog(`  Moving bound ${partnerProductMol.name} from ${partnerComp} to ${targetOutside} (Inside->Outside)`);
+                }
+                partnerProductMol.compartment = targetOutside;
+              }
+            }
+          }
+        }
+      }
+      
+      // After induced transport, re-select graph compartment based on updated molecule compartments
+      // The graph compartment should be the 2D surface compartment (if any molecule is on a surface)
+      let newSelectedComp: string | undefined;
+      let newSelectedDim = 99;
+      
+      for (const mol of productGraph.molecules) {
+        const molComp = mol.compartment;
+        if (molComp) {
+          const compInfo = compartmentMap.get(molComp);
+          const dim = compInfo ? compInfo.dimension : 3;
+          if (dim < newSelectedDim || !newSelectedComp) {
+            newSelectedComp = molComp;
+            newSelectedDim = dim;
+          }
+        }
+      }
+      
+      if (newSelectedComp && newSelectedComp !== productGraph.compartment) {
+        if (shouldLogNetworkGenerator) {
+          debugNetworkLog(`[buildProductGraph] Re-selecting graph compartment after induced transport: ${productGraph.compartment} -> ${newSelectedComp}`);
+        }
+        productGraph.compartment = newSelectedComp;
       }
     }
 
@@ -2078,6 +2350,58 @@ export class NetworkGenerator {
       productGraph.addBond(bond.molIdx1, bond.compIdx1, bond.molIdx2, bond.compIdx2, newLabel);
     }
 
+    // COMPARTMENT ADJACENCY VALIDATION: Check if all bonds span adjacent compartments
+    // In cBNGL, bonds can only exist between molecules in adjacent compartments:
+    // - Two molecules in the same compartment (volume or surface)
+    // - A volume molecule and a surface molecule where the volume is adjacent to the surface
+    //   (i.e., volume is parent or child of the surface)
+    // If a transport rule would create a bond spanning non-adjacent compartments, the rule
+    // should not fire (return null to indicate invalid product).
+    if (this.options.compartments && this.options.compartments.length > 0) {
+      const compartmentMap = new Map(this.options.compartments.map(c => [c.name, c]));
+      
+      // Helper to check if two compartments are adjacent (can have bonds between them)
+      const areCompartmentsAdjacent = (comp1: string, comp2: string): boolean => {
+        if (comp1 === comp2) return true;
+        
+        const info1 = compartmentMap.get(comp1);
+        const info2 = compartmentMap.get(comp2);
+        if (!info1 || !info2) return true; // Unknown compartment, allow
+        
+        // Check if one is the parent of the other
+        if (info1.parent === comp2 || info2.parent === comp1) return true;
+        
+        // Check if they share the same parent (siblings)
+        // Actually, for cBNGL, molecules in sibling 3D compartments (both inside same 2D surface)
+        // cannot have direct bonds - they would need to be on the shared surface.
+        // E.g., EC and CP are both adjacent to PM, but EC and CP are not adjacent to each other.
+        
+        return false;
+      };
+      
+      // Check all bonds in the product graph
+      for (const [adjKey, partnerKeys] of productGraph.adjacency.entries()) {
+        const [molIdxStr] = adjKey.split('.');
+        const mol1Idx = Number(molIdxStr);
+        const mol1 = productGraph.molecules[mol1Idx];
+        const mol1Comp = mol1?.compartment || productGraph.compartment;
+        
+        for (const partnerKey of partnerKeys) {
+          const [partnerMolIdxStr] = partnerKey.split('.');
+          const mol2Idx = Number(partnerMolIdxStr);
+          const mol2 = productGraph.molecules[mol2Idx];
+          const mol2Comp = mol2?.compartment || productGraph.compartment;
+          
+          if (mol1Comp && mol2Comp && !areCompartmentsAdjacent(mol1Comp, mol2Comp)) {
+            if (shouldLogNetworkGenerator) {
+              debugNetworkLog(`[buildProductGraph] REJECTING product: bond between ${mol1?.name}@${mol1Comp} and ${mol2?.name}@${mol2Comp} spans non-adjacent compartments`);
+            }
+            return null; // Invalid product - bond spans non-adjacent compartments
+          }
+        }
+      }
+    }
+
     if (shouldLogNetworkGenerator) {
       debugNetworkLog(`[buildProductGraph] Result: ${productGraph.toString()}`);
     }
@@ -2245,65 +2569,5 @@ export class NetworkGenerator {
     const err = new Error(message);
     err.name = 'NetworkGenerationLimitError';
     return err;
-  }
-
-  private getVolumeScaleRevised(reactant1: Species, reactant2?: Species): number {
-    if (!this.options.compartments || this.options.compartments.length === 0) {
-      return 1;
-    }
-
-    const getCompInfo = (s: Species) => {
-      let cName = s.graph.compartment;
-      if (!cName && s.graph.molecules.length > 0) {
-        cName = s.graph.molecules[0].compartment;
-      }
-      if (!cName) return null;
-      return this.options.compartments!.find(c => c.name === cName);
-    };
-
-    const c1 = getCompInfo(reactant1);
-    const c2 = reactant2 ? getCompInfo(reactant2) : null;
-    
-    let targetComp = c1;
-
-    if (c1 && c2) {
-      // Prioritize volume (3D) over surface (2D) for adsorption-like reactions
-      if (c1.dimension >= 3 && c2.dimension < 3) {
-        targetComp = c1;
-      } else if (c1.dimension < 3 && c2.dimension >= 3) {
-        targetComp = c2;
-      } else {
-        // Same dimension or other case, default to c1
-        targetComp = c1;
-      }
-    } else if (c1 && !c2) {
-      // Only c1 is known; if it's 2D, search for a 3D compartment for scaling
-      if (c1.dimension < 3) {
-        const vol3D = this.options.compartments!.find(c => c.dimension >= 3);
-        if (vol3D) {
-          targetComp = vol3D;
-        }
-      }
-    } else if (!c1 && c2) {
-      // Only c2 is known; if it's 2D, search for a 3D compartment for scaling
-      if (c2.dimension < 3) {
-        const vol3D = this.options.compartments!.find(c => c.dimension >= 3);
-        if (vol3D) {
-          targetComp = vol3D;
-        } else {
-          targetComp = c2;
-        }
-      } else {
-        targetComp = c2;
-      }
-    }
-
-    if (!targetComp) return 1;
-
-    if (targetComp.size > 0) {
-        return 1.0 / targetComp.size;
-    }
-
-    return 1;
   }
 }

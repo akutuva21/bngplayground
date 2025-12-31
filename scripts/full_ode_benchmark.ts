@@ -249,6 +249,81 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
 }> {
   const totalStart = performance.now();
 
+  // --- Helper: Evaluate Functional Rate Expressions (copied from bnglWorker.ts, minimal) ---
+  const expandedExpressionCache: Map<string, string> = new Map();
+  const compiledRateFunctions: Map<string, (context: Record<string, number>) => number> = new Map();
+
+  const preExpandExpression = (
+    expression: string,
+    functions?: { name: string; args: string[]; expression: string }[]
+  ): string => {
+    const cached = expandedExpressionCache.get(expression);
+    if (cached !== undefined) return cached;
+
+    let expandedExpr = expression;
+    if (functions && functions.length > 0) {
+      for (let pass = 0; pass < 10; pass++) {
+        let foundFunction = false;
+        for (const func of functions) {
+          const funcCallPattern = new RegExp(`\\b${func.name}\\s*\\(\\s*\\)`, 'g');
+          if (funcCallPattern.test(expandedExpr)) {
+            foundFunction = true;
+            expandedExpr = expandedExpr.replace(funcCallPattern, `(${func.expression})`);
+          }
+        }
+        if (!foundFunction) break;
+      }
+    }
+
+    expandedExpr = expandedExpr.replace(/\^/g, '**');
+    expandedExpressionCache.set(expression, expandedExpr);
+    return expandedExpr;
+  };
+
+  const getCompiledRateFunction = (
+    expandedExpr: string,
+    varNames: string[]
+  ): ((context: Record<string, number>) => number) => {
+    const cached = compiledRateFunctions.get(expandedExpr);
+    if (cached !== undefined) return cached;
+
+    const sortedNames = [...varNames].sort((a, b) => b.length - a.length);
+    let jsExpr = expandedExpr;
+    for (const name of sortedNames) {
+      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      jsExpr = jsExpr.replace(new RegExp(`\\b${escaped}\\b`, 'g'), `ctx["${name}"]`);
+    }
+
+    try {
+      const fn = new Function('ctx', `return ${jsExpr};`) as (context: Record<string, number>) => number;
+      compiledRateFunctions.set(expandedExpr, fn);
+      return fn;
+    } catch (e: any) {
+      console.warn(`[getCompiledRateFunction] Failed to compile '${expandedExpr}': ${e.message}`);
+      const zeroFn = () => 0;
+      compiledRateFunctions.set(expandedExpr, zeroFn);
+      return zeroFn;
+    }
+  };
+
+  const evaluateFunctionalRate = (
+    expression: string,
+    parameters: Record<string, number>,
+    observableValues: Record<string, number>,
+    functions?: { name: string; args: string[]; expression: string }[]
+  ): number => {
+    const context: Record<string, number> = { ...parameters, ...observableValues };
+    const expandedExpr = preExpandExpression(expression, functions);
+    const fn = getCompiledRateFunction(expandedExpr, Object.keys(context));
+    try {
+      const result = fn(context);
+      return typeof result === 'number' && isFinite(result) ? result : 0;
+    } catch (e: any) {
+      console.warn(`[evaluateFunctionalRate] Failed to evaluate '${expression}': ${e.message}`);
+      return 0;
+    }
+  };
+
   try {
     // 1. Parse
     const parseStart = performance.now();
@@ -289,56 +364,64 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
     const seedSpecies = model.species.map(s => BNGLParser.parseSpeciesGraph(s.name));
     const parametersMap = new Map(Object.entries(model.parameters).map(([k, v]) => [k, Number(v as number)]));
 
-    // Create a set of observable and function names for rate expression evaluation
-    const observablesSet = new Set<string>(
-      [
-        ...(model.observables || []).map(o => o.name),
-        ...(model.functions || []).map(f => f.name)
-      ]
-    );
+    const observableNames = new Set((model.observables || []).map(o => o.name));
+    const functionNames = new Set((model.functions || []).map(f => f.name));
 
-    const rules = model.reactionRules.flatMap(r => {
-      let rate: number;
-      try {
-        rate = BNGLParser.evaluateExpression(r.rate, parametersMap, observablesSet);
-      } catch {
-        rate = 0;
+    // Helper to check if a rate expression contains observable or function references
+    const isFunctionalRateExpr = (rateExpr: string): boolean => {
+      if (!rateExpr) return false;
+      for (const obsName of observableNames) {
+        if (new RegExp(`\\b${obsName}\\b`).test(rateExpr)) return true;
+      }
+      for (const funcName of functionNames) {
+        if (new RegExp(`\\b${funcName}\\s*\\(`).test(rateExpr)) return true;
+      }
+      return false;
+    };
+
+    const rules = model.reactionRules.flatMap((r, ruleIdx) => {
+      // Preserve functional rates (observable/function-dependent) as expressions.
+      // Evaluate static rates (parameter-only math) to numbers for performance.
+      const forwardIsFunctional = isFunctionalRateExpr(r.rate);
+      let forwardRateArg: number | string;
+      if (forwardIsFunctional) {
+        forwardRateArg = r.rate;
+      } else {
+        const evaluated = BNGLParser.evaluateExpression(r.rate, parametersMap);
+        forwardRateArg = Number.isFinite(evaluated) ? evaluated : r.rate;
       }
 
-      let reverseRate: number;
+      let reverseRateArg: number | string;
       if (r.reverseRate) {
-        try {
-          reverseRate = BNGLParser.evaluateExpression(r.reverseRate, parametersMap, observablesSet);
-        } catch {
-          reverseRate = 0;
+        const reverseIsFunctional = isFunctionalRateExpr(r.reverseRate);
+        if (reverseIsFunctional) {
+          reverseRateArg = r.reverseRate;
+        } else {
+          const evaluated = BNGLParser.evaluateExpression(r.reverseRate, parametersMap);
+          reverseRateArg = Number.isFinite(evaluated) ? evaluated : r.reverseRate;
         }
       } else {
-        reverseRate = rate;
+        reverseRateArg = forwardRateArg;
       }
 
-      if (r.name === 'L_R_bind' || r.rate.includes('kp_LR')) {
-        console.log(`[EvalRule] Rule=${r.name} RateExpression="${r.rate}" Evaluated=${rate} Param_kp_LR=${parametersMap.get('kp_LR')}`);
-      }
-
-
-      const formatList = (list: string[]) => list.length > 0 ? list.join(' + ') : '0';
+      const formatList = (list: string[]) => (list.length > 0 ? list.join(' + ') : '0');
       const ruleStr = `${formatList(r.reactants)} -> ${formatList(r.products)}`;
 
       try {
-        const forwardRule = BNGLParser.parseRxnRule(ruleStr, rate);
-        // FIX: Use original rule name to prevent deduplication of identical rules (e.g. stochastic vs deterministic variants)
-        forwardRule.name = r.name ? `${r.name}_fwd` : `_R${rules.indexOf(r as any) + 1}_fwd`;
+        const forwardRule = BNGLParser.parseRxnRule(ruleStr, forwardRateArg);
+        forwardRule.name = r.name ? `${r.name}_fwd` : `_R${ruleIdx + 1}_fwd`;
 
         if (r.constraints && r.constraints.length > 0) {
           forwardRule.applyConstraints(r.constraints, (s) => BNGLParser.parseSpeciesGraph(s));
         }
+
         if (r.isBidirectional) {
           const reverseRuleStr = `${formatList(r.products)} -> ${formatList(r.reactants)}`;
-          const reverseRule = BNGLParser.parseRxnRule(reverseRuleStr, reverseRate);
-          // Append suffix for reverse rule to maintain uniqueness
-          reverseRule.name = r.name ? `${r.name}_rev` : `_R${rules.indexOf(r as any) + 1}_rev`;
+          const reverseRule = BNGLParser.parseRxnRule(reverseRuleStr, reverseRateArg);
+          reverseRule.name = r.name ? `${r.name}_rev` : `_R${ruleIdx + 1}_rev`;
           return [forwardRule, reverseRule];
         }
+
         return [forwardRule];
       } catch {
         return [];
@@ -366,7 +449,8 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
       compartments: model.compartments?.map(c => ({
         name: c.name,
         dimension: c.dimension,
-        size: c.size
+        size: c.size,
+        parent: c.parent
       }))
     });
 
@@ -433,9 +517,12 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
     // 3. ODE Simulation
     const odeStart = performance.now();
 
-    // Build species name to index map
+    // Build species name to index map (use both canonicalString and toString forms)
     const speciesMap = new Map<string, number>();
-    network.species.forEach((s, i) => speciesMap.set(BNGLParser.speciesGraphToString(s.graph), i));
+    network.species.forEach((s, i) => {
+      speciesMap.set(s.canonicalString, i);
+      speciesMap.set(BNGLParser.speciesGraphToString(s.graph), i);
+    });
 
     // Build initial state and derivatives
 
@@ -449,18 +536,150 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
       }
     });
 
-    // Build concrete reactions
+    // Build observable contributor coefficients for dynamic observables + output
+    type ObsContributor = { idx: number; coeff: number };
+    const observableContributors = new Map<string, ObsContributor[]>();
+
+    // Helper: get global compartment from canonical string like "@CP::..."
+    const getSpeciesGlobalCompartment = (speciesCanonical: string): string | null => {
+      const m = speciesCanonical.match(/^@([A-Za-z0-9_]+)::/);
+      return m ? m[1] : null;
+    };
+
+    // Helper: parse molecule-level compartment from a molecule token (may be missing)
+    const getMoleculeCompartment = (molToken: string): { compartment: string | null; cleanMol: string } => {
+      // Token might look like "@CP::P(r)" only for whole species; molecules are typically "P(r!1)" or "P(r)@CP".
+      // Handle suffix "...@COMP" on molecule.
+      const suffix = molToken.match(/^(.*?)(?:@([A-Za-z0-9_]+))$/);
+      if (suffix) {
+        return { cleanMol: suffix[1], compartment: suffix[2] };
+      }
+      // Handle prefix "@COMP:Mol(...)" or "@COMP::Mol(...)"
+      const prefix = molToken.match(/^@([A-Za-z0-9_]+):(:?)(.+)$/);
+      if (prefix) {
+        return { cleanMol: prefix[3], compartment: prefix[1] };
+      }
+      return { cleanMol: molToken, compartment: null };
+    };
+
+    const countSingleMoleculeMatches = (
+      speciesCanonical: string,
+      patCompartment: string | null,
+      cleanPattern: string
+    ): number => {
+      const globalComp = getSpeciesGlobalCompartment(speciesCanonical);
+      const molTokens = speciesCanonical
+        .replace(/^@[A-Za-z0-9_]+::/, '')
+        .split('.')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      const molName = cleanPattern.includes('(') ? cleanPattern.split('(')[0] : cleanPattern;
+      const body = cleanPattern.includes('(')
+        ? cleanPattern.substring(molName.length + 1, cleanPattern.length - 1)
+        : '';
+
+      let count = 0;
+      for (const tok of molTokens) {
+        const { cleanMol, compartment: molComp } = getMoleculeCompartment(tok);
+        const effectiveComp = molComp || globalComp;
+        if (patCompartment && effectiveComp !== patCompartment) continue;
+        if (!cleanMol.startsWith(molName)) continue;
+        if (body) {
+          // Very simple body check (good enough for TF(), P(r), etc.)
+          if (!cleanMol.includes(`(${body}`) && !cleanMol.includes(body)) continue;
+        } else {
+          // Ensure it's a molecule token (has parentheses in canonical strings)
+          if (!cleanMol.includes('(')) continue;
+        }
+        count++;
+      }
+      return count;
+    };
+
+    const buildObservableContributors = () => {
+      (model.observables || []).forEach(o => {
+        const contribs: ObsContributor[] = [];
+        const pattern = o.pattern;
+
+        network.species.forEach((s, idx) => {
+          if (o.type === 'species') {
+            if (s.canonicalString === pattern) contribs.push({ idx, coeff: 1 });
+            return;
+          }
+
+          let patternCompartment: string | null = null;
+          let cleanPat = pattern;
+          const compMatch = pattern.match(/^@([A-Za-z0-9_]+):(.+)$/);
+          if (compMatch) {
+            patternCompartment = compMatch[1];
+            cleanPat = compMatch[2];
+          }
+          cleanPat = cleanPat.replace(/![?+]/g, '');
+
+          if (cleanPat.includes('.')) {
+            // Very rough complex presence check (good enough for P.R here)
+            const molNames = cleanPat.split('.').map(part => (part.includes('(') ? part.split('(')[0] : part));
+            const hasAll = molNames.every(name => s.canonicalString.includes(name + '('));
+            if (!hasAll) return;
+            // Approximate coefficient as 1 complex per species instance
+            // (better would be full subgraph matching).
+            // Also enforce compartment constraint loosely.
+            if (patternCompartment) {
+              const globalComp = getSpeciesGlobalCompartment(s.canonicalString);
+              if (globalComp !== patternCompartment && !s.canonicalString.includes(`@${patternCompartment}`)) return;
+            }
+            contribs.push({ idx, coeff: 1 });
+            return;
+          }
+
+          const coeff = countSingleMoleculeMatches(s.canonicalString, patternCompartment, cleanPat);
+          if (coeff > 0) contribs.push({ idx, coeff });
+        });
+
+        observableContributors.set(o.name, contribs);
+      });
+    };
+
+    buildObservableContributors();
+
+    // Build concrete reactions (preserve functional rate expressions from NetworkGenerator)
     const concreteReactions = network.reactions.map(r => ({
       reactants: r.reactants,
       products: r.products,
-      rate: r.rate
+      rateConstant: r.rate,
+      rateExpression: r.rateExpression,
+      propensityFactor: r.propensityFactor ?? 1
     }));
+
+    const hasFunctionalRates = concreteReactions.some(r => !!r.rateExpression);
 
     // Derivative function
     const derivatives = (y: Float64Array, out: Float64Array) => {
       out.fill(0);
+
+      // Compute observables (needed for functional rates)
+      const obsValues: Record<string, number> = {};
+      if (hasFunctionalRates) {
+        for (const [name, contribs] of observableContributors.entries()) {
+          let sum = 0;
+          for (const { idx, coeff } of contribs) sum += coeff * y[idx];
+          obsValues[name] = sum;
+        }
+      }
+
       for (const rxn of concreteReactions) {
-        let velocity = rxn.rate;
+        let k = rxn.rateConstant;
+        if (rxn.rateExpression) {
+          k = evaluateFunctionalRate(
+            rxn.rateExpression,
+            model.parameters as Record<string, number>,
+            obsValues,
+            model.functions
+          );
+        }
+
+        let velocity = k * rxn.propensityFactor;
         for (const idx of rxn.reactants) {
           velocity *= y[idx];
         }
@@ -482,7 +701,9 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
       J.fill(0);
 
       for (const rxn of concreteReactions) {
-        const k = rxn.rate;
+        // Only valid for mass-action with constant k. If there are functional rates,
+        // we will NOT use this Jacobian (solver switches to cvode without jacobian).
+        const k = rxn.rateConstant * rxn.propensityFactor;
         const reactants = rxn.reactants;
 
         // Count reactant multiplicities for this reaction
@@ -553,13 +774,13 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
     // Check for NaN/Inf in reaction rates
     let hasBadRates = false;
     concreteReactions.forEach((r, i) => {
-      if (!Number.isFinite(r.rate)) {
-        console.error(`Reaction ${i} has invalid rate: ${r.rate}`);
+      if (!Number.isFinite(r.rateConstant)) {
+        console.error(`Reaction ${i} has invalid rateConstant: ${r.rateConstant}`);
         hasBadRates = true;
       }
     });
 
-    const rates = concreteReactions.map(r => r.rate);
+    const rates = concreteReactions.map(r => r.rateConstant);
     const minRate = Math.min(...rates);
     const maxRate = Math.max(...rates);
     const zeroRates = rates.filter(r => r === 0).length;
@@ -608,212 +829,53 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
 
     console.log(`[ODESolver] Using tolerances: atol=${atol}, rtol=${rtol}, initialStep=${initialStep ?? 'auto'}, maxStep=${maxStep === Infinity ? 'Infinity' : maxStep}`);
 
-    // For large stiff models, try sparse solver first (better for stiff Jacobians)
-    // For smaller models, use dense analytical Jacobian (faster)
-    // NOTE: cvode_jac has better convergence failure handling than cvode_sparse
-    const useSparse = false;  // Always use dense with analytical Jacobian for now
-    console.log(`[ODESolver] Using cvode_jac for ${numSpecies} species (analytical Jacobian)`);
+    // If functional rates exist, use CVODE without analytic Jacobian.
+    // (Analytic Jacobian would need dk/dy terms from observables/functions.)
+    const solverType = hasFunctionalRates ? 'cvode' : 'cvode_jac';
+    console.log(`[ODESolver] Using ${solverType} for ${numSpecies} species${hasFunctionalRates ? ' (functional rates detected)' : ' (analytical Jacobian)'} `);
 
-    const solver = await createSolver(numSpecies, derivatives, {
-      atol: atol,
-      rtol: rtol,
-      maxSteps: 100000000,
-      maxStep: maxStep,
-      initialStep: initialStep,
-      solver: 'cvode_jac',
-      jacobian: jacobian  // Always provide analytical Jacobian
-    } as any);
+    const solver = await createSolver(numSpecies, derivatives, (
+      hasFunctionalRates
+        ? {
+          atol: atol,
+          rtol: rtol,
+          maxSteps: 100000000,
+          maxStep: maxStep,
+          initialStep: initialStep,
+          solver: 'cvode'
+        }
+        : {
+          atol: atol,
+          rtol: rtol,
+          maxSteps: 100000000,
+          maxStep: maxStep,
+          initialStep: initialStep,
+          solver: 'cvode_jac',
+          jacobian: jacobian
+        }
+    ) as any);
 
     const dtOut = t_end / n_steps;
     let y = new Float64Array(y0);
     let t = 0;
     let currentSolver = solver;
-    let solverName = 'cvode_jac';
+    let solverName = solverType;
     let fallbackAttempted = false;
 
     // Integration loop with timeout and solver fallback
     const odeStartTime = performance.now();
 
-    // Track observables for verification
-    const times: number[] = [0];
-    const observableValues = new Map<string, Float64Array>();
-    const observableContributors = new Map<string, number[]>();
-    model.observables.forEach(o => {
-      const indices: number[] = [];
-      // Clean pattern string (remove type prefix if parser included it, though usually separate)
-      // Check types.ts: type is separate field.
-      const pattern = o.pattern;
-
-      network.species.forEach((s, idx) => {
-        // Simplified matching:
-        if (o.type === 'species') {
-          // Exact match of canonical string (approx)
-          if (s.canonicalString === pattern) indices.push(idx);
-        } else {
-          // Molecules: check if species contains the pattern
-          // Handle compartment-prefixed patterns like @PM:L or @PM:R(tf~pY!?)
-          let patternCompartment: string | null = null;
-          let cleanPat = pattern;
-
-          // Extract compartment from pattern if present
-          const compMatch = pattern.match(/^@([A-Za-z0-9_]+):(.+)$/);
-          if (compMatch) {
-            patternCompartment = compMatch[1];
-            cleanPat = compMatch[2];
-          }
-
-          // Remove bond wildcards (!?, !+)
-          cleanPat = cleanPat.replace(/![?+]/g, '');
-
-          // Extract compartment from species canonical string
-          // Format: @COMP::MolName(...) or MolName(...)@COMP
-          let speciesCompartment: string | null = null;
-          const speciesCompMatch1 = s.canonicalString.match(/^@([A-Za-z0-9_]+)::/);
-          const speciesCompMatch2 = s.canonicalString.match(/@([A-Za-z0-9_]+)$/);
-          if (speciesCompMatch1) speciesCompartment = speciesCompMatch1[1];
-          else if (speciesCompMatch2) speciesCompartment = speciesCompMatch2[1];
-          // Also check species graph compartment directly
-          if (!speciesCompartment && s.graph.compartment) {
-            speciesCompartment = s.graph.compartment;
-          }
-          // Check first molecule's compartment
-          if (!speciesCompartment && s.graph.molecules.length > 0 && s.graph.molecules[0].compartment) {
-            speciesCompartment = s.graph.molecules[0].compartment;
-          }
-
-          // If pattern has compartment, need to verify molecule-level compartment
-          // BNG2 uses molecule-level compartments in canonical strings like L(r!1)@EC
-
-          // Now check if the pattern matches the species
-          if (patternCompartment) {
-            // For compartment-prefixed patterns, need molecule-level compartment matching
-            const molName = cleanPat.includes('(') ? cleanPat.split('(')[0] : cleanPat;
-
-            // Build regex to find molecule with optional compartment suffix
-            // Pattern: molName followed by (...) followed by optional @COMP
-            const molRegex = new RegExp(`${molName}\\([^)]*\\)(?:@([A-Za-z0-9_]+))?`, 'g');
-            let match;
-            let moleculeMatches = 0;
-
-            while ((match = molRegex.exec(s.canonicalString)) !== null) {
-              const molCompartment = match[1]; // Captured compartment suffix, may be undefined
-
-              // Determine effective molecule compartment
-              // If molecule has suffix, use that; otherwise inherit from species
-              const effectiveComp = molCompartment || speciesCompartment;
-
-              // Validate molecule compartment matches pattern compartment
-              if (effectiveComp !== patternCompartment) {
-                continue; // This molecule is in wrong compartment
-              }
-
-              // Check body pattern if specified (for patterns like R(tf~pY))
-              if (cleanPat.includes('(')) {
-                const body = cleanPat.substring(molName.length + 1, cleanPat.length - 1);
-                if (body !== '' && !match[0].includes(body.replace(/![?+]/g, ''))) {
-                  continue;
-                }
-              }
-
-              moleculeMatches++;
-            }
-
-            if (moleculeMatches > 0) {
-              indices.push(idx);
-            }
-          } else {
-            // No compartment prefix - use simple pattern matching
-            if (cleanPat.includes('(')) {
-              const molName = cleanPat.split('(')[0];
-              const body = cleanPat.substring(molName.length + 1, cleanPat.length - 1);
-              // Verify molecule name and body presence
-              if (s.canonicalString.includes(molName) && (body === '' || s.canonicalString.includes(body.replace(/![?+]/g, '')))) {
-                indices.push(idx);
-              }
-            } else if (cleanPat.includes('.')) {
-              // Complex pattern like P.R - check for all molecule names
-              const molNames = cleanPat.split('.');
-              if (molNames.every(name => s.canonicalString.includes(name + '('))) {
-                indices.push(idx);
-              }
-            } else {
-              // Simple molecule name match (e.g., L matches L(...))
-              if (s.canonicalString.includes(cleanPat + '(')) {
-                indices.push(idx);
-                if (o.name === 'Tot_P') console.log(`[Tot_P] Matched species ${idx}: ${s.canonicalString}`);
-              } else if (o.name === 'Tot_P' && idx < 5) {
-                console.log(`[Tot_P] NO match for species ${idx}: ${s.canonicalString} (looking for '${cleanPat}(')`);
-              }
-            }
-          }
-        }
-      });
-      observableContributors.set(o.name, indices);
-      // Debug: log observable matching
-      if (indices.length === 0 && o.name.match(/Tot_P|P_R|L_Bound/)) {
-        console.log(`[ObsMatchDebug] ${o.name} pattern='${o.pattern}' cleanPat='${pattern}' patternComp=${o.pattern.match(/^@([A-Za-z0-9_]+):/)?.[1] || 'none'} matched=${indices.length} species`);
-      }
-    });
-
-    // Initialize computed observables map
+    // Track observables for output + accuracy checks
+    const times: number[] = [];
     const computedObservables = new Map<string, number[]>();
-    if (refData) {
-      model.observables.forEach(o => {
-        computedObservables.set(o.name, []);
-      });
-    }
+    (model.observables || []).forEach(o => computedObservables.set(o.name, []));
 
-    let obsStoreIdx = 0;
-
-    // Actually, constructing observables properly:
-    // We already have the network. We can re-evaluate observables based on species concentrations.
-    // The NetworkGenerator doesn't export the observable mapping directly in `network` variable in this script easily?
-    // Wait, NetworkGenerator returns `observables` map (index -> list of species indices)?
-    // Let's check NetworkGenerator.generate return type.
-
-    // Quick fix: The return from generator.generate is { species, reactions }.
-    // We need to map observables properly. 
-    // To do this *correctly* without re-implementing matching:
-    // We can assume we don't have easy observable values unless we implemented it.
-    // BUT: The benchmark is mostly for performance.
-    // For ACCURACY, checking Species indices directly against a reference is hard (indices change).
-    // Observables are the only invariant.
-
-    // For now, let's skip complex observable pattern matching inside this script and only support models
-    // where observables are direct sums of species (which is common) or rely on a "best effort" mapping.
-
-    // BETTER APPROACH: 
-    // Just use the species concentrations directly if we can map them? No, names change.
-    // We MUST calculate observables.
-
-    // Let's use a simplified approach: assume we can't easily compute complex observables here without
-    // porting more logic.
-    // However, we can check basic species if they are simple.
-
-    // ALTERNATIVE: Just run the simulation and accept we can't validate numerically 
-    // UNLESS we extract the observable maps from the NetworkGenerator. 
-    // NetworkGenerator *does* compute observables! It's in `network.observables`?
-    // Let's check the type definition of `network`.
-    // It is `GeneratedNetwork`.
-
-    // Initial observable calc
-    if (refData) {
-      times.push(0);
-      observableContributors.forEach((indices, name) => {
-        let sum = 0;
-        for (const idx of indices) sum += y0[idx];
-        // computedObservables.get(name)![0] = sum; // Need to handle size or push?
-        // Actually let's just use arrays in the map, Float64Array is fixed size.
-        // Using standard arrays for simplicity in this script as perf is less critical than correctness here.
-      });
-      // Reinitalize with standard arrays for push capability
-      observableContributors.forEach((_, name) => {
-        computedObservables.set(name, [0]); // Will overwrite
-        let sum = 0;
-        const indices = observableContributors.get(name)!;
-        for (const idx of indices) sum += y0[idx];
-        computedObservables.get(name)!.push(sum);
-      });
+    // Store t=0
+    times.push(0);
+    for (const [name, contribs] of observableContributors.entries()) {
+      let sum = 0;
+      for (const { idx, coeff } of contribs) sum += coeff * y0[idx];
+      computedObservables.get(name)!.push(sum);
     }
 
 
@@ -893,15 +955,14 @@ async function runFullSimulation(modelName: string, modelPath: string, bng2Speci
       y = new Float64Array(result.y);
       t = result.t;
 
-      // Store data points for verification (subsample if too large)
-      if (refData && (i % Math.ceil(n_steps / 5000) === 0 || i === n_steps)) {
+      // Store data points for verification/output (subsample if too large)
+      if (i % Math.ceil(n_steps / 5000) === 0 || i === n_steps) {
         times.push(t);
-
-        observableContributors.forEach((indices, name) => {
+        for (const [name, contribs] of observableContributors.entries()) {
           let sum = 0;
-          for (const idx of indices) sum += y[idx];
-          computedObservables.get(name)?.push(sum);
-        });
+          for (const { idx, coeff } of contribs) sum += coeff * y[idx];
+          computedObservables.get(name)!.push(sum);
+        }
       }
     }
 

@@ -28,52 +28,160 @@ export const CheatsheetModal: React.FC<CheatsheetModalProps> = ({ isOpen, onClos
                             <span>✨</span> Natural Language Designer
                         </h3>
                         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                            Write in structured English. The "Logic Parser" automatically converts this to valid BNGL.
+                            Write in structured English. The parser accepts many synonyms (e.g., "binds" / "interacts with" / "associates with").
                         </p>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div className="border border-slate-200 dark:border-slate-700 rounded p-3">
-                                <h4 className="font-semibold text-sm mb-2">Definitions</h4>
+                                <h4 className="font-semibold text-sm mb-2 text-blue-600 dark:text-blue-400">📦 Definitions</h4>
                                 <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
                                     Define Lck
                                 </code>
-                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
                                     Define TCR with sites itam, b
+                                </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                                    Create protein Receptor with sites a~active~inactive
                                 </code>
                             </div>
 
                             <div className="border border-slate-200 dark:border-slate-700 rounded p-3">
-                                <h4 className="font-semibold text-sm mb-2">Interactions</h4>
+                                <h4 className="font-semibold text-sm mb-2 text-green-600 dark:text-green-400">🔗 Binding</h4>
                                 <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
                                     Lck binds TCR
                                 </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
+                                    A interacts with B
+                                </code>
                                 <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                                    Receptor recruits Kinase
+                                </code>
+                            </div>
+
+                            <div className="border border-slate-200 dark:border-slate-700 rounded p-3">
+                                <h4 className="font-semibold text-sm mb-2 text-orange-600 dark:text-orange-400">⚡ Phosphorylation</h4>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
                                     Lck phosphorylates TCR
                                 </code>
-                            </div>
-
-                            <div className="border border-slate-200 dark:border-slate-700 rounded p-3">
-                                <h4 className="font-semibold text-sm mb-2">Initialization</h4>
                                 <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
-                                    Start with 100 Lck
+                                    SHP1 dephosphorylates Target
+                                </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                                    Kinase adds phosphate to Substrate at Y
                                 </code>
                             </div>
 
                             <div className="border border-slate-200 dark:border-slate-700 rounded p-3">
-                                <h4 className="font-semibold text-sm mb-2">Simulation</h4>
+                                <h4 className="font-semibold text-sm mb-2 text-purple-600 dark:text-purple-400">🧬 Other Modifications</h4>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
+                                    E3 ubiquitinates Target
+                                </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
+                                    HAT acetylates Histone
+                                </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                                    Methyltransferase methylates H3 at K4
+                                </code>
+                            </div>
+
+                            <div className="border border-slate-200 dark:border-slate-700 rounded p-3">
+                                <h4 className="font-semibold text-sm mb-2 text-red-600 dark:text-red-400">🔄 Synthesis & Degradation</h4>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
+                                    Ribosome synthesizes Protein
+                                </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
+                                    Proteasome degrades Target
+                                </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                                    OldProtein is degraded
+                                </code>
+                            </div>
+
+                            <div className="border border-slate-200 dark:border-slate-700 rounded p-3">
+                                <h4 className="font-semibold text-sm mb-2 text-cyan-600 dark:text-cyan-400">🔀 Dimerization</h4>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
+                                    Receptor dimerizes
+                                </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
+                                    A dimerizes with B
+                                </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                                    EGFR forms dimer
+                                </code>
+                            </div>
+
+                            <div className="border border-slate-200 dark:border-slate-700 rounded p-3">
+                                <h4 className="font-semibold text-sm mb-2 text-teal-600 dark:text-teal-400">🚚 Translocation</h4>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
+                                    Protein translocates to nucleus
+                                </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                                    Factor moves to membrane
+                                </code>
+                            </div>
+
+                            <div className="border border-slate-200 dark:border-slate-700 rounded p-3">
+                                <h4 className="font-semibold text-sm mb-2 text-yellow-600 dark:text-yellow-400">⚙️ Activation & Inhibition</h4>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
+                                    Ligand activates Receptor
+                                </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
+                                    Inhibitor blocks Enzyme
+                                </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                                    Drug suppresses Pathway
+                                </code>
+                            </div>
+
+                            <div className="border border-slate-200 dark:border-slate-700 rounded p-3">
+                                <h4 className="font-semibold text-sm mb-2 text-pink-600 dark:text-pink-400">✂️ Cleavage</h4>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
+                                    Caspase cleaves Substrate
+                                </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                                    Protease cuts ProProtein
+                                </code>
+                            </div>
+
+                            <div className="border border-slate-200 dark:border-slate-700 rounded p-3">
+                                <h4 className="font-semibold text-sm mb-2 text-slate-600 dark:text-slate-400">🔢 Initialization</h4>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
+                                    Start with 100 of Lck
+                                </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                                    Initialize 1000 Receptor molecules
+                                </code>
+                            </div>
+
+                            <div className="border border-slate-200 dark:border-slate-700 rounded p-3">
+                                <h4 className="font-semibold text-sm mb-2 text-slate-600 dark:text-slate-400">▶️ Simulation</h4>
                                 <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded mb-1">
                                     Simulate for 100s
                                 </code>
                                 <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
-                                    Simulate 50s with 500 steps
+                                    Run 50 seconds with 500 steps
                                 </code>
                             </div>
 
                             <div className="border border-slate-200 dark:border-slate-700 rounded p-3">
-                                <h4 className="font-semibold text-sm mb-2">Comments</h4>
+                                <h4 className="font-semibold text-sm mb-2 text-slate-600 dark:text-slate-400">💬 Comments</h4>
                                 <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
                                     # This is a comment
                                 </code>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-md">
+                            <h4 className="font-semibold text-sm mb-2 text-indigo-700 dark:text-indigo-300">💡 Pro Tip: Flexible Synonyms</h4>
+                            <p className="text-xs text-slate-600 dark:text-slate-400">
+                                The parser accepts many natural phrasings. For example, these all mean the same thing:
+                            </p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">binds</span>
+                                <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">interacts with</span>
+                                <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">associates with</span>
+                                <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">recruits</span>
+                                <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">docks to</span>
                             </div>
                         </div>
                     </section>

@@ -1,6 +1,31 @@
-﻿
+﻿/**
+ * @deprecated LEGACY BNGL PARSER - DO NOT USE IN PRODUCTION
+ * 
+ * This file contains the deprecated regex-based BNGL parser.
+ * Use `parseBNGL()` from `./parseBNGL.ts` instead, which uses the ANTLR-based parser.
+ * 
+ * This file is retained only for:
+ * 1. Historical comparison / benchmarking
+ * 2. Debugging parser differences
+ * 
+ * If you accidentally import from this file in production code, you should see
+ * a deprecation warning at runtime.
+ */
+
 import type { BNGLModel } from '../types.ts';
 import { BNGLParser } from '../src/services/graph/core/BNGLParser.ts';
+
+// Runtime deprecation warning - fires once on first use
+let _deprecationWarned = false;
+function warnLegacyUsage() {
+  if (!_deprecationWarned) {
+    _deprecationWarned = true;
+    console.warn(
+      '[DEPRECATED] parseBNGL_Legacy is deprecated. Use parseBNGL() from ./parseBNGL.ts (ANTLR-based) instead.\n' +
+      'If you see this in production, please update your import to use the main parseBNGL module.'
+    );
+  }
+}
 
 const speciesPattern = /^[A-Za-z0-9_]+(?:\([^)]*\))?(?:\.[A-Za-z0-9_]+(?:\([^)]*\))?)*$/;
 
@@ -232,7 +257,13 @@ export interface ParseBNGLOptions {
   debug?: boolean;
 }
 
+/**
+ * @deprecated Use `parseBNGL()` from `./parseBNGL.ts` instead.
+ */
 export function parseBNGL(code: string, options: ParseBNGLOptions = {}): BNGLModel {
+  // Emit runtime deprecation warning
+  warnLegacyUsage();
+  
   const { checkCancelled, debug } = options;
   const logDebug = (...args: unknown[]) => {
     if (debug) {

@@ -139,3 +139,6 @@ simulation_results_*.csv
 
 web_output/
 
+artifacts/
+
+# End of .gitignore

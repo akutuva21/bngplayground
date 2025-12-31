@@ -1,0 +1,516 @@
+// src/services/NeuralODESurrogate.ts
+// Phase 2: Neural ODE surrogate models for fast parameter sweeps
+
+import * as tf from '@tensorflow/tfjs';
+// Note: BNGLModel type is in root types.ts - using 'any' for flexibility
+
+export interface SurrogateTrainingConfig {
+  epochs?: number;
+  batchSize?: number;
+  validationSplit?: number;
+  learningRate?: number;
+  earlyStopping?: boolean;
+  patience?: number;
+  verbose?: boolean;
+}
+
+export interface TrainingDataset {
+  parameters: number[][];     // [nSamples, nParams]
+  timePoints: number[];        // [nTimePoints]
+  concentrations: number[][][]; // [nSamples, nTimePoints, nSpecies]
+}
+
+export interface PredictionResult {
+  concentrations: number[][];  // [nTimePoints, nSpecies]
+  confidence?: number[][];     // Optional uncertainty estimates
+}
+
+/**
+ * Neural ODE Surrogate Model
+ * Train a neural network to approximate ODE solutions for fast parameter sweeps
+ */
+export class NeuralODESurrogate {
+  private model: tf.Sequential | null = null;
+  private nParams: number;
+  private nSpecies: number;
+  private paramMean: number[] = [];
+  private paramStd: number[] = [];
+  private concMean: number[] = [];
+  private concStd: number[] = [];
+  private isNormalized: boolean = false;
+  
+  constructor(nParams: number, nSpecies: number) {
+    this.nParams = nParams;
+    this.nSpecies = nSpecies;
+  }
+  
+  /**
+   * Build the neural network architecture
+   * Architecture: (params + time) -> [128, 128, 64] -> concentrations
+   */
+  private buildModel(hiddenUnits: number[] = [128, 128, 64]): tf.Sequential {
+    const model = tf.sequential();
+    
+    // Input: parameters + time point
+    model.add(tf.layers.dense({
+      inputShape: [this.nParams + 1],
+      units: hiddenUnits[0],
+      activation: 'relu',
+      kernelInitializer: 'heNormal'
+    }));
+    
+    // Hidden layers with batch normalization
+    for (let i = 1; i < hiddenUnits.length; i++) {
+      model.add(tf.layers.batchNormalization());
+      model.add(tf.layers.dense({
+        units: hiddenUnits[i],
+        activation: 'relu',
+        kernelInitializer: 'heNormal'
+      }));
+      model.add(tf.layers.dropout({ rate: 0.1 })); // Prevent overfitting
+    }
+    
+    // Output layer: species concentrations
+    model.add(tf.layers.dense({
+      units: this.nSpecies,
+      activation: 'softplus', // Ensure positive concentrations
+      kernelInitializer: 'glorotUniform'
+    }));
+    
+    return model;
+  }
+  
+  /**
+   * Normalize training data for better convergence
+   */
+  private normalizeData(data: TrainingDataset): {
+    normalizedParams: tf.Tensor2D;
+    normalizedTime: tf.Tensor2D;
+    normalizedConc: tf.Tensor3D;
+  } {
+    // Normalize parameters
+    const paramsTensor = tf.tensor2d(data.parameters);
+    this.paramMean = paramsTensor.mean(0).arraySync() as number[];
+    this.paramStd = tf.moments(paramsTensor, 0).variance.sqrt().arraySync() as number[];
+    
+    const normalizedParams = tf.tidy(() => {
+      const mean = tf.tensor1d(this.paramMean);
+      const std = tf.tensor1d(this.paramStd);
+      return tf.div(tf.sub(paramsTensor, mean), tf.add(std, 1e-7)) as tf.Tensor2D;
+    });
+    
+    // Normalize time (simple min-max scaling)
+    const tMin = Math.min(...data.timePoints);
+    const tMax = Math.max(...data.timePoints);
+    const normalizedTimeArray = data.timePoints.map(t => (t - tMin) / (tMax - tMin + 1e-7));
+    const normalizedTime = tf.tensor2d(
+      normalizedTimeArray.map(t => [t])
+    );
+    
+    // Normalize concentrations (log-transform + standardize)
+    const concTensor = tf.tensor3d(data.concentrations);
+    const logConc = tf.log(tf.add(concTensor, 1e-10)); // Add small constant to avoid log(0)
+    
+    const flatLogConc = logConc.reshape([-1, this.nSpecies]);
+    this.concMean = flatLogConc.mean(0).arraySync() as number[];
+    this.concStd = tf.moments(flatLogConc, 0).variance.sqrt().arraySync() as number[];
+    
+    const normalizedConc = tf.tidy(() => {
+      const mean = tf.tensor1d(this.concMean);
+      const std = tf.tensor1d(this.concStd);
+      const normalized = tf.div(tf.sub(flatLogConc, mean), tf.add(std, 1e-7));
+      return normalized.reshape(concTensor.shape) as tf.Tensor3D;
+    });
+    
+    this.isNormalized = true;
+    
+    return { normalizedParams, normalizedTime, normalizedConc };
+  }
+  
+  /**
+   * Prepare training inputs: (params, time) pairs
+   */
+  private prepareTrainingData(
+    normalizedParams: tf.Tensor2D,
+    normalizedTime: tf.Tensor2D,
+    normalizedConc: tf.Tensor3D
+  ): { inputs: tf.Tensor2D; outputs: tf.Tensor2D } {
+    return tf.tidy(() => {
+      const nSamples = normalizedParams.shape[0];
+      const nTimePoints = normalizedTime.shape[0];
+      const totalExamples = nSamples * nTimePoints;
+      
+      // Create all (param, time) combinations
+      const inputs: number[][] = [];
+      const outputs: number[][] = [];
+      
+      const paramsArray = normalizedParams.arraySync() as number[][];
+      const timeArray = normalizedTime.arraySync() as number[][];
+      const concArray = normalizedConc.arraySync() as number[][][];
+      
+      for (let i = 0; i < nSamples; i++) {
+        for (let t = 0; t < nTimePoints; t++) {
+          inputs.push([...paramsArray[i], timeArray[t][0]]);
+          outputs.push(concArray[i][t]);
+        }
+      }
+      
+      return {
+        inputs: tf.tensor2d(inputs),
+        outputs: tf.tensor2d(outputs)
+      };
+    });
+  }
+  
+  /**
+   * Train the surrogate model on simulation data
+   */
+  async train(
+    data: TrainingDataset,
+    config: SurrogateTrainingConfig = {}
+  ): Promise<tf.History> {
+    const {
+      epochs = 100,
+      batchSize = 32,
+      validationSplit = 0.1,
+      learningRate = 0.001,
+      earlyStopping = true,
+      patience = 10,
+      verbose = true
+    } = config;
+    
+    // Build model if not already built
+    if (!this.model) {
+      this.model = this.buildModel();
+    }
+    
+    // Compile model
+    this.model.compile({
+      optimizer: tf.train.adam(learningRate),
+      loss: 'meanSquaredError',
+      metrics: ['mae']
+    });
+    
+    // Normalize data
+    const { normalizedParams, normalizedTime, normalizedConc } = this.normalizeData(data);
+    
+    // Prepare training data
+    const { inputs, outputs } = this.prepareTrainingData(
+      normalizedParams,
+      normalizedTime,
+      normalizedConc
+    );
+    
+    // Training callbacks
+    const callbacks: tf.CustomCallbackArgs = {};
+    
+    if (earlyStopping) {
+      let bestLoss = Infinity;
+      let patienceCounter = 0;
+      
+      callbacks.onEpochEnd = async (epoch, logs) => {
+        if (logs && logs.val_loss !== undefined) {
+          if (logs.val_loss < bestLoss) {
+            bestLoss = logs.val_loss;
+            patienceCounter = 0;
+          } else {
+            patienceCounter++;
+            if (patienceCounter >= patience) {
+              console.log(`Early stopping at epoch ${epoch}`);
+              this.model!.stopTraining = true;
+            }
+          }
+        }
+        
+        if (verbose && epoch % 10 === 0) {
+          console.log(
+            `Epoch ${epoch}: loss=${logs?.loss.toFixed(4)}, ` +
+            `val_loss=${logs?.val_loss?.toFixed(4)}, ` +
+            `mae=${logs?.mae.toFixed(4)}`
+          );
+        }
+      };
+    }
+    
+    // Train model
+    const history = await this.model.fit(inputs, outputs, {
+      epochs,
+      batchSize,
+      validationSplit,
+      callbacks,
+      shuffle: true
+    });
+    
+    // Cleanup
+    inputs.dispose();
+    outputs.dispose();
+    normalizedParams.dispose();
+    normalizedTime.dispose();
+    normalizedConc.dispose();
+    
+    return history;
+  }
+  
+  /**
+   * Predict concentrations for given parameters and time points
+   */
+  predict(params: number[], timePoints: number[]): PredictionResult {
+    if (!this.model) {
+      throw new Error('Model not trained yet. Call train() first.');
+    }
+    
+    if (!this.isNormalized) {
+      throw new Error('Model normalization parameters not set. Train the model first.');
+    }
+    
+    return tf.tidy(() => {
+      // Normalize inputs
+      const normalizedParams = params.map((p, i) => 
+        (p - this.paramMean[i]) / (this.paramStd[i] + 1e-7)
+      );
+      
+      const tMin = 0; // Assuming time starts at 0
+      const tMax = Math.max(...timePoints);
+      const normalizedTime = timePoints.map(t => (t - tMin) / (tMax - tMin + 1e-7));
+      
+      // Create input pairs
+      const inputs: number[][] = normalizedTime.map(t => [...normalizedParams, t]);
+      const inputTensor = tf.tensor2d(inputs);
+      
+      // Predict (normalized log concentrations)
+      const predictions = this.model!.predict(inputTensor) as tf.Tensor2D;
+      
+      // Denormalize: reverse standardization and exp transform
+      const denormalized = tf.tidy(() => {
+        const mean = tf.tensor1d(this.concMean);
+        const std = tf.tensor1d(this.concStd);
+        const unnormalized = tf.add(tf.mul(predictions, std), mean);
+        return tf.exp(unnormalized); // Reverse log transform
+      });
+      
+      const concentrations = denormalized.arraySync() as number[][];
+      
+      return { concentrations };
+    });
+  }
+  
+  /**
+   * Fast parameter sweep using the surrogate model
+   */
+  async parameterSweep(
+    paramSets: number[][],
+    timePoints: number[]
+  ): Promise<number[][][]> {
+    if (!this.model) {
+      throw new Error('Model not trained yet. Call train() first.');
+    }
+    
+    const results: number[][][] = [];
+    
+    // Batch predictions for efficiency
+    const batchSize = 100;
+    for (let i = 0; i < paramSets.length; i += batchSize) {
+      const batch = paramSets.slice(i, Math.min(i + batchSize, paramSets.length));
+      
+      const batchResults = await Promise.all(
+        batch.map(params => {
+          const result = this.predict(params, timePoints);
+          return result.concentrations;
+        })
+      );
+      
+      results.push(...batchResults);
+    }
+    
+    return results;
+  }
+  
+  /**
+   * Evaluate model performance on test data
+   */
+  evaluate(testData: TrainingDataset): { mse: number; mae: number; r2: number[] } {
+    if (!this.model) {
+      throw new Error('Model not trained yet. Call train() first.');
+    }
+    
+    const predictions: number[][][] = [];
+    
+    // Predict for all test samples
+    for (let i = 0; i < testData.parameters.length; i++) {
+      const pred = this.predict(testData.parameters[i], testData.timePoints);
+      predictions.push(pred.concentrations);
+    }
+    
+    // Compute metrics
+    let totalMSE = 0;
+    let totalMAE = 0;
+    const r2PerSpecies: number[] = new Array(this.nSpecies).fill(0);
+    
+    for (let i = 0; i < predictions.length; i++) {
+      for (let t = 0; t < testData.timePoints.length; t++) {
+        for (let s = 0; s < this.nSpecies; s++) {
+          const pred = predictions[i][t][s];
+          const true_val = testData.concentrations[i][t][s];
+          const error = pred - true_val;
+          
+          totalMSE += error * error;
+          totalMAE += Math.abs(error);
+        }
+      }
+    }
+    
+    const nTotal = predictions.length * testData.timePoints.length * this.nSpecies;
+    const mse = totalMSE / nTotal;
+    const mae = totalMAE / nTotal;
+    
+    // Compute R² per species
+    for (let s = 0; s < this.nSpecies; s++) {
+      let ssRes = 0;
+      let ssTot = 0;
+      const meanTrue = this.computeMeanForSpecies(testData.concentrations, s);
+      
+      for (let i = 0; i < predictions.length; i++) {
+        for (let t = 0; t < testData.timePoints.length; t++) {
+          const pred = predictions[i][t][s];
+          const true_val = testData.concentrations[i][t][s];
+          ssRes += (true_val - pred) ** 2;
+          ssTot += (true_val - meanTrue) ** 2;
+        }
+      }
+      
+      r2PerSpecies[s] = 1 - ssRes / (ssTot + 1e-10);
+    }
+    
+    return { mse, mae, r2: r2PerSpecies };
+  }
+  
+  private computeMeanForSpecies(concentrations: number[][][], speciesIdx: number): number {
+    let sum = 0;
+    let count = 0;
+    
+    for (const sample of concentrations) {
+      for (const timepoint of sample) {
+        sum += timepoint[speciesIdx];
+        count++;
+      }
+    }
+    
+    return sum / count;
+  }
+  
+  /**
+   * Save model to browser storage or download
+   */
+  async save(name: string): Promise<void> {
+    if (!this.model) {
+      throw new Error('No model to save');
+    }
+    
+    await this.model.save(`localstorage://${name}`);
+    
+    // Save normalization parameters
+    const metadata = {
+      nParams: this.nParams,
+      nSpecies: this.nSpecies,
+      paramMean: this.paramMean,
+      paramStd: this.paramStd,
+      concMean: this.concMean,
+      concStd: this.concStd,
+      isNormalized: this.isNormalized
+    };
+    
+    localStorage.setItem(`${name}_metadata`, JSON.stringify(metadata));
+  }
+  
+  /**
+   * Load model from browser storage
+   */
+  async load(name: string): Promise<void> {
+    this.model = await tf.loadLayersModel(`localstorage://${name}`) as tf.Sequential;
+    
+    // Load normalization parameters
+    const metadataStr = localStorage.getItem(`${name}_metadata`);
+    if (metadataStr) {
+      const metadata = JSON.parse(metadataStr);
+      this.nParams = metadata.nParams;
+      this.nSpecies = metadata.nSpecies;
+      this.paramMean = metadata.paramMean;
+      this.paramStd = metadata.paramStd;
+      this.concMean = metadata.concMean;
+      this.concStd = metadata.concStd;
+      this.isNormalized = metadata.isNormalized;
+    }
+  }
+  
+  /**
+   * Cleanup TensorFlow resources
+   */
+  dispose(): void {
+    if (this.model) {
+      this.model.dispose();
+      this.model = null;
+    }
+  }
+}
+
+/**
+ * Generate training dataset by sampling parameter space and running ODE simulations
+ */
+export class SurrogateDatasetGenerator {
+  /**
+   * Latin Hypercube Sampling for parameter space
+   */
+  static latinHypercubeSample(
+    paramRanges: [number, number][],
+    nSamples: number
+  ): number[][] {
+    const nParams = paramRanges.length;
+    const samples: number[][] = Array(nSamples).fill(0).map(() => Array(nParams).fill(0));
+    
+    for (let p = 0; p < nParams; p++) {
+      const [min, max] = paramRanges[p];
+      const interval = (max - min) / nSamples;
+      
+      // Stratified sampling
+      const stratifiedSamples = Array(nSamples).fill(0).map((_, i) => {
+        const lower = min + i * interval;
+        const upper = min + (i + 1) * interval;
+        return lower + Math.random() * (upper - lower);
+      });
+      
+      // Shuffle
+      for (let i = nSamples - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [stratifiedSamples[i], stratifiedSamples[j]] = [stratifiedSamples[j], stratifiedSamples[i]];
+      }
+      
+      for (let i = 0; i < nSamples; i++) {
+        samples[i][p] = stratifiedSamples[i];
+      }
+    }
+    
+    return samples;
+  }
+  
+  /**
+   * Generate training dataset
+   * NOTE: This requires integration with the actual ODE solver
+   */
+  static async generateDataset(
+    paramRanges: [number, number][],
+    nSamples: number,
+    timePoints: number[],
+    simulateFunction: (params: number[]) => Promise<number[][]>
+  ): Promise<TrainingDataset> {
+    const parameters = this.latinHypercubeSample(paramRanges, nSamples);
+    const concentrations: number[][][] = [];
+    
+    // Run simulations for each parameter set
+    for (const params of parameters) {
+      const result = await simulateFunction(params);
+      concentrations.push(result);
+    }
+    
+    return { parameters, timePoints, concentrations };
+  }
+}

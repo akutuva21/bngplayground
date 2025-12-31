@@ -10,6 +10,7 @@ import { CartoonTab } from './tabs/CartoonTab';
 import { RegulatoryTab } from './tabs/RegulatoryTab';
 import { VerificationTab } from './tabs/VerificationTab';
 import { ParameterScanTab } from './tabs/ParameterScanTab';
+import { ParameterEstimationTab } from './tabs/ParameterEstimationTab';
 import { FluxAnalysisTab } from './tabs/FluxAnalysisTab';
 import { ExpressionInputPanel, CustomExpression } from './ExpressionInputPanel';
 
@@ -105,6 +106,7 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
             <Tab>Identifiability</Tab>
             <Tab>Steady State</Tab>
             <Tab>Parameter Scan</Tab>
+            <Tab>Parameter Estimation</Tab>
             <Tab>Flux Analysis</Tab>
             <Tab>Verification</Tab>
             {/* <Tab>Robustness</Tab> */}
@@ -153,6 +155,10 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
             <TabPanel>
               <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">Parameter Scan – explore how observables change with parameter values</div>
               <ParameterScanTab model={model} />
+            </TabPanel>
+            <TabPanel>
+              <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">Parameter Estimation – Bayesian inference of model parameters from experimental data</div>
+              <ParameterEstimationTab model={model} />
             </TabPanel>
             <TabPanel>
               <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">Flux Analysis – visualize reaction flux contributions</div>

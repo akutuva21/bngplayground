@@ -282,7 +282,15 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
     if (!typeCtx || strings.length === 0 || !patternListCtx) return;
 
-    const typeText = typeCtx.STRING()?.text?.toLowerCase() || 'molecules';
+    // Check for MOLECULES or SPECIES tokens first, then fall back to STRING
+    let typeText = 'molecules';
+    if (typeCtx.SPECIES()) {
+      typeText = 'species';
+    } else if (typeCtx.MOLECULES()) {
+      typeText = 'molecules';
+    } else if (typeCtx.STRING()) {
+      typeText = typeCtx.STRING()!.text.toLowerCase();
+    }
     const type: 'molecules' | 'species' = typeText === 'species' ? 'species' : 'molecules';
 
     // Get observable name - skip label if present
@@ -333,17 +341,27 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     const intNode = Array.isArray(labelInt) ? labelInt[0] : labelInt;
     const name = labelCtx ? (strNode?.text || intNode?.text) : undefined;
 
-    // Get reactants
+    // Get reactants - check for null pattern (INT token like "0")
     const reactantSpecies = reactantCtx.species_def();
-    const reactants = reactantSpecies.length > 0
-      ? reactantSpecies.map(sd => this.getSpeciesString(sd))
-      : ['0'];  // Null pattern
+    const reactantInt = reactantCtx.INT();
+    let reactants: string[];
+    if (reactantInt) {
+      // Null pattern: 0 -> Product
+      reactants = [];
+    } else {
+      reactants = reactantSpecies.map(sd => this.getSpeciesString(sd));
+    }
 
-    // Get products
+    // Get products - check for null pattern (INT token like "0")
     const productSpecies = productCtx.species_def();
-    const products = productSpecies.length > 0
-      ? productSpecies.map(sd => this.getSpeciesString(sd))
-      : ['0'];  // Null pattern
+    const productInt = productCtx.INT();
+    let products: string[];
+    if (productInt) {
+      // Null pattern: Reactant -> 0
+      products = [];
+    } else {
+      products = productSpecies.map(sd => this.getSpeciesString(sd));
+    }
 
     // Get rate(s)
     const rateExpressions = rateLawCtx.expression();

@@ -1,16 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { BNGLModel, SimulationOptions } from '../types';
 import * as fimModule from '../services/fim';
-import { bnglService } from '../services/bnglService';
 
 // Mock bnglService
 vi.mock('../services/bnglService', async () => {
   return {
     bnglService: {
-      prepareModel: vi.fn(async (model: BNGLModel) => {
+      prepareModel: vi.fn(async (_model: BNGLModel) => {
         return 1;
       }),
-      simulateCached: vi.fn(async (modelId: number, parameterOverrides: Record<string, number> | undefined, options: SimulationOptions) => {
+      simulateCached: vi.fn(async (_modelId: number, parameterOverrides: Record<string, number> | undefined, options: SimulationOptions) => {
         // Simple analytic model: observable "obs" = (a + b) * time
         const params = { ...(parameterOverrides ?? {}) } as Record<string, number>;
         // default parameters if not overridden
@@ -53,6 +52,9 @@ describe('FIM identifiability', () => {
     // There should be a nullspace combination (a-b) or similar
     expect(res.nullspaceCombinations).toBeDefined();
     expect(res.nullspaceCombinations!.length).toBeGreaterThan(0);
+
+    // Since only (a+b) is observable, a and b are not individually identifiable.
+    expect(res.unidentifiableParams).toEqual(expect.arrayContaining(['a', 'b']));
     const comb = res.nullspaceCombinations![0];
     // components should include a and b
     const names = comb.components.map((c) => c.name);

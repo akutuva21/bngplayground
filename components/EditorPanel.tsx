@@ -176,7 +176,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   const [simulationMethod, setSimulationMethod] = useState<'ode' | 'ssa'>('ode');
   const [customAtol, setCustomAtol] = useState<string>('');
   const [customRtol, setCustomRtol] = useState<string>('');
-  const [odeSolver, setOdeSolver] = useState<'auto' | 'cvode' | 'cvode_auto' | 'cvode_sparse' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4'>('auto');
+  const [odeSolver, setOdeSolver] = useState<'auto' | 'cvode' | 'cvode_auto' | 'cvode_sparse' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4'>('cvode_sparse');
   const [isParamsOpen, setIsParamsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 

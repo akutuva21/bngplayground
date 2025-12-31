@@ -408,7 +408,7 @@ export async function computeFIM(
   // Compute covariance matrix as FIM inverse using eigendecomposition
   const n = p;
   const cov: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
-  const eigThreshold = Math.max(1e-12, maxEig * 1e-12); // threshold for small eigenvalues
+  const eigThreshold = Math.max(1e-12, Math.abs(maxEig) * 1e-12); // threshold for small eigenvalues
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
       let sum = 0;
@@ -443,19 +443,11 @@ export async function computeFIM(
   // Sensitivity profiles: for each parameter, return the column of J (sensitivity over observables/time)
   const sensitivityProfiles = parameterNames.map((name, i) => ({ name, timeProfile: J.map((row) => row[i]) }));
 
-  // Practical identifiability: compute eigen-contribution per parameter using the FIM eigenpairs
+  // Parameter-level identifiability: infer from near-null eigenvectors.
+  // If a parameter has a large loading in ANY near-null eigenvector, it cannot be uniquely
+  // estimated (locally) from the provided outputs (it participates in an unidentifiable combination).
   const identifiableParams: string[] = [];
   const unidentifiableParams: string[] = [];
-  const contribThreshold = maxEig * 1e-6;
-  for (let i = 0; i < n; i++) {
-    const eigContribution = sortedVecs.reduce((acc, vec, k) => {
-      const lambda = sortedVals[k];
-      if (lambda > eigThreshold) return acc + (vec[i] * vec[i]) * lambda;
-      return acc;
-    }, 0);
-    if (eigContribution > contribThreshold) identifiableParams.push(parameterNames[i]);
-    else unidentifiableParams.push(parameterNames[i]);
-  }
 
   // Compute VIF (Variance Inflation Factor) by inverting the correlation matrix (pseudo-inverse)
   let vif: number[] = new Array(n).fill(0);
@@ -513,6 +505,7 @@ export async function computeFIM(
 
   // Analyze small-eigenvalue eigenvectors (near-null space) to detect non-identifiable parameter combinations.
   const nullspaceCombinations: Array<{ eigenvalue: number; components: Array<{ name: string; loading: number }> }> = [];
+  const unidentifiableMask: boolean[] = new Array(n).fill(false);
   // Follow common heuristic: eigenvalues << maxEig are considered near-zero. Use a relative threshold similar to the Julia code (1e-4 * maxEig).
   const nullTol = Math.max(1e-12, Math.abs(maxEig) * 1e-4);
   // iterate from smallest eigenvalue upwards to collect near-zero modes
@@ -528,10 +521,22 @@ export async function computeFIM(
     for (let i = 0; i < vec.length; i++) {
       if (Math.abs(vec[i]) >= threshold && Number.isFinite(vec[i]) && !Number.isNaN(vec[i])) {
         comps.push({ name: parameterNames[i], loading: vec[i] });
+        unidentifiableMask[i] = true;
       }
     }
     comps.sort((a, b) => Math.abs(b.loading) - Math.abs(a.loading));
     nullspaceCombinations.push({ eigenvalue: lambda, components: comps });
+  }
+
+  // Derive per-parameter labeling from nullspace participation.
+  // If there is no detected nullspace, all parameters are locally identifiable.
+  if (nullspaceCombinations.length === 0) {
+    identifiableParams.push(...parameterNames);
+  } else {
+    for (let i = 0; i < n; i++) {
+      if (unidentifiableMask[i]) unidentifiableParams.push(parameterNames[i]);
+      else identifiableParams.push(parameterNames[i]);
+    }
   }
 
   // Optional: approximate 1D profile-likelihood-like scans. This is a cheap heuristic: we
@@ -625,8 +630,7 @@ export async function computeFIM(
 
       for (let iter = 0; iter < maxIter; iter++) {
         // sort simplex by fvals ascending
-        const idx = fvals.map((v, i) => i).sort((a, b) => fvals[a] - fvals[b]);
-        const best = simplex[idx[0]];
+        const idx = fvals.map((_, i) => i).sort((a, b) => fvals[a] - fvals[b]);
         const worst = simplex[idx[simplex.length - 1]];
 
         // centroid of all but worst

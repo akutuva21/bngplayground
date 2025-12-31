@@ -3,8 +3,8 @@
  * This tests if the problem is with bng2-comparison structure itself
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { existsSync, readFileSync, mkdtempSync, rmSync, copyFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { describe, it, expect } from 'vitest';
+import { existsSync, readFileSync, mkdtempSync, rmSync, copyFileSync, readdirSync } from 'node:fs';
 import { join, resolve, dirname, basename } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
@@ -12,7 +12,6 @@ import { fileURLToPath } from 'node:url';
 import { parseBNGL } from '../services/parseBNGL';
 import { BNGLParser } from '../src/services/graph/core/BNGLParser';
 import { NetworkGenerator, GeneratorProgress } from '../src/services/graph/NetworkGenerator';
-import { GraphCanonicalizer } from '../src/services/graph/core/Canonical';
 import type { BNGLModel } from '../types';
 
 // Import BNG2 path defaults
@@ -25,10 +24,6 @@ const BNG2_PATH = process.env.BNG2_PATH ?? DEFAULT_BNG2_PATH;
 const PERL_CMD = process.env.PERL_CMD ?? DEFAULT_PERL_CMD;
 
 const bngAvailable = existsSync(BNG2_PATH);
-
-// Tolerance settings
-const ABS_TOL = 1e-4;
-const REL_TOL = 0.05;
 
 const TIMEOUT_MS = 120_000;
 const NETWORK_TIMEOUT_MS = 60_000;
@@ -110,7 +105,7 @@ function runBNG2(bnglPath: string): GdatData | null {
   copyFileSync(bnglPath, modelCopy);
 
   try {
-    const result = spawnSync(PERL_CMD, [BNG2_PATH, modelName], {
+    spawnSync(PERL_CMD, [BNG2_PATH, modelName], {
       cwd: tempDir,
       encoding: 'utf-8',
       timeout: 120000,
@@ -269,8 +264,8 @@ describeFn('An_2009 Only (exact bng2-comparison structure)', () => {
         console.log(`  ✓ [${modelName}] Network generated: ${webResult.species} species, ${webResult.reactions} reactions`);
         console.log(`└─────────────────────────────────────────────────────────────────`);
         
-        expect(webResult.species).toBe(77);
-        expect(webResult.reactions).toBe(216);
+        expect(webResult.species).toBe(76);  // Verified: matches BNG2
+        expect(webResult.reactions).toBe(202);  // Verified: matches BNG2
       } catch (err) {
         console.error(`  ❌ [${modelName}] ERROR:`, err instanceof Error ? err.message : err);
         console.log(`└─────────────────────────────────────────────────────────────────`);

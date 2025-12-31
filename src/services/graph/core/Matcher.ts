@@ -608,8 +608,13 @@ class VF2State {
           continue;
         }
         const mol = this.target.molecules[neighbor];
-        const key = mol.compartment ? `${mol.name}|${mol.compartment}` : mol.name;
-        targetCounts.set(key, (targetCounts.get(key) ?? 0) + 1);
+        // Always count the base name for patterns without compartment constraints
+        targetCounts.set(mol.name, (targetCounts.get(mol.name) ?? 0) + 1);
+        // Also count the compartmented key if molecule has a compartment
+        if (mol.compartment) {
+          const specificKey = `${mol.name}|${mol.compartment}`;
+          targetCounts.set(specificKey, (targetCounts.get(specificKey) ?? 0) + 1);
+        }
       }
     };
 
@@ -628,13 +633,18 @@ class VF2State {
   }
 
   private checkFrontierConsistency(pMol: number, tMol: number): boolean {
+    // Build pattern counts: key is name|compartment if pattern molecule has compartment, else just name
     const patternCounts = new Map<string, number>();
+    const patternKeysWithoutCompartment = new Set<string>(); // Track which pattern keys have no compartment constraint
     for (const neighbor of getNeighborMolecules(this.pattern, pMol)) {
       if (this.corePattern.has(neighbor)) {
         continue;
       }
       const mol = this.pattern.molecules[neighbor];
       const key = mol.compartment ? `${mol.name}|${mol.compartment}` : mol.name;
+      if (!mol.compartment) {
+        patternKeysWithoutCompartment.add(mol.name);
+      }
       patternCounts.set(key, (patternCounts.get(key) ?? 0) + 1);
     }
 
@@ -642,14 +652,22 @@ class VF2State {
       return true;
     }
 
+    // Build target counts: for each target neighbor, increment both:
+    // 1. The specific key (name|compartment if it has one, else just name)
+    // 2. The base key (just name) if it has a compartment - so patterns without compartment constraint can match
     const targetCounts = new Map<string, number>();
     for (const neighbor of getNeighborMolecules(this.target, tMol)) {
       if (this.coreTarget.has(neighbor)) {
         continue;
       }
       const mol = this.target.molecules[neighbor];
-      const key = mol.compartment ? `${mol.name}|${mol.compartment}` : mol.name;
-      targetCounts.set(key, (targetCounts.get(key) ?? 0) + 1);
+      // Always count the base name for matching patterns without compartment constraints
+      targetCounts.set(mol.name, (targetCounts.get(mol.name) ?? 0) + 1);
+      // Also count the compartmented key if molecule has a compartment
+      if (mol.compartment) {
+        const specificKey = `${mol.name}|${mol.compartment}`;
+        targetCounts.set(specificKey, (targetCounts.get(specificKey) ?? 0) + 1);
+      }
     }
 
     for (const [key, required] of patternCounts.entries()) {
@@ -1079,9 +1097,9 @@ class VF2State {
         if (!this.areComponentsBonded(tMolIdx, tCompIdx, targetPartnerMolIdx, targetPartnerCompIdx)) {
           return false;
         }
-        if (!this.targetCompartmentsMatch(tMolIdx, targetPartnerMolIdx)) {
-          return false;
-        }
+        // NOTE: Removed targetCompartmentsMatch check here.
+        // In cBNGL, molecules in ADJACENT compartments can be bonded (e.g., L@EC bound to R@PM).
+        // The pattern determines compartment constraints, not the target's actual compartments.
       } else {
         const neighborKeys = this.target.adjacency.get(this.getAdjacencyKey(tMolIdx, tCompIdx));
         if (!neighborKeys || neighborKeys.length === 0) {
@@ -1098,9 +1116,8 @@ class VF2State {
             return false;
           }
         }
-        if (!Number.isNaN(neighborMolIdx) && !this.targetCompartmentsMatch(tMolIdx, neighborMolIdx)) {
-          return false;
-        }
+        // NOTE: Removed targetCompartmentsMatch check here.
+        // In cBNGL, molecules in ADJACENT compartments can be bonded.
       }
     }
 

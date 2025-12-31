@@ -10,7 +10,8 @@ const makeComponent = (name: string) => new Component(name);
 const buildChain = (label: string, length: number): SpeciesGraph => {
   const molecules: Molecule[] = [];
   for (let i = 0; i < length; i++) {
-    molecules.push(new Molecule(`${label}${i}`, [makeComponent('bind')]));
+    // Use same base name 'M' for pattern and target so names match
+    molecules.push(new Molecule('M', [makeComponent('bind')]));
   }
   const graph = new SpeciesGraph(molecules);
   for (let i = 0; i < length - 1; i++) {
@@ -25,10 +26,10 @@ describe('GraphMatcher VF2++ performance', () => {
     const target = buildChain('T', 12);
 
     // add two extra branches to increase search complexity without changing connectivity
-    const branch = new Molecule('TBranch', [makeComponent('bind')]);
+    const branch = new Molecule('M', [makeComponent('bind')]);
     target.molecules.push(branch);
     target.addBond(0, 0, target.molecules.length - 1, 0, 99);
-    const branch2 = new Molecule('TBranch', [makeComponent('bind')]);
+    const branch2 = new Molecule('M', [makeComponent('bind')]);
     target.molecules.push(branch2);
     target.addBond(3, 0, target.molecules.length - 1, 0, 100);
 

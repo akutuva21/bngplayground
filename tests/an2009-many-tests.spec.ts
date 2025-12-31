@@ -12,7 +12,6 @@ import { fileURLToPath } from 'node:url';
 import { parseBNGL } from '../services/parseBNGL';
 import { BNGLParser } from '../src/services/graph/core/BNGLParser';
 import { NetworkGenerator } from '../src/services/graph/NetworkGenerator';
-import { GraphCanonicalizer } from '../src/services/graph/core/Canonical';
 
 // Import BNG2 path defaults
 import { DEFAULT_BNG2_PATH, DEFAULT_PERL_CMD } from '../scripts/bngDefaults.js';
@@ -47,7 +46,7 @@ function runBNG2(bnglPath: string): boolean {
   copyFileSync(bnglPath, modelCopy);
 
   try {
-    const result = spawnSync(PERL_CMD, [BNG2_PATH, modelName], {
+    spawnSync(PERL_CMD, [BNG2_PATH, modelName], {
       cwd: tempDir,
       encoding: 'utf-8',
       timeout: 120000,
@@ -169,8 +168,8 @@ describeFn('An_2009 with many tests registered (like bng2-comparison)', () => {
     
     const result = await runAn2009();
     
-    expect(result.species).toBe(77);
-    expect(result.reactions).toBe(216);
+    expect(result.species).toBe(76);  // Verified: matches BNG2
+    expect(result.reactions).toBe(202);  // Verified: matches BNG2
     
     console.log('\nTEST PASSED!');
   }, TIMEOUT_MS);

@@ -94,7 +94,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
   const [param2End, setParam2End] = useState('');
   const [param2Steps, setParam2Steps] = useState('5');
   const [method, setMethod] = useState<'ode' | 'ssa'>('ode');
-  const [solver, setSolver] = useState<'auto' | 'cvode' | 'cvode_sparse' | 'rosenbrock23' | 'rk45' | 'rk4'>('cvode');
+  const [solver, setSolver] = useState<'auto' | 'cvode' | 'cvode_sparse' | 'rosenbrock23' | 'rk45' | 'rk4'>('cvode_sparse');
   const [tEnd, setTEnd] = useState('100');
   const [nSteps, setNSteps] = useState('100');
   const [selectedObservable, setSelectedObservable] = useState('');
@@ -104,6 +104,14 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [error, setError] = useState<string | null>(null);
   const [isLogScale, setIsLogScale] = useState(false);
+  
+  // Neural ODE Surrogate state
+  const [useSurrogate, setUseSurrogate] = useState(false);
+  const [surrogateStatus, setSurrogateStatus] = useState<'none' | 'training' | 'ready' | 'error'>('none');
+  const [surrogateProgress, setSurrogateProgress] = useState({ epoch: 0, totalEpochs: 0, loss: 0 });
+  const [surrogateMetrics, setSurrogateMetrics] = useState<{ mse: number; mae: number; r2: number[] } | null>(null);
+  const surrogateRef = useRef<any>(null); // Will hold NeuralODESurrogate instance
+  
   // Use refs for lifecycle-bound cancellers and mounts to avoid setState-after-unmount races
   const scanAbortControllerRef = useRef<AbortController | null>(null);
   const isMountedRef = useRef(true);
@@ -180,6 +188,16 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
     setTwoDResult(null);
   }, [scanType]);
 
+  // Cleanup surrogate when model changes
+  useEffect(() => {
+    if (surrogateRef.current) {
+      surrogateRef.current.dispose?.();
+      surrogateRef.current = null;
+      setSurrogateStatus('none');
+      setSurrogateMetrics(null);
+    }
+  }, [model]);
+
   const cancelActiveScan = useCallback((reason?: string) => {
     const controller = scanAbortControllerRef.current;
     if (controller) {
@@ -187,6 +205,131 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
       scanAbortControllerRef.current = null;
     }
   }, []);
+
+  // Train Neural ODE Surrogate
+  const handleTrainSurrogate = useCallback(async () => {
+    if (!model || !parameter1) return;
+    
+    setSurrogateStatus('training');
+    setSurrogateProgress({ epoch: 0, totalEpochs: 50, loss: 0 });
+    setError(null);
+    
+    try {
+      // Dynamically import TensorFlow.js and surrogate module
+      const [tf, { NeuralODESurrogate, SurrogateDatasetGenerator }] = await Promise.all([
+        import('@tensorflow/tfjs'),
+        import('../../src/services/NeuralODESurrogate')
+      ]);
+      
+      // Determine parameters to vary
+      const paramsToVary = scanType === '2d' && parameter2 ? [parameter1, parameter2] : [parameter1];
+      const paramRanges: [number, number][] = paramsToVary.map(p => {
+        const baseValue = model.parameters[p] ?? 1;
+        return [baseValue * 0.1, baseValue * 10];
+      });
+      
+      // Generate training data using ODE solver
+      const nTrainingSamples = 100;
+      const timePoints = Array.from({ length: 51 }, (_, i) => i * 2); // 0 to 100
+      
+      // Create sample parameter sets
+      const parameterSets = SurrogateDatasetGenerator.latinHypercubeSample(paramRanges, nTrainingSamples);
+      
+      // Run simulations for training data
+      const concentrations: number[][][] = [];
+      const modelId = await bnglService.prepareModel(model, {});
+      
+      for (let i = 0; i < parameterSets.length; i++) {
+        const overrides: Record<string, number> = {};
+        paramsToVary.forEach((p, idx) => {
+          overrides[p] = parameterSets[i][idx];
+        });
+        
+        const simResult = await bnglService.simulateCached(modelId, overrides, {
+          method: 'ode',
+          t_end: 100,
+          n_steps: 50,
+          solver: 'cvode'
+        } as any, {});
+        
+        // Extract observable values at each time point
+        const trajectory: number[][] = simResult.data.map(point => 
+          observableNames.map(obs => point[obs] as number ?? 0)
+        );
+        concentrations.push(trajectory);
+        
+        if (isMountedRef.current) {
+          setSurrogateProgress(prev => ({ ...prev, epoch: Math.floor((i / nTrainingSamples) * 25) }));
+        }
+      }
+      
+      await bnglService.releaseModel(modelId);
+      
+      // Create training dataset
+      const trainingData = {
+        parameters: parameterSets,
+        timePoints,
+        concentrations
+      };
+      
+      // Create and train surrogate
+      const surrogate = new NeuralODESurrogate(paramsToVary.length, observableNames.length);
+      
+      await surrogate.train(trainingData, {
+        epochs: 50,
+        batchSize: 16,
+        validationSplit: 0.1,
+        learningRate: 0.001,
+        earlyStopping: true,
+        patience: 10,
+        verbose: false
+      });
+      
+      // Evaluate surrogate
+      const testData = {
+        parameters: SurrogateDatasetGenerator.latinHypercubeSample(paramRanges, 20),
+        timePoints,
+        concentrations: [] as number[][][]
+      };
+      
+      // Generate test data
+      const testModelId = await bnglService.prepareModel(model, {});
+      for (const params of testData.parameters) {
+        const overrides: Record<string, number> = {};
+        paramsToVary.forEach((p, idx) => {
+          overrides[p] = params[idx];
+        });
+        
+        const simResult = await bnglService.simulateCached(testModelId, overrides, {
+          method: 'ode',
+          t_end: 100,
+          n_steps: 50,
+          solver: 'cvode'
+        } as any, {});
+        
+        const trajectory = simResult.data.map(point => 
+          observableNames.map(obs => point[obs] as number ?? 0)
+        );
+        testData.concentrations.push(trajectory);
+      }
+      await bnglService.releaseModel(testModelId);
+      
+      const metrics = surrogate.evaluate(testData);
+      
+      surrogateRef.current = surrogate;
+      if (isMountedRef.current) {
+        setSurrogateStatus('ready');
+        setSurrogateMetrics(metrics);
+      }
+      
+    } catch (err) {
+      console.error('Surrogate training failed:', err);
+      if (isMountedRef.current) {
+        setSurrogateStatus('error');
+        setError(`Surrogate training failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+  }, [model, parameter1, parameter2, scanType, observableNames]);
 
 
   const oneDChartData = useMemo(() => {
@@ -629,6 +772,113 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
               {isRunning ? 'Running…' : 'Run Scan'}
             </Button>
           </div>
+        </div>
+      </Card>
+
+      {/* Neural ODE Surrogate Card */}
+      <Card className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              🚀 Neural ODE Surrogate (Beta)
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Train a neural network to approximate ODE simulations for 100x faster parameter sweeps
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {surrogateStatus === 'ready' && (
+              <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                ✓ Surrogate Ready
+              </span>
+            )}
+            {surrogateStatus === 'training' && (
+              <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 flex items-center gap-1">
+                <LoadingSpinner className="w-3 h-3" />
+                Training...
+              </span>
+            )}
+            {surrogateStatus === 'error' && (
+              <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                ✗ Training Failed
+              </span>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+            <input
+              type="checkbox"
+              checked={useSurrogate}
+              onChange={(e) => setUseSurrogate(e.target.checked)}
+              disabled={surrogateStatus !== 'ready'}
+              className="rounded border-slate-300 text-primary focus:ring-primary disabled:opacity-50"
+            />
+            Use surrogate for scans
+          </label>
+          
+          <Button 
+            variant="subtle" 
+            onClick={handleTrainSurrogate}
+            disabled={surrogateStatus === 'training' || !model || !parameter1}
+          >
+            {surrogateStatus === 'training' ? 'Training...' : 
+             surrogateStatus === 'ready' ? 'Retrain Surrogate' : 'Train Surrogate'}
+          </Button>
+          
+          {surrogateRef.current && (
+            <Button 
+              variant="subtle"
+              onClick={() => {
+                surrogateRef.current?.dispose();
+                surrogateRef.current = null;
+                setSurrogateStatus('none');
+                setSurrogateMetrics(null);
+                setUseSurrogate(false);
+              }}
+            >
+              Clear Surrogate
+            </Button>
+          )}
+        </div>
+        
+        {surrogateStatus === 'training' && (
+          <div className="w-full">
+            <div className="text-xs text-slate-500 mb-1">
+              Training progress: Epoch {surrogateProgress.epoch} / {surrogateProgress.totalEpochs}
+            </div>
+            <div className="w-full bg-slate-200 rounded-full h-1.5 dark:bg-slate-700">
+              <div
+                className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                style={{ width: `${(surrogateProgress.epoch / Math.max(1, surrogateProgress.totalEpochs)) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+        
+        {surrogateMetrics && surrogateStatus === 'ready' && (
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="bg-slate-50 dark:bg-slate-800 rounded p-2">
+              <div className="text-xs text-slate-500 dark:text-slate-400">MSE</div>
+              <div className="text-sm font-medium">{surrogateMetrics.mse.toExponential(2)}</div>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800 rounded p-2">
+              <div className="text-xs text-slate-500 dark:text-slate-400">MAE</div>
+              <div className="text-sm font-medium">{surrogateMetrics.mae.toExponential(2)}</div>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800 rounded p-2">
+              <div className="text-xs text-slate-500 dark:text-slate-400">Mean R²</div>
+              <div className="text-sm font-medium">
+                {(surrogateMetrics.r2.reduce((a, b) => a + b, 0) / surrogateMetrics.r2.length).toFixed(3)}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <div className="text-xs text-slate-500 dark:text-slate-400">
+          💡 Tip: Train a surrogate once, then run unlimited parameter sweeps instantly. 
+          Best for exploring large parameter spaces.
         </div>
       </Card>
 

@@ -76,7 +76,7 @@ molecule_types_block
     ;
 
 molecule_type_def
-    : (STRING COLON)? molecule_def
+    : (STRING COLON)? molecule_def POPULATION?  // BNG2 parity: optional population tag
     ;
 
 // Molecules can have optional parentheses (e.g., "dead" or "A()" are both valid)
@@ -181,10 +181,11 @@ observable_pattern
     | STRING (EQUALS | GT | GTE | LT | LTE) INT  // Stoichiometry comparison: R==1, R>5
     ;
 
-// Reaction rules block - supports both "reaction rules" and "reaction_rules"
+// Reaction rules block - supports "reaction rules", "reaction_rules", and "reactions"
 reaction_rules_block
     : BEGIN REACTION RULES LB+ (reaction_rule_def LB+)* END REACTION RULES LB*
     | BEGIN REACTION_RULES LB+ (reaction_rule_def LB+)* END REACTION_RULES LB*
+    | BEGIN REACTIONS LB+ (reaction_rule_def LB+)* END REACTIONS LB*
     ;
 
 reaction_rule_def
@@ -223,6 +224,7 @@ rule_modifiers
     | MOVECONNECTED
     | MATCHONCE
     | TOTALRATE
+    | PRIORITY BECOMES expression  // BNG2 parity: priority modifier (priority=5)
     | INCLUDE_REACTANTS LPAREN INT COMMA pattern_list RPAREN
     | EXCLUDE_REACTANTS LPAREN INT COMMA pattern_list RPAREN
     | INCLUDE_PRODUCTS LPAREN INT COMMA pattern_list RPAREN
@@ -407,15 +409,15 @@ conditional_expr
     ;
 
 or_expr
-    : and_expr (PIPE PIPE and_expr)*
+    : and_expr ((PIPE PIPE | LOGICAL_OR) and_expr)*
     ;
 
 and_expr
-    : equality_expr (AMPERSAND AMPERSAND equality_expr)*
+    : equality_expr ((AMPERSAND AMPERSAND | LOGICAL_AND) equality_expr)*
     ;
 
 equality_expr
-    : relational_expr ((EQUALS | GTE | GT | LTE | LT) relational_expr)*
+    : relational_expr ((EQUALS | NOT_EQUALS | GTE | GT | LTE | LT) relational_expr)*
     ;
 
 relational_expr
@@ -435,7 +437,7 @@ power_expr
     ;
 
 unary_expr
-    : (PLUS | MINUS)? primary_expr
+    : (PLUS | MINUS | EMARK | TILDE)? primary_expr  // EMARK/TILDE for logical NOT
     ;
 
 primary_expr
@@ -449,7 +451,8 @@ primary_expr
 function_call
     : (EXP | LN | LOG10 | LOG2 | SQRT | ABS | SIN | COS | TAN | ASIN | ACOS | ATAN 
        | SINH | COSH | TANH | ASINH | ACOSH | ATANH | RINT | MIN | MAX | SUM | AVG
-       | IF | SAT | MM | HILL | ARRHENIUS | TIME) 
+       | IF | SAT | MM | HILL | ARRHENIUS | TIME
+       | MRATIO | TFUN | FUNCTIONPRODUCT)  // BNG2 parity: mratio, TFUN, FunctionProduct
       LPAREN expression_list? RPAREN
     ;
 

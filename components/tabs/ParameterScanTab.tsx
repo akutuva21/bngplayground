@@ -94,7 +94,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
   const [param2End, setParam2End] = useState('');
   const [param2Steps, setParam2Steps] = useState('5');
   const [method, setMethod] = useState<'ode' | 'ssa'>('ode');
-  const [solver, setSolver] = useState<'auto' | 'cvode' | 'cvode_sparse' | 'rosenbrock23' | 'rk45' | 'rk4'>('cvode_sparse');
+  const [solver, setSolver] = useState<'auto' | 'cvode' | 'cvode_sparse' | 'rosenbrock23' | 'rk45' | 'rk4' | 'webgpu_rk4'>('auto');
   const [tEnd, setTEnd] = useState('100');
   const [nSteps, setNSteps] = useState('100');
   const [selectedObservable, setSelectedObservable] = useState('');
@@ -104,7 +104,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [error, setError] = useState<string | null>(null);
   const [isLogScale, setIsLogScale] = useState(false);
-  
+
   // Neural ODE Surrogate state
   const [useSurrogate, setUseSurrogate] = useState(false);
   const [surrogateStatus, setSurrogateStatus] = useState<'none' | 'training' | 'ready' | 'error'>('none');
@@ -115,12 +115,15 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
     loss: number;
   }>({ phase: 'data', current: 0, total: 0, loss: 0 });
   const [surrogateMetrics, setSurrogateMetrics] = useState<{ mse: number; mae: number; r2: number[] } | null>(null);
+  const [activeBackend, setActiveBackend] = useState<string>('');
   const surrogateRef = useRef<any>(null); // Will hold NeuralODESurrogate instance
 
   // Surrogate training controls (defaults enabled)
   const [surrogateTrainingSims, setSurrogateTrainingSims] = useState('200');
   const [surrogateTrainingEpochs, setSurrogateTrainingEpochs] = useState('100');
-  
+  // Network size: 'auto' | 'light' | 'standard' | 'full'
+  const [surrogateNetworkSize, setSurrogateNetworkSize] = useState<'auto' | 'light' | 'standard' | 'full'>('auto');
+
   // Use refs for lifecycle-bound cancellers and mounts to avoid setState-after-unmount races
   const scanAbortControllerRef = useRef<AbortController | null>(null);
   const isMountedRef = useRef(true);
@@ -219,27 +222,56 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
   const handleTrainSurrogate = useCallback(async () => {
     if (!model || !parameter1) return;
 
-    const nTrainingSamples = Math.max(20, Math.min(2000, Math.floor(Number(surrogateTrainingSims) || 200)));
-    const trainingEpochs = Math.max(10, Math.min(500, Math.floor(Number(surrogateTrainingEpochs) || 100)));
+    const nTrainingSamples = Math.max(5, Math.min(2000, Math.floor(Number(surrogateTrainingSims) || 200)));
+    const trainingEpochs = Math.max(1, Math.min(500, Math.floor(Number(surrogateTrainingEpochs) || 100)));
 
     setSurrogateStatus('training');
     setSurrogateProgress({ phase: 'data', current: 0, total: nTrainingSamples, loss: 0 });
     setError(null);
-    
+
     try {
       // Dynamically import TensorFlow.js and surrogate module
       const [tf, { NeuralODESurrogate, SurrogateDatasetGenerator }] = await Promise.all([
         import('@tensorflow/tfjs'),
         import('../../src/services/NeuralODESurrogate')
       ]);
-      
+
+      if (isMountedRef.current) {
+        setActiveBackend(tf.getBackend());
+      }
+
+      const maybeSwitchBackend = async (backend: string): Promise<boolean> => {
+        try {
+          const current = tf.getBackend();
+          if (current === backend) return true;
+          const ok = await tf.setBackend(backend);
+          await tf.ready();
+          if (ok && isMountedRef.current) {
+            setActiveBackend(backend);
+          }
+          return ok;
+        } catch {
+          return false;
+        }
+      };
+
+      const isWebglBackendError = (err: unknown): boolean => {
+        const msg = err instanceof Error ? err.message : String(err);
+        // Cover a broader set of TFJS/WebGL failures observed in the wild:
+        // - shader linking failures
+        // - context creation failures
+        // - exhausted driver options / ANGLE errors
+        // - backend initialization failures
+        return /(?:Failed to link vertex and fragment shaders|Failed to create WebGL context|Could not get context for WebGL|Exhausted GL driver options|Initialization of backend webgl failed|webgl creation failed|ANGLE|Exhausted GL driver)/i.test(msg);
+      };
+
       // Determine parameters to vary
       const paramsToVary = scanType === '2d' && parameter2 ? [parameter1, parameter2] : [parameter1];
       const paramRanges: [number, number][] = paramsToVary.map(p => {
         const baseValue = model.parameters[p] ?? 1;
         return [baseValue * 0.1, baseValue * 10];
       });
-      
+
       // Generate training data using ODE solver
       const timePoints = Array.from({ length: 51 }, (_, i) => i * 2); // 0 to 100
 
@@ -248,33 +280,33 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
       const shouldLogSample = paramRanges.every(([min, max]) => min > 0 && max / Math.max(min, 1e-12) >= 50);
       const parameterSets = shouldLogSample
         ? SurrogateDatasetGenerator
-            .latinHypercubeSample(paramRanges.map(([min, max]) => [Math.log(min), Math.log(max)]), nTrainingSamples)
-            .map((row) => row.map((v) => Math.exp(v)))
+          .latinHypercubeSample(paramRanges.map(([min, max]) => [Math.log(min), Math.log(max)]), nTrainingSamples)
+          .map((row) => row.map((v) => Math.exp(v)))
         : SurrogateDatasetGenerator.latinHypercubeSample(paramRanges, nTrainingSamples);
-      
+
       // Run simulations for training data
       const concentrations: number[][][] = [];
       const modelId = await bnglService.prepareModel(model, {});
-      
+
       for (let i = 0; i < parameterSets.length; i++) {
         const overrides: Record<string, number> = {};
         paramsToVary.forEach((p, idx) => {
           overrides[p] = parameterSets[i][idx];
         });
-        
+
         const simResult = await bnglService.simulateCached(modelId, overrides, {
           method: 'ode',
           t_end: 100,
           n_steps: 50,
           solver: 'cvode'
         } as any, {});
-        
+
         // Extract observable values at each time point
-        const trajectory: number[][] = simResult.data.map(point => 
+        const trajectory: number[][] = simResult.data.map(point =>
           observableNames.map(obs => point[obs] as number ?? 0)
         );
         concentrations.push(trajectory);
-        
+
         if (isMountedRef.current) {
           setSurrogateProgress((prev) => ({
             ...prev,
@@ -289,60 +321,141 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
           await tf.nextFrame();
         }
       }
-      
+
       await bnglService.releaseModel(modelId);
-      
+
       // Create training dataset
       const trainingData = {
         parameters: parameterSets,
         timePoints,
         concentrations
       };
-      
-      // Create and train surrogate
-      const surrogate = new NeuralODESurrogate(paramsToVary.length, observableNames.length);
 
-      if (isMountedRef.current) {
-        setSurrogateProgress((prev) => ({
-          ...prev,
-          phase: 'train',
-          current: 0,
-          total: trainingEpochs
-        }));
-      }
-      
-      await surrogate.train(trainingData, {
-        epochs: trainingEpochs,
-        batchSize: 16,
-        validationSplit: 0.1,
-        learningRate: 0.001,
-        earlyStopping: true,
-        patience: Math.max(10, Math.floor(trainingEpochs / 10)),
-        verbose: false,
-        onEpochEnd: async (epoch, logs) => {
-          if (!isMountedRef.current) return;
-          const loss = typeof logs?.loss === 'number' ? (logs.loss as number) : undefined;
+      // Create and train surrogate
+      let surrogate = new NeuralODESurrogate(paramsToVary.length, observableNames.length);
+
+      const trainWithRetry = async (): Promise<void> => {
+        if (isMountedRef.current) {
           setSurrogateProgress((prev) => ({
             ...prev,
             phase: 'train',
-            current: Math.max(prev.current, epoch + 1),
-            total: trainingEpochs,
-            loss: loss ?? prev.loss
+            current: 0,
+            total: trainingEpochs
           }));
         }
-      });
-      
+
+        try {
+          await surrogate.train(trainingData, {
+            epochs: trainingEpochs,
+            batchSize: 16,
+            validationSplit: 0.1,
+            learningRate: 0.001,
+            earlyStopping: true,
+            patience: Math.max(10, Math.floor(trainingEpochs / 10)),
+            verbose: false,
+            onEpochEnd: async (epoch, logs) => {
+              if (!isMountedRef.current) return;
+              const loss = typeof logs?.loss === 'number' ? (logs.loss as number) : undefined;
+              setSurrogateProgress((prev) => ({
+                ...prev,
+                phase: 'train',
+                current: Math.max(prev.current, epoch + 1),
+                total: trainingEpochs,
+                loss: loss ?? prev.loss
+              }));
+            }
+          });
+          return;
+        } catch (err) {
+          console.error('Surrogate training error (attempting fallback):', err);
+          // Some GPUs/drivers fail TFJS WebGL shader compilation/linking.
+          // Retry once on CPU backend for robustness (slower but typically reliable).
+          // If the error looks like a WebGL/backend initialization failure, fall back to CPU and retry.
+          if (!isWebglBackendError(err)) {
+            throw err;
+          }
+
+          const switched = await maybeSwitchBackend('cpu');
+          console.info('maybeSwitchBackend returned', switched, 'current backend after setBackend:', tf.getBackend());
+          if (!switched) {
+            throw err;
+          }
+
+          console.warn('TFJS WebGL shader link failed; falling back to CPU backend for training.');
+          if (isMountedRef.current) {
+            // Include a short excerpt of the original error to help debugging without flooding the UI
+            setError(`WebGL backend failed on this device. Falling back to CPU for surrogate training (slower). Error: ${String(err).slice(0, 300)}`);
+          }
+
+          // Dispose of the old surrogate/model and create a fresh one for the new backend
+          surrogate.dispose();
+          surrogate = new NeuralODESurrogate(paramsToVary.length, observableNames.length);
+
+          // Reset progress for retry
+          if (isMountedRef.current) {
+            setSurrogateProgress((prev) => ({
+              ...prev,
+              phase: 'train',
+              current: 0,
+              total: trainingEpochs
+            }));
+          }
+
+          await surrogate.train(trainingData, {
+            epochs: trainingEpochs,
+            batchSize: 16,
+            validationSplit: 0.1,
+            learningRate: 0.001,
+            earlyStopping: true,
+            patience: Math.max(10, Math.floor(trainingEpochs / 10)),
+            verbose: false,
+            onEpochEnd: async (epoch, logs) => {
+              if (!isMountedRef.current) return;
+              const loss = typeof logs?.loss === 'number' ? (logs.loss as number) : undefined;
+              setSurrogateProgress((prev) => ({
+                ...prev,
+                phase: 'train',
+                current: Math.max(prev.current, epoch + 1),
+                total: trainingEpochs,
+                loss: loss ?? prev.loss
+              }));
+            }
+          });
+        }
+      };
+
+      try {
+        await trainWithRetry();
+      } catch (err) {
+        console.error('Error after trainWithRetry, will attempt outer CPU retry if applicable:', err);
+        // If fallback inside trainWithRetry didn't cover a backend initialization error,
+        // attempt one more explicit retry on CPU (covers errors thrown before training loop).
+        if (isWebglBackendError(err)) {
+          const switched = await maybeSwitchBackend('cpu');
+          console.info('Outer retry maybeSwitchBackend returned', switched, 'backend now:', tf.getBackend());
+          if (switched) {
+            surrogate.dispose();
+            surrogate = new NeuralODESurrogate(paramsToVary.length, observableNames.length);
+            await trainWithRetry();
+          } else {
+            throw err;
+          }
+        } else {
+          throw err;
+        }
+      }
+
       // Evaluate surrogate
       const testData = {
         parameters: shouldLogSample
           ? SurrogateDatasetGenerator
-              .latinHypercubeSample(paramRanges.map(([min, max]) => [Math.log(min), Math.log(max)]), 20)
-              .map((row) => row.map((v) => Math.exp(v)))
+            .latinHypercubeSample(paramRanges.map(([min, max]) => [Math.log(min), Math.log(max)]), 20)
+            .map((row) => row.map((v) => Math.exp(v)))
           : SurrogateDatasetGenerator.latinHypercubeSample(paramRanges, 20),
         timePoints,
         concentrations: [] as number[][][]
       };
-      
+
       // Generate test data
       const testModelId = await bnglService.prepareModel(model, {});
       for (const params of testData.parameters) {
@@ -350,29 +463,29 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
         paramsToVary.forEach((p, idx) => {
           overrides[p] = params[idx];
         });
-        
+
         const simResult = await bnglService.simulateCached(testModelId, overrides, {
           method: 'ode',
           t_end: 100,
           n_steps: 50,
           solver: 'cvode'
         } as any, {});
-        
-        const trajectory = simResult.data.map(point => 
+
+        const trajectory = simResult.data.map(point =>
           observableNames.map(obs => point[obs] as number ?? 0)
         );
         testData.concentrations.push(trajectory);
       }
       await bnglService.releaseModel(testModelId);
-      
+
       const metrics = surrogate.evaluate(testData);
-      
+
       surrogateRef.current = surrogate;
       if (isMountedRef.current) {
         setSurrogateStatus('ready');
         setSurrogateMetrics(metrics);
       }
-      
+
     } catch (err) {
       console.error('Surrogate training failed:', err);
       if (isMountedRef.current) {
@@ -380,7 +493,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
         setError(`Surrogate training failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
-  }, [model, parameter1, parameter2, scanType, observableNames]);
+  }, [model, parameter1, parameter2, scanType, observableNames, surrogateTrainingSims, surrogateTrainingEpochs]);
 
 
   const oneDChartData = useMemo(() => {
@@ -777,6 +890,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
                 <option value="rosenbrock23">Rosenbrock23</option>
                 <option value="rk45">RK45 (Dormand-Prince)</option>
                 <option value="rk4">RK4 (Fixed-step)</option>
+                <option value="webgpu_rk4">WebGPU RK4 (Experimental)</option>
                 <option value="auto">Auto</option>
               </Select>
             </div>
@@ -839,15 +953,29 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
           </div>
           <div className="flex items-center gap-2">
             {surrogateStatus === 'ready' && (
-              <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                ✓ Surrogate Ready
-              </span>
+              <div className="flex flex-col items-end">
+                <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                  ✓ Surrogate Ready
+                </span>
+                {activeBackend && (
+                  <span className="text-[10px] text-slate-400 mt-0.5 uppercase">
+                    Backend: {activeBackend}
+                  </span>
+                )}
+              </div>
             )}
             {surrogateStatus === 'training' && (
-              <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 flex items-center gap-1">
-                <LoadingSpinner className="w-3 h-3" />
-                Training...
-              </span>
+              <div className="flex flex-col items-end">
+                <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 flex items-center gap-1">
+                  <LoadingSpinner className="w-3 h-3" />
+                  Training...
+                </span>
+                {activeBackend && (
+                  <span className="text-[10px] text-slate-400 mt-0.5 uppercase">
+                    Backend: {activeBackend}
+                  </span>
+                )}
+              </div>
             )}
             {surrogateStatus === 'error' && (
               <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
@@ -856,7 +984,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
             )}
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
             <input
@@ -896,19 +1024,33 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
                 className="mt-1"
               />
             </label>
+            <label className="text-xs text-slate-600 dark:text-slate-300">
+              Network Size
+              <select
+                value={surrogateNetworkSize}
+                onChange={(e) => setSurrogateNetworkSize(e.target.value as typeof surrogateNetworkSize)}
+                disabled={surrogateStatus === 'training'}
+                className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-primary focus:ring-primary text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
+              >
+                <option value="auto">Auto (based on species)</option>
+                <option value="light">Light [32,32] ~2K params</option>
+                <option value="standard">Standard [64,64] ~8K params</option>
+                <option value="full">Full [128,128,64] ~25K params</option>
+              </select>
+            </label>
           </div>
-          
-          <Button 
-            variant="subtle" 
+
+          <Button
+            variant="subtle"
             onClick={handleTrainSurrogate}
             disabled={surrogateStatus === 'training' || !model || !parameter1}
           >
-            {surrogateStatus === 'training' ? 'Training...' : 
-             surrogateStatus === 'ready' ? 'Retrain Surrogate' : 'Train Surrogate'}
+            {surrogateStatus === 'training' ? 'Training...' :
+              surrogateStatus === 'ready' ? 'Retrain Surrogate' : 'Train Surrogate'}
           </Button>
-          
+
           {surrogateRef.current && (
-            <Button 
+            <Button
               variant="subtle"
               onClick={() => {
                 surrogateRef.current?.dispose();
@@ -922,7 +1064,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
             </Button>
           )}
         </div>
-        
+
         {surrogateStatus === 'training' && (
           <div className="w-full">
             <div className="text-xs text-slate-500 mb-1">
@@ -938,7 +1080,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
             </div>
           </div>
         )}
-        
+
         {surrogateMetrics && surrogateStatus === 'ready' && (
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="bg-slate-50 dark:bg-slate-800 rounded p-2">
@@ -957,10 +1099,18 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
             </div>
           </div>
         )}
-        
+
         <div className="text-xs text-slate-500 dark:text-slate-400">
-          💡 Tip: Train a surrogate once, then run unlimited parameter sweeps instantly. 
+          💡 Tip: Train a surrogate once, then run unlimited parameter sweeps instantly.
           Best for exploring large parameter spaces.
+        </div>
+        {activeBackend === 'cpu' && surrogateStatus !== 'none' && (
+          <div className="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
+            ⚠️ Running on CPU (slow). Use a GPU-enabled browser (Chrome/Edge with WebGL) for 10-50x faster training.
+          </div>
+        )}
+        <div className="text-xs text-slate-400 dark:text-slate-500 mt-2">
+          🖥️ For best performance, use Chrome or Edge with GPU acceleration enabled. Training uses WebGL when available.
         </div>
       </Card>
 

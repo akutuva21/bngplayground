@@ -4,6 +4,75 @@
 import * as tf from '@tensorflow/tfjs';
 // Note: BNGLModel type is in root types.ts - using 'any' for flexibility
 
+// Backend initialization state
+let backendInitialized = false;
+let backendInitPromise: Promise<void> | null = null;
+
+/**
+ * Initialize TensorFlow.js backend with fallback support.
+ * Tries WebGL first (GPU acceleration), then falls back to WASM or CPU.
+ * This prevents crashes on systems without WebGL support.
+ */
+async function initializeBackend(): Promise<void> {
+  if (backendInitialized) return;
+  if (backendInitPromise) return backendInitPromise;
+
+  backendInitPromise = (async () => {
+    const backends = ['webgl', 'wasm', 'cpu'];
+    
+    for (const backend of backends) {
+      try {
+        // Set the backend
+        const success = await tf.setBackend(backend);
+        if (success) {
+          await tf.ready();
+          console.log(`TensorFlow.js initialized with ${backend} backend`);
+          backendInitialized = true;
+          return;
+        }
+      } catch (e) {
+        console.warn(`Failed to initialize ${backend} backend:`, e);
+      }
+    }
+    
+    // If all preferred backends fail, let TensorFlow.js pick the best available
+    try {
+      await tf.ready();
+      console.log(`TensorFlow.js initialized with ${tf.getBackend()} backend (fallback)`);
+      backendInitialized = true;
+    } catch (e) {
+      console.error('Failed to initialize any TensorFlow.js backend:', e);
+      throw new Error('No TensorFlow.js backend available. Neural ODE features are unavailable.');
+    }
+  })();
+
+  return backendInitPromise;
+}
+
+/**
+ * Network size presets for different model complexities
+ * - light: [32, 32] for simple models (<5 species) - ~2K params, fast training
+ * - standard: [64, 64] for medium models (5-20 species) - ~8K params
+ * - full: [128, 128, 64] for complex models (20+ species) - ~25K params
+ * - auto: dynamically select based on species count
+ */
+export type NetworkSizePreset = 'light' | 'standard' | 'full' | 'auto';
+
+export const NETWORK_ARCHITECTURES: Record<Exclude<NetworkSizePreset, 'auto'>, number[]> = {
+  light: [32, 32],
+  standard: [64, 64],
+  full: [128, 128, 64]
+};
+
+/**
+ * Get appropriate network size based on species count
+ */
+export function getAutoNetworkSize(nSpecies: number): Exclude<NetworkSizePreset, 'auto'> {
+  if (nSpecies < 5) return 'light';
+  if (nSpecies < 20) return 'standard';
+  return 'full';
+}
+
 export interface SurrogateTrainingConfig {
   epochs?: number;
   batchSize?: number;
@@ -13,6 +82,8 @@ export interface SurrogateTrainingConfig {
   patience?: number;
   verbose?: boolean;
   onEpochEnd?: (epoch: number, logs?: tf.Logs) => void | Promise<void>;
+  /** Network size preset - defaults to 'auto' which selects based on species count */
+  networkSize?: NetworkSizePreset;
 }
 
 export interface TrainingDataset {
@@ -39,32 +110,67 @@ export class NeuralODESurrogate {
   private concMean: number[] = [];
   private concStd: number[] = [];
   private isNormalized: boolean = false;
+  private networkSizePreset: NetworkSizePreset;
   
-  constructor(nParams: number, nSpecies: number) {
+  constructor(nParams: number, nSpecies: number, networkSize: NetworkSizePreset = 'auto') {
     this.nParams = nParams;
     this.nSpecies = nSpecies;
+    this.networkSizePreset = networkSize;
+  }
+  
+  /**
+   * Get the hidden units array based on network size preset
+   */
+  private getHiddenUnits(): number[] {
+    const preset = this.networkSizePreset === 'auto' 
+      ? getAutoNetworkSize(this.nSpecies) 
+      : this.networkSizePreset;
+    return NETWORK_ARCHITECTURES[preset];
+  }
+  
+  /**
+   * Get info about current network configuration
+   */
+  getNetworkInfo(): { preset: string; hiddenUnits: number[]; estimatedParams: number } {
+    const preset = this.networkSizePreset === 'auto' 
+      ? getAutoNetworkSize(this.nSpecies) 
+      : this.networkSizePreset;
+    const hiddenUnits = NETWORK_ARCHITECTURES[preset];
+    // Rough estimate: (input+1)*h1 + h1*h2 + ... + hN*output
+    const inputSize = this.nParams + 1;
+    let params = (inputSize + 1) * hiddenUnits[0];
+    for (let i = 1; i < hiddenUnits.length; i++) {
+      params += (hiddenUnits[i-1] + 1) * hiddenUnits[i];
+    }
+    params += (hiddenUnits[hiddenUnits.length - 1] + 1) * this.nSpecies;
+    return { preset, hiddenUnits, estimatedParams: params };
   }
   
   /**
    * Build the neural network architecture
-   * Architecture: (params + time) -> [128, 128, 64] -> concentrations
+   * Architecture dynamically sized based on model complexity:
+   * - light: [32, 32] for <5 species
+   * - standard: [64, 64] for 5-20 species  
+   * - full: [128, 128, 64] for 20+ species
    */
-  private buildModel(hiddenUnits: number[] = [128, 128, 64]): tf.Sequential {
+  private buildModel(hiddenUnits?: number[]): tf.Sequential {
+    const units = hiddenUnits ?? this.getHiddenUnits();
+    console.log(`[NeuralODESurrogate] Building model with architecture: [${units.join(', ')}]`);
     const model = tf.sequential();
     
     // Input: parameters + time point
     model.add(tf.layers.dense({
       inputShape: [this.nParams + 1],
-      units: hiddenUnits[0],
+      units: units[0],
       activation: 'relu',
       kernelInitializer: 'heNormal'
     }));
     
     // Hidden layers with batch normalization
-    for (let i = 1; i < hiddenUnits.length; i++) {
+    for (let i = 1; i < units.length; i++) {
       model.add(tf.layers.batchNormalization());
       model.add(tf.layers.dense({
-        units: hiddenUnits[i],
+        units: units[i],
         activation: 'relu',
         kernelInitializer: 'heNormal'
       }));
@@ -180,6 +286,9 @@ export class NeuralODESurrogate {
     data: TrainingDataset,
     config: SurrogateTrainingConfig = {}
   ): Promise<tf.History> {
+    // Initialize backend with fallback support (WebGL -> WASM -> CPU)
+    await initializeBackend();
+    
     const {
       epochs = 100,
       batchSize = 32,

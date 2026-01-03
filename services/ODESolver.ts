@@ -18,7 +18,7 @@ export interface SolverOptions {
   minStep: number;        // Minimum step size before failure
   maxStep: number;        // Maximum step size
   initialStep?: number;   // Initial step size (if not provided, computed automatically)
-  solver: 'auto' | 'cvode' | 'cvode_auto' | 'cvode_sparse' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4' | 'sparse_implicit';
+  solver: 'auto' | 'cvode' | 'cvode_auto' | 'cvode_sparse' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4' | 'sparse_implicit' | 'webgpu_rk4';
   jacobianRowMajor?: (y: Float64Array, J: Float64Array) => void;  // Row-major Jacobian for Rosenbrock
 }
 
@@ -1109,7 +1109,7 @@ export class CVODESolver {
     // views on each call when pointers and memory buffer are stable.
     let cachedYPtr = 0;
     let cachedYdotPtr = 0;
-    let cachedBuffer: ArrayBuffer | null = null;
+    let cachedBuffer: ArrayBufferLike | null = null;
     let yView: Float64Array | null = null;
     let dydtView: Float64Array | null = null;
 
@@ -1141,7 +1141,7 @@ export class CVODESolver {
       // Same idea: reuse views if pointers/buffer are stable.
       let cachedJacYPtr = 0;
       let cachedJPtr = 0;
-      let cachedJacBuffer: ArrayBuffer | null = null;
+      let cachedJacBuffer: ArrayBufferLike | null = null;
       let jacYView: Float64Array | null = null;
       let jacJView: Float64Array | null = null;
       m.jacobianCallback = (_t: number, yPtr: number, _fyPtr: number, JPtr: number, neqVal: number) => {
@@ -1288,7 +1288,7 @@ export class CVODESolver {
  */
 class SparseImplicitSolver {
   private rosenbrock: Rosenbrock23Solver;
-  private options: SolverOptions;
+  private _options: SolverOptions;  // Stored for potential future use
   
   constructor(n: number, f: DerivativeFunction, options: Partial<SolverOptions> = {}) {
     // Use very tight tolerances for stiff systems
@@ -1300,7 +1300,7 @@ class SparseImplicitSolver {
       minStep: 1e-18,
       maxStep: options.maxStep ?? 1.0,
     };
-    this.options = { ...DEFAULT_OPTIONS, ...stiffOptions };
+    this._options = { ...DEFAULT_OPTIONS, ...stiffOptions };
     this.rosenbrock = new Rosenbrock23Solver(n, f, stiffOptions);
     console.log(`[SparseImplicitSolver] Created with atol=${stiffOptions.atol}, rtol=${stiffOptions.rtol}`);
   }
@@ -1352,6 +1352,11 @@ export async function createSolver(
       // Requires reactions and speciesNames in options
       console.log('[ODESolver] Using sparse_implicit solver');
       return new SparseImplicitSolver(n, f, opts);
+    case 'webgpu_rk4':
+      // WebGPU solver has async interface - for main simulation, use CPU fallback
+      // WebGPU is better suited for ensemble/parameter scans via direct WebGPUODESolver import
+      console.warn('[ODESolver] webgpu_rk4 selected - using CPU FastRK4 fallback. For GPU acceleration, use ensemble simulation API.');
+      return new FastRK4Solver(n, f, opts);
     case 'auto':
     default:
       // Auto could also use CVODE if verified stable, for now keep SmartAutoSolver

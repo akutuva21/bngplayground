@@ -18,14 +18,14 @@ import { Rxn } from '../src/services/graph/core/Rxn';
 import { GraphCanonicalizer } from '../src/services/graph/core/Canonical';
 // Using official ANTLR parser for bng2.pl parity (util polyfill added in vite.config.ts)
 import { parseBNGLStrict as parseBNGLModel } from '../src/parser/BNGLParserWrapper';
-// Conservation law detection for ODE system reduction (Catalyst.jl-inspired)
-import { findConservationLaws, createReducedSystem, type ConservationAnalysis } from '../src/services/ConservationLaws';
-import { createSolver } from './ODESolver';
+// Conservation law detection is available in ConservationLaws.ts for future use
+// WebGPU ODE solver for GPU-accelerated integration
+import { WebGPUODESolver, GPUReaction, isWebGPUODESolverAvailable } from '../src/services/WebGPUODESolver';
 
 const ctx: DedicatedWorkerGlobalScope = self as unknown as DedicatedWorkerGlobalScope;
 
 // Version marker to verify updated code is loaded
-console.log('[Worker] bnglWorker v2.1.0 - products fix applied 2024-12-07');
+console.log('[Worker] bnglWorker v2.2.0 - n_steps API priority fix 2024-12-31');
 
 type JobState = {
   cancelled: boolean;
@@ -319,7 +319,7 @@ function isSpeciesMatch(speciesStr: string, pattern: string): boolean {
   const findMatch = (patIdx: number, patToSpecMap: Map<number, number>): boolean => {
     if (patIdx >= patternMolecules.length) {
       // All pattern molecules assigned - now verify bond connectivity
-      for (const [bondId, patEndpoints] of patternBonds) {
+      for (const [_bondId, patEndpoints] of patternBonds) {
         if (patEndpoints.length !== 2) continue; // Skip malformed bonds
 
         const [ep1, ep2] = patEndpoints;
@@ -519,6 +519,47 @@ function parseBNGL(jobId: number, bnglCode: string): BNGLModel {
   return parseBNGLModel(bnglCode);
 }
 
+/**
+ * Convert worker's concreteReactions to GPUReaction[] format for WebGPU solver
+ */
+function convertReactionsToGPU(
+  concreteReactions: Array<{
+    reactants: Int32Array;
+    products: Int32Array;
+    rateConstant: number;
+  }>
+): { gpuReactions: GPUReaction[]; rateConstants: number[] } {
+  const gpuReactions: GPUReaction[] = [];
+  const rateConstants: number[] = [];
+
+  concreteReactions.forEach((rxn, idx) => {
+    // Build reactant stoichiometry map
+    const reactantMap = new Map<number, number>();
+    for (let i = 0; i < rxn.reactants.length; i++) {
+      const speciesIdx = rxn.reactants[i];
+      reactantMap.set(speciesIdx, (reactantMap.get(speciesIdx) || 0) + 1);
+    }
+
+    // Build product stoichiometry map
+    const productMap = new Map<number, number>();
+    for (let i = 0; i < rxn.products.length; i++) {
+      const speciesIdx = rxn.products[i];
+      productMap.set(speciesIdx, (productMap.get(speciesIdx) || 0) + 1);
+    }
+
+    gpuReactions.push({
+      reactantIndices: Array.from(reactantMap.keys()),
+      reactantStoich: Array.from(reactantMap.values()),
+      productIndices: Array.from(productMap.keys()),
+      productStoich: Array.from(productMap.values()),
+      rateConstantIndex: idx,
+      isForward: true
+    });
+    rateConstants.push(rxn.rateConstant);
+  });
+
+  return { gpuReactions, rateConstants };
+}
 
 
 async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Promise<BNGLModel> {
@@ -712,13 +753,39 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
 
   // Multi-phase simulation support: check if model has explicit simulation phases
   const hasMultiPhase = inputModel.simulationPhases && inputModel.simulationPhases.length > 0;
-  const phases = hasMultiPhase ? inputModel.simulationPhases! : [{
-    method: options.method as 'ode' | 'ssa',
-    t_end: inputModel.simulationOptions?.t_end ?? options.t_end,
-    n_steps: inputModel.simulationOptions?.n_steps ?? options.n_steps,
-    atol: inputModel.simulationOptions?.atol ?? options.atol,
-    rtol: inputModel.simulationOptions?.rtol ?? options.rtol,
-  }];
+
+  // Build phases array, applying API-passed options as overrides
+  let phases: Array<{
+    method: 'ode' | 'ssa' | 'nf';
+    t_end?: number;
+    n_steps?: number;
+    atol?: number;
+    rtol?: number;
+    suffix?: string;
+    sparse?: boolean;
+    steady_state?: boolean;
+  }>;
+
+  if (hasMultiPhase) {
+    // Use model-defined phases, but allow API options to override per-phase values
+    phases = inputModel.simulationPhases!.map(p => ({
+      ...p,
+      // API options take priority over model-defined values
+      t_end: options.t_end ?? p.t_end,
+      n_steps: options.n_steps ?? p.n_steps,
+      atol: options.atol ?? p.atol,
+      rtol: options.rtol ?? p.rtol,
+    }));
+  } else {
+    // No model-defined phases - create single phase from options
+    phases = [{
+      method: options.method as 'ode' | 'ssa',
+      t_end: options.t_end ?? inputModel.simulationOptions?.t_end,
+      n_steps: options.n_steps ?? inputModel.simulationOptions?.n_steps,
+      atol: options.atol ?? inputModel.simulationOptions?.atol,
+      rtol: options.rtol ?? inputModel.simulationOptions?.rtol,
+    }];
+  }
   const concentrationChanges = inputModel.concentrationChanges || [];
   const parameterChanges = inputModel.parameterChanges || [];
 
@@ -1133,6 +1200,107 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
       }
     }
 
+    // ==== WebGPU Integration Path ====
+    // If webgpu_rk4 is selected, use the GPU-accelerated solver
+    if (solverType === 'webgpu_rk4') {
+      console.log('[Worker] WebGPU RK4 solver requested');
+
+      try {
+        // Check WebGPU availability
+        const gpuAvailable = await isWebGPUODESolverAvailable();
+        if (!gpuAvailable) {
+          console.warn('[Worker] WebGPU not available, falling back to CPU RK4');
+          solverType = 'rk4'; // Fall back to CPU RK4
+        } else {
+          // Convert reactions to GPU format
+          const { gpuReactions, rateConstants } = convertReactionsToGPU(concreteReactions);
+          console.log(`[Worker] Converted ${gpuReactions.length} reactions to GPU format`);
+
+          // Calculate timestep based on simulation parameters
+          const gpu_t_end = phases[0]?.t_end ?? options.t_end ?? 100;
+          const gpu_n_steps = phases[0]?.n_steps ?? options.n_steps ?? 100;
+          const gpu_dt = gpu_t_end / (gpu_n_steps * 10); // 10 substeps per output point
+          console.log(`[Worker] WebGPU dt=${gpu_dt.toExponential(2)} (t_end=${gpu_t_end}, n_steps=${gpu_n_steps})`);
+
+          // Create WebGPU solver  
+          const gpuSolver = new WebGPUODESolver(
+            numSpecies,
+            gpuReactions,
+            rateConstants,
+            {
+              dt: gpu_dt,  // Use calculated timestep
+              atol: options.atol ?? 1e-6,
+              rtol: options.rtol ?? 1e-4,
+              maxSteps: gpu_n_steps * 20  // Limit max steps
+            }
+          );
+
+          // Compile shaders
+          const compiled = await gpuSolver.compile();
+          if (!compiled) {
+            console.warn('[Worker] WebGPU shader compilation failed, falling back to CPU RK4');
+            gpuSolver.dispose();
+            solverType = 'rk4';
+          } else {
+            // Build output times
+            const t_end = phases[0]?.t_end ?? options.t_end ?? 100;
+            const n_steps = phases[0]?.n_steps ?? options.n_steps ?? 100;
+            const outputTimes: number[] = [];
+            for (let i = 0; i <= n_steps; i++) {
+              outputTimes.push((t_end / n_steps) * i);
+            }
+
+            // Convert initial state to Float32Array
+            const y0 = new Float32Array(state);
+
+            console.log(`[Worker] Running WebGPU integration: t_end=${t_end}, n_steps=${n_steps}`);
+            const gpuResult = await gpuSolver.integrate(y0, 0, t_end, outputTimes);
+
+            console.log(`[Worker] WebGPU completed: ${gpuResult.steps} steps, ${gpuResult.gpuTime.toFixed(1)}ms GPU time`);
+
+            // Convert results to standard format
+            const data: Record<string, number>[] = [];
+            const speciesData: Record<string, number>[] = [];
+
+            for (let i = 0; i < gpuResult.concentrations.length; i++) {
+              const conc = gpuResult.concentrations[i];
+              const time = i < outputTimes.length ? outputTimes[i] : gpuResult.times[i];
+
+              // Evaluate observables for this timepoint
+              const y64 = new Float64Array(conc); // Convert to Float64 for observable evaluation
+              const observableValues = evaluateObservablesFast(y64);
+              data.push({ time, ...observableValues });
+
+              // Species data
+              const speciesPoint: Record<string, number> = { time };
+              for (let j = 0; j < numSpecies; j++) {
+                speciesPoint[speciesHeaders[j]] = conc[j];
+              }
+              speciesData.push(speciesPoint);
+            }
+
+            // Clean up GPU resources
+            gpuSolver.dispose();
+
+            const totalTime = performance.now() - simulationStartTime;
+            console.log(`[Worker] ⏱️ TIMING: WebGPU simulation completed in ${totalTime.toFixed(0)}ms`);
+
+            return {
+              headers,
+              data,
+              speciesHeaders,
+              speciesData,
+              expandedReactions: model.reactions,
+              expandedSpecies: model.species,
+            };
+          }
+        }
+      } catch (error) {
+        console.error('[Worker] WebGPU error, falling back to CPU:', error);
+        solverType = 'rk4';
+      }
+    }
+
     // Build analytical Jacobian for mass-action kinetics
     // J[i][k] = ∂(dSᵢ/dt)/∂Sₖ = Σ_r stoich[i][r] * k_r * ∂(∏ⱼ Sⱼ^nⱼ)/∂Sₖ
     // For mass-action: ∂velocity/∂Sₖ = velocity * reactant_order[k] / Sₖ
@@ -1243,7 +1411,7 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
       maxSteps: options.maxSteps ?? 1000000,
       minStep: 1e-15,
       maxStep: 0,  // 0 = unlimited, matching native BNG which uses CVodeSetMaxStep(cvode_mem, 0.0)
-      solver: solverType as 'auto' | 'cvode' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4' | 'sparse_implicit',
+      solver: solverType as 'auto' | 'cvode' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4' | 'sparse_implicit' | 'webgpu_rk4',
     };
 
     // Pass analytical Jacobian if available (correct format for each solver)

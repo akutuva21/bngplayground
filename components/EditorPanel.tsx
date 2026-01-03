@@ -176,7 +176,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   const [simulationMethod, setSimulationMethod] = useState<'ode' | 'ssa'>('ode');
   const [customAtol, setCustomAtol] = useState<string>('');
   const [customRtol, setCustomRtol] = useState<string>('');
-  const [odeSolver, setOdeSolver] = useState<'auto' | 'cvode' | 'cvode_auto' | 'cvode_sparse' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4'>('cvode_sparse');
+  const [odeSolver, setOdeSolver] = useState<'auto' | 'cvode' | 'cvode_auto' | 'cvode_sparse' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4' | 'webgpu_rk4'>('auto');
   const [isParamsOpen, setIsParamsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -355,6 +355,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
                 <option value="rosenbrock23">Rosenbrock23</option>
                 <option value="rk45">RK45</option>
                 <option value="rk4">RK4</option>
+                <option value="webgpu_rk4">WebGPU RK4 (Exp)</option>
               </select>
               <label className="text-slate-600 dark:text-slate-400">atol:</label>
               <input

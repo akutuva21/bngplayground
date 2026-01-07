@@ -16,6 +16,8 @@ import { BNGLParser } from '../src/services/graph/core/BNGLParser';
 import { Species } from '../src/services/graph/core/Species';
 import { Rxn } from '../src/services/graph/core/Rxn';
 import { GraphCanonicalizer } from '../src/services/graph/core/Canonical';
+import { GraphMatcher } from '../src/services/graph/core/Matcher';
+import { countEmbeddingDegeneracy } from '../src/services/graph/core/degeneracy';
 // Using official ANTLR parser for bng2.pl parity (util polyfill added in vite.config.ts)
 import { parseBNGLStrict as parseBNGLModel } from '../src/parser/BNGLParserWrapper';
 // Conservation law detection is available in ConservationLaws.ts for future use
@@ -161,12 +163,27 @@ const getCompartment = (s: string) => {
 };
 
 const removeCompartment = (s: string) => {
-  return s.replace(/^@[A-Za-z0-9_]+:/, '').replace(/@[A-Za-z0-9_]+$/, '');
+  // Support both Web-style "@cell:Species" and BNG2-style "@cell::Species"
+  return s.replace(/^@[A-Za-z0-9_]+::?/, '').replace(/@[A-Za-z0-9_]+$/, '');
 };
 
 // --- Helper: Extract compartment from a single molecule string ---
 // Handles molecule-level suffix format like "L(r)@PM" → { compartment: "PM", cleanMol: "L(r)" }
+// Also handles double-compartment molecules like "@PM::L(r!1)@EC" where PM is the complex compartment
+// and EC is the molecule's origin compartment - strips both for pattern matching.
 function getMoleculeCompartment(mol: string): { compartment: string | null; cleanMol: string } {
+  // Match molecule with compartment prefix: @COMP:Name(components) or @COMP::Name(components)
+  const prefixMatch = mol.match(/^@([A-Za-z0-9_]+)::?(.+)$/);
+  if (prefixMatch) {
+    // Also strip any suffix compartment from cleanMol (e.g., "L(r!1)@EC" -> "L(r!1)")
+    let cleanMol = prefixMatch[2];
+    const suffixMatch = cleanMol.match(/^(.+)@([A-Za-z0-9_]+)$/);
+    if (suffixMatch) {
+      cleanMol = suffixMatch[1];
+    }
+    return { compartment: prefixMatch[1], cleanMol };
+  }
+
   // Match molecule with compartment suffix: Name(components)@COMPARTMENT or Name@COMPARTMENT
   const match = mol.match(/^(.+)@([A-Za-z0-9_]+)$/);
   if (match) {
@@ -175,77 +192,34 @@ function getMoleculeCompartment(mol: string): { compartment: string | null; clea
   return { compartment: null, cleanMol: mol };
 }
 
-// --- Helper: Match Single Molecule Pattern ---
-function matchMolecule(patMol: string, specMol: string): boolean {
-  // patMol and specMol are "Name(components)" strings, no compartments.
+const parsedGraphCache = new Map<string, ReturnType<typeof BNGLParser.parseSpeciesGraph>>();
+function parseGraphCached(str: string) {
+  const cached = parsedGraphCache.get(str);
+  if (cached) return cached;
+  const parsed = BNGLParser.parseSpeciesGraph(str);
+  parsedGraphCache.set(str, parsed);
+  return parsed;
+}
 
-  const patMatch = patMol.match(/^([A-Za-z0-9_]+)(?:\(([^)]*)\))?$/);
-  const specMatch = specMol.match(/^([A-Za-z0-9_]+)(?:\(([^)]*)\))?$/);
+// --- Helper: Count ALL embeddings of a single-molecule pattern into a target molecule ---
+// For Molecules observables, BNG2 counts all ways the pattern can embed.
+// E.g., pattern A(b) matching A(b,b) = 2 embeddings (one for each free b site)
+function countMoleculeEmbeddings(patMol: string, specMol: string): number {
+  try {
+    const patGraph = parseGraphCached(patMol);
+    const specGraph = parseGraphCached(specMol);
 
-  if (!patMatch || !specMatch) {
-    return false;
+    if (!GraphMatcher.matchesPattern(patGraph, specGraph)) {
+      return 0;
+    }
+
+    // Single-molecule observable: count all valid component assignments within the molecule.
+    // This matches BNG2's behavior for Molecules observables like A(b) matching A(b,b) => 2.
+    const match = { moleculeMap: new Map<number, number>([[0, 0]]), componentMap: new Map<string, string>() };
+    return countEmbeddingDegeneracy(patGraph, specGraph, match);
+  } catch {
+    return 0;
   }
-
-  const patName = patMatch[1];
-  const specName = specMatch[1];
-
-  if (patName !== specName) {
-    return false;
-  }
-
-  // If pattern has no component list (e.g. "A"), it matches any A.
-  if (patMatch[2] === undefined) return true;
-
-  const patCompsStr = patMatch[2];
-  const specCompsStr = specMatch[2] || "";
-
-  const patComps = patCompsStr.split(',').map(s => s.trim()).filter(Boolean);
-  const specComps = specCompsStr.split(',').map(s => s.trim()).filter(Boolean);
-
-  // Every component in pattern must be satisfied by species
-  return patComps.every(pCompStr => {
-    const pM = pCompStr.match(/^([A-Za-z0-9_]+)(?:~([A-Za-z0-9_?]+))?(?:!([0-9]+|\+|\?))?$/);
-    if (!pM) {
-      return false;
-    }
-    const [_, pName, pState, pBond] = pM;
-
-    const sCompStr = specComps.find(s => {
-      const sName = s.split(/[~!]/)[0];
-      return sName === pName;
-    });
-
-    if (!sCompStr) {
-      return false;
-    }
-
-    // BUG FIX: Handle !+ and !? wildcards in species string too
-    const sM = sCompStr.match(/^([A-Za-z0-9_]+)(?:~([A-Za-z0-9_]+))?(?:!([0-9]+|\+|\?))?$/);
-    if (!sM) {
-      return false;
-    }
-    const [__, _sName, sState, sBond] = sM;
-
-    if (pState && pState !== sState) {
-      return false;
-    }
-
-    if (pBond) {
-      if (pBond === '?') {
-        // !? matches anything
-      } else if (pBond === '+') {
-        if (!sBond) return false;
-      } else {
-        // Specific bond ID (e.g. !1) - treat as "must be bound" for simple matching
-        if (!sBond) return false;
-      }
-    } else {
-      // No bond specified in pattern means "must be unbound"
-      if (sBond) return false;
-    }
-
-    return true;
-  });
 }
 
 // --- Helper: Check if Species Matches Pattern (Boolean) ---
@@ -259,115 +233,47 @@ function isSpeciesMatch(speciesStr: string, pattern: string): boolean {
   const cleanPat = removeCompartment(pattern);
   const cleanSpec = removeCompartment(speciesStr);
 
-  // Single molecule pattern
-  if (!cleanPat.includes('.')) {
-    const specMols = cleanSpec.split('.');
-    return specMols.some(sMol => matchMolecule(cleanPat, sMol));
-  }
-
-  // Multi-molecule pattern - need to verify bond connectivity
-  const patternMolecules = cleanPat.split('.').map(s => s.trim());
-  const speciesMolecules = cleanSpec.split('.').map(s => s.trim());
-
-  if (patternMolecules.length > speciesMolecules.length) return false;
-
-  // Parse bonds from pattern molecules: bondId -> [(molIdx, componentName)]
-  const patternBonds = new Map<string, Array<{ molIdx: number, compName: string }>>();
-
-  for (let molIdx = 0; molIdx < patternMolecules.length; molIdx++) {
-    const mol = patternMolecules[molIdx];
-    const compMatch = mol.match(/\(([^)]*)\)/);
-    if (!compMatch) continue;
-
-    const comps = compMatch[1].split(',');
-    for (const comp of comps) {
-      const bondMatch = comp.match(/([A-Za-z0-9_]+)(?:~[A-Za-z0-9_?]+)?!(\d+)/);
-      if (bondMatch) {
-        const [, compName, bondId] = bondMatch;
-        if (!patternBonds.has(bondId)) {
-          patternBonds.set(bondId, []);
-        }
-        patternBonds.get(bondId)!.push({ molIdx, compName });
-      }
-    }
-  }
-
-  // Parse bonds from species molecules: bondId -> [(molIdx, componentName)]
-  const speciesBonds = new Map<string, Array<{ molIdx: number, compName: string }>>();
-
-  for (let molIdx = 0; molIdx < speciesMolecules.length; molIdx++) {
-    const mol = speciesMolecules[molIdx];
-    const compMatch = mol.match(/\(([^)]*)\)/);
-    if (!compMatch) continue;
-
-    const comps = compMatch[1].split(',');
-    for (const comp of comps) {
-      const bondMatch = comp.match(/([A-Za-z0-9_]+)(?:~[A-Za-z0-9_]+)?!(\d+)/);
-      if (bondMatch) {
-        const [, compName, bondId] = bondMatch;
-        if (!speciesBonds.has(bondId)) {
-          speciesBonds.set(bondId, []);
-        }
-        speciesBonds.get(bondId)!.push({ molIdx, compName });
-      }
-    }
-  }
-
-  // Try to find a valid assignment of pattern molecules to species molecules
-  const usedIndices = new Set<number>();
-
-  const findMatch = (patIdx: number, patToSpecMap: Map<number, number>): boolean => {
-    if (patIdx >= patternMolecules.length) {
-      // All pattern molecules assigned - now verify bond connectivity
-      for (const [_bondId, patEndpoints] of patternBonds) {
-        if (patEndpoints.length !== 2) continue; // Skip malformed bonds
-
-        const [ep1, ep2] = patEndpoints;
-        const specMolIdx1 = patToSpecMap.get(ep1.molIdx);
-        const specMolIdx2 = patToSpecMap.get(ep2.molIdx);
-
-        if (specMolIdx1 === undefined || specMolIdx2 === undefined) {
-          return false; // Pattern bond endpoints not mapped
-        }
-
-        // Find a species bond that connects these two species molecules at the same component names
-        let foundMatchingBond = false;
-        for (const [, specEndpoints] of speciesBonds) {
-          if (specEndpoints.length !== 2) continue;
-
-          const [se1, se2] = specEndpoints;
-          // Check if species bond matches pattern bond (in either order)
-          if ((se1.molIdx === specMolIdx1 && se1.compName === ep1.compName &&
-            se2.molIdx === specMolIdx2 && se2.compName === ep2.compName) ||
-            (se1.molIdx === specMolIdx2 && se1.compName === ep2.compName &&
-              se2.molIdx === specMolIdx1 && se2.compName === ep1.compName)) {
-            foundMatchingBond = true;
-            break;
-          }
-        }
-
-        if (!foundMatchingBond) {
-          return false; // Pattern bond not matched by any species bond
-        }
-      }
-      return true; // All pattern bonds verified
-    }
-
-    const patMol = patternMolecules[patIdx];
-    for (let i = 0; i < speciesMolecules.length; i++) {
-      if (usedIndices.has(i)) continue;
-      if (matchMolecule(patMol, speciesMolecules[i])) {
-        usedIndices.add(i);
-        patToSpecMap.set(patIdx, i);
-        if (findMatch(patIdx + 1, patToSpecMap)) return true;
-        patToSpecMap.delete(patIdx);
-        usedIndices.delete(i);
-      }
-    }
+  try {
+    const patGraph = parseGraphCached(cleanPat);
+    const specGraph = parseGraphCached(cleanSpec);
+    return GraphMatcher.matchesPattern(patGraph, specGraph);
+  } catch {
     return false;
-  };
+  }
+}
 
-  return findMatch(0, new Map());
+/**
+ * Counts the number of molecules in a species that can serve as the "anchor" (first molecule)
+ * for a match of a multi-molecule pattern. This follows BNG2 semantics for Molecules observables.
+ * E.g., for pattern egfr.egfr and species egfr-egfr, it returns 2.
+ * For pattern A.B and species A-B, it returns 1 (anchored on A).
+ */
+function countMultiMoleculePatternMatches(speciesStr: string, pattern: string): number {
+  const patComp = getCompartment(pattern);
+  const specComp = getCompartment(speciesStr);
+
+  if (patComp && patComp !== specComp) return 0;
+
+  const cleanPat = removeCompartment(pattern);
+  const cleanSpec = removeCompartment(speciesStr);
+
+  try {
+    const patGraph = parseGraphCached(cleanPat);
+    const specGraph = parseGraphCached(cleanSpec);
+
+    // BNG2 semantics for Molecules observables (multi-molecule patterns): count the
+    // number of distinct target molecules that can serve as the image of the first
+    // pattern molecule in at least one valid embedding.
+    const maps = GraphMatcher.findAllMaps(patGraph, specGraph);
+    const anchors = new Set<number>();
+    for (const m of maps) {
+      const t0 = m.moleculeMap.get(0);
+      if (t0 !== undefined) anchors.add(t0);
+    }
+    return anchors.size;
+  } catch {
+    return 0;
+  }
 }
 
 // --- Helper: Count Matches for Molecules Observable ---
@@ -376,32 +282,31 @@ function countPatternMatches(speciesStr: string, patternStr: string): number {
   // Extract compartment constraint from pattern (prefix format: @PM:L → "PM")
   const patComp = getCompartment(patternStr);
   const cleanPat = removeCompartment(patternStr);
+  const specLevelComp = getCompartment(speciesStr);
 
   if (cleanPat.includes('.')) {
-    // Complex pattern: For multi-molecule patterns with compartment constraints,
-    // we need to verify all molecules in the pattern are in the required compartment
-    if (patComp) {
-      // Check if the species contains molecules in the required compartment
-      const specMols = speciesStr.split('.');
-      const hasMatchingCompartment = specMols.some(sMol => {
-        const { compartment } = getMoleculeCompartment(sMol);
-        return compartment === patComp;
-      });
-      if (!hasMatchingCompartment) return 0;
-    }
-    // Fallback to boolean match (1 or 0)
-    return isSpeciesMatch(speciesStr, patternStr) ? 1 : 0;
+    // Multi-molecule pattern: BNG2 "Molecules" observables count the number of 
+    // physical molecules in the species that satisfy the pattern.
+    // Specifically, for a pattern P1.P2... this is the number of molecules m 
+    // in the species that can serve as the target for P1 in some match.
+    return countMultiMoleculePatternMatches(speciesStr, patternStr);
   } else {
-    // Single molecule pattern: count matching molecules WITH compartment filtering
+    // Single molecule pattern: count ALL embeddings across all matching molecules
+    // FIX: Use countMoleculeEmbeddings to count all ways the pattern can embed
+    // E.g., A(b) matching A(b,b) should count 2 (one embedding per free b site)
     const specMols = speciesStr.split('.');  // Keep compartment info per molecule
     let count = 0;
     for (const sMol of specMols) {
-      const { compartment: molComp, cleanMol } = getMoleculeCompartment(sMol);
+      const { compartment: rawMolComp, cleanMol } = getMoleculeCompartment(sMol);
+      // BNG2 behavior: For compartment observables like @PM:L, use the COMPLEX-level
+      // compartment (specLevelComp), not the molecule's original compartment.
+      // The molecule-level compartment (rawMolComp) tracks where the molecule came from,
+      // but for counting "molecules in compartment PM", we use the complex's location.
+      const molComp = specLevelComp ?? rawMolComp;
       // If pattern requires a specific compartment, molecule must be in that compartment
       if (patComp && molComp !== patComp) continue;
-      if (matchMolecule(cleanPat, cleanMol)) {
-        count++;
-      }
+      // Count all embeddings of the pattern into this molecule
+      count += countMoleculeEmbeddings(cleanPat, cleanMol);
     }
     return count;
   }
@@ -434,11 +339,23 @@ function preExpandExpression(
     for (let pass = 0; pass < 10; pass++) {
       let foundFunction = false;
       for (const func of functions) {
-        // Match function_name() - zero-argument functions
-        const funcCallPattern = new RegExp(`\\b${func.name}\\s*\\(\\s*\\)`, 'g');
-        if (funcCallPattern.test(expandedExpr)) {
+        // BNG2 allows zero-argument functions with or without parentheses:
+        //   - k_func() - with parentheses
+        //   - k_func - without parentheses (just the function name as a word)
+        // First try with parentheses, then try without
+        const funcCallWithParens = new RegExp(`\\b${func.name}\\s*\\(\\s*\\)`, 'g');
+        if (funcCallWithParens.test(expandedExpr)) {
           foundFunction = true;
-          expandedExpr = expandedExpr.replace(funcCallPattern, `(${func.expression})`);
+          expandedExpr = expandedExpr.replace(funcCallWithParens, `(${func.expression})`);
+        }
+        // Also match function name without parentheses (zero-arg function used as bare name)
+        // Only for zero-argument functions
+        if (func.args.length === 0) {
+          const funcCallNoParens = new RegExp(`\\b${func.name}\\b(?!\\s*\\()`, 'g');
+          if (funcCallNoParens.test(expandedExpr)) {
+            foundFunction = true;
+            expandedExpr = expandedExpr.replace(funcCallNoParens, `(${func.expression})`);
+          }
         }
       }
       if (!foundFunction) break;
@@ -561,19 +478,15 @@ function convertReactionsToGPU(
   return { gpuReactions, rateConstants };
 }
 
-
 async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Promise<BNGLModel> {
   console.log('[Worker] Starting network generation for model with', inputModel.species.length, 'species and', inputModel.reactionRules.length, 'rules');
 
   // Convert BNGLModel to graph structures
-  const seedSpecies = inputModel.species.map(s => {
-    const graph = BNGLParser.parseSpeciesGraph(s.name);
-    return graph;
-  });
+  const seedSpecies = inputModel.species.map((s) => BNGLParser.parseSpeciesGraph(s.name));
 
-  // FIX: Create a map of CANONICAL seed species names to concentrations
+  // Create a map of CANONICAL seed species names to concentrations
   const seedConcentrationMap = new Map<string, number>();
-  inputModel.species.forEach(s => {
+  inputModel.species.forEach((s) => {
     const g = BNGLParser.parseSpeciesGraph(s.name);
     const canonicalName = GraphCanonicalizer.canonicalize(g);
     seedConcentrationMap.set(canonicalName, s.initialConcentration);
@@ -582,8 +495,8 @@ async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Pr
   const formatSpeciesList = (list: string[]) => (list.length > 0 ? list.join(' + ') : '0');
 
   // Create sets for detecting functional rates (observables and functions)
-  const observableNames = new Set(inputModel.observables.map(o => o.name));
-  const functionNames = new Set((inputModel.functions || []).map(f => f.name));
+  const observableNames = new Set(inputModel.observables.map((o) => o.name));
+  const functionNames = new Set((inputModel.functions || []).map((f) => f.name));
 
   // Helper to check if a rate expression contains observable or function references
   const isFunctionalRateExpr = (rateExpr: string): boolean => {
@@ -591,13 +504,16 @@ async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Pr
     for (const obsName of observableNames) {
       if (new RegExp(`\\b${obsName}\\b`).test(rateExpr)) return true;
     }
+    // BNG2 allows functions to be used without parentheses when they have no arguments:
+    //   e.g., `k_IKKKactivation` instead of `k_IKKKactivation()`
+    // So we check for the function name as a word boundary match
     for (const funcName of functionNames) {
-      if (new RegExp(`\\b${funcName}\\s*\\(`).test(rateExpr)) return true;
+      if (new RegExp(`\\b${funcName}\\b`).test(rateExpr)) return true;
     }
     return false;
   };
 
-  const rules = inputModel.reactionRules.flatMap(r => {
+  const rules = inputModel.reactionRules.flatMap((r) => {
     const parametersMap = new Map(Object.entries(inputModel.parameters));
 
     // Check if this is a functional rate (depends on observables or functions)
@@ -608,13 +524,12 @@ async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Pr
     // For static rates, try to evaluate
     let rate: number;
     if (isForwardFunctional) {
-      rate = 0; // Placeholder for functional rate
+      rate = 0;
     } else {
       try {
         rate = BNGLParser.evaluateExpression(r.rate, parametersMap);
         if (isNaN(rate)) rate = 0;
       } catch (e) {
-        // Only warn if this is not expected to fail (shouldn't happen if not functional)
         console.warn('[Worker] Could not evaluate rate expression:', r.rate, '- using 0');
         rate = 0;
       }
@@ -623,7 +538,7 @@ async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Pr
     let reverseRate: number;
     if (r.reverseRate) {
       if (isReverseFunctional) {
-        reverseRate = 0; // Placeholder for functional rate
+        reverseRate = 0;
       } else {
         try {
           reverseRate = BNGLParser.evaluateExpression(r.reverseRate, parametersMap);
@@ -639,9 +554,7 @@ async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Pr
 
     const ruleStr = `${formatSpeciesList(r.reactants)} -> ${formatSpeciesList(r.products)}`;
     const forwardRule = BNGLParser.parseRxnRule(ruleStr, rate);
-    // FIX: Use original rule name to prevent deduplication of identical rules (e.g. stochastic vs deterministic variants)
     forwardRule.name = r.name;
-    // Store rate expression for functional rates (will be passed through to simulation)
     if (isForwardFunctional) {
       (forwardRule as any).rateExpression = r.rate;
       (forwardRule as any).isFunctionalRate = true;
@@ -654,24 +567,20 @@ async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Pr
     if (r.isBidirectional) {
       const reverseRuleStr = `${formatSpeciesList(r.products)} -> ${formatSpeciesList(r.reactants)}`;
       const reverseRule = BNGLParser.parseRxnRule(reverseRuleStr, reverseRate);
-      // Append suffix for reverse rule to maintain uniqueness
       reverseRule.name = r.name + '_rev';
       if (isReverseFunctional) {
         (reverseRule as any).rateExpression = r.reverseRate;
         (reverseRule as any).isFunctionalRate = true;
       }
       return [forwardRule, reverseRule];
-    } else {
-      return [forwardRule];
     }
+
+    return [forwardRule];
   });
 
   // Use network options from BNGL file if available, with reasonable defaults
   const networkOpts = inputModel.networkOptions || {};
-  // Convert Record<string, number> to Map for maxStoich if provided
-  const maxStoich = networkOpts.maxStoich
-    ? new Map(Object.entries(networkOpts.maxStoich))
-    : 500;  // Default limit per molecule type
+  const maxStoich = networkOpts.maxStoich ? new Map(Object.entries(networkOpts.maxStoich)) : 500;
 
   const generator = new NetworkGenerator({
     maxSpecies: 20000,
@@ -679,10 +588,11 @@ async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Pr
     maxAgg: networkOpts.maxAgg ?? 500,
     maxStoich,
     // Pass compartment info for cBNGL volume scaling (bimolecular rates scaled by 1/volume)
-    compartments: inputModel.compartments?.map(c => ({
+    compartments: inputModel.compartments?.map((c) => ({
       name: c.name,
       dimension: c.dimension,
-      size: c.size
+      size: c.size,
+      parent: c.parent
     }))
   });
 
@@ -690,7 +600,7 @@ async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Pr
   let lastProgressTime = 0;
   const progressCallback = (progress: GeneratorProgress) => {
     const now = Date.now();
-    if (now - lastProgressTime >= 250) { // Throttle to 4Hz (250ms)
+    if (now - lastProgressTime >= 250) {
       lastProgressTime = now;
       ctx.postMessage({ id: jobId, type: 'generate_network_progress', payload: progress });
     }
@@ -712,14 +622,12 @@ async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Pr
 
   const generatedReactions = result.reactions.map((r: Rxn, idx: number) => {
     try {
-      // CRITICAL: Preserve rateExpression for functional rates (rates that depend on observables/parameters)
-      // This allows runtime re-evaluation when parameters change between simulation phases
       const reaction = {
         reactants: r.reactants.map((ridx: number) => GraphCanonicalizer.canonicalize(result.species[ridx].graph)),
         products: r.products.map((pidx: number) => GraphCanonicalizer.canonicalize(result.species[pidx].graph)),
-        // Use rateExpression if available (for functional rates), otherwise use numeric rate
         rate: r.rateExpression || String(r.rate),
-        rateConstant: typeof r.rate === 'number' ? r.rate : 0
+        rateConstant: typeof r.rate === 'number' ? r.rate : 0,
+        propensityFactor: (r as any).propensityFactor ?? 1
       };
       return reaction;
     } catch (e: any) {
@@ -743,6 +651,113 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
   console.log('[Worker] ⏱️ TIMING: Starting simulation');
   console.log('[Worker] Starting simulation with', inputModel.species.length, 'species and', inputModel.reactionRules?.length ?? 0, 'rules');
 
+  // Strict parity: GDAT times are printed by BNG2 in scientific notation with
+  // 12 digits after the decimal in the mantissa (i.e. `%.12e`).
+  //
+  // To match BNG2 under TIME_TOL=1e-10, we compute grid times in double precision
+  // (same as BNG2) and then quantize them to the `%.12e`-printed value.
+  //
+  // CRITICAL: BNG2 uses ACCUMULATION (t_out += sample_time) rather than direct
+  // multiplication (t_start + sample_time * n). This causes different floating-point
+  // rounding errors that affect the final printed value. We must match BNG2's
+  // accumulation semantics to achieve strict TIME_TOL parity.
+  //
+  // ROUNDING: At exact boundary cases (e.g., 6365.55555555555...), JS's toExponential
+  // uses "round half to even" while BNG2 (glibc) uses "round half away from zero" or
+  // a different tie-breaker. To match BNG2, we implement custom rounding that rounds
+  // DOWN for positive tie-breaker cases (matching observed BNG2 behavior).
+
+  /**
+   * Format a number to BNG2-compatible scientific notation with 12 decimal digits.
+   * Uses "round half down" for tie-breaker cases to match observed BNG2 printf behavior.
+   */
+  const toBngScientific12 = (x: number): string => {
+    if (!Number.isFinite(x) || x === 0) {
+      return x.toExponential(12);
+    }
+
+    const sign = x < 0 ? '-' : '';
+    const absX = Math.abs(x);
+
+    // Get exponent: floor(log10(absX))
+    const exp = Math.floor(Math.log10(absX));
+    
+    // Normalized mantissa: absX / 10^exp should be in [1, 10)
+    const scale = Math.pow(10, exp);
+    const mantissa = absX / scale;
+
+    // We need 13 significant digits total (1 before decimal + 12 after)
+    // Multiply by 10^12 to get all significant digits as an integer
+    const shifted = mantissa * 1e12;
+    
+    // Custom rounding: for tie-breaker cases, round DOWN (floor)
+    // Check if we're at a tie (value ends in exactly .5 after shifting)
+    const floored = Math.floor(shifted);
+    const fraction = shifted - floored;
+    
+    // Tie condition: fraction is exactly 0.5 (or very close due to FP errors)
+    // If tie, round DOWN. Otherwise, use normal rounding.
+    let rounded: number;
+    if (Math.abs(fraction - 0.5) < 1e-9) {
+      // Tie-breaker: round DOWN (toward zero) for positive numbers
+      rounded = floored;
+    } else {
+      // Normal rounding
+      rounded = Math.round(shifted);
+    }
+
+    // Handle overflow case (e.g., 9.9999... rounds to 10.0)
+    if (rounded >= 1e13) {
+      rounded = Math.round(rounded / 10);
+      const newExp = exp + 1;
+      const mantStr = (rounded / 1e12).toFixed(12);
+      const expSign = newExp >= 0 ? '+' : '-';
+      const expAbs = Math.abs(newExp);
+      const expPadded = expAbs < 100 ? String(expAbs).padStart(2, '0') : String(expAbs);
+      return `${sign}${mantStr}e${expSign}${expPadded}`;
+    }
+
+    // Format mantissa with exactly 12 decimal places
+    const mantStr = (rounded / 1e12).toFixed(12);
+    const expSign = exp >= 0 ? '+' : '-';
+    const expAbs = Math.abs(exp);
+    const expPadded = expAbs < 100 ? String(expAbs).padStart(2, '0') : String(expAbs);
+    
+    return `${sign}${mantStr}e${expSign}${expPadded}`;
+  };
+
+  const quantizeBngPrintedTime = (t: number): number => {
+    if (!Number.isFinite(t)) return t;
+    
+    // Use custom BNG2-compatible formatting
+    const formatted = toBngScientific12(t);
+    const parsed = Number(formatted);
+    
+    // Preserve exact-integer timestamps
+    if (Number.isInteger(parsed)) return parsed;
+    return parsed;
+  };
+
+  // Legacy function for backward compatibility
+  const toBngGridTime = (
+    phaseStart: number,
+    phaseDuration: number,
+    phaseSteps: number,
+    outIdx: number
+  ): number => {
+    // For outIdx 0, return phase start
+    if (outIdx === 0) {
+      return quantizeBngPrintedTime(phaseStart);
+    }
+    // Use accumulation for non-zero indices
+    const dtOut = phaseDuration / phaseSteps;
+    let t_accum = phaseStart;
+    for (let i = 0; i < outIdx; i++) {
+      t_accum += dtOut;
+    }
+    return quantizeBngPrintedTime(t_accum);
+  };
+
   const networkGenStart = performance.now();
   const expandedModel = await generateExpandedNetwork(jobId, inputModel);
   const networkGenTime = performance.now() - networkGenStart;
@@ -757,48 +772,83 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
   // Build phases array, applying API-passed options as overrides
   let phases: Array<{
     method: 'ode' | 'ssa' | 'nf';
+    t_start?: number;
     t_end?: number;
     n_steps?: number;
+    continue_from_previous?: boolean;
     atol?: number;
     rtol?: number;
     suffix?: string;
     sparse?: boolean;
     steady_state?: boolean;
+    print_functions?: boolean;
   }>;
 
   if (hasMultiPhase) {
-    // Use model-defined phases, but allow API options to override per-phase values
+    // Use model-defined phases as authored in the BNGL actions block.
+    // IMPORTANT: Do NOT override per-phase t_end/n_steps from the UI's single-phase options.
+    // Many published models (e.g., Hat 2016 / test7) rely on distinct durations per phase.
     phases = inputModel.simulationPhases!.map(p => ({
       ...p,
-      // API options take priority over model-defined values
-      t_end: options.t_end ?? p.t_end,
-      n_steps: options.n_steps ?? p.n_steps,
+      // Allow global tolerances to override if provided.
       atol: options.atol ?? p.atol,
       rtol: options.rtol ?? p.rtol,
     }));
   } else {
     // No model-defined phases - create single phase from options
+    const inferredMethod: 'ode' | 'ssa' =
+      options.method === 'ssa'
+        ? 'ssa'
+        : options.method === 'ode'
+          ? 'ode'
+          : (inputModel.simulationOptions?.method === 'ssa' ? 'ssa' : 'ode');
+
     phases = [{
-      method: options.method as 'ode' | 'ssa',
+      method: inferredMethod,
       t_end: options.t_end ?? inputModel.simulationOptions?.t_end,
       n_steps: options.n_steps ?? inputModel.simulationOptions?.n_steps,
       atol: options.atol ?? inputModel.simulationOptions?.atol,
       rtol: options.rtol ?? inputModel.simulationOptions?.rtol,
     }];
   }
+
+  // If user selected an explicit method, force all phases to that method.
+  // If user selected 'default', respect the model-authored per-phase methods.
+  if (options.method === 'ode' || options.method === 'ssa') {
+    const forcedMethod: 'ode' | 'ssa' = options.method;
+    phases = phases.map(p => ({ ...p, method: forcedMethod }));
+  }
+
   const concentrationChanges = inputModel.concentrationChanges || [];
   const parameterChanges = inputModel.parameterChanges || [];
+
+  // Output semantics for multi-phase BNGL actions:
+  // - A new simulate_* with continue=>0 (or unspecified) starts a new output series.
+  // - Subsequent simulate_* with continue=>1 append to the same output series.
+  // For browser CSV export parity with BNG2, we emit the final output series:
+  // the last phase plus any immediately-preceding continuation phases.
+  let recordFromPhaseIdx = phases.length - 1;
+  while (recordFromPhaseIdx > 0 && (phases[recordFromPhaseIdx].continue_from_previous ?? false)) {
+    recordFromPhaseIdx -= 1;
+  }
 
   if (hasMultiPhase) {
     console.log(`[Worker] Multi-phase simulation: ${phases.length} phases, ${concentrationChanges.length} concentration changes, ${parameterChanges.length} parameter changes`);
   }
 
-  // Use the last ODE phase settings for backward compatibility
-  const lastOdePhase = phases.filter(p => p.method === 'ode').pop() || phases[phases.length - 1];
-  const t_end = lastOdePhase.t_end;
-  const n_steps = lastOdePhase.n_steps;
-  const method = options.method;
-  const headers = ['time', ...model.observables.map((observable) => observable.name)];
+  // Determine whether we are running an SSA-only plan.
+  // If any ODE phase exists, we use the ODE codepath and can execute SSA phases inline.
+  const allSsa = phases.every(p => p.method === 'ssa');
+
+  // BNG2 prints function values as extra GDAT columns when `print_functions=>1`.
+  // We only support printing zero-arg functions (foo()), which is what BNG uses for output columns.
+  const printableFunctions = (model.functions || []).filter(f => (f.args?.length ?? 0) === 0);
+  const shouldPrintFunctions =
+    printableFunctions.length > 0 &&
+    phases.slice(recordFromPhaseIdx).some(p => (p.print_functions ?? false) === true);
+  const functionHeaders = shouldPrintFunctions ? printableFunctions.map(f => f.name) : [];
+
+  const headers = ['time', ...model.observables.map((observable) => observable.name), ...functionHeaders];
   // Species headers for cdat-style output
   const speciesHeaders = model.species.map((s) => s.name);
 
@@ -813,6 +863,10 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
   // Detect functional rates (containing observables or function calls) that need dynamic evaluation
   const observableNames = new Set(model.observables.map(o => o.name));
   const functionNames = new Set((model.functions || []).map(f => f.name));
+  // Also treat rates as functional if they reference parameters that are changed via setParameter().
+  // This is required for parity with BNGL multi-phase scripts where parameters (e.g., stimulus) are
+  // modified between phases and those parameters appear in reaction rate expressions.
+  const changingParameterNames = new Set(parameterChanges.map(c => c.parameter));
 
   const concreteReactions = model.reactions.map(r => {
     const reactantIndices = r.reactants.map(name => speciesMap.get(name));
@@ -843,9 +897,23 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
     }
 
     // Check for function calls in the rate expression
+    // BNG2 allows functions to be used without parentheses when they have no arguments:
+    //   e.g., `k_IKKKactivation` instead of `k_IKKKactivation()`
+    // So we check for the function name as a word boundary match, not just `func_name\(`
     if (!isFunctionalRate) {
       for (const funcName of functionNames) {
-        if (new RegExp(`\\b${funcName}\\s*\\(`).test(rateExpr)) {
+        // Match function name with optional parentheses (for zero-arg functions)
+        if (new RegExp(`\\b${funcName}\\b`).test(rateExpr)) {
+          isFunctionalRate = true;
+          break;
+        }
+      }
+    }
+
+    // Check for changing parameter references in the rate expression
+    if (!isFunctionalRate && changingParameterNames.size > 0) {
+      for (const paramName of changingParameterNames) {
+        if (new RegExp(`\\b${paramName}\\b`).test(rateExpr)) {
           isFunctionalRate = true;
           break;
         }
@@ -868,7 +936,8 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
       products: new Int32Array(productIndices as number[]),
       rateConstant: rate,
       rateExpression: isFunctionalRate ? rateExpr : null,
-      isFunctionalRate
+      isFunctionalRate,
+      propensityFactor: (r as any).propensityFactor ?? 1
     };
   }).filter(r => r !== null) as {
     reactants: Int32Array;
@@ -876,6 +945,7 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
     rateConstant: number;
     rateExpression: string | null;
     isFunctionalRate: boolean;
+    propensityFactor: number;
   }[];
 
 
@@ -890,30 +960,83 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
     // Split pattern by comma to handle multiple patterns (e.g. "A,B" or "pattern1, pattern2")
     // BUT only split on commas OUTSIDE parentheses to avoid breaking patterns like "p53(S15_S20~0,S46~0)"
     const splitPatternsSafe = (patternStr: string): string[] => {
-      const result: string[] = [];
+      // BNGL observables often separate multiple patterns by whitespace
+      // (e.g., Species Clusters EGFR==1 EGFR==2 ...), and sometimes by commas.
+      // We split on commas only at top-level (not inside parentheses), then
+      // further tokenize by whitespace while preserving count constraints with
+      // optional spaces around operators (e.g., EGFR == 1).
+      const commaChunks: string[] = [];
       let current = '';
       let parenDepth = 0;
       for (const char of patternStr) {
         if (char === '(') parenDepth++;
-        else if (char === ')') parenDepth--;
+        else if (char === ')') parenDepth = Math.max(0, parenDepth - 1);
         else if (char === ',' && parenDepth === 0) {
-          if (current.trim()) result.push(current.trim());
+          const trimmed = current.trim();
+          if (trimmed) commaChunks.push(trimmed);
           current = '';
           continue;
         }
         current += char;
       }
-      if (current.trim()) result.push(current.trim());
-      return result;
+      const trimmed = current.trim();
+      if (trimmed) commaChunks.push(trimmed);
+
+      const patterns: string[] = [];
+      const tokenRe = /([A-Za-z0-9_]+\s*(?:==|<=|>=|<|>)\s*\d+|[^\s]+)/g;
+      for (const chunk of commaChunks) {
+        const matches = Array.from(chunk.matchAll(tokenRe), m => m[1].trim()).filter(Boolean);
+        if (matches.length > 0) patterns.push(...matches);
+      }
+      return patterns;
     };
     const patterns = splitPatternsSafe(obs.pattern);
     const matchingIndices: number[] = [];
     const coefficients: number[] = [];
 
+    const countMoleculeInSpecies = (speciesStr: string, molName: string): number => {
+      const cleanSpec = removeCompartment(speciesStr);
+      const parts = cleanSpec.split('.');
+      let count = 0;
+      for (const part of parts) {
+        const { cleanMol } = getMoleculeCompartment(part.trim());
+        const nameMatch = cleanMol.match(/^([A-Za-z0-9_]+)/);
+        const name = nameMatch?.[1];
+        if (name === molName) count++;
+      }
+      return count;
+    };
+
+    const matchesCountConstraint = (speciesStr: string, constraint: string): boolean | null => {
+      const m = constraint.trim().match(/^([A-Za-z0-9_]+)\s*(==|<=|>=|<|>)\s*(\d+)$/);
+      if (!m) return null;
+      const mol = m[1];
+      const op = m[2];
+      const n = Number.parseInt(m[3], 10);
+      const c = countMoleculeInSpecies(speciesStr, mol);
+      switch (op) {
+        case '==': return c === n;
+        case '<=': return c <= n;
+        case '>=': return c >= n;
+        case '<': return c < n;
+        case '>': return c > n;
+        default: return null;
+      }
+    };
+
+    const obsType = ((obs as any).type ?? '').toString().toLowerCase();
     model.species.forEach((s, i) => {
       let count = 0;
       for (const pat of patterns) {
-        if (obs.type === 'species') {
+        if (obsType === 'species') {
+          const constraintMatch = matchesCountConstraint(s.name, pat);
+          if (constraintMatch === true) {
+            count = 1;
+            break; // Species matches once
+          }
+          if (constraintMatch === false) {
+            continue;
+          }
           if (isSpeciesMatch(s.name, pat)) {
             count = 1;
             break; // Species matches once
@@ -957,88 +1080,242 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
     return obsValues;
   };
 
+  const evaluateFunctionsForOutput = (observableValues: Record<string, number>) => {
+    if (!shouldPrintFunctions) return {} as Record<string, number>;
+    const fnValues: Record<string, number> = {};
+    for (const fnDef of printableFunctions) {
+      fnValues[fnDef.name] = evaluateFunctionalRate(
+        fnDef.expression,
+        model.parameters || {},
+        observableValues,
+        model.functions
+      );
+    }
+    return fnValues;
+  };
+
   // Define checkCancelled helper
   const checkCancelled = () => ensureNotCancelled(jobId);
 
-  if (method === 'ssa') {
-    // SSA Implementation using Typed Arrays
+  if (allSsa) {
+    // SSA-only plan (supports multi-phase)
+    // NOTE: Functional rates are not currently evaluated dynamically in SSA.
+    if (functionalRateCount > 0) {
+      console.warn('[Worker] SSA selected but functional rates were detected; SSA will ignore rate expressions and may be inaccurate.');
+    }
+
     // Round initial state for SSA
     for (let i = 0; i < numSpecies; i++) state[i] = Math.round(state[i]);
 
-    const dtOut = t_end / n_steps;
-    let t = 0;
-    let nextTOut = 0;
+    let globalTime = 0;
+    for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx++) {
+      const phase = phases[phaseIdx];
+      const recordThisPhase = phaseIdx >= recordFromPhaseIdx;
+      const shouldEmitPhaseStart = recordThisPhase && (phaseIdx === recordFromPhaseIdx || !(phase.continue_from_previous ?? false));
 
-    data.push({ time: t, ...evaluateObservablesFast(state) });
-    // Initial species concentrations (cdat)
-    const speciesPoint0: Record<string, number> = { time: t };
-    for (let i = 0; i < numSpecies; i++) speciesPoint0[speciesHeaders[i]] = state[i];
-    speciesData.push(speciesPoint0);
+      // Apply concentration changes BEFORE this phase
+      for (const change of concentrationChanges) {
+        if (change.afterPhaseIndex === phaseIdx - 1) {
+          let resolvedValue: number;
+          if (typeof change.value === 'number') {
+            resolvedValue = change.value;
+          } else {
+            // Try to look up as parameter name first
+            const paramValue = model.parameters?.[change.value];
+            if (typeof paramValue === 'number') {
+              resolvedValue = paramValue;
+            } else {
+              // Try to evaluate as expression (e.g., "1*1", "10*60")
+              try {
+                let expr = change.value;
+                // Substitute parameter names in the expression
+                for (const [pName, pVal] of Object.entries(model.parameters || {})) {
+                  expr = expr.replace(new RegExp(`\\b${pName}\\b`, 'g'), String(pVal));
+                }
+                expr = expr.replace(/\^/g, '**');
+                resolvedValue = new Function('return ' + expr)() as number;
+              } catch {
+                // Fall back to parseFloat
+                resolvedValue = parseFloat(String(change.value)) || 0;
+              }
+            }
+          }
 
-    while (t < t_end) {
-      checkCancelled();
+          // Robust species lookup: allow labeled species names ("Label: ...") and
+          // fall back to BNGL structural pattern matching.
+          // Note: Canonical species names use @comp::Species (double colon) format,
+          // while BNGL files use @comp:Species (single colon). Normalize both.
+          const normalizeCompartmentSyntax = (s: string) => s.replace(/^@([A-Za-z0-9_]+):(?!:)/, '@$1::');
+          const wantedPattern = change.species.trim();
+          const normalizedWanted = normalizeCompartmentSyntax(wantedPattern);
+          
+          let speciesIdx = speciesMap.get(normalizedWanted);
+          if (speciesIdx === undefined) {
+            // Also try original pattern in case speciesMap uses single-colon syntax
+            speciesIdx = speciesMap.get(wantedPattern);
+          }
+          const normalizeSpeciesName = (name: string) => name.trim().replace(/^[^:]+:\s*/, '');
 
-      // Calculate propensities
-      let aTotal = 0;
-      const propensities = new Float64Array(concreteReactions.length);
+          if (speciesIdx === undefined) {
+            for (const [speciesName, idx] of speciesMap.entries()) {
+              if (normalizeSpeciesName(speciesName) === normalizedWanted) {
+                speciesIdx = idx;
+                break;
+              }
+            }
+          }
 
-      for (let i = 0; i < concreteReactions.length; i++) {
-        const rxn = concreteReactions[i];
-        let a = rxn.rateConstant;
-        for (let j = 0; j < rxn.reactants.length; j++) {
-          a *= state[rxn.reactants[j]];
+          if (speciesIdx === undefined) {
+            const matches: number[] = [];
+            for (const [speciesName, idx] of speciesMap.entries()) {
+              const normalized = normalizeSpeciesName(speciesName);
+              if (isSpeciesMatch(normalized, wantedPattern)) {
+                matches.push(idx);
+              }
+            }
+
+            if (matches.length === 1) {
+              speciesIdx = matches[0];
+            } else if (matches.length > 1) {
+              matches.sort((a, b) => a - b);
+              console.warn(
+                `[Worker] Phase ${phaseIdx}: setConcentration("${change.species}") matched ${matches.length} species; applying to the first match (species index ${matches[0]}).`
+              );
+              speciesIdx = matches[0];
+            }
+          }
+
+          if (speciesIdx !== undefined) {
+            console.log(`[Worker] Phase ${phaseIdx}: setConcentration("${change.species}") = ${resolvedValue} (species index ${speciesIdx})`);
+            state[speciesIdx] = Math.round(resolvedValue);
+          } else {
+            console.warn(`[Worker] Phase ${phaseIdx}: Could not find species for setConcentration("${change.species}")`);
+          }
         }
-        propensities[i] = a;
-        aTotal += a;
       }
 
-      if (aTotal === 0) break;
+      // Apply parameter changes BEFORE this phase
+      for (const change of parameterChanges) {
+        if (change.afterPhaseIndex === phaseIdx - 1) {
+          let resolvedValue: number;
+          if (typeof change.value === 'number') {
+            resolvedValue = change.value;
+          } else {
+            try {
+              let expr = change.value;
+              for (const [pName, pVal] of Object.entries(model.parameters || {})) {
+                expr = expr.replace(new RegExp(`\\b${pName}\\b`, 'g'), String(pVal));
+              }
+              expr = expr.replace(/\^/g, '**');
+              resolvedValue = new Function('return ' + expr)() as number;
+            } catch (e) {
+              console.warn(`[Worker] Failed to evaluate setParameter expression "${change.value}":`, e);
+              resolvedValue = parseFloat(String(change.value)) || 0;
+            }
+          }
 
-      const r1 = Math.random();
-      const tau = (1 / aTotal) * Math.log(1 / r1);
-      t += tau;
+          console.log(`[Worker] Phase ${phaseIdx}: setParameter("${change.parameter}") = ${resolvedValue}`);
+          if (inputModel.parameters) inputModel.parameters[change.parameter] = resolvedValue;
+          if (model.parameters) model.parameters[change.parameter] = resolvedValue;
+        }
+      }
 
-      const r2 = Math.random() * aTotal;
-      let sumA = 0;
-      let reactionIndex = propensities.length - 1;
+      const phaseTEnd = phase.t_end ?? options.t_end;
+      const phaseNSteps = phase.n_steps ?? options.n_steps;
 
-      for (let i = 0; i < propensities.length; i++) {
-        sumA += propensities[i];
-        if (r2 <= sumA) {
-          reactionIndex = i;
+      let t = 0;
+      let nextOutIdx = 1;
+      let nextTOut = (phaseTEnd * nextOutIdx) / phaseNSteps;
+
+      if (shouldEmitPhaseStart) {
+        const outT0 = toBngGridTime(globalTime, phaseTEnd, phaseNSteps, 0);
+        const obsValues = evaluateObservablesFast(state);
+        data.push({ time: outT0, ...obsValues, ...evaluateFunctionsForOutput(obsValues) });
+        const speciesPoint0: Record<string, number> = { time: outT0 };
+        for (let i = 0; i < numSpecies; i++) speciesPoint0[speciesHeaders[i]] = state[i];
+        speciesData.push(speciesPoint0);
+      }
+
+      // SSA event loop
+      while (t < phaseTEnd) {
+        checkCancelled();
+
+        let aTotal = 0;
+        const propensities = new Float64Array(concreteReactions.length);
+
+        for (let i = 0; i < concreteReactions.length; i++) {
+          const rxn = concreteReactions[i];
+          let a = rxn.rateConstant * rxn.propensityFactor;
+          for (let j = 0; j < rxn.reactants.length; j++) {
+            a *= state[rxn.reactants[j]];
+          }
+          propensities[i] = a;
+          aTotal += a;
+        }
+
+        if (aTotal === 0) {
           break;
         }
+
+        const r1 = Math.random();
+        const tau = (1 / aTotal) * Math.log(1 / r1);
+        if (t + tau > phaseTEnd) {
+          t = phaseTEnd;
+          break;
+        }
+        t += tau;
+
+        const r2 = Math.random() * aTotal;
+        let sumA = 0;
+        let reactionIndex = propensities.length - 1;
+        for (let i = 0; i < propensities.length; i++) {
+          sumA += propensities[i];
+          if (r2 <= sumA) {
+            reactionIndex = i;
+            break;
+          }
+        }
+
+        const firedRxn = concreteReactions[reactionIndex];
+        for (let j = 0; j < firedRxn.reactants.length; j++) state[firedRxn.reactants[j]]--;
+        for (let j = 0; j < firedRxn.products.length; j++) state[firedRxn.products[j]]++;
+
+        while (t >= nextTOut && nextTOut <= phaseTEnd) {
+          checkCancelled();
+          if (recordThisPhase) {
+            const outT = toBngGridTime(globalTime, phaseTEnd, phaseNSteps, nextOutIdx);
+            const obsValues = evaluateObservablesFast(state);
+            data.push({ time: outT, ...obsValues, ...evaluateFunctionsForOutput(obsValues) });
+            const speciesPointLoop: Record<string, number> = { time: outT };
+            for (let k = 0; k < numSpecies; k++) speciesPointLoop[speciesHeaders[k]] = state[k];
+            speciesData.push(speciesPointLoop);
+          }
+          nextOutIdx += 1;
+          nextTOut = (phaseTEnd * nextOutIdx) / phaseNSteps;
+        }
       }
 
-      const firedRxn = concreteReactions[reactionIndex];
-      for (let j = 0; j < firedRxn.reactants.length; j++) state[firedRxn.reactants[j]]--;
-      for (let j = 0; j < firedRxn.products.length; j++) state[firedRxn.products[j]]++;
-
-      while (t >= nextTOut && nextTOut <= t_end) {
-        checkCancelled();
-        data.push({ time: Math.round(nextTOut * 1e10) / 1e10, ...evaluateObservablesFast(state) });
-        // Also record species concentrations for SSA
-        const speciesPointLoop: Record<string, number> = { time: Math.round(nextTOut * 1e10) / 1e10 };
-        for (let k = 0; k < numSpecies; k++) speciesPointLoop[speciesHeaders[k]] = state[k];
-        speciesData.push(speciesPointLoop);
-        nextTOut += dtOut;
+      // Fill remaining output steps to phase end
+      while (nextTOut <= phaseTEnd + 1e-12) {
+        if (recordThisPhase) {
+          const outT = toBngGridTime(globalTime, phaseTEnd, phaseNSteps, nextOutIdx);
+          const obsValues = evaluateObservablesFast(state);
+          data.push({ time: outT, ...obsValues, ...evaluateFunctionsForOutput(obsValues) });
+          const speciesPointFinal: Record<string, number> = { time: outT };
+          for (let k = 0; k < numSpecies; k++) speciesPointFinal[speciesHeaders[k]] = state[k];
+          speciesData.push(speciesPointFinal);
+        }
+        nextOutIdx += 1;
+        nextTOut = (phaseTEnd * nextOutIdx) / phaseNSteps;
       }
-    }
 
-    // Fill remaining steps
-    while (nextTOut <= t_end) {
-      data.push({ time: Math.round(nextTOut * 1e10) / 1e10, ...evaluateObservablesFast(state) });
-      // Also record species concentrations for SSA
-      const speciesPointFinal: Record<string, number> = { time: Math.round(nextTOut * 1e10) / 1e10 };
-      for (let k = 0; k < numSpecies; k++) speciesPointFinal[speciesHeaders[k]] = state[k];
-      speciesData.push(speciesPointFinal);
-      nextTOut += dtOut;
+      globalTime += phaseTEnd;
     }
 
     return { headers, data, speciesHeaders, speciesData, expandedReactions: model.reactions, expandedSpecies: model.species } satisfies SimulationResults;
   }
 
-  if (method === 'ode') {
+  {
     // Import ODESolver dynamically to avoid circular dependency
     const { createSolver } = await import('./ODESolver');
 
@@ -1051,7 +1328,7 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
 
       for (let i = 0; i < concreteReactions.length; i++) {
         const rxn = concreteReactions[i];
-        let term = `${rxn.rateConstant}`;
+        let term = `${rxn.rateConstant * rxn.propensityFactor}`;
         for (let j = 0; j < rxn.reactants.length; j++) {
           term += ` * y[${rxn.reactants[j]}]`;
         }
@@ -1080,7 +1357,7 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
           dydt.fill(0);
           for (let i = 0; i < concreteReactions.length; i++) {
             const rxn = concreteReactions[i];
-            let velocity = rxn.rateConstant;
+            let velocity = rxn.rateConstant * rxn.propensityFactor;
             for (let j = 0; j < rxn.reactants.length; j++) {
               velocity *= yIn[rxn.reactants[j]];
             }
@@ -1095,7 +1372,7 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
         dydt.fill(0);
         for (let i = 0; i < concreteReactions.length; i++) {
           const rxn = concreteReactions[i];
-          let velocity = rxn.rateConstant;
+          let velocity = rxn.rateConstant * rxn.propensityFactor;
           for (let j = 0; j < rxn.reactants.length; j++) {
             velocity *= yIn[rxn.reactants[j]];
           }
@@ -1148,7 +1425,7 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
           }
 
           // Compute velocity = k * [R1] * [R2] * ...
-          let velocity = k;
+          let velocity = k * rxn.propensityFactor;
           for (let j = 0; j < rxn.reactants.length; j++) {
             velocity *= yIn[rxn.reactants[j]];
           }
@@ -1189,15 +1466,16 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
     console.log(`[Worker] Rate ratio: ${rateRatio.toExponential(2)} (max=${maxRate.toExponential(2)}, min=${minRate.toExponential(2)})`);
 
     if (solverType === 'auto') {
-      if (isExtremelyStiff) {
-        // Use sparse_implicit for extremely stiff systems (like Barua models)
-        solverType = 'sparse_implicit';
-        console.log(`[Worker] Using ${solverType} solver for ${numSpecies} species - extremely stiff (rate ratio=${rateRatio.toExponential(2)})`);
-      } else {
-        // Use analytical Jacobian when all reactions are mass-action (no observable-dependent rates)
-        solverType = allMassAction ? 'cvode_jac' : 'cvode';
-        console.log(`[Worker] Using ${solverType} solver for ${numSpecies} species (allMassAction=${allMassAction})`);
-      }
+      // Default to CVODE (BNG2 behavior). Some models can have huge rate ratios but still
+      // integrate fine with CVODE; switching to the Rosenbrock-based sparse_implicit path
+      // can fail immediately at t=0 (e.g. Repressilator).
+      //
+      // Users can still explicitly select `sparse_implicit` from the UI when desired.
+      solverType = allMassAction ? 'cvode_jac' : 'cvode';
+      console.log(
+        `[Worker] Using ${solverType} solver for ${numSpecies} species ` +
+        `(allMassAction=${allMassAction}${isExtremelyStiff ? `, extremelyStiff(rate ratio=${rateRatio.toExponential(2)})` : ''})`
+      );
     }
 
     // ==== WebGPU Integration Path ====
@@ -1428,12 +1706,21 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
 
     // State vector for simulation - preserved across phases
     let y = new Float64Array(state);
-    let globalTime = 0; // Cumulative time across all phases
+    // Track BNG model time (absolute t_start/t_end). Note: `continue=>0` resets time but not concentrations.
+    let modelTime = 0;
+
+    // Per-simulation early-stop flag (steady state or recoverable solver error)
+    let shouldStop = false;
 
     // Multi-phase simulation loop
     for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx++) {
       const phase = phases[phaseIdx];
       const isLastPhase = phaseIdx === phases.length - 1;
+      const recordThisPhase = phaseIdx >= recordFromPhaseIdx;
+      const shouldEmitPhaseStart = recordThisPhase && (phaseIdx === recordFromPhaseIdx || !(phase.continue_from_previous ?? false));
+
+      // Reset per-phase early-stop state
+      shouldStop = false;
 
       if (hasMultiPhase) {
         console.log(`[Worker] Starting phase ${phaseIdx + 1}/${phases.length}: t_end=${phase.t_end}, n_steps=${phase.n_steps}`);
@@ -1448,22 +1735,68 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
           if (typeof change.value === 'number') {
             resolvedValue = change.value;
           } else {
-            // Look up parameter value
+            // Try to look up as parameter name first
             const paramValue = model.parameters?.[change.value];
-            resolvedValue = typeof paramValue === 'number' ? paramValue : parseFloat(String(paramValue)) || 0;
+            if (typeof paramValue === 'number') {
+              resolvedValue = paramValue;
+            } else {
+              // Try to evaluate as expression (e.g., "1*1", "10*60")
+              try {
+                let expr = change.value;
+                // Substitute parameter names in the expression
+                for (const [pName, pVal] of Object.entries(model.parameters || {})) {
+                  expr = expr.replace(new RegExp(`\\b${pName}\\b`, 'g'), String(pVal));
+                }
+                expr = expr.replace(/\^/g, '**');
+                resolvedValue = new Function('return ' + expr)() as number;
+              } catch {
+                // Fall back to parseFloat
+                resolvedValue = parseFloat(String(change.value)) || 0;
+              }
+            }
           }
 
-          // Find species index using speciesMap (exact match or pattern match)
-          let speciesIdx = speciesMap.get(change.species);
+          // Robust species lookup: allow labeled species names ("Label: ...") and
+          // fall back to BNGL structural pattern matching.
+          // Note: Canonical species names use @comp::Species (double colon) format,
+          // while BNGL files use @comp:Species (single colon). Normalize both.
+          const normalizeCompartmentSyntax = (s: string) => s.replace(/^@([A-Za-z0-9_]+):(?!:)/, '@$1::');
+          const wantedPattern = change.species.trim();
+          const normalizedWanted = normalizeCompartmentSyntax(wantedPattern);
+          
+          let speciesIdx = speciesMap.get(normalizedWanted);
+          if (speciesIdx === undefined) {
+            // Also try original pattern in case speciesMap uses single-colon syntax
+            speciesIdx = speciesMap.get(wantedPattern);
+          }
+          const normalizeSpeciesName = (name: string) => name.trim().replace(/^[^:]+:\s*/, '');
 
-          // If not found directly, try to find a matching species
           if (speciesIdx === undefined) {
             for (const [speciesName, idx] of speciesMap.entries()) {
-              // Try prefix match or contains match
-              if (speciesName.startsWith(change.species.split('(')[0] + '(')) {
+              if (normalizeSpeciesName(speciesName) === normalizedWanted) {
                 speciesIdx = idx;
                 break;
               }
+            }
+          }
+
+          if (speciesIdx === undefined) {
+            const matches: number[] = [];
+            for (const [speciesName, idx] of speciesMap.entries()) {
+              const normalized = normalizeSpeciesName(speciesName);
+              if (isSpeciesMatch(normalized, normalizedWanted)) {
+                matches.push(idx);
+              }
+            }
+
+            if (matches.length === 1) {
+              speciesIdx = matches[0];
+            } else if (matches.length > 1) {
+              matches.sort((a, b) => a - b);
+              console.warn(
+                `[Worker] Phase ${phaseIdx}: setConcentration("${change.species}") matched ${matches.length} species; applying to the first match (species index ${matches[0]}).`
+              );
+              speciesIdx = matches[0];
             }
           }
 
@@ -1549,7 +1882,117 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
         }
       }
 
-      // Create solver with phase-specific tolerances
+      const phase_t_end = phase.t_end;
+      const phase_n_steps = phase.n_steps;
+
+      const phaseStart = phase.t_start !== undefined
+        ? phase.t_start
+        : ((phase.continue_from_previous ?? false) ? modelTime : 0);
+
+      if ((phase.continue_from_previous ?? false) && Math.abs(phaseStart - modelTime) > 1e-9) {
+        throw new Error(`t_start (${phaseStart}) must equal current model time (${modelTime}) for continuation`);
+      }
+
+      const phaseDuration = phase_t_end - phaseStart;
+      if (!(phaseDuration > 0)) {
+        throw new Error(`t_end (${phase_t_end}) must be greater than t_start (${phaseStart})`);
+      }
+
+      // Allow SSA phases to run inline in an otherwise ODE/mixed plan.
+      if (phase.method === 'ssa') {
+        if (functionalRateCount > 0) {
+          console.warn('[Worker] SSA phase encountered but functional rates were detected; SSA will ignore rate expressions and may be inaccurate.');
+        }
+
+        // Round state for SSA
+        for (let i = 0; i < numSpecies; i++) y[i] = Math.round(y[i]);
+
+        let t = 0;
+        let nextOutIdx = 1;
+        let nextTOut = (phaseDuration * nextOutIdx) / phase_n_steps;
+
+        if (shouldEmitPhaseStart) {
+          const outT0 = toBngGridTime(phaseStart, phaseDuration, phase_n_steps, 0);
+          const obsValues = evaluateObservablesFast(y);
+          data.push({ time: outT0, ...obsValues, ...evaluateFunctionsForOutput(obsValues) });
+          const s0: Record<string, number> = { time: outT0 };
+          for (let i = 0; i < numSpecies; i++) s0[speciesHeaders[i]] = y[i];
+          speciesData.push(s0);
+        }
+
+        while (t < phaseDuration) {
+          checkCancelled();
+
+          let aTotal = 0;
+          const propensities = new Float64Array(concreteReactions.length);
+          for (let i = 0; i < concreteReactions.length; i++) {
+            const rxn = concreteReactions[i];
+            let a = rxn.rateConstant;
+            for (let j = 0; j < rxn.reactants.length; j++) {
+              a *= y[rxn.reactants[j]];
+            }
+            propensities[i] = a;
+            aTotal += a;
+          }
+
+          if (aTotal === 0) break;
+
+          const r1 = Math.random();
+          const tau = (1 / aTotal) * Math.log(1 / r1);
+          if (t + tau > phaseDuration) {
+            t = phaseDuration;
+            break;
+          }
+          t += tau;
+
+          const r2 = Math.random() * aTotal;
+          let sumA = 0;
+          let reactionIndex = propensities.length - 1;
+          for (let i = 0; i < propensities.length; i++) {
+            sumA += propensities[i];
+            if (r2 <= sumA) {
+              reactionIndex = i;
+              break;
+            }
+          }
+
+          const firedRxn = concreteReactions[reactionIndex];
+          for (let j = 0; j < firedRxn.reactants.length; j++) y[firedRxn.reactants[j]]--;
+          for (let j = 0; j < firedRxn.products.length; j++) y[firedRxn.products[j]]++;
+
+          while (t >= nextTOut && nextTOut <= phaseDuration) {
+            checkCancelled();
+            if (recordThisPhase) {
+              const outT = toBngGridTime(phaseStart, phaseDuration, phase_n_steps, nextOutIdx);
+              const obsValues = evaluateObservablesFast(y);
+              data.push({ time: outT, ...obsValues, ...evaluateFunctionsForOutput(obsValues) });
+              const sp: Record<string, number> = { time: outT };
+              for (let k = 0; k < numSpecies; k++) sp[speciesHeaders[k]] = y[k];
+              speciesData.push(sp);
+            }
+            nextOutIdx += 1;
+            nextTOut = (phaseDuration * nextOutIdx) / phase_n_steps;
+          }
+        }
+
+        while (nextTOut <= phaseDuration + 1e-12) {
+          if (recordThisPhase) {
+            const outT = toBngGridTime(phaseStart, phaseDuration, phase_n_steps, nextOutIdx);
+            const obsValues = evaluateObservablesFast(y);
+            data.push({ time: outT, ...obsValues, ...evaluateFunctionsForOutput(obsValues) });
+            const sp: Record<string, number> = { time: outT };
+            for (let k = 0; k < numSpecies; k++) sp[speciesHeaders[k]] = y[k];
+            speciesData.push(sp);
+          }
+          nextOutIdx += 1;
+          nextTOut = (phaseDuration * nextOutIdx) / phase_n_steps;
+        }
+
+        modelTime = phase_t_end;
+        continue;
+      }
+
+      // ODE phase: Create solver with phase-specific tolerances
       const phaseAtol = phase.atol ?? userAtol;
       const phaseRtol = phase.rtol ?? userRtol;
       const phaseSolverOptions = {
@@ -1559,127 +2002,122 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
       };
 
       const solver = await createSolver(numSpecies, derivatives, phaseSolverOptions);
-
-      const phase_t_end = phase.t_end;
-      const phase_n_steps = phase.n_steps;
-      const dtOut = phase_t_end / phase_n_steps;
       let t = 0;
 
-      // Only add initial point for the final phase (or single phase)
-      if (isLastPhase) {
-        data.push({ time: globalTime + t, ...evaluateObservablesFast(y) });
-        const odeSpeciesPoint0: Record<string, number> = { time: globalTime + t };
+      // BNG2 steady_state behavior (Network3):
+      // - check steady state at each output step
+      // - compute dx = ||dydt||_2 / dim(x)
+      // - stop immediately when dx < atol (rtol is not used for this criterion)
+      const steadyStateEnabled = (phase.steady_state ?? !!options.steadyState) === true;
+      const steadyStateAtol = phase.atol ?? 1e-8;
+      const steadyStateDerivs = steadyStateEnabled ? new Float64Array(numSpecies) : null;
+
+      // Only add initial point for the first recorded phase (avoid duplicate boundary points for continuation phases)
+      if (shouldEmitPhaseStart) {
+        const outT0 = toBngGridTime(phaseStart, phaseDuration, phase_n_steps, 0);
+        const obsValues = evaluateObservablesFast(y);
+        data.push({ time: outT0, ...obsValues, ...evaluateFunctionsForOutput(obsValues) });
+        const odeSpeciesPoint0: Record<string, number> = { time: outT0 };
         for (let i = 0; i < numSpecies; i++) odeSpeciesPoint0[speciesHeaders[i]] = y[i];
         speciesData.push(odeSpeciesPoint0);
       }
+      try {
+        // Integration loop for this phase
+        for (let i = 1; i <= phase_n_steps && !shouldStop; i += 1) {
+          checkCancelled();
+          const tTarget = (phaseDuration * i) / phase_n_steps;
 
-      // Steady state detection
-      const tolerance = options.steadyStateTolerance ?? 1e-6;
-      const window = options.steadyStateWindow ?? 5;
-      const enforceSteadyState = phase.steady_state ?? !!options.steadyState;
-      let consecutiveStable = 0;
-      let shouldStop = false;
-      let prevY = new Float64Array(numSpecies);
+          // Integrate from current t to tTarget using adaptive solver
+          const result = solver.integrate(y, t, tTarget, checkCancelled);
 
-      // DEBUG: Check derivatives at phase start
-      const dydt = new Float64Array(numSpecies);
-      derivatives(y, dydt);
-      let maxDeriv = 0;
-      for (let i = 0; i < numSpecies; i++) maxDeriv = Math.max(maxDeriv, Math.abs(dydt[i]));
-      console.log(`[Worker] Phase ${phaseIdx}: Max derivative at t=0: ${maxDeriv}`);
+          if (!result.success) {
+            const errorMsg = result.errorMessage || 'Unknown error';
+            let userFriendlyMessage = errorMsg;
+            let suggestion = '';
 
-      // Integration loop for this phase
-      for (let i = 1; i <= phase_n_steps && !shouldStop; i += 1) {
-        checkCancelled();
-        const tTarget = i * dtOut;
+            if (errorMsg.includes('flag -3') || errorMsg.includes('CV_CONV_FAILURE')) {
+              userFriendlyMessage = `Simulation reached t=${t.toFixed(2)} (phase ${phaseIdx + 1}) before numerical convergence failed. ` +
+                `This model has extreme stiffness that exceeds browser-based solver limits.`;
+              suggestion = 'Try increasing tolerances (atol/rtol) in simulation settings, or use SSA method for stochastic simulation.';
+            } else if (errorMsg.includes('flag -4') || errorMsg.includes('CV_ERR_FAILURE')) {
+              userFriendlyMessage = `Simulation reached t=${t.toFixed(2)} (phase ${phaseIdx + 1}) before error tolerance was exceeded. ` +
+                `This model has very sharp transients that are difficult to track accurately.`;
+              suggestion = 'Try increasing tolerances, reducing simulation time, or using SSA method.';
+            }
 
-        // Save previous state for steady-state check
-        prevY.set(y);
+            console.warn(`[Worker] ODE solver failed at phase ${phaseIdx}, t=${t}: ${errorMsg}`);
 
-        // Integrate from current t to tTarget using adaptive solver
-        const result = solver.integrate(y, t, tTarget, checkCancelled);
-
-        if (!result.success) {
-          const errorMsg = result.errorMessage || 'Unknown error';
-          let userFriendlyMessage = errorMsg;
-          let suggestion = '';
-
-          if (errorMsg.includes('flag -3') || errorMsg.includes('CV_CONV_FAILURE')) {
-            userFriendlyMessage = `Simulation reached t=${t.toFixed(2)} (phase ${phaseIdx + 1}) before numerical convergence failed. ` +
-              `This model has extreme stiffness that exceeds browser-based solver limits.`;
-            suggestion = 'Try increasing tolerances (atol/rtol) in simulation settings, or use SSA method for stochastic simulation.';
-          } else if (errorMsg.includes('flag -4') || errorMsg.includes('CV_ERR_FAILURE')) {
-            userFriendlyMessage = `Simulation reached t=${t.toFixed(2)} (phase ${phaseIdx + 1}) before error tolerance was exceeded. ` +
-              `This model has very sharp transients that are difficult to track accurately.`;
-            suggestion = 'Try increasing tolerances, reducing simulation time, or using SSA method.';
+            if (data.length > 1 || recordThisPhase) {
+              console.warn(`[Worker] Returning ${data.length} partial time points up to t=${phaseStart + t}`);
+              postMessage({
+                type: 'progress',
+                message: `Simulation stopped at t=${(phaseStart + t).toFixed(2)} (phase ${phaseIdx + 1}, ${data.length} time points)`,
+                warning: userFriendlyMessage
+              });
+              shouldStop = true;
+              break;
+            } else {
+              throw new Error(`${userFriendlyMessage}${suggestion ? '\n\nSuggestion: ' + suggestion : ''}`);
+            }
           }
 
-          console.warn(`[Worker] ODE solver failed at phase ${phaseIdx}, t=${t}: ${errorMsg}`);
+          // Update state
+          y.set(result.y);
+          t = result.t;
 
-          if (data.length > 1 || isLastPhase) {
-            console.warn(`[Worker] Returning ${data.length} partial time points up to t=${globalTime + t}`);
-            postMessage({
-              type: 'progress',
-              message: `Simulation stopped at t=${(globalTime + t).toFixed(2)} (phase ${phaseIdx + 1}, ${data.length} time points)`,
-              warning: userFriendlyMessage
-            });
-            shouldStop = true;
-            break;
-          } else {
-            throw new Error(`${userFriendlyMessage}${suggestion ? '\n\nSuggestion: ' + suggestion : ''}`);
+          // Record data for the final output series (last phase + continuation chain)
+          if (recordThisPhase) {
+            const outT = toBngGridTime(phaseStart, phaseDuration, phase_n_steps, i);
+            const obsValues = evaluateObservablesFast(y);
+            data.push({ time: outT, ...obsValues, ...evaluateFunctionsForOutput(obsValues) });
+            const speciesPoint: Record<string, number> = { time: outT };
+            for (let k = 0; k < numSpecies; k++) {
+              speciesPoint[speciesHeaders[k]] = y[k];
+            }
+            speciesData.push(speciesPoint);
           }
-        }
 
-        // Update state
-        y.set(result.y);
-        t = result.t;
-
-        // Check steady state (applies per phase if phase.steady_state is set)
-        if (enforceSteadyState) {
-          let maxDelta = 0;
-          for (let k = 0; k < numSpecies; k++) {
-            const d = Math.abs(y[k] - prevY[k]);
-            if (d > maxDelta) maxDelta = d;
-          }
-          if (maxDelta <= tolerance) {
-            consecutiveStable++;
-            if (consecutiveStable >= window) {
-              console.log(`[Worker] Phase ${phaseIdx}: Steady state reached at t=${t}`);
+          // BNG2 checks for steady state after printing the current output step.
+          if (steadyStateEnabled) {
+            derivatives(y, steadyStateDerivs!);
+            let sumSq = 0;
+            for (let k = 0; k < steadyStateDerivs!.length; k++) {
+              const v = steadyStateDerivs![k];
+              sumSq += v * v;
+            }
+            const dx = Math.sqrt(sumSq) / steadyStateDerivs!.length;
+            if (dx < steadyStateAtol) {
+              console.log(`[Worker] Phase ${phaseIdx}: Steady state reached at t=${phaseStart + tTarget} (dx=${dx})`);
               shouldStop = true;
             }
-          } else {
-            consecutiveStable = 0;
+          }
+
+          // Progress update for long-running phases
+          if (i % Math.ceil(phase_n_steps / 10) === 0) {
+            const phaseProgress = (i / phase_n_steps) * 100;
+            const overallProgress = hasMultiPhase
+              ? ((phaseIdx + phaseProgress / 100) / phases.length) * 100
+              : phaseProgress;
+            postMessage({
+              type: 'progress',
+              message: hasMultiPhase
+                ? `Phase ${phaseIdx + 1}/${phases.length}: ${phaseProgress.toFixed(0)}%`
+                : `Simulating: ${phaseProgress.toFixed(0)}%`,
+              simulationProgress: overallProgress
+            });
           }
         }
-
-        // Only record data from the final phase
-        if (isLastPhase) {
-          data.push({ time: Math.round((globalTime + t) * 1e10) / 1e10, ...evaluateObservablesFast(y) });
-          const speciesPoint: Record<string, number> = { time: Math.round((globalTime + t) * 1e10) / 1e10 };
-          for (let k = 0; k < numSpecies; k++) {
-            speciesPoint[speciesHeaders[k]] = y[k];
-          }
-          speciesData.push(speciesPoint);
-        }
-
-        // Progress update for long-running phases
-        if (i % Math.ceil(phase_n_steps / 10) === 0) {
-          const phaseProgress = (i / phase_n_steps) * 100;
-          const overallProgress = hasMultiPhase
-            ? ((phaseIdx + phaseProgress / 100) / phases.length) * 100
-            : phaseProgress;
-          postMessage({
-            type: 'progress',
-            message: hasMultiPhase
-              ? `Phase ${phaseIdx + 1}/${phases.length}: ${phaseProgress.toFixed(0)}%`
-              : `Simulating: ${phaseProgress.toFixed(0)}%`,
-            simulationProgress: overallProgress
-          });
+      } finally {
+        // Free solver resources (important for CVODE WASM).
+        try {
+          (solver as any)?.destroy?.();
+        } catch {
+          // ignore
         }
       }
 
-      // Update global time after this phase
-      globalTime += t;
+      // Update model time after this phase
+      modelTime = phaseStart + t;
 
       // For non-final phases: only break entirely on solver ERROR, not steady state.
       // Steady state in equilibration phases is expected and should proceed to next phase.
@@ -1706,7 +2144,7 @@ async function simulate(jobId: number, inputModel: BNGLModel, options: Simulatio
   }
 
 
-  throw new Error(`Unsupported simulation method: ${method}`);
+  throw new Error(`Unsupported simulation method: ${String(options.method)}`);
 }
 
 ctx.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
@@ -1759,7 +2197,7 @@ ctx.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
 
         // Backwards-compatible: payload can be { model, options } or { modelId, parameterOverrides?, options }
         const p = payload as any;
-        let model: BNGLModel | undefined = undefined;
+        let model: BNGLModel | undefined;
         const options: SimulationOptions | undefined = p.options;
 
         if (p.model) {
@@ -1767,9 +2205,8 @@ ctx.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
         } else if (typeof p.modelId === 'number') {
           const cached = cachedModels.get(p.modelId);
           if (!cached) throw new Error('Cached model not found in worker');
-          // mark as recently used
           touchCachedModel(p.modelId);
-          // If there are parameter overrides, create a shallow copy and update rate constants
+
           if (!p.parameterOverrides || Object.keys(p.parameterOverrides).length === 0) {
             model = cached;
           } else {
@@ -1780,7 +2217,6 @@ ctx.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
               reactions: [],
             } as BNGLModel;
 
-            // Update reaction rate constants using new parameters
             (cached.reactions || []).forEach((r) => {
               const rateConst = nextModel.parameters[r.rate] ?? parseFloat(r.rate as unknown as string);
               nextModel.reactions.push({ ...r, rateConstant: rateConst });
@@ -1822,6 +2258,11 @@ ctx.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
         observables: (model.observables || []).map((o) => ({ ...o })),
         reactions: (model.reactions || []).map((r) => ({ ...r })),
         reactionRules: (model.reactionRules || []).map((r) => ({ ...r })),
+        // Preserve action-derived simulation metadata for parity and for simulateCached callers
+        simulationOptions: model.simulationOptions ? { ...(model.simulationOptions as any) } : model.simulationOptions,
+        simulationPhases: (model.simulationPhases || []).map((p: any) => ({ ...p })),
+        concentrationChanges: (model.concentrationChanges || []).map((c: any) => ({ ...c })),
+        parameterChanges: (model.parameterChanges || []).map((c: any) => ({ ...c })),
       };
       cachedModels.set(modelId, stored);
       // Enforce LRU eviction if we exceed the cache size

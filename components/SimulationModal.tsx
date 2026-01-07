@@ -95,7 +95,7 @@ export function SimulationModal({
         {/* Info Message */}
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 text-center">
           {isSimulating
-            ? 'Running ODE simulation...'
+            ? 'Running simulation...'
             : 'Network size depends on model complexity'}
         </p>
 

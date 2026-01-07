@@ -140,7 +140,7 @@
   },
   {
     "modelName": "beta-adrenergic-response",
-    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\gdat_comparison_output\\beta-adrenergic-response_bng2.gdat",
+    "bng2GdatPath": "C:\\Users\\Achyudhan\\OneDrive - University of Pittsburgh\\Desktop\\Achyudhan\\School\\PhD\\Research\\BioNetGen\\bionetgen-web-simulator\\beta-adrenergic-response.gdat",
     "bng2Headers": [
       "time",
       "Active_BetaR",

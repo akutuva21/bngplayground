@@ -81,12 +81,19 @@ export class BNGLParser {
 
     for (const molStr of moleculeStrings) {
       const molecule = this.parseMolecule(molStr.trim());
-      // For single-molecule species without explicit molecule-level compartment,
-      // inherit the graph-level compartment. This ensures proper tracking when
-      // molecules from different compartments bind to form complexes.
-      // E.g., L(r)@EC -> L has compartment EC, so when binding R@PM,
-      // we know L came from EC and can generate correct canonical: @PM::L(r!1)@EC.R(l!1)
-      if (!molecule.compartment && globalCompartment && moleculeStrings.length === 1) {
+      // BNG2 semantics for graph-level compartment prefix (e.g., @CYT:A(b!1).B(a!1)):
+      // - When a graph-level compartment is specified, ALL molecules in the pattern
+      //   that don't have their own explicit compartment annotation inherit it.
+      // - This is different from molecule-level suffix (e.g., A(b!1)@CYT.B(a!1))
+      //   which only applies to that specific molecule.
+      // 
+      // Example patterns:
+      //   @O1V:A(t,b!1).B(a!1)  -> Both A and B are in O1V
+      //   A(t,b!1)@O1V.B(a!1)   -> Only A is in O1V, B has no compartment constraint
+      //
+      // This ensures rules like "@O1V:A(t,b!1).B(a!1) + T1(a)" only match
+      // A.B complexes that are actually in O1V, not in other compartments like CYT.
+      if (!molecule.compartment && globalCompartment) {
         molecule.compartment = globalCompartment;
       }
       graph.molecules.push(molecule);
@@ -133,7 +140,9 @@ export class BNGLParser {
     let compartment: string | undefined;
     let cleanStr = molStr;
 
-    const prefixMatch = molStr.match(/^@([A-Za-z0-9_]+):(.+)$/);
+    // Support both single colon (Web) and double colon (BNG2/canonical) separators
+    // e.g. @cell:Mol(...) or @cell::Mol(...)
+    const prefixMatch = molStr.match(/^@([A-Za-z0-9_]+)::?(.+)$/);
     if (prefixMatch) {
       compartment = prefixMatch[1];
       cleanStr = prefixMatch[2];

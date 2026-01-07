@@ -23,6 +23,7 @@ import { State_nameContext } from "./BNGParser";
 import { Seed_species_blockContext } from "./BNGParser";
 import { Seed_species_defContext } from "./BNGParser";
 import { Species_defContext } from "./BNGParser";
+import { Molecule_compartmentContext } from "./BNGParser";
 import { Molecule_patternContext } from "./BNGParser";
 import { Molecule_tagContext } from "./BNGParser";
 import { Component_pattern_listContext } from "./BNGParser";
@@ -234,6 +235,13 @@ export interface BNGParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitSpecies_def?: (ctx: Species_defContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `BNGParser.molecule_compartment`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitMolecule_compartment?: (ctx: Molecule_compartmentContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `BNGParser.molecule_pattern`.

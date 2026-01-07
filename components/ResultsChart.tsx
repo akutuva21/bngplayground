@@ -93,22 +93,11 @@ const CustomLegend = (props: any) => {
 };
 
 // Helper: Export chart data as CSV
+import { downloadCsv } from '../src/utils/download';
+
 function exportAsCSV(data: Record<string, any>[], headers: string[]) {
-  if (!data || data.length === 0) return;
-
-  const csvHeaders = ['time', ...headers.filter(h => h !== 'time')];
-  const csvRows = data.map(row =>
-    csvHeaders.map(h => row[h] ?? '').join(',')
-  );
-  const csv = [csvHeaders.join(','), ...csvRows].join('\n');
-
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `simulation_results_${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const filename = `simulation_results_${new Date().toISOString().slice(0, 10)}.csv`;
+  downloadCsv(data, headers, filename);
 }
 
 // Helper: Export chart data as GDAT (BioNetGen format - observables)

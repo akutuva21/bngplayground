@@ -190,7 +190,7 @@ export const INITIAL_BNGL_CODE = ABTutorial;
 // 1. Use NFsim (network-free simulation) - not supported in browser
 // 2. Use deprecated/non-standard syntax
 // 3. Have missing dependencies or other BNG2.pl errors
-const BNG2_COMPATIBLE_MODELS = new Set([
+export const BNG2_COMPATIBLE_MODELS = new Set([
   // ========================================================
   // Models verified to pass BOTH BNG2.pl AND ANTLR parser
   // Last updated: 2024-12-21 from published_benchmark.test.ts
@@ -324,10 +324,146 @@ const BNG2_COMPATIBLE_MODELS = new Set([
 //   'polymer_draft',
 // // ]);
 
-// Helper to filter models to only BNG2.pl compatible ones
-// Excludes models using simulate_nf (network-free simulation) which is not supported
+// Helper to filter models to only those supported by the web simulator UI.
+// For now we only expose models that include an explicit ODE `simulate(...)` action.
+// This excludes NF-only models (method=>"nf"), models that only emit XML (writeXML + RNF protocol),
+// and workflows like bifurcate() that don't produce a timecourse via simulate().
+const ODE_SIMULATE_ACTION_RE = /\b(?:simulate\s*\(\s*\{[^}]*\bmethod\s*=>\s*"ode"[^}]*\}\s*\)|simulate_ode\s*\()\s*/i;
+
+const stripBnglCommentLines = (code: string): string => code.replace(/^\s*#.*$/gm, '');
+
+// For published models, only expose ones that:
+// 1) contain an explicit ODE simulate() action, and
+// 2) we have verified can run in BNG2.pl and produce outputs (.net + .gdat/.cdat).
+// This avoids showing published models that parse in our UI but fail/abort in canonical BNG2.
+// =============================
+// WEBSITE VISIBILITY GATE
+// =============================
+// The Example Gallery / model picker must ONLY show models that satisfy BOTH:
+//
+// (A) Canonical BNG2.pl compatibility ("BNG2 published")
+//     - The BNGL file must run successfully in canonical BioNetGen (BNG2.pl)
+//     - Verified by running: scripts/verify_published_models_with_bng2.cjs
+//       with VERIFY_MODE=parse (i.e., exit status == 0; output files are NOT required).
+//     - Source of truth: temp_bng_output/bng2_verify_published_report.json
+//       (filter results where status == "PASS").
+//
+// (B) Deterministic ODE timecourse eligibility ("ODE verified")
+//     - The BNGL text must contain an *active* (uncommented) ODE simulate action:
+//         simulate({ method => "ode", ... })  OR  simulate_ode(...)
+//     - NF-only (simulate_nf / method=>"nf"), writeXML-only, bifurcate-only, etc. do NOT qualify.
+//
+// This set is the intersection: PASS(parse) ∩ HasActiveOdeSimulate.
+// It is intentionally a hard allowlist so website contents remain stable/reproducible.
+// Last regenerated on 2026-01-04 (count=92) from the verifier report above.
+// Note: A separate "web batch run" (e.g., web_output/*.csv) is useful for parity checks,
+// but is NOT used for website visibility gating.
+const BNG2_PARSE_AND_ODE_VERIFIED_MODELS = new Set([
+  'AB',
+  'ABC',
+  'ABp',
+  'ABp_approx',
+  'akt-signaling',
+  'allosteric-activation',
+  'An_2009',
+  'apoptosis-cascade',
+  'auto-activation-loop',
+  'BAB',
+  'BAB_coop',
+  'Barua_2007',
+  'Barua_2009',
+  'Barua_2013',
+  'beta-adrenergic-response',
+  'birth-death',
+  'bistable-toggle-switch',
+  'Blinov_2006',
+  'blood-coagulation-thrombin',
+  'brusselator-oscillator',
+  'calcium-spike-signaling',
+  'cBNGL_simple',
+  'cell-cycle-checkpoint',
+  'Cheemalavagu_JAK_STAT',
+  'chemotaxis-signal-transduction',
+  'circadian-oscillator',
+  'competitive-enzyme-inhibition',
+  'complement-activation-cascade',
+  'cooperative-binding',
+  'dna-damage-repair',
+  'dual-site-phosphorylation',
+  'egfr_simple',
+  'egfr-signaling-pathway',
+  'er-stress-response',
+  'FceRI_ji',
+  'FceRI_viz',
+  'gene-expression-toggle',
+  'GK',
+  'glycolysis-branch-point',
+  'Hat_2016',
+  'hematopoietic-growth-factor',
+  'hypoxia-response-signaling',
+  'immune-synapse-formation',
+  'inflammasome-activation',
+  'innate_immunity',
+  'insulin-glucose-homeostasis',
+  'interferon-signaling',
+  'jak-stat-cytokine-signaling',
+  'Jaruszewicz-Blonska_2023',
+  'lac-operon-regulation',
+  'Lang_2024',
+  'lipid-mediated-pip3-signaling',
+  'Lisman',
+  'LR',
+  'LR_comp',
+  'LRR_comp',
+  'LV',
+  'mapk-signaling-cascade',
+  'michaelis-menten-kinetics',
+  'mtor-signaling',
+  'myogenic-differentiation',
+  'negative-feedback-loop',
+  'neurotransmitter-release',
+  'nfkb-feedback',
+  'notch-delta-lateral-inhibition',
+  'organelle_transport',
+  'organelle_transport_struct',
+  'oxidative-stress-response',
+  'p53-mdm2-oscillator',
+  'Pekalski_2013',
+  'phosphorelay-chain',
+  'platelet-activation',
+  'predator-prey-dynamics',
+  'quorum-sensing-circuit',
+  'rab-gtpase-cycle',
+  'Repressilator',
+  'repressilator-oscillator',
+  'retinoic-acid-signaling',
+  'signal-amplification-cascade',
+  'simple-dimerization',
+  'SIR',
+  'sir-epidemic-model',
+  'smad-tgf-beta-signaling',
+  'stress-response-adaptation',
+  'synaptic-plasticity-ltp',
+  't-cell-activation',
+  'tnf-induced-apoptosis',
+  'two-component-system',
+  'vegf-angiogenesis',
+  'viral-sensing-innate-immunity',
+  'wnt-beta-catenin-signaling',
+  'wound-healing-pdgf-signaling',
+]);
+
+// Known BNG2.pl failures (explicitly excluded from the website).
+const BNG2_EXCLUDED_MODELS = new Set(['Erdem_2021', 'Faeder_2003', 'fceri_2003']);
+
 const filterCompatibleModels = (models: Example[]): Example[] =>
-  models.filter(m => BNG2_COMPATIBLE_MODELS.has(m.id) && !m.code.includes('simulate_nf'));
+  models.filter((m) => {
+    if (BNG2_EXCLUDED_MODELS.has(m.id)) return false;
+    if (!ODE_SIMULATE_ACTION_RE.test(stripBnglCommentLines(m.code))) return false;
+
+    // Website gallery: only show BNG2-parse-pass + active ODE timecourse models.
+    return BNG2_PARSE_AND_ODE_VERIFIED_MODELS.has(m.id);
+  });
 
 const CELL_REGULATION: Example[] = [
   {
@@ -1508,6 +1644,27 @@ export const MODEL_CATEGORIES: ModelCategory[] = RAW_MODEL_CATEGORIES
     models: filterCompatibleModels(cat.models),
   }))
   .filter(cat => cat.models.length > 0);
+
+// Tiny DEV-only debug print to verify filtering behavior in the browser console.
+// (Avoids impacting production builds.)
+if ((import.meta as any)?.env?.DEV) {
+  const rawTotal = RAW_MODEL_CATEGORIES.reduce((sum, cat) => sum + cat.models.length, 0);
+  const filteredTotal = MODEL_CATEGORIES.reduce((sum, cat) => sum + cat.models.length, 0);
+  const breakdown = MODEL_CATEGORIES.map((c) => ({ id: c.id, count: c.models.length }));
+
+  const excludedExamples: string[] = [];
+  for (const cat of RAW_MODEL_CATEGORIES) {
+    const kept = new Set(filterCompatibleModels(cat.models).map((m) => m.id));
+    for (const m of cat.models) {
+      if (!kept.has(m.id)) excludedExamples.push(m.id);
+    }
+  }
+
+  // eslint-disable-next-line no-console
+  console.log('[BNGL gallery] raw examples:', rawTotal, 'filtered:', filteredTotal, 'categories:', breakdown);
+  // eslint-disable-next-line no-console
+  console.log('[BNGL gallery] excluded example ids (first 50):', excludedExamples.slice(0, 50));
+}
 
 // Flat list of all compatible models
 export const EXAMPLES: Example[] = MODEL_CATEGORIES.flatMap(cat => cat.models);

@@ -298,8 +298,22 @@ export class GraphMatcher {
    * Check if target species matches the pattern (has at least one valid mapping)
    */
   static matchesPattern(pattern: SpeciesGraph, target: SpeciesGraph): boolean {
-    const maps = this.findAllMaps(pattern, target);
-    return maps.length > 0;
+    return this.findFirstMap(pattern, target) !== null;
+  }
+
+  /**
+   * Find the first valid embedding of `pattern` in `target`, or null.
+   * This is a performance-friendly alternative to `findAllMaps` for boolean checks.
+   */
+  static findFirstMap(pattern: SpeciesGraph, target: SpeciesGraph): MatchMap | null {
+    if (!this.canPossiblyMatch(pattern, target)) {
+      return null;
+    }
+
+    const ordering = this.computeNodeOrdering(pattern, target);
+    const state = new VF2State(pattern, target, ordering);
+    const iterationCount = { value: 0 };
+    return this.vf2BacktrackFirst(state, iterationCount);
   }
 
   /**
@@ -312,14 +326,16 @@ export class GraphMatcher {
   ): void {
     iterationCount.value++;
     if (iterationCount.value > MAX_VF2_ITERATIONS) {
-      console.warn(
+      throw new Error(
         `[GraphMatcher] VF2 iteration limit exceeded (${MAX_VF2_ITERATIONS}). ` +
-        `Pattern may be too complex or combinatorially explosive. Returning partial results.`
+          `Pattern may be too complex or combinatorially explosive. Aborting match to avoid partial results.`
       );
-      return;
     }
     if (state.isComplete()) {
-      matches.push(state.getMatch());
+      const match = state.tryGetMatch();
+      if (match) {
+        matches.push(match);
+      }
       return;
     }
 
@@ -335,6 +351,37 @@ export class GraphMatcher {
         state.removePair(pNode, tNode);
       }
     }
+  }
+
+  /**
+   * VF2 recursive backtracking that stops after the first complete match.
+   */
+  private static vf2BacktrackFirst(state: VF2State, iterationCount: { value: number }): MatchMap | null {
+    iterationCount.value++;
+    if (iterationCount.value > MAX_VF2_ITERATIONS) {
+      throw new Error(
+        `[GraphMatcher] VF2 iteration limit exceeded (${MAX_VF2_ITERATIONS}). ` +
+          `Pattern may be too complex or combinatorially explosive. Aborting match to avoid partial results.`
+      );
+    }
+
+    if (state.isComplete()) {
+      return state.tryGetMatch();
+    }
+
+    const candidates = state.getCandidatePairs();
+    for (const [pNode, tNode] of candidates) {
+      if (state.isFeasible(pNode, tNode)) {
+        state.addPair(pNode, tNode);
+        const result = this.vf2BacktrackFirst(state, iterationCount);
+        state.removePair(pNode, tNode);
+        if (result) {
+          return result;
+        }
+      }
+    }
+
+    return null;
   }
 }
 
@@ -540,6 +587,10 @@ class VF2State {
       return false;
     }
 
+    // BioNetGen compartment matching semantics:
+    // - If pattern specifies a compartment, target must be in the same compartment
+    // - If pattern does NOT specify a compartment (undefined/null), it matches ANY compartment
+    // This allows rules like "L(r) + R(l)" to match "L(r)@EC + R(l)@PM"
     if (patternMol.compartment && patternMol.compartment !== targetMol.compartment) {
       return false;
     }
@@ -571,9 +622,16 @@ class VF2State {
    * VF2++ Algorithm 2 label consistency check. We compare the unmatched neighbourhoods (T1' and T2')
    * induced by already mapped nodes plus the candidate pair (pMol, tMol). Every label/compartment
    * requirement exposed by the pattern frontier must be satisfiable by the target frontier.
+   * 
+   * BioNetGen compartment semantics:
+   * - If pattern molecule specifies a compartment, target must be in the same compartment
+   * - If pattern molecule does NOT specify a compartment, it matches ANY compartment
    */
   private labelConsistencyCut(pMol: number, tMol: number): boolean {
+    // Pattern counts: key is either "name|compartment" or "name|*" for wildcarded compartments
     const patternCounts = new Map<string, number>();
+    // Also track name-only counts for patterns without compartment (compartment wildcards)
+    const patternNameOnlyCounts = new Map<string, number>();
 
     const addPatternNeighbors = (sourceIdx: number, skipCandidate: boolean) => {
       for (const neighbor of getNeighborMolecules(this.pattern, sourceIdx)) {
@@ -584,8 +642,14 @@ class VF2State {
           continue;
         }
         const mol = this.pattern.molecules[neighbor];
-        const key = mol.compartment ? `${mol.name}|${mol.compartment}` : mol.name;
-        patternCounts.set(key, (patternCounts.get(key) ?? 0) + 1);
+        if (mol.compartment) {
+          // Pattern specifies compartment - must match exactly
+          const key = `${mol.name}|${mol.compartment}`;
+          patternCounts.set(key, (patternCounts.get(key) ?? 0) + 1);
+        } else {
+          // Pattern doesn't specify compartment - track by name only (wildcard)
+          patternNameOnlyCounts.set(mol.name, (patternNameOnlyCounts.get(mol.name) ?? 0) + 1);
+        }
       }
     };
 
@@ -594,11 +658,14 @@ class VF2State {
     }
     addPatternNeighbors(pMol, false);
 
-    if (patternCounts.size === 0) {
+    if (patternCounts.size === 0 && patternNameOnlyCounts.size === 0) {
       return true;
     }
 
+    // Target counts: "name|compartment" exact match, and also name-only counts
     const targetCounts = new Map<string, number>();
+    const targetNameOnlyCounts = new Map<string, number>();
+    
     const addTargetNeighbors = (sourceIdx: number, skipCandidate: boolean) => {
       for (const neighbor of getNeighborMolecules(this.target, sourceIdx)) {
         if (this.coreTarget.has(neighbor)) {
@@ -608,13 +675,10 @@ class VF2State {
           continue;
         }
         const mol = this.target.molecules[neighbor];
-        // Always count the base name for patterns without compartment constraints
-        targetCounts.set(mol.name, (targetCounts.get(mol.name) ?? 0) + 1);
-        // Also count the compartmented key if molecule has a compartment
-        if (mol.compartment) {
-          const specificKey = `${mol.name}|${mol.compartment}`;
-          targetCounts.set(specificKey, (targetCounts.get(specificKey) ?? 0) + 1);
-        }
+        const key = `${mol.name}|${mol.compartment ?? ''}`;
+        targetCounts.set(key, (targetCounts.get(key) ?? 0) + 1);
+        // Also count by name only for wildcard matching
+        targetNameOnlyCounts.set(mol.name, (targetNameOnlyCounts.get(mol.name) ?? 0) + 1);
       }
     };
 
@@ -623,8 +687,16 @@ class VF2State {
     }
     addTargetNeighbors(tMol, false);
 
+    // Check exact compartment requirements
     for (const [labelKey, required] of patternCounts.entries()) {
       if ((targetCounts.get(labelKey) ?? 0) < required) {
+        return false;
+      }
+    }
+    
+    // Check compartment wildcard requirements (pattern without compartment matches any)
+    for (const [name, required] of patternNameOnlyCounts.entries()) {
+      if ((targetNameOnlyCounts.get(name) ?? 0) < required) {
         return false;
       }
     }
@@ -633,45 +705,56 @@ class VF2State {
   }
 
   private checkFrontierConsistency(pMol: number, tMol: number): boolean {
-    // Build pattern counts: key is name|compartment if pattern molecule has compartment, else just name
+    // Build pattern counts: separate by compartmented vs non-compartmented patterns
+    // Pattern counts for exact compartment match
     const patternCounts = new Map<string, number>();
-    const patternKeysWithoutCompartment = new Set<string>(); // Track which pattern keys have no compartment constraint
+    // Pattern counts for compartment wildcard (name only)
+    const patternNameOnlyCounts = new Map<string, number>();
+    
     for (const neighbor of getNeighborMolecules(this.pattern, pMol)) {
       if (this.corePattern.has(neighbor)) {
         continue;
       }
       const mol = this.pattern.molecules[neighbor];
-      const key = mol.compartment ? `${mol.name}|${mol.compartment}` : mol.name;
-      if (!mol.compartment) {
-        patternKeysWithoutCompartment.add(mol.name);
+      if (mol.compartment) {
+        // Pattern specifies compartment - must match exactly
+        const key = `${mol.name}|${mol.compartment}`;
+        patternCounts.set(key, (patternCounts.get(key) ?? 0) + 1);
+      } else {
+        // Pattern doesn't specify compartment - wildcard match by name
+        patternNameOnlyCounts.set(mol.name, (patternNameOnlyCounts.get(mol.name) ?? 0) + 1);
       }
-      patternCounts.set(key, (patternCounts.get(key) ?? 0) + 1);
     }
 
-    if (!patternCounts.size) {
+    if (patternCounts.size === 0 && patternNameOnlyCounts.size === 0) {
       return true;
     }
 
-    // Build target counts: for each target neighbor, increment both:
-    // 1. The specific key (name|compartment if it has one, else just name)
-    // 2. The base key (just name) if it has a compartment - so patterns without compartment constraint can match
+    // Build target counts: exact compartment and name-only
     const targetCounts = new Map<string, number>();
+    const targetNameOnlyCounts = new Map<string, number>();
+    
     for (const neighbor of getNeighborMolecules(this.target, tMol)) {
       if (this.coreTarget.has(neighbor)) {
         continue;
       }
       const mol = this.target.molecules[neighbor];
-      // Always count the base name for matching patterns without compartment constraints
-      targetCounts.set(mol.name, (targetCounts.get(mol.name) ?? 0) + 1);
-      // Also count the compartmented key if molecule has a compartment
-      if (mol.compartment) {
-        const specificKey = `${mol.name}|${mol.compartment}`;
-        targetCounts.set(specificKey, (targetCounts.get(specificKey) ?? 0) + 1);
-      }
+      const key = `${mol.name}|${mol.compartment ?? ''}`;
+      targetCounts.set(key, (targetCounts.get(key) ?? 0) + 1);
+      // Also count by name only for wildcard matching
+      targetNameOnlyCounts.set(mol.name, (targetNameOnlyCounts.get(mol.name) ?? 0) + 1);
     }
 
+    // Check exact compartment requirements
     for (const [key, required] of patternCounts.entries()) {
       if ((targetCounts.get(key) ?? 0) < required) {
+        return false;
+      }
+    }
+    
+    // Check compartment wildcard requirements (pattern without compartment matches any)
+    for (const [name, required] of patternNameOnlyCounts.entries()) {
+      if ((targetNameOnlyCounts.get(name) ?? 0) < required) {
         return false;
       }
     }
@@ -705,12 +788,28 @@ class VF2State {
     this.componentCandidateCache.clear();
   }
 
-  getMatch(): MatchMap {
+  tryGetMatch(): MatchMap | null {
+    // Component maps recorded during VF2 descent are usually correct.
+    // However, in symmetric/repeated-site cases (e.g., BAB), a molecule-level mapping can be
+    // feasible while an earlier component assignment becomes inconsistent once all molecules
+    // are mapped. Recompute only when needed.
+
     const componentMap = new Map<string, string>();
 
     for (const [pMolIdx, tMolIdx] of this.corePattern.entries()) {
-      const perMolMap = this.componentMatches.get(pMolIdx);
-      if (!perMolMap) continue;
+      const storedMap = this.componentMatches.get(pMolIdx);
+
+      let perMolMap: Map<number, number> | null = null;
+      if (storedMap && this.isStoredComponentMapConsistent(pMolIdx, tMolIdx, storedMap)) {
+        perMolMap = storedMap;
+      } else {
+        perMolMap = this.matchComponentsWithBondConsistency(pMolIdx, tMolIdx);
+      }
+
+      // If we cannot produce a bond-consistent component mapping, the molecule mapping is not a valid match.
+      if (!perMolMap) {
+        return null;
+      }
 
       for (const [pCompIdx, tCompIdx] of perMolMap.entries()) {
         componentMap.set(`${pMolIdx}.${pCompIdx}`, `${tMolIdx}.${tCompIdx}`);
@@ -721,6 +820,184 @@ class VF2State {
       moleculeMap: new Map(this.corePattern),
       componentMap
     };
+  }
+
+  private isStoredComponentMapConsistent(
+    pMolIdx: number,
+    tMolIdx: number,
+    storedMap: Map<number, number>
+  ): boolean {
+    const patternMol = this.pattern.molecules[pMolIdx];
+    const targetMol = this.target.molecules[tMolIdx];
+    if (!patternMol || !targetMol) return false;
+
+    // If the stored map is incomplete, we must recompute.
+    if (storedMap.size < patternMol.components.length) return false;
+
+    // Injective within molecule.
+    const seenTargets = new Set<number>();
+    for (const [pCompIdx, tCompIdx] of storedMap.entries()) {
+      if (seenTargets.has(tCompIdx)) return false;
+      seenTargets.add(tCompIdx);
+      const pComp = patternMol.components[pCompIdx];
+      const tComp = targetMol.components[tCompIdx];
+      if (!pComp || !tComp) return false;
+      if (!this.isComponentCompatible(pMolIdx, pCompIdx, tMolIdx, tCompIdx)) return false;
+    }
+
+    // Bond consistency across already-mapped molecules: any pattern bond to a mapped partner
+    // must correspond to a bond to the partner molecule in the target.
+    for (let pCompIdx = 0; pCompIdx < patternMol.components.length; pCompIdx++) {
+      const mappedTargetCompIdx = storedMap.get(pCompIdx);
+      if (mappedTargetCompIdx === undefined) return false;
+      const pComp = patternMol.components[pCompIdx];
+
+      for (const [bondLabel] of pComp.edges.entries()) {
+        const partner = this.getBondPartner(pMolIdx, pCompIdx, bondLabel);
+        if (!partner) continue;
+
+        // Only enforce inter-molecule bonds.
+        if (partner.molIdx === pMolIdx) continue;
+
+        const partnerMolIdx = partner.molIdx;
+        if (!this.corePattern.has(partnerMolIdx)) continue;
+
+        const targetPartnerMolIdx = this.corePattern.get(partnerMolIdx)!;
+        const partnerStoredMap = this.componentMatches.get(partnerMolIdx);
+        if (!partnerStoredMap) {
+          // Can't validate without partner's mapping.
+          return false;
+        }
+
+        const targetPartnerCompIdx = partnerStoredMap.get(partner.compIdx);
+        if (targetPartnerCompIdx === undefined) {
+          return false;
+        }
+
+        if (!this.areComponentsBonded(tMolIdx, mappedTargetCompIdx, targetPartnerMolIdx, targetPartnerCompIdx)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Recompute component assignment for a molecule pair, ensuring inter-molecule bond consistency.
+   * This uses the FULL corePattern (all molecule mappings) to constrain component choices.
+   */
+  private matchComponentsWithBondConsistency(pMolIdx: number, tMolIdx: number): Map<number, number> | null {
+    const patternMol = this.pattern.molecules[pMolIdx];
+    if (patternMol.components.length === 0) {
+      return new Map();
+    }
+
+    // Order components by priority (bound components first)
+    const order = patternMol.components
+      .map((_, idx) => idx)
+      .sort((a, b) => this.componentPriority(patternMol.components[b]) - this.componentPriority(patternMol.components[a]));
+
+    const assignment = new Map<number, number>();
+    const usedTargets = new Set<number>();
+    const iterationCount = { value: 0 };
+
+    const success = this.assignComponentsWithFullContext(
+      pMolIdx, tMolIdx, order, 0, assignment, usedTargets, iterationCount
+    );
+    return success ? assignment : null;
+  }
+
+  /**
+   * Component assignment backtracking that uses full molecule mapping context.
+   */
+  private assignComponentsWithFullContext(
+    pMolIdx: number,
+    tMolIdx: number,
+    order: number[],
+    orderIdx: number,
+    assignment: Map<number, number>,
+    usedTargets: Set<number>,
+    iterationCount: { value: number }
+  ): boolean {
+    iterationCount.value++;
+    if (iterationCount.value > MAX_COMPONENT_ITERATIONS) {
+      return false;
+    }
+
+    if (orderIdx >= order.length) {
+      return true;
+    }
+
+    const pCompIdx = order[orderIdx];
+    const candidates = this.getComponentCandidates(pMolIdx, tMolIdx, pCompIdx, usedTargets);
+
+    for (const tCompIdx of candidates) {
+      if (iterationCount.value > MAX_COMPONENT_ITERATIONS) {
+        return false;
+      }
+
+      // Check basic component compatibility (name, state, bond patterns)
+      if (!this.isComponentAssignmentValid(pMolIdx, pCompIdx, tMolIdx, tCompIdx, assignment)) {
+        continue;
+      }
+
+      // CRITICAL: Verify inter-molecule bond consistency using FULL corePattern
+      if (!this.checkInterMoleculeBondConsistency(pMolIdx, pCompIdx, tMolIdx, tCompIdx, assignment)) {
+        continue;
+      }
+
+      assignment.set(pCompIdx, tCompIdx);
+      usedTargets.add(tCompIdx);
+
+      if (this.assignComponentsWithFullContext(
+        pMolIdx, tMolIdx, order, orderIdx + 1, assignment, usedTargets, iterationCount
+      )) {
+        return true;
+      }
+
+      assignment.delete(pCompIdx);
+      usedTargets.delete(tCompIdx);
+    }
+
+    return false;
+  }
+
+  /**
+   * Check if a component assignment is consistent with inter-molecule bonds,
+   * using the FULL molecule mapping (corePattern) as context.
+   */
+  private checkInterMoleculeBondConsistency(
+    pMolIdx: number,
+    pCompIdx: number,
+    tMolIdx: number,
+    tCompIdx: number,
+    currentAssignment: Map<number, number>
+  ): boolean {
+    const pComp = this.pattern.molecules[pMolIdx].components[pCompIdx];
+
+    for (const [bondLabel] of pComp.edges.entries()) {
+      const partner = this.getBondPartner(pMolIdx, pCompIdx, bondLabel);
+      if (!partner) continue;
+
+      const partnerMolIdx = partner.molIdx;
+
+      // Only check inter-molecule bonds (partner is in a DIFFERENT molecule)
+      if (partnerMolIdx === pMolIdx) continue;
+
+      // Check if partner molecule is in corePattern (already matched)
+      if (!this.corePattern.has(partnerMolIdx)) continue;
+
+      const targetPartnerMolIdx = this.corePattern.get(partnerMolIdx)!;
+
+      // Component-level bond feasibility: pattern's (partner.molIdx, partner.compIdx) must map to
+      // some compatible component on the already-mapped target partner molecule that is bonded to (tMolIdx,tCompIdx).
+      if (!this.hasCompatibleBondedPartnerComponent(tMolIdx, tCompIdx, partner.molIdx, partner.compIdx, targetPartnerMolIdx)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private buildBondPartnerLookup(): Map<string, BondEndpoint> {
@@ -986,6 +1263,36 @@ class VF2State {
     return true;
   }
 
+  /**
+   * Check if a pattern component is compatible with a target component.
+   * Combines state compatibility and bond state compatibility checks.
+   */
+  private isComponentCompatible(
+    pMolIdx: number,
+    pCompIdx: number,
+    tMolIdx: number,
+    tCompIdx: number
+  ): boolean {
+    const patternMol = this.pattern.molecules[pMolIdx];
+    const targetMol = this.target.molecules[tMolIdx];
+    if (!patternMol || !targetMol) return false;
+
+    const pComp = patternMol.components[pCompIdx];
+    const tComp = targetMol.components[tCompIdx];
+    if (!pComp || !tComp) return false;
+
+    // Check name match
+    if (pComp.name !== tComp.name) return false;
+
+    // Check state compatibility
+    if (!this.componentStateCompatible(pComp, tComp)) return false;
+
+    // Check bond state compatibility
+    if (!this.componentBondStateCompatible(pMolIdx, pCompIdx, tMolIdx, tCompIdx)) return false;
+
+    return true;
+  }
+
   private componentStateCompatible(patternComp: Component, targetComp: Component): boolean {
     if (!patternComp.state || patternComp.state === '?') {
       return true;
@@ -1001,11 +1308,11 @@ class VF2State {
   ): boolean {
     const patternMol = this.pattern.molecules[pMolIdx];
     const targetMol = this.target.molecules[tMolIdx];
-    if (
-      patternMol.compartment &&
-      targetMol.compartment &&
-      patternMol.compartment !== targetMol.compartment
-    ) {
+
+    // BioNetGen compartment matching semantics:
+    // - If pattern specifies a compartment, target must be in the same compartment
+    // - If pattern does NOT specify a compartment (undefined/null), it matches ANY compartment
+    if (patternMol.compartment && patternMol.compartment !== targetMol.compartment) {
       return false;
     }
 
@@ -1032,16 +1339,16 @@ class VF2State {
         if (shouldLogGraphMatcher) console.log(`[GraphMatcher] Specific bond failed: P${pMolIdx}.${pCompIdx}(${pComp.name}) expects bond`);
         return false;
       }
-      return true; 
+      return true;
     } else {
-        // Pattern specifies NO edges and NO wildcard.
-        // This implies the component must be explicitly UNBOUND.
-        // STRICT CHECK:
-        if (targetBound) {
-            if (shouldLogGraphMatcher) console.log(`[GraphMatcher] Strict unbound check failed: P${pMolIdx}.${pCompIdx}(${pComp.name}) expects unbound`);
-            return false;
-        }
-        return true;
+      // Pattern specifies NO edges and NO wildcard.
+      // This implies the component must be explicitly UNBOUND.
+      // STRICT CHECK:
+      if (targetBound) {
+        if (shouldLogGraphMatcher) console.log(`[GraphMatcher] Strict unbound check failed: P${pMolIdx}.${pCompIdx}(${pComp.name}) expects unbound`);
+        return false;
+      }
+      return true;
     }
 
   }
@@ -1085,21 +1392,15 @@ class VF2State {
           }
         }
       } else if (this.corePattern.has(partnerMolIdx)) {
+        // The bond partner's molecule is already matched in corePattern.
+        // CRITICAL FIX: Instead of requiring the frozen componentMatches to satisfy the bond,
+        // we check if SOME component of the target partner molecule could satisfy this bond.
+        // This is essential for finding multiple symmetric embeddings (e.g., BAB).
         const targetPartnerMolIdx = this.corePattern.get(partnerMolIdx)!;
-        const partnerComponentMap = this.componentMatches.get(partnerMolIdx);
-        if (!partnerComponentMap) {
+
+        if (!this.hasCompatibleBondedPartnerComponent(tMolIdx, tCompIdx, partnerMolIdx, partnerCompIdx, targetPartnerMolIdx)) {
           return false;
         }
-        const targetPartnerCompIdx = partnerComponentMap.get(partnerCompIdx);
-        if (targetPartnerCompIdx === undefined) {
-          return false;
-        }
-        if (!this.areComponentsBonded(tMolIdx, tCompIdx, targetPartnerMolIdx, targetPartnerCompIdx)) {
-          return false;
-        }
-        // NOTE: Removed targetCompartmentsMatch check here.
-        // In cBNGL, molecules in ADJACENT compartments can be bonded (e.g., L@EC bound to R@PM).
-        // The pattern determines compartment constraints, not the target's actual compartments.
       } else {
         const neighborKeys = this.target.adjacency.get(this.getAdjacencyKey(tMolIdx, tCompIdx));
         if (!neighborKeys || neighborKeys.length === 0) {
@@ -1116,8 +1417,6 @@ class VF2State {
             return false;
           }
         }
-        // NOTE: Removed targetCompartmentsMatch check here.
-        // In cBNGL, molecules in ADJACENT compartments can be bonded.
       }
     }
 
@@ -1130,8 +1429,28 @@ class VF2State {
     );
   }
 
+  /**
+   * Check if a target component has any bond.
+   * Returns true if:
+   * 1. The component is in the adjacency map (fully resolved bond), OR
+   * 2. The component has unresolved/dangling bonds (edges with value -1)
+   * 
+   * This is important for matching patterns like EGFR(Y1068~P!+) against
+   * single molecules parsed from complex species strings like EGFR(CR1!3,L!1,Y1068~P!4)
+   * where the bonds are dangling (partner not present).
+   */
   private targetHasBond(tMolIdx: number, tCompIdx: number): boolean {
-    return this.target.adjacency.has(this.getAdjacencyKey(tMolIdx, tCompIdx));
+    // Check resolved bonds in adjacency map
+    if (this.target.adjacency.has(this.getAdjacencyKey(tMolIdx, tCompIdx))) {
+      return true;
+    }
+    // Also check for dangling/unresolved bonds in component.edges
+    // These have value -1 to indicate the partner wasn't found during parsing
+    const comp = this.target.molecules[tMolIdx]?.components[tCompIdx];
+    if (comp && comp.edges.size > 0) {
+      return true;
+    }
+    return false;
   }
 
   private areComponentsBonded(
@@ -1147,16 +1466,40 @@ class VF2State {
     return partnersA !== undefined && partnersA.includes(keyB);
   }
 
-  private targetCompartmentsMatch(molIdxA: number, molIdxB: number): boolean {
-    const molA = this.target.molecules[molIdxA];
-    const molB = this.target.molecules[molIdxB];
-    if (!molA || !molB) {
+  private hasCompatibleBondedPartnerComponent(
+    tMolIdx: number,
+    tCompIdx: number,
+    pPartnerMolIdx: number,
+    pPartnerCompIdx: number,
+    tPartnerMolIdx: number
+  ): boolean {
+    const partnerPatternMol = this.pattern.molecules[pPartnerMolIdx];
+    const partnerTargetMol = this.target.molecules[tPartnerMolIdx];
+    if (!partnerPatternMol || !partnerTargetMol) {
       return false;
     }
-    if (molA.compartment && molB.compartment && molA.compartment !== molB.compartment) {
+
+    // If the partner pattern molecule is compartmented, it must match exactly (already ensured at molecule feasibility).
+    const pPartnerComp = partnerPatternMol.components[pPartnerCompIdx];
+    if (!pPartnerComp) {
       return false;
     }
-    return true;
+
+    for (let tPartnerCompIdx = 0; tPartnerCompIdx < partnerTargetMol.components.length; tPartnerCompIdx++) {
+      const tPartnerComp = partnerTargetMol.components[tPartnerCompIdx];
+
+      if (tPartnerComp.name !== pPartnerComp.name) continue;
+      if (!this.componentStateCompatible(pPartnerComp, tPartnerComp)) continue;
+
+      // Apply bond wildcard/unbound semantics for the partner endpoint as well.
+      if (!this.componentBondStateCompatible(pPartnerMolIdx, pPartnerCompIdx, tPartnerMolIdx, tPartnerCompIdx)) continue;
+
+      if (this.areComponentsBonded(tMolIdx, tCompIdx, tPartnerMolIdx, tPartnerCompIdx)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private getAdjacencyKey(molIdx: number, compIdx: number): string {

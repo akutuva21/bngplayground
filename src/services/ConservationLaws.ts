@@ -156,7 +156,10 @@ export function computeLeftNullSpace(N: number[][]): number[][] {
   const rank = pivotRow;
   const nullDimension = nSpecies - rank;
 
-  console.log(`[ConservationLaws] Stoichiometric rank: ${rank}, null space dimension: ${nullDimension}`);
+  const shouldLog = process.env.CONSERVATION_LAWS_DEBUG === '1';
+  if (shouldLog) {
+    console.log(`[ConservationLaws] Stoichiometric rank: ${rank}, null space dimension: ${nullDimension}`);
+  }
 
   // Rows with all zeros in N portion are in the left null space
   // The identity portion gives us the coefficients
@@ -256,7 +259,9 @@ export function findConservationLaws(
       dependentSet.add(maxIdx);
 
       const description = `${involvedSpecies.join(' + ')} = ${total.toExponential(3)}`;
-      console.log(`[ConservationLaws] Found: ${description}`);
+      if (process.env.CONSERVATION_LAWS_DEBUG === '1') {
+        console.log(`[ConservationLaws] Found: ${description}`);
+      }
 
       laws.push({
         dependentSpecies: maxIdx,
@@ -276,7 +281,9 @@ export function findConservationLaws(
     }
   }
 
-  console.log(`[ConservationLaws] ${laws.length} conservation laws, ${independentSpecies.length} independent species`);
+  if (process.env.CONSERVATION_LAWS_DEBUG === '1') {
+    console.log(`[ConservationLaws] ${laws.length} conservation laws, ${independentSpecies.length} independent species`);
+  }
 
   return {
     laws,
@@ -314,6 +321,47 @@ export function createReducedSystem(
   const { laws, independentSpecies, dependentSpecies } = analysis;
   const reducedSize = independentSpecies.length;
 
+  const solveLinearSystem = (Ain: number[][], bin: number[]): number[] | null => {
+    const n = bin.length;
+    // Defensive copies (small systems: typically <= 50)
+    const A = Ain.map(row => row.slice());
+    const b = bin.slice();
+    const EPS = 1e-14;
+
+    for (let col = 0; col < n; col++) {
+      // Partial pivot
+      let pivotRow = col;
+      let maxAbs = Math.abs(A[col][col]);
+      for (let r = col + 1; r < n; r++) {
+        const v = Math.abs(A[r][col]);
+        if (v > maxAbs) {
+          maxAbs = v;
+          pivotRow = r;
+        }
+      }
+      if (maxAbs < EPS) return null;
+
+      if (pivotRow !== col) {
+        [A[col], A[pivotRow]] = [A[pivotRow], A[col]];
+        [b[col], b[pivotRow]] = [b[pivotRow], b[col]];
+      }
+
+      const pivot = A[col][col];
+      for (let c = col; c < n; c++) A[col][c] /= pivot;
+      b[col] /= pivot;
+
+      for (let r = 0; r < n; r++) {
+        if (r === col) continue;
+        const factor = A[r][col];
+        if (Math.abs(factor) < EPS) continue;
+        for (let c = col; c < n; c++) A[r][c] -= factor * A[col][c];
+        b[r] -= factor * b[col];
+      }
+    }
+
+    return b;
+  };
+
   // Precompute index mappings
   const fullToReduced = new Int32Array(nSpecies).fill(-1);
   for (let i = 0; i < independentSpecies.length; i++) {
@@ -326,6 +374,96 @@ export function createReducedSystem(
     const coef = law.coefficients[dep];
     return { dep, coef, law };
   });
+
+  // Precompute a coupled linear system for dependent reconstruction.
+  // Each conservation law provides one equation; we solve all dependent species together:
+  //   sum_{d in dependent} coef_d * y_d = total - sum_{i in independent} coef_i * y_i
+  const depIndex = new Map<number, number>();
+  for (let i = 0; i < dependentSpecies.length; i++) depIndex.set(dependentSpecies[i], i);
+
+  const depSystem = (() => {
+    const m = dependentSpecies.length;
+    if (m === 0) return null;
+
+    // Build constant A and coefficient lists for b (independent contributions)
+    const A: number[][] = Array.from({ length: m }, () => Array(m).fill(0));
+    const bTotals = new Float64Array(m);
+    const indepTerms: Array<Array<{ idx: number; coef: number }>> = Array.from({ length: m }, () => []);
+
+    // We expect one law per dependent species.
+    for (let row = 0; row < laws.length; row++) {
+      const law = laws[row];
+      const dep = law.dependentSpecies;
+      const rowIdx = depIndex.get(dep);
+      if (rowIdx === undefined) continue;
+
+      bTotals[rowIdx] = law.total;
+
+      // Dependent coefficients become A entries; independent coefficients contribute to b.
+      for (let j = 0; j < nSpecies; j++) {
+        const c = law.coefficients[j];
+        if (Math.abs(c) < 1e-15) continue;
+        const dj = depIndex.get(j);
+        if (dj !== undefined) {
+          A[rowIdx][dj] += c;
+        } else {
+          // Independent or otherwise not eliminated
+          indepTerms[rowIdx].push({ idx: j, coef: c });
+        }
+      }
+    }
+
+    return { A, bTotals, indepTerms, m };
+  })();
+
+  const reconstructDependentSpecies = (y: Float64Array) => {
+    if (!depSystem) {
+      // Fall back to sequential reconstruction (historical behavior)
+      for (const { dep, coef, law } of dependentCoefs) {
+        let sum = law.total;
+        for (let j = 0; j < nSpecies; j++) {
+          if (j !== dep && Math.abs(law.coefficients[j]) > 1e-15) {
+            sum -= law.coefficients[j] * y[j];
+          }
+        }
+        y[dep] = sum / coef;
+        if (y[dep] < 0) y[dep] = 0;
+      }
+      return;
+    }
+
+    const { A, bTotals, indepTerms, m } = depSystem;
+    const b = new Array<number>(m);
+    for (let row = 0; row < m; row++) {
+      let rhs = bTotals[row];
+      for (const term of indepTerms[row]) rhs -= term.coef * y[term.idx];
+      b[row] = rhs;
+    }
+
+    const x = solveLinearSystem(A, b);
+    if (!x) {
+      // If system is singular/ill-conditioned, revert to sequential.
+      for (const { dep, coef, law } of dependentCoefs) {
+        let sum = law.total;
+        for (let j = 0; j < nSpecies; j++) {
+          if (j !== dep && Math.abs(law.coefficients[j]) > 1e-15) {
+            sum -= law.coefficients[j] * y[j];
+          }
+        }
+        y[dep] = sum / coef;
+        if (y[dep] < 0) y[dep] = 0;
+      }
+      return;
+    }
+
+    for (let i = 0; i < dependentSpecies.length; i++) {
+      const idx = dependentSpecies[i];
+      const v = x[i];
+      // Clamp only tiny negative numerical noise.
+      y[idx] = v < 0 && v > -1e-9 ? 0 : v;
+      if (y[idx] < 0) y[idx] = 0;
+    }
+  };
 
   return {
     reducedSize,
@@ -346,18 +484,7 @@ export function createReducedSystem(
         y[independentSpecies[i]] = y_r[i];
       }
 
-      // Then, compute dependent species from conservation laws
-      for (const { dep, coef, law } of dependentCoefs) {
-        let sum = law.total;
-        for (let j = 0; j < nSpecies; j++) {
-          if (j !== dep && Math.abs(law.coefficients[j]) > 1e-15) {
-            sum -= law.coefficients[j] * y[j];
-          }
-        }
-        y[dep] = sum / coef;
-        // Clamp to non-negative
-        if (y[dep] < 0) y[dep] = 0;
-      }
+      reconstructDependentSpecies(y);
 
       return y;
     },
@@ -373,15 +500,8 @@ export function createReducedSystem(
         for (let i = 0; i < reducedSize; i++) {
           fullY[independentSpecies[i]] = y_r[i];
         }
-        for (const { dep, coef, law } of dependentCoefs) {
-          let sum = law.total;
-          for (let j = 0; j < nSpecies; j++) {
-            if (j !== dep && Math.abs(law.coefficients[j]) > 1e-15) {
-              sum -= law.coefficients[j] * fullY[j];
-            }
-          }
-          fullY[dep] = Math.max(0, sum / coef);
-        }
+
+        reconstructDependentSpecies(fullY);
 
         // Compute full derivatives
         fullDerivatives(fullY, fullDydt);

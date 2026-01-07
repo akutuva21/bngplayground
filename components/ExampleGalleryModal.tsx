@@ -104,7 +104,7 @@ export const ExampleGalleryModal: React.FC<ExampleGalleryModalProps> = ({ isOpen
     <Modal isOpen={isOpen} onClose={onClose} title="BNGL Models" size="3xl">
       <div className="mt-4">
         <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
-          Browse {MODEL_CATEGORIES.reduce((sum, cat) => sum + cat.models.length, 0)} models compatible with BNG2.pl (ODE/SSA simulation).
+          Browse {MODEL_CATEGORIES.reduce((sum, cat) => sum + cat.models.length, 0)} models with explicit ODE simulate() actions.
         </p>
         
         {/* Semantic Search */}

@@ -86,16 +86,24 @@ export const TabList: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return (
     <div className="border-b border-stone-200 dark:border-slate-700">
       <nav className="-mb-px flex space-x-6 overflow-x-auto" aria-label="Tabs">
-        {items.map((child) => {
+        {items.map((child, itemIdx) => {
+          // Keys are required here because we're returning an array from `map`.
+          const explicitKey = React.isValidElement(child) ? child.key : null;
+
           if (!isTabElement(child)) {
             // Allow non-tab elements (e.g., a "More" button) inside the row.
-            return React.isValidElement(child) ? child : null;
+            if (!React.isValidElement(child)) return null;
+            const key = explicitKey ?? `tablist-extra-${itemIdx}`;
+            return React.cloneElement(child, { key });
           }
 
           tabIndex += 1;
           const currentIndex = tabIndex;
+          const label = typeof child.props.children === 'string' ? child.props.children : undefined;
+          const key = explicitKey ?? `tab-${label ?? currentIndex}`;
 
           return React.cloneElement(child, {
+            key,
             isActive: currentIndex === activeIndex,
             onClick: () => setActiveIndex(currentIndex),
           });

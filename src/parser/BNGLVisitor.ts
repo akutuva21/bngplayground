@@ -68,13 +68,33 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       }
     }
 
-    // Visit actions block if present
+    // Visit actions blocks if present
     const actionsBlock = ctx.actions_block();
     if (actionsBlock) {
       try {
         this.visitActions_block(actionsBlock);
       } catch (e: any) {
         console.error('Error visiting actions block:', e.message);
+      }
+    }
+
+    // Many published models use BEGIN ACTIONS ... END ACTIONS
+    const wrappedActionsBlock = ctx.wrapped_actions_block?.();
+    if (wrappedActionsBlock) {
+      try {
+        this.visitWrapped_actions_block(wrappedActionsBlock);
+      } catch (e: any) {
+        console.error('Error visiting wrapped actions block:', e.message);
+      }
+    }
+
+    // Some grammars/inputs may surface begin_actions_block explicitly
+    const beginActionsBlock = (ctx as any).begin_actions_block?.();
+    if (beginActionsBlock) {
+      try {
+        this.visitBegin_actions_block(beginActionsBlock);
+      } catch (e: any) {
+        console.error('Error visiting begin actions block:', e.message);
       }
     }
 
@@ -142,9 +162,18 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     const compBlock = ctx.compartments_block();
     if (compBlock) { this.visitCompartments_block(compBlock); return; }
 
-    // Actions block (begin actions / end actions) - skip for model parsing
-    const actionsBlock = ctx.wrapped_actions_block();
-    if (actionsBlock) { /* Actions handled separately by bnglWorker */ return; }
+    // Actions blocks (BEGIN ACTIONS ... END ACTIONS)
+    const wrappedActionsBlock = ctx.wrapped_actions_block();
+    if (wrappedActionsBlock) {
+      this.visitWrapped_actions_block(wrappedActionsBlock);
+      return;
+    }
+
+    const beginActionsBlock = ctx.begin_actions_block();
+    if (beginActionsBlock) {
+      this.visitBegin_actions_block(beginActionsBlock);
+      return;
+    }
 
     // energy_patterns_block and population_maps_block are less common, skip for now
   }
@@ -489,6 +518,20 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     }
   }
 
+  // Wrapped actions block (BEGIN ACTIONS ... END ACTIONS)
+  visitWrapped_actions_block(ctx: Parser.Wrapped_actions_blockContext): void {
+    for (const cmd of ctx.action_command()) {
+      this.visit(cmd);
+    }
+  }
+
+  // Alias for wrapped actions block in some grammar variants
+  visitBegin_actions_block(ctx: Parser.Begin_actions_blockContext): void {
+    for (const cmd of ctx.action_command()) {
+      this.visit(cmd);
+    }
+  }
+
   visitGenerate_network_cmd(ctx: Parser.Generate_network_cmdContext): void {
     const argsCtx = ctx.action_args();
     if (!argsCtx) return;
@@ -550,6 +593,12 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       }
     };
 
+    const evalIntArg = (val: string | undefined, defaultVal: number): number => {
+      const n = evalNumericArg(val, defaultVal);
+      if (!Number.isFinite(n)) return defaultVal;
+      return Math.trunc(n);
+    };
+
     // Determine method from command name or args
     let method: 'ode' | 'ssa' | 'nf' = 'ode';
     const cmdText = ctx.text.toLowerCase();
@@ -560,13 +609,26 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     // Build simulation phase
     const phase: SimulationPhase = {
       method,
+      t_start: args.t_start !== undefined ? evalNumericArg(args.t_start, 0) : undefined,
       t_end: evalNumericArg(args.t_end, 100),
-      n_steps: args.n_steps !== undefined ? parseInt(args.n_steps) : 100,
+      n_steps: args.n_steps !== undefined ? evalIntArg(args.n_steps, 100) : 100,
+      continue_from_previous: args.continue !== undefined
+        ? (String(args.continue).trim() === '1' || String(args.continue).trim().toLowerCase() === 'true')
+        : undefined,
       atol: args.atol !== undefined ? evalNumericArg(args.atol, 1e-8) : (args.atoll !== undefined ? evalNumericArg(args.atoll, 1e-8) : undefined),
       rtol: args.rtol !== undefined ? evalNumericArg(args.rtol, 1e-8) : undefined,
       suffix: args.suffix?.replace(/["']/g, ''),
-      sparse: args.sparse === '1' || args.sparse === 'true',
+      // Preserve tri-state sparse flag:
+      // - undefined: not specified
+      // - false: sparse=>0
+      // - true: sparse=>1
+      sparse: args.sparse !== undefined
+        ? (args.sparse === '1' || args.sparse === 'true')
+        : undefined,
       steady_state: args.steady_state === '1' || args.steady_state === 'true',
+      print_functions: args.print_functions !== undefined
+        ? (String(args.print_functions).trim() === '1' || String(args.print_functions).trim().toLowerCase() === 'true')
+        : undefined,
     };
 
     this.simulationPhases.push(phase);
@@ -576,11 +638,11 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       if (args.method === 'ssa') this.simulationOptions.method = 'ssa';
       else this.simulationOptions.method = 'ode';
     }
-    if (args.t_end !== undefined) this.simulationOptions.t_end = parseFloat(args.t_end);
-    if (args.n_steps !== undefined) this.simulationOptions.n_steps = parseInt(args.n_steps);
-    if (args.atol !== undefined) this.simulationOptions.atol = parseFloat(args.atol);
-    if (args.atoll !== undefined) this.simulationOptions.atol = parseFloat(args.atoll);
-    if (args.rtol !== undefined) this.simulationOptions.rtol = parseFloat(args.rtol);
+    if (args.t_end !== undefined) this.simulationOptions.t_end = evalNumericArg(args.t_end, this.simulationOptions.t_end ?? 100);
+    if (args.n_steps !== undefined) this.simulationOptions.n_steps = evalIntArg(args.n_steps, this.simulationOptions.n_steps ?? 100);
+    if (args.atol !== undefined) this.simulationOptions.atol = evalNumericArg(args.atol, this.simulationOptions.atol ?? 1e-8);
+    if (args.atoll !== undefined) this.simulationOptions.atol = evalNumericArg(args.atoll, this.simulationOptions.atol ?? 1e-8);
+    if (args.rtol !== undefined) this.simulationOptions.rtol = evalNumericArg(args.rtol, this.simulationOptions.rtol ?? 1e-8);
   }
 
   // Explicitly ignore write commands (writeXML, writeSBML, etc)

@@ -541,11 +541,24 @@ export class GraphCanonicalizer {
         bondStr = `!${comp.wildcard}`;
       }
 
-      return { baseStr, bondStr, compIdx };
+      return { baseStr, bondStr, compIdx, hasRealBond: bondIds.length > 0 };
     });
 
-    // Sort components alphabetically by their base string (name + state, without bond)
-    componentData.sort((a: any, b: any) => a.baseStr < b.baseStr ? -1 : a.baseStr > b.baseStr ? 1 : 0);
+    // Sort components alphabetically by base string (name + state).
+    // IMPORTANT: When base strings are identical (e.g., repeated site names like A(b,b)),
+    // BNG2 places bound components before unbound components.
+    componentData.sort((a: any, b: any) => {
+      if (a.baseStr !== b.baseStr) return a.baseStr < b.baseStr ? -1 : 1;
+
+      // Bound before unbound for repeated component names
+      if (a.hasRealBond !== b.hasRealBond) return a.hasRealBond ? -1 : 1;
+
+      // Deterministic tie-breaker across multiple bonds
+      if (a.bondStr !== b.bondStr) return a.bondStr < b.bondStr ? -1 : 1;
+
+      // Final deterministic tie-breaker
+      return a.compIdx - b.compIdx;
+    });
 
     // BNG2 convention: Only include molecule compartment when it differs from graph compartment
     const compartmentSuffix = (mol.compartment && mol.compartment !== graph.compartment) ? `@${mol.compartment}` : '';
@@ -572,6 +585,18 @@ export class GraphCanonicalizer {
         const n = graph.molecules.length;
         const flatAdj = new Int32Array(n * n);
 
+        // Build a stable vertex coloring so Nauty respects molecule labels/state.
+        // Without colors, Nauty computes orbits of the *unlabeled* graph, which can
+        // incorrectly merge distinct molecule types and over-reduce symmetry.
+        const localSigs = graph.molecules.map(mol => this.getLocalSignature(mol));
+        const uniqueSigs = Array.from(new Set(localSigs)).sort();
+        const sigToRank = new Map<string, number>();
+        uniqueSigs.forEach((sig, idx) => sigToRank.set(sig, idx));
+        const colors = new Int32Array(n);
+        for (let i = 0; i < n; i++) {
+          colors[i] = sigToRank.get(localSigs[i])!;
+        }
+
         // Build adjacency matrix from graph.adjacency
         for (const [key, partnerKeys] of graph.adjacency) {
           const [m1Str, _] = key.split('.');
@@ -588,7 +613,7 @@ export class GraphCanonicalizer {
           }
         }
 
-        const orbitsArr = nauty.getCanonicalOrbits(n, flatAdj);
+        const { orbits: orbitsArr } = nauty.getCanonicalLabeling(n, flatAdj, colors);
 
         // Map back to molecule indices
         const result = new Map<number, number>();
@@ -602,11 +627,12 @@ export class GraphCanonicalizer {
       }
     }
 
-    // 2. Fallback: Weisfeiler-Lehman
-    const infos = this.getRefinedMoleculeInfos(graph);
+    // 2. Fallback: no symmetry reduction.
+    // WL refinement is not an exact orbit computation; using it for symmetry reduction
+    // can incorrectly merge non-symmetric matches and drop reactions.
     const orbits = new Map<number, number>();
-    for (const info of infos) {
-      orbits.set(info.originalIndex, info.colorClass);
+    for (let i = 0; i < graph.molecules.length; i++) {
+      orbits.set(i, i);
     }
     return orbits;
   }

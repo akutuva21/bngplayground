@@ -1014,6 +1014,30 @@ export class FastRK4Solver {
 
 /**
  * CVODE Solver - High performance WASM-based stiff solver
+ * 
+ * Uses SUNDIALS CVODE with BDF method (implicit, L-stable) compiled to WebAssembly.
+ * Configuration matches BioNetGen's Network3/run_network defaults:
+ * - max_num_steps: 2000 (auto-grows on CV_TOO_MUCH_WORK)
+ * - max_err_test_fails: 7
+ * - max_conv_fails: 10
+ * - max_step: 0.0 (no limit)
+ * 
+ * Additional CVODE options available in WASM wrapper (wasm-sundials/cvode_wrapper.c):
+ * - set_min_step(ptr, hmin): Set minimum step size
+ * - set_max_ord(ptr, maxord): Set max BDF order (1-5, default 5)
+ * - set_stab_lim_det(ptr, onoff): Enable BDF stability limit detection (helps oscillators)
+ * - set_max_nonlin_iters(ptr, maxcor): Max nonlinear iterations per step (default 3)
+ * - set_nonlin_conv_coef(ptr, nlscoef): NLS convergence coefficient (default 0.1)
+ * - set_max_err_test_fails(ptr, maxnef): Max error test failures per step
+ * - set_max_conv_fails(ptr, maxncf): Max convergence failures per step
+ * - reinit_solver(ptr, t0, y0): Reinitialize at new time/state (for multi-phase)
+ * - get_solver_stats(ptr, ...): Get diagnostic statistics
+ * 
+ * Known limitations for strict numerical parity with BNG2:
+ * 1. Chaotic systems (Hill n>10) will diverge due to floating-point sensitivity
+ * 2. Long-period oscillators accumulate phase drift over many cycles
+ * 3. Very long simulations (>100k time units) accumulate rounding errors
+ * These are fundamental numerical characteristics, not implementation bugs.
  */
 interface CVodeModule {
   _init_solver(neq: number, t0: number, y0: number, rtol: number, atol: number, max_steps: number): number;
@@ -1029,6 +1053,16 @@ interface CVodeModule {
   derivativeCallback: (t: number, y: number, ydot: number) => void;
   jacobianCallback?: (t: number, y: number, fy: number, J: number, neq: number) => void;
   _init_solver_jac?: (neq: number, t0: number, y0: number, rtol: number, atol: number, maxSteps: number) => number;
+  // Additional CVODE options (exposed in WASM wrapper)
+  _set_min_step?: (mem: number, hmin: number) => number;
+  _set_max_ord?: (mem: number, maxord: number) => number;
+  _set_stab_lim_det?: (mem: number, onoff: number) => number;
+  _set_max_nonlin_iters?: (mem: number, maxcor: number) => number;
+  _set_nonlin_conv_coef?: (mem: number, nlscoef: number) => number;
+  _set_max_err_test_fails?: (mem: number, maxnef: number) => number;
+  _set_max_conv_fails?: (mem: number, maxncf: number) => number;
+  _reinit_solver?: (mem: number, t0: number, y0: number) => number;
+  _get_solver_stats?: (mem: number, nsteps: number, nfevals: number, nlinsetups: number, netfails: number) => void;
 }
 
 // Type for Jacobian function: fills column-major matrix J[i + j*neq] = df_i/dy_j
@@ -1040,6 +1074,26 @@ export class CVODESolver {
   private options: SolverOptions;
   private useSparse: boolean;
   private jacobian?: JacobianFunction;
+
+  private solverMem: number | null = null;
+  private yPtr: number = 0;
+  private tretPtr: number = 0;
+  private currentT: number = NaN;
+  private yOut: Float64Array | null = null;
+
+  // Cached callback views (avoid allocating TypedArray views on every callback)
+  private cachedYPtr = 0;
+  private cachedYdotPtr = 0;
+  private cachedDerivBuffer: ArrayBufferLike | null = null;
+  private yView: Float64Array | null = null;
+  private dydtView: Float64Array | null = null;
+
+  private cachedJacYPtr = 0;
+  private cachedJPtr = 0;
+  private cachedJacBuffer: ArrayBufferLike | null = null;
+  private jacYView: Float64Array | null = null;
+  private jacJView: Float64Array | null = null;
+
   static module: CVodeModule | null = null;
   static initPromise: Promise<void> | null = null;
 
@@ -1091,6 +1145,143 @@ export class CVODESolver {
     return this.initPromise;
   }
 
+  destroy(): void {
+    const m = CVODESolver.module;
+    if (!m) return;
+    if (this.solverMem) {
+      try {
+        m._destroy_solver(this.solverMem);
+      } finally {
+        this.solverMem = null;
+      }
+    }
+    if (this.yPtr) {
+      m._free(this.yPtr);
+      this.yPtr = 0;
+    }
+    if (this.tretPtr) {
+      m._free(this.tretPtr);
+      this.tretPtr = 0;
+    }
+    this.currentT = NaN;
+    this.yOut = null;
+  }
+
+  private ensureInitialized(y0: Float64Array, t0: number): { success: true } | { success: false; errorMessage: string } {
+    const m = CVODESolver.module;
+    if (!m) return { success: false as const, errorMessage: 'CVODE WASM not loaded' };
+
+    const neq = this.n;
+    const { atol, rtol } = this.options;
+
+    // If we have an active solver, verify we're continuing from the expected state.
+    if (this.solverMem) {
+      const tTol = 1e-12 * Math.max(1, Math.abs(this.currentT), Math.abs(t0));
+      const tMatches = Number.isFinite(this.currentT) && Math.abs(t0 - this.currentT) <= tTol;
+      if (tMatches) {
+        // Verify the caller-provided y0 matches current internal state.
+        const heap = m.HEAPF64;
+        const heapY = heap.subarray(this.yPtr >> 3, (this.yPtr >> 3) + neq);
+        let maxAbsDelta = 0;
+        let maxAbsY = 0;
+        for (let i = 0; i < neq; i++) {
+          const yi = heapY[i];
+          const d = Math.abs(y0[i] - yi);
+          if (d > maxAbsDelta) maxAbsDelta = d;
+          const ay = Math.abs(yi);
+          if (ay > maxAbsY) maxAbsY = ay;
+        }
+        // If state differs, reinitialize from provided y0/t0.
+        const yTol = 1e-14 * Math.max(1, maxAbsY);
+        if (maxAbsDelta <= yTol) {
+          return { success: true as const };
+        }
+      }
+
+      // Not continuing cleanly: reset the solver.
+      this.destroy();
+    }
+
+    // Set callback once per initialization.
+    m.derivativeCallback = (_t: number, yPtr: number, ydotPtr: number) => {
+      const buf = m.HEAPF64.buffer;
+      if (!this.yView || !this.dydtView || this.cachedDerivBuffer !== buf || this.cachedYPtr !== yPtr || this.cachedYdotPtr !== ydotPtr) {
+        this.cachedDerivBuffer = buf;
+        this.cachedYPtr = yPtr;
+        this.cachedYdotPtr = ydotPtr;
+        this.yView = new Float64Array(buf, yPtr, neq);
+        this.dydtView = new Float64Array(buf, ydotPtr, neq);
+      }
+      this.f(this.yView, this.dydtView);
+    };
+
+    // Allocate memory for state and t_reached.
+    this.yPtr = m._malloc(neq * 8);
+    if (!this.yPtr) return { success: false, errorMessage: 'CVODE malloc failed for yPtr' };
+    this.tretPtr = m._malloc(8);
+    if (!this.tretPtr) {
+      m._free(this.yPtr);
+      this.yPtr = 0;
+      return { success: false as const, errorMessage: 'CVODE malloc failed for tretPtr' };
+    }
+    this.yOut = new Float64Array(y0.length);
+
+    // Copy initial state into WASM memory.
+    m.HEAPF64.set(y0, this.yPtr >> 3);
+
+    // Initialize solver.
+    let solverMem: number;
+    if (this.jacobian && m._init_solver_jac) {
+      m.jacobianCallback = (_t: number, yPtr: number, _fyPtr: number, JPtr: number, neqVal: number) => {
+        const buf = m.HEAPF64.buffer;
+        if (!this.jacYView || !this.jacJView || this.cachedJacBuffer !== buf || this.cachedJacYPtr !== yPtr || this.cachedJPtr !== JPtr) {
+          this.cachedJacBuffer = buf;
+          this.cachedJacYPtr = yPtr;
+          this.cachedJPtr = JPtr;
+          this.jacYView = new Float64Array(buf, yPtr, neqVal);
+          this.jacJView = new Float64Array(buf, JPtr, neqVal * neqVal);
+        }
+        this.jacobian!(this.jacYView, this.jacJView);
+      };
+      solverMem = m._init_solver_jac(neq, t0, this.yPtr, rtol, atol, this.options.maxSteps);
+    } else if (this.useSparse) {
+      solverMem = m._init_solver_sparse(neq, t0, this.yPtr, rtol, atol, this.options.maxSteps);
+    } else {
+      solverMem = m._init_solver(neq, t0, this.yPtr, rtol, atol, this.options.maxSteps);
+    }
+
+    if (!solverMem) {
+      m._free(this.yPtr);
+      m._free(this.tretPtr);
+      this.yPtr = 0;
+      this.tretPtr = 0;
+      return { success: false as const, errorMessage: 'CVODE initialization failed' };
+    }
+
+    this.solverMem = solverMem;
+    this.currentT = t0;
+
+    // Optional: initial/max step configuration (bindings may not exist)
+    if (this.options.initialStep && this.options.initialStep > 0) {
+      // @ts-ignore
+      if (typeof (m as any)._set_init_step === 'function') {
+        // @ts-ignore
+        (m as any)._set_init_step(this.solverMem, this.options.initialStep);
+        console.log(`[CVODESolver] Set initial step size to ${this.options.initialStep}`);
+      }
+    }
+
+    if (this.options.maxStep > 0 && this.options.maxStep < Infinity) {
+      // @ts-ignore
+      if (typeof (m as any)._set_max_step === 'function') {
+        // @ts-ignore
+        (m as any)._set_max_step(this.solverMem, this.options.maxStep);
+      }
+    }
+
+    return { success: true as const };
+  }
+
   integrate(
     y0: Float64Array,
     t0: number,
@@ -1102,99 +1293,27 @@ export class CVODESolver {
       return { success: false, t: t0, y: y0, steps: 0, errorMessage: "CVODE WASM not loaded" };
     }
 
+    const init = this.ensureInitialized(y0, t0);
+    if (!init.success) {
+      const msg = ('errorMessage' in init) ? init.errorMessage : 'CVODE initialization failed';
+      return { success: false, t: t0, y: y0, steps: 0, errorMessage: msg };
+    }
+
     const neq = this.n;
-    const { atol, rtol } = this.options;
+    const yOut = this.yOut ?? new Float64Array(y0);
 
-    // Set callback. CVODE will call this very frequently; avoid allocating new TypedArray
-    // views on each call when pointers and memory buffer are stable.
-    let cachedYPtr = 0;
-    let cachedYdotPtr = 0;
-    let cachedBuffer: ArrayBufferLike | null = null;
-    let yView: Float64Array | null = null;
-    let dydtView: Float64Array | null = null;
-
-    m.derivativeCallback = (_t: number, yPtr: number, ydotPtr: number) => {
-      const buf = m.HEAPF64.buffer;
-      if (!yView || !dydtView || cachedBuffer !== buf || cachedYPtr !== yPtr || cachedYdotPtr !== ydotPtr) {
-        cachedBuffer = buf;
-        cachedYPtr = yPtr;
-        cachedYdotPtr = ydotPtr;
-        yView = new Float64Array(buf, yPtr, neq);
-        dydtView = new Float64Array(buf, ydotPtr, neq);
-      }
-      this.f(yView, dydtView);
-    };
-
-    // Allocate memory for state
-    const yPtr = m._malloc(neq * 8);
-    const yOut = new Float64Array(y0);
-
-    // Copy initial state
-    // Use HEAPF64 directly. Pointer is byte offset, need index for Float64Array (bytes/8)
-    const heap = m.HEAPF64;
-    heap.set(y0, yPtr >> 3);
-
-    // Initialize solver
-    let solverMem: number;
-    if (this.jacobian && m._init_solver_jac) {
-      // Set Jacobian callback (column-major dense matrix)
-      // Same idea: reuse views if pointers/buffer are stable.
-      let cachedJacYPtr = 0;
-      let cachedJPtr = 0;
-      let cachedJacBuffer: ArrayBufferLike | null = null;
-      let jacYView: Float64Array | null = null;
-      let jacJView: Float64Array | null = null;
-      m.jacobianCallback = (_t: number, yPtr: number, _fyPtr: number, JPtr: number, neqVal: number) => {
-        const buf = m.HEAPF64.buffer;
-        if (!jacYView || !jacJView || cachedJacBuffer !== buf || cachedJacYPtr !== yPtr || cachedJPtr !== JPtr) {
-          cachedJacBuffer = buf;
-          cachedJacYPtr = yPtr;
-          cachedJPtr = JPtr;
-          jacYView = new Float64Array(buf, yPtr, neqVal);
-          jacJView = new Float64Array(buf, JPtr, neqVal * neqVal);
-        }
-        this.jacobian!(jacYView, jacJView);
-      };
-      solverMem = m._init_solver_jac(neq, t0, yPtr, rtol, atol, this.options.maxSteps);
-    } else if (this.useSparse) {
-      solverMem = m._init_solver_sparse(neq, t0, yPtr, rtol, atol, this.options.maxSteps);
-    } else {
-      solverMem = m._init_solver(neq, t0, yPtr, rtol, atol, this.options.maxSteps);
-    }
-
-    if (!solverMem) {
-      m._free(yPtr);
-      return { success: false, t: t0, y: y0, steps: 0, errorMessage: "CVODE initialization failed" };
-    }
-
-
-
-    // Set Initial Step Size if provided (requires WASM rebuild to enable)
-    if (this.options.initialStep && this.options.initialStep > 0) {
-      // @ts-ignore
-      if (typeof m._set_init_step === 'function') {
-        // @ts-ignore
-        m._set_init_step(solverMem, this.options.initialStep);
-        console.log(`[CVODESolver] Set initial step size to ${this.options.initialStep}`);
-      }
-      // Note: If _set_init_step is not available, CVODE will use its default initial step selection
-    }
-
-    // Attempt to set max step size if the binding exposes it
-    if (this.options.maxStep > 0 && this.options.maxStep < Infinity) {
-      // @ts-ignore
-      if (typeof m._set_max_step === 'function') {
-        // @ts-ignore
-        m._set_max_step(solverMem, this.options.maxStep);
-      }
-    }
-
-    let t = t0;
+    let t = this.currentT;
     let steps = 0;
-    const tretPtr = m._malloc(8); // Pointer for t_reached
+
+    let solverMem = this.solverMem!;
+    let yPtr = this.yPtr;
+    let tretPtr = this.tretPtr;
     let lastT = t0; // Track previous t to detect stuck solver
     let stuckCount = 0;
     const MAX_STUCK_ITERATIONS = 10; // If t doesn't advance 10 times in a row, we're stuck
+    let mxstepBumps = 0;
+    const MAX_MXSTEP_BUMPS = 12;
+    const MAX_MXSTEP = 5_000_000;
 
     try {
       // Check if we're already at or past the target (within floating point tolerance)
@@ -1209,7 +1328,7 @@ export class CVODESolver {
           m._get_y(solverMem, yPtr);
           const currentHeap = m.HEAPF64;
           yOut.set(currentHeap.subarray(yPtr >> 3, (yPtr >> 3) + neq));
-          return { success: true, t, y: yOut, steps }; // Return what we have
+          return { success: false, t, y: yOut, steps, errorMessage: `Max internal iterations exceeded at t=${t}` };
         }
 
         // CRITICAL: Check if remaining distance to target is too small for CVODE
@@ -1219,8 +1338,8 @@ export class CVODESolver {
         const machineEpsilonRelative = Math.max(1e-13, Math.abs(tEnd) * 1e-13);
 
         if (remainingDistance < machineEpsilonRelative) {
-          // We're close enough - treat as success
-          t = tEnd; // Snap to exact target
+          // We're close enough: stop iterating, but do NOT snap time forward.
+          // Snapping desynchronizes JS time from CVODE's internal time/state.
           break;
         }
 
@@ -1242,10 +1361,8 @@ export class CVODESolver {
             console.warn(`[CVODESolver] Solver stuck at t=${t} (target=${tEnd}), advance=${advance}`);
             m._get_y(solverMem, yPtr);
             yOut.set(currentHeap.subarray(yPtr >> 3, (yPtr >> 3) + neq));
-            // If we're close enough to target, consider it success
-            if (Math.abs(t - tEnd) < relTol * 10) {
-              return { success: true, t, y: yOut, steps };
-            }
+            // If we're close enough, return success without snapping time.
+            if (Math.abs(t - tEnd) < relTol * 10) return { success: true, t, y: yOut, steps };
             return { success: false, t, y: yOut, steps, errorMessage: `Solver stuck at t=${t}` };
           }
         } else {
@@ -1254,8 +1371,39 @@ export class CVODESolver {
         lastT = t;
 
         if (flag < 0) {
+          // Capture the best available state from CVODE before deciding how to recover.
           m._get_y(solverMem, yPtr);
-          yOut.set(currentHeap.subarray(yPtr >> 3, (yPtr >> 3) + neq));
+          const heapY = currentHeap.subarray(yPtr >> 3, (yPtr >> 3) + neq);
+          yOut.set(heapY);
+
+          // BNG2 behavior: if CVODE hits mxstep (CV_TOO_MUCH_WORK == -1), increase mxstep and continue.
+          // We approximate this by reinitializing CVODE from the current (t,y) with a larger maxSteps.
+          if (flag === -1 && mxstepBumps < MAX_MXSTEP_BUMPS) {
+            const prevMax = this.options.maxSteps;
+            const nextMax = Math.min(MAX_MXSTEP, Math.max(2000, prevMax > 0 ? prevMax * 2 : 2000));
+
+            if (nextMax > prevMax) {
+              const yRestart = new Float64Array(neq);
+              yRestart.set(heapY);
+              const tRestart = t;
+
+              this.destroy();
+              this.options.maxSteps = nextMax;
+
+              const reinit = this.ensureInitialized(yRestart, tRestart);
+              if (reinit.success) {
+                solverMem = this.solverMem!;
+                yPtr = this.yPtr;
+                tretPtr = this.tretPtr;
+                t = this.currentT;
+                lastT = t;
+                stuckCount = 0;
+                mxstepBumps++;
+                continue;
+              }
+            }
+          }
+
           return { success: false, t, y: yOut, steps, errorMessage: `CVODE failed with flag ${flag}` };
         }
 
@@ -1270,14 +1418,15 @@ export class CVODESolver {
       const currentHeap = m.HEAPF64;
       yOut.set(currentHeap.subarray(yPtr >> 3, (yPtr >> 3) + neq));
 
+      this.currentT = t;
+
       return { success: true, t, y: yOut, steps };
 
     } catch (e) {
       return { success: false, t, y: yOut, steps, errorMessage: `CVODE error: ${e}` };
     } finally {
-      m._destroy_solver(solverMem);
-      m._free(yPtr);
-      m._free(tretPtr);
+      // Intentionally do not destroy solver here.
+      // We keep CVODE state across successive integrate() calls to match BNG2 behavior.
     }
   }
 }
@@ -1288,7 +1437,6 @@ export class CVODESolver {
  */
 class SparseImplicitSolver {
   private rosenbrock: Rosenbrock23Solver;
-  private _options: SolverOptions;  // Stored for potential future use
   
   constructor(n: number, f: DerivativeFunction, options: Partial<SolverOptions> = {}) {
     // Use very tight tolerances for stiff systems
@@ -1300,7 +1448,6 @@ class SparseImplicitSolver {
       minStep: 1e-18,
       maxStep: options.maxStep ?? 1.0,
     };
-    this._options = { ...DEFAULT_OPTIONS, ...stiffOptions };
     this.rosenbrock = new Rosenbrock23Solver(n, f, stiffOptions);
     console.log(`[SparseImplicitSolver] Created with atol=${stiffOptions.atol}, rtol=${stiffOptions.rtol}`);
   }
@@ -1323,7 +1470,7 @@ export async function createSolver(
   n: number,
   f: DerivativeFunction,
   options: Partial<SolverOptions> = {}
-): Promise<{ integrate: (y0: Float64Array, t0: number, tEnd: number, checkCancelled?: () => void) => SolverResult }> {
+): Promise<{ integrate: (y0: Float64Array, t0: number, tEnd: number, checkCancelled?: () => void) => SolverResult; destroy?: () => void }> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   switch (opts.solver) {

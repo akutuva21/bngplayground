@@ -61,8 +61,9 @@ function App() {
     }
 
     // Expose batch runner for automation
-    import('./src/utils/batchRunner').then(({ runAllModels }) => {
+    import('./src/utils/batchRunner').then(({ runAllModels, runModels }) => {
       (window as any).runAllModels = runAllModels;
+      (window as any).runModels = runModels;
       console.log('🤖 batch runner loaded. Run `window.runAllModels()` to start.');
     });
   }, []);
@@ -316,6 +317,7 @@ function App() {
 
                   isSimulating={isSimulating}
                   modelExists={!!model}
+                  model={model}
                   validationWarnings={validationWarnings}
                   editorMarkers={editorMarkers}
                   loadedModelName={loadedModelName}

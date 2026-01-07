@@ -116,7 +116,13 @@ seed_species_def
 
 // Species can optionally have compartment annotation using @ (prefix @comp: or suffix @comp)
 species_def
-    : (AT STRING COLON)? molecule_pattern (DOT molecule_pattern)* (AT STRING)?
+    : (AT STRING COLON)? molecule_pattern molecule_compartment? (DOT molecule_pattern molecule_compartment?)* (AT STRING)?
+    ;
+
+// CBNGL: allow compartment annotations on individual molecules in a complex
+// e.g. A(t!1,b)@CYT.T1(a!1)
+molecule_compartment
+    : AT STRING
     ;
 
 // Molecule patterns can have optional parentheses (e.g., ".CK1a" is valid in reactions)

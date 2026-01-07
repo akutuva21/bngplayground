@@ -46,8 +46,14 @@ export class Component {
     if (this.name !== other.name) return false;
     if (checkState && this.state !== other.state) return false;
     if (this.states.length !== other.states.length) return false;
-    // Wildcard matching: '+' requires bond, '?' allows any
+    // Bond wildcard matching (BNGL), per BioNetGen tutorial:
+    // - '!+' means the site must be bound (one or more bonds)
+    // - '!?' means the site may or may not be bound (zero or one bond)
+    // - '!-' means the site must be unbound (zero bonds)
+    // - absence of any '!<...>' is handled elsewhere (explicit component presence implies unbound)
     if (this.wildcard === '+' && other.edges.size === 0) return false;
+    if (this.wildcard === '-' && other.edges.size !== 0) return false;
+    if (this.wildcard === '?' && other.edges.size > 1) return false;
     return true;
   }
 

@@ -90,7 +90,8 @@ export class SparseODESolver {
     this.reactions = reactions;
     this.derivatives = derivatives;
     this.options = { ...DEFAULT_OPTIONS, ...options };
-    
+    console.log(`[SparseODESolver] Initialized with atol=${this.options.atol}, rtol=${this.options.rtol}, maxSteps=${this.options.maxSteps}`);
+        
     // Conservation law elimination
     if (this.options.useConservationLaws && reactions.length > 0) {
       this.conservation = findConservationLaws(reactions, nSpecies, y0, speciesNames);

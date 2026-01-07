@@ -11,7 +11,8 @@
     "test": "vitest --run",
     "test:watch": "vitest",
     "generate:gdat": "node scripts/generateGdat.mjs",
-    "generate:embeddings": "node scripts/generateEmbeddings.mjs"
+    "generate:embeddings": "node scripts/generateEmbeddings.mjs",
+    "generate:web-output": "node scripts/generate_web_output_playwright.mjs"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",
@@ -40,8 +41,10 @@
     "assert": "^2.1.0",
     "autoprefixer": "^10.4.19",
     "baseline-browser-mapping": "^2.9.11",
+    "playwright": "^1.50.1",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
+    "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "util": "^0.12.5",
     "vite": "^6.2.0",

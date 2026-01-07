@@ -118,13 +118,22 @@ export interface BNGLModel {
 // Represents a single simulate_* action
 export interface SimulationPhase {
   method: 'ode' | 'ssa' | 'nf';
+  // BNGL supports absolute start/end times with optional continuation between phases.
+  // If t_start is omitted, BNG defaults to 0 (or current model time if continuing).
+  t_start?: number;
   t_end: number;
   n_steps: number;
+  // Maps to BNGL `continue=>1` (true) / `continue=>0` (false).
+  // When true, BNG requires t_start to equal the current model time.
+  continue_from_previous?: boolean;
   atol?: number;
   rtol?: number;
   suffix?: string;
   sparse?: boolean;
   steady_state?: boolean;
+  // Maps to BNGL `print_functions=>1` for including function values as output columns.
+  // When true, BNG prints zero-arg function values alongside observables in the GDAT.
+  print_functions?: boolean;
 }
 
 // Represents a setConcentration() call between simulation phases
@@ -153,7 +162,9 @@ export interface SimulationResults {
 }
 
 export interface SimulationOptions {
-  method: 'ode' | 'ssa';
+  // 'default' means "follow the model's authored method/phases".
+  // 'ode'/'ssa' force all phases to that method.
+  method: 'default' | 'ode' | 'ssa';
   t_end: number;
   n_steps: number;
   // ODE solver options

@@ -1,55 +1,41 @@
 import { bnglService } from '../../services/bnglService';
 import { MODEL_CATEGORIES } from '../../constants';
 import { BNGLModel, SimulationResults } from '../../types';
+import { getSimulationOptionsFromParsedModel } from './simulationOptions';
+import { downloadCsv } from './download';
 
-// Extract default simulation parameters if not specified in the model
-const DEFAULT_SIM_OPTIONS = {
-    method: 'ode' as const,
-    t_end: 100,
-    n_steps: 100,
-    solver: 'cvode' as const
-};
-
-// Helper to download data as CSV (copied/adapted from ResultsChart)
-function downloadCSV(filename: string, data: Record<string, any>[], headers: string[]) {
-    if (!data || data.length === 0) return;
-
-    const csvHeaders = ['time', ...headers.filter(h => h !== 'time')];
-    const csvRows = data.map(row =>
-        csvHeaders.map(h => row[h] ?? '').join(',')
-    );
-    const csv = [csvHeaders.join(','), ...csvRows].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a); // Append to body to ensure click works
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+function normalizeFilterNames(names?: string[]) {
+    if (!names || names.length === 0) return null;
+    const normalized = names
+        .map(n => String(n ?? '').trim())
+        .filter(Boolean)
+        .map(n => n.toLowerCase());
+    return normalized.length ? normalized : null;
 }
 
-// Regex to extract simulate options from BNGL code (simplified version of EditorPanel logic)
-function extractSimOptions(code: string) {
-    const t_end_match = code.match(/t_end\s*=>\s*([\d\.e\-\+]+)/i);
-    const n_steps_match = code.match(/n_steps\s*=>\s*(\d+)/i);
-    return {
-        t_end: t_end_match ? parseFloat(t_end_match[1]) : DEFAULT_SIM_OPTIONS.t_end,
-        n_steps: n_steps_match ? parseInt(n_steps_match[1]) : DEFAULT_SIM_OPTIONS.n_steps
-    };
+function safeModelName(name: string) {
+    return name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 }
 
-export async function runAllModels() {
+export async function runModels(modelNames?: string[]) {
+    const filter = normalizeFilterNames(modelNames);
     const allModels = MODEL_CATEGORIES.flatMap(c => c.models);
+    const modelsToProcess = filter
+        ? allModels.filter(m => {
+            const n = m.name.toLowerCase();
+            const safe = safeModelName(m.name);
+            return filter.includes(n) || filter.includes(safe);
+        })
+        : allModels;
+
     console.group('🚀 Batch Model Runner');
-    console.log(`Found ${allModels.length} models to process.`);
+    console.log(`Found ${modelsToProcess.length} models to process.`);
+    if (filter) console.log('Model filter:', filter);
 
     let successCount = 0;
     let failCount = 0;
 
-    for (const modelDef of allModels) {
+    for (const modelDef of modelsToProcess) {
         console.group(`Processing: ${modelDef.name}`);
         try {
             // 1. Parse
@@ -58,23 +44,20 @@ export async function runAllModels() {
             console.timeEnd('Parse');
 
             // 2. Determine Simulation Options
-            const options = extractSimOptions(modelDef.code);
-            console.log('Simulation Options:', options);
+            const options = getSimulationOptionsFromParsedModel(model, 'ode', { solver: 'cvode' });
+            console.log('Simulation Options:', { t_end: options.t_end, n_steps: options.n_steps, solver: options.solver });
 
             // 3. Simulate
             console.time('Simulate');
             const results: SimulationResults = await bnglService.simulate(model, {
-                method: 'ode',
-                t_end: options.t_end,
-                n_steps: options.n_steps,
-                solver: 'cvode' // Force CVODE for robustness
+                ...options
             }, { description: `Batch Sim: ${modelDef.name}` });
             console.timeEnd('Simulate');
 
             // 4. Export
             const headers = results.headers || [];
-            const safeName = modelDef.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            downloadCSV(`results_${safeName}.csv`, results.data, headers);
+            const safeName = safeModelName(modelDef.name);
+            downloadCsv(results.data, headers, `results_${safeName}.csv`);
 
             console.log('✅ Exported CSV');
             successCount++;
@@ -96,4 +79,8 @@ export async function runAllModels() {
     console.log(`Batch Run Complete. Success: ${successCount}, Failed: ${failCount}`);
     console.groupEnd();
     return { success: successCount, failed: failCount };
+}
+
+export async function runAllModels() {
+    return runModels();
 }

@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { NetworkGenerator } from '../src/services/graph/NetworkGenerator.ts';
 import { BNGLParser } from '../src/services/graph/core/BNGLParser.ts';
+import { GraphCanonicalizer } from '../src/services/graph/core/Canonical.ts';
 import { parseBNGL } from '../services/parseBNGL.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,6 +30,106 @@ interface BNG2Reaction {
 interface BNG2Network {
   species: BNG2Species[];
   reactions: BNG2Reaction[];
+}
+
+function parseArgs(argv: string[]) {
+  const out: { net?: string; dir?: string } = {};
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === '--net' || a === '--netFile') {
+      out.net = argv[i + 1];
+      i++;
+    } else if (a === '--dir' || a === '--netDir') {
+      out.dir = argv[i + 1];
+      i++;
+    }
+  }
+  return out;
+}
+
+function stripNetComment(s: string): string {
+  // BNG2 reaction lines often include an inline comment: "rate #ruleName"
+  // Keep only the expression before '#'.
+  const idx = s.indexOf('#');
+  return (idx >= 0 ? s.slice(0, idx) : s).trim();
+}
+
+function canonicalizeSpeciesText(speciesText: string): string {
+  const g = BNGLParser.parseSpeciesGraph(speciesText);
+  return GraphCanonicalizer.canonicalize(g);
+}
+
+function buildCanonicalByIndexFromBng2Net(net: BNG2Network): Map<number, string> {
+  const out = new Map<number, string>();
+  for (const s of net.species) {
+    try {
+      out.set(s.index, canonicalizeSpeciesText(s.pattern));
+    } catch {
+      // ignore
+    }
+  }
+  return out;
+}
+
+function buildCanonicalByIndexFromOurNetwork(ourSpecies: Array<{ graph: any }>): string[] {
+  return ourSpecies.map((s) => GraphCanonicalizer.canonicalize(s.graph));
+}
+
+type RxnSig = string;
+interface RateAgg {
+  count: number;
+  sumCoeff: number;
+  sample: { reactants: string[]; products: string[] };
+  ruleNames: Map<string, number>;
+}
+
+function makeRxnSig(reactantsCanon: string[], productsCanon: string[]): RxnSig {
+  const r = reactantsCanon.slice().sort().join(' + ');
+  const p = productsCanon.slice().sort().join(' + ');
+  return `${r} => ${p}`;
+}
+
+function aggAdd(
+  map: Map<RxnSig, RateAgg>,
+  sig: RxnSig,
+  coeff: number,
+  sample: RateAgg['sample'],
+  ruleName?: string
+) {
+  const prev = map.get(sig);
+  if (!prev) {
+    const ruleNames = new Map<string, number>();
+    if (ruleName) ruleNames.set(ruleName, 1);
+    map.set(sig, { count: 1, sumCoeff: coeff, sample, ruleNames });
+    return;
+  }
+  prev.count += 1;
+  prev.sumCoeff += coeff;
+  if (ruleName) {
+    prev.ruleNames.set(ruleName, (prev.ruleNames.get(ruleName) ?? 0) + 1);
+  }
+}
+
+function topRuleNames(agg: RateAgg, max = 3): string {
+  const entries = Array.from(agg.ruleNames.entries())
+    .filter(([name]) => name && name.trim())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, max)
+    .map(([name, n]) => `${name}${n > 1 ? `(${n})` : ''}`);
+  return entries.length > 0 ? entries.join(', ') : '<unknown>';
+}
+
+function evaluateNetRateExpr(expr: string, parametersMap: Map<string, number>): number {
+  const cleaned = stripNetComment(expr);
+  if (!cleaned) return NaN;
+  try {
+    const val = BNGLParser.evaluateExpression(cleaned, parametersMap as any);
+    return Number(val);
+  } catch {
+    // Fallback: sometimes the rate is already numeric.
+    const n = Number.parseFloat(cleaned);
+    return Number.isFinite(n) ? n : NaN;
+  }
 }
 
 /**
@@ -114,6 +215,93 @@ function normalizeSpecies(pattern: string): string {
   }
 }
 
+function compareReactionsCanonical(
+  bng2: BNG2Network,
+  ourNetwork: { species: any[]; reactions: any[] },
+  parametersMap: Map<string, number>
+): {
+  bng2Agg: Map<RxnSig, RateAgg>;
+  ourAgg: Map<RxnSig, RateAgg>;
+  missing: Array<{ sig: RxnSig; bng2: RateAgg }>;
+  extra: Array<{ sig: RxnSig; ours: RateAgg }>;
+  rateMismatches: Array<{ sig: RxnSig; bng2: RateAgg; ours: RateAgg; absDiff: number; relDiff: number }>;
+} {
+  const bng2CanonByIndex = buildCanonicalByIndexFromBng2Net(bng2);
+  const ourCanonByIndex = buildCanonicalByIndexFromOurNetwork(ourNetwork.species);
+
+  const bng2Agg = new Map<RxnSig, RateAgg>();
+  const ourAgg = new Map<RxnSig, RateAgg>();
+
+  for (const rxn of bng2.reactions) {
+    const reactantsCanon = rxn.reactants
+      .map((i) => bng2CanonByIndex.get(i))
+      .filter((x): x is string => typeof x === 'string');
+    const productsCanon = rxn.products
+      .map((i) => bng2CanonByIndex.get(i))
+      .filter((x): x is string => typeof x === 'string');
+    if (reactantsCanon.length !== rxn.reactants.length || productsCanon.length !== rxn.products.length) {
+      continue;
+    }
+    const sig = makeRxnSig(reactantsCanon, productsCanon);
+    const coeff = evaluateNetRateExpr(rxn.rate, parametersMap);
+    // Capture rule name from inline comment if present: "k #RuleName".
+    const idx = rxn.rate.indexOf('#');
+    const ruleName = idx >= 0 ? rxn.rate.slice(idx + 1).trim() : undefined;
+    aggAdd(bng2Agg, sig, coeff, { reactants: reactantsCanon, products: productsCanon }, ruleName);
+  }
+
+  for (const rxn of ourNetwork.reactions) {
+    const reactantsCanon = rxn.reactants
+      .map((i: number) => ourCanonByIndex[i])
+      .filter((x: unknown): x is string => typeof x === 'string');
+    const productsCanon = rxn.products
+      .map((i: number) => ourCanonByIndex[i])
+      .filter((x: unknown): x is string => typeof x === 'string');
+    if (reactantsCanon.length !== rxn.reactants.length || productsCanon.length !== rxn.products.length) {
+      continue;
+    }
+
+    const sig = makeRxnSig(reactantsCanon, productsCanon);
+    const propensity = (rxn as any).propensityFactor ?? 1;
+    const rateExpr = (rxn as any).rateExpression as string | undefined;
+    let coeff = Number(rxn.rate) * Number(propensity);
+    if (rateExpr) {
+      const evaluated = evaluateNetRateExpr(rateExpr, parametersMap);
+      coeff = Number(rxn.rate) * Number(propensity) * evaluated;
+    }
+    const ruleName = (rxn as any).name as string | undefined;
+    aggAdd(ourAgg, sig, coeff, { reactants: reactantsCanon, products: productsCanon }, ruleName);
+  }
+
+  const missing: Array<{ sig: RxnSig; bng2: RateAgg }> = [];
+  const extra: Array<{ sig: RxnSig; ours: RateAgg }> = [];
+  const rateMismatches: Array<{ sig: RxnSig; bng2: RateAgg; ours: RateAgg; absDiff: number; relDiff: number }> = [];
+
+  for (const [sig, b] of bng2Agg.entries()) {
+    const o = ourAgg.get(sig);
+    if (!o) {
+      missing.push({ sig, bng2: b });
+      continue;
+    }
+
+    const absDiff = Math.abs(b.sumCoeff - o.sumCoeff);
+    const denom = Math.max(Math.abs(b.sumCoeff), Math.abs(o.sumCoeff), 1e-30);
+    const relDiff = absDiff / denom;
+    if (absDiff > 1e-12 && relDiff > 1e-12) {
+      rateMismatches.push({ sig, bng2: b, ours: o, absDiff, relDiff });
+    }
+  }
+
+  for (const [sig, o] of ourAgg.entries()) {
+    if (!bng2Agg.has(sig)) {
+      extra.push({ sig, ours: o });
+    }
+  }
+
+  rateMismatches.sort((a, b) => b.absDiff - a.absDiff);
+  return { bng2Agg, ourAgg, missing, extra, rateMismatches };
+}
+
 /**
  * Find corresponding BNGL model for a .net file
  */
@@ -129,6 +317,8 @@ function findBnglModel(netFile: string): string | null {
   ];
   
   const publishedModelsDir = path.join(ROOT_DIR, 'published-models');
+  const bngTestOutputDir = path.join(ROOT_DIR, 'bng_test_output');
+  const publicModelsDir = path.join(ROOT_DIR, 'public', 'models');
   
   function searchDir(dir: string, targetName: string): string | null {
     const items = fs.readdirSync(dir, { withFileTypes: true });
@@ -144,9 +334,23 @@ function findBnglModel(netFile: string): string | null {
     return null;
   }
   
+  // 1) Fast paths (non-recursive) for this repo's common model locations.
   for (const pattern of patterns) {
-    const found = searchDir(publishedModelsDir, pattern);
-    if (found) return found;
+    const directCandidates = [
+      path.join(bngTestOutputDir, `${pattern}.bngl`),
+      path.join(publicModelsDir, `${pattern}.bngl`),
+    ];
+    for (const candidate of directCandidates) {
+      if (fs.existsSync(candidate)) return candidate;
+    }
+  }
+
+  // 2) Back-compat recursive search for older layouts.
+  if (fs.existsSync(publishedModelsDir)) {
+    for (const pattern of patterns) {
+      const found = searchDir(publishedModelsDir, pattern);
+      if (found) return found;
+    }
   }
   
   return null;
@@ -165,7 +369,10 @@ interface ComparisonResult {
   error?: string;
 }
 
-async function compareModel(netFilePath: string): Promise<ComparisonResult> {
+async function compareModel(
+  netFilePath: string,
+  options: { verboseRxnDiff?: boolean } = {}
+): Promise<ComparisonResult> {
   const netFileName = path.basename(netFilePath);
   console.log(`\nComparing ${netFileName}...`);
   
@@ -201,6 +408,13 @@ async function compareModel(netFilePath: string): Promise<ComparisonResult> {
     const model = parseBNGL(bnglCode);
     
     const seedSpecies = model.species.map(s => BNGLParser.parseSpeciesGraph(s.name));
+
+    // Build numeric parameters map for evaluating BNG2 .net rate expressions.
+    const parametersMap = new Map<string, number>();
+    for (const [k, v] of Object.entries(model.parameters ?? {})) {
+      const n = Number(v);
+      if (Number.isFinite(n)) parametersMap.set(k, n);
+    }
     
     const rules = model.reactionRules.flatMap(r => {
       const rate = model.parameters[r.rate] ?? parseFloat(r.rate);
@@ -209,6 +423,8 @@ async function compareModel(netFilePath: string): Promise<ComparisonResult> {
       
       try {
         const forwardRule = BNGLParser.parseRxnRule(ruleStr, rate);
+        // Preserve rule name for debugging/attribution.
+        (forwardRule as any).name = (r as any).name ?? (r as any).id ?? (r as any).label ?? forwardRule.name;
         if (r.constraints && r.constraints.length > 0) {
           forwardRule.applyConstraints(r.constraints, (s) => BNGLParser.parseSpeciesGraph(s));
         }
@@ -216,6 +432,7 @@ async function compareModel(netFilePath: string): Promise<ComparisonResult> {
         if (r.isBidirectional) {
           const reverseRuleStr = `${r.products.join(' + ')} -> ${r.reactants.join(' + ')}`;
           const reverseRule = BNGLParser.parseRxnRule(reverseRuleStr, reverseRate);
+          (reverseRule as any).name = ((forwardRule as any).name ? `${(forwardRule as any).name}_rev` : reverseRule.name);
           return [forwardRule, reverseRule];
         }
         return [forwardRule];
@@ -271,6 +488,45 @@ async function compareModel(netFilePath: string): Promise<ComparisonResult> {
     if (extraInOurs.length > 0) {
       result.speciesDiff.push(`Extra in ours (${extraInOurs.length}): ${extraInOurs.slice(0, 5).join(', ')}${extraInOurs.length > 5 ? '...' : ''}`);
     }
+
+    // Reaction-level diff (canonical + rate coefficient)
+    const rxnCmp = compareReactionsCanonical(bng2Network, ourNetwork as any, parametersMap);
+    if (rxnCmp.missing.length > 0) {
+      result.speciesDiff.push(`Missing reactions (canonical) in ours: ${rxnCmp.missing.length}`);
+    }
+    if (rxnCmp.extra.length > 0) {
+      result.speciesDiff.push(`Extra reactions (canonical) in ours: ${rxnCmp.extra.length}`);
+    }
+    if (rxnCmp.rateMismatches.length > 0) {
+      const worst = rxnCmp.rateMismatches[0];
+      result.speciesDiff.push(
+        `Rate mismatches (canonical): ${rxnCmp.rateMismatches.length} (worst abs=${worst.absDiff.toExponential(6)}, rel=${worst.relDiff.toExponential(3)})`
+      );
+    }
+
+    if (options.verboseRxnDiff) {
+      const showN = 12;
+      if (rxnCmp.missing.length > 0) {
+        console.log(`\n=== Missing reactions in ours (canonical, first ${showN}) ===`);
+        for (const m of rxnCmp.missing.slice(0, showN)) {
+          console.log(`- coeff=${m.bng2.sumCoeff} count=${m.bng2.count} rules=${topRuleNames(m.bng2)} :: ${m.sig}`);
+        }
+      }
+      if (rxnCmp.extra.length > 0) {
+        console.log(`\n=== Extra reactions in ours (canonical, first ${showN}) ===`);
+        for (const e of rxnCmp.extra.slice(0, showN)) {
+          console.log(`- coeff=${e.ours.sumCoeff} count=${e.ours.count} rules=${topRuleNames(e.ours)} :: ${e.sig}`);
+        }
+      }
+      if (rxnCmp.rateMismatches.length > 0) {
+        console.log(`\n=== Rate coefficient mismatches (first ${showN}) ===`);
+        for (const mm of rxnCmp.rateMismatches.slice(0, showN)) {
+          console.log(
+            `- abs=${mm.absDiff} rel=${mm.relDiff} :: bng2=${mm.bng2.sumCoeff} (count=${mm.bng2.count}, rules=${topRuleNames(mm.bng2)}) vs ours=${mm.ours.sumCoeff} (count=${mm.ours.count}, rules=${topRuleNames(mm.ours)}) :: ${mm.sig}`
+          );
+        }
+      }
+    }
     
   } catch (e: any) {
     result.error = e.message;
@@ -280,16 +536,29 @@ async function compareModel(netFilePath: string): Promise<ComparisonResult> {
 }
 
 async function run() {
-  const netFiles = fs.readdirSync(ROOT_DIR)
-    .filter(f => f.startsWith('temp_') && f.endsWith('.net'))
-    .map(f => path.join(ROOT_DIR, f));
-  
+  const args = parseArgs(process.argv.slice(2));
+  let netFiles: string[] = [];
+
+  if (args.net) {
+    netFiles = [path.resolve(ROOT_DIR, args.net)];
+  } else if (args.dir) {
+    const dirPath = path.resolve(ROOT_DIR, args.dir);
+    netFiles = fs.readdirSync(dirPath)
+      .filter(f => f.endsWith('.net'))
+      .map(f => path.join(dirPath, f));
+  } else {
+    // Backward-compatible default: compare temp_*.net in repo root
+    netFiles = fs.readdirSync(ROOT_DIR)
+      .filter(f => f.startsWith('temp_') && f.endsWith('.net'))
+      .map(f => path.join(ROOT_DIR, f));
+  }
+
   console.log(`Found ${netFiles.length} BNG2 .net files to compare against.\n`);
   
   const results: ComparisonResult[] = [];
   
   for (const netFile of netFiles) {
-    const result = await compareModel(netFile);
+    const result = await compareModel(netFile, { verboseRxnDiff: !!args.net });
     results.push(result);
     
     const speciesStatus = result.speciesMatch ? '✅' : (Math.abs(result.bng2Species - result.ourSpecies) <= 2 ? '⚠️' : '❌');

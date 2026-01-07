@@ -30,7 +30,10 @@ export function parseBNGLWithANTLR(input: string): ParseResult {
 
   try {
     // Create lexer and parser
-    const inputStream = CharStreams.fromString(input);
+    // Some published BNGL files can start with a UTF-8 BOM (U+FEFF). BNG2.pl
+    // accepts this; our lexer should too.
+    const sanitizedInput = input.replace(/^\uFEFF/, '');
+    const inputStream = CharStreams.fromString(sanitizedInput);
     const lexer = new BNGLexer(inputStream);
 
     // Collect lexer errors

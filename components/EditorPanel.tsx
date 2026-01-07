@@ -61,7 +61,8 @@ function formatBNGLMini(code: string): string {
   return out.join('\n').trim() + '\n';
 }
 import MonacoEditor from './MonacoEditor';
-import { SimulationOptions, ValidationWarning, EditorMarker } from '../types';
+import { BNGLModel, SimulationOptions, ValidationWarning, EditorMarker } from '../types';
+import { getSimulationOptionsFromParsedModel } from '../src/utils/simulationOptions';
 
 interface EditorPanelProps {
   code: string;
@@ -70,6 +71,7 @@ interface EditorPanelProps {
   onSimulate: (options: SimulationOptions) => void;
   isSimulating: boolean;
   modelExists: boolean;
+  model?: BNGLModel | null;
   validationWarnings: ValidationWarning[];
   editorMarkers: EditorMarker[];
   loadedModelName?: string | null;
@@ -82,79 +84,6 @@ interface EditorPanelProps {
   };
 }
 
-type ParsedSimulateOptions = {
-  t_end?: number;
-  n_steps?: number;
-  atol?: number;
-  rtol?: number;
-};
-
-const SIMULATE_REGEX = /simulate(?:_(ode|ssa))?\s*\(\s*\{([\s\S]*?)\}\s*\)/gi;
-
-const DEFAULT_SIMULATION: Record<'ode' | 'ssa', { t_end: number; n_steps: number }> = {
-  ode: { t_end: 100, n_steps: 100 },
-  ssa: { t_end: 100, n_steps: 100 },
-};
-
-function extractSimulateOptions(source: string, preferredMethod: 'ode' | 'ssa'): ParsedSimulateOptions {
-  const matches: Array<{ method?: 'ode' | 'ssa'; options: ParsedSimulateOptions }> = [];
-
-  SIMULATE_REGEX.lastIndex = 0;
-  let simulateMatch: RegExpExecArray | null;
-  while ((simulateMatch = SIMULATE_REGEX.exec(source)) !== null) {
-    const [, methodSuffixRaw, block] = simulateMatch;
-    const entry: { method?: 'ode' | 'ssa'; options: ParsedSimulateOptions } = {
-      method: methodSuffixRaw ? (methodSuffixRaw.toLowerCase() as 'ode' | 'ssa') : undefined,
-      options: {},
-    };
-
-    const keyValueRegex = /(\w+)\s*=>\s*(?:"([^"]*)"|'([^']*)'|([^,\s}]+))/g;
-    let kvMatch: RegExpExecArray | null;
-    while ((kvMatch = keyValueRegex.exec(block)) !== null) {
-      const key = kvMatch[1];
-      const rawValue = kvMatch[2] ?? kvMatch[3] ?? kvMatch[4] ?? '';
-      if (key === 'method' && rawValue) {
-        const normalized = rawValue.toLowerCase();
-        if (normalized === 'ode' || normalized === 'ssa') {
-          entry.method = normalized;
-        }
-      } else if (key === 't_end') {
-        const num = Number(rawValue);
-        if (!Number.isNaN(num)) {
-          entry.options.t_end = num;
-        }
-      } else if (key === 'n_steps') {
-        const num = Number(rawValue);
-        if (!Number.isNaN(num)) {
-          entry.options.n_steps = num;
-        }
-      } else if (key === 'atol') {
-        const num = Number(rawValue);
-        if (!Number.isNaN(num)) {
-          entry.options.atol = num;
-        }
-      } else if (key === 'rtol') {
-        const num = Number(rawValue);
-        if (!Number.isNaN(num)) {
-          entry.options.rtol = num;
-        }
-      }
-    }
-
-    matches.push(entry);
-  }
-
-  if (matches.length === 0) {
-    return {};
-  }
-
-  const exact = matches.find((entry) => entry.method === preferredMethod);
-  const methodless = matches.find((entry) => entry.method === undefined);
-  const chosen = exact ?? methodless ?? matches[0];
-
-  return chosen.options;
-}
-
 export const EditorPanel: React.FC<EditorPanelProps> = ({
   code,
   onCodeChange,
@@ -163,6 +92,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
 
   isSimulating,
   modelExists,
+  model,
   validationWarnings,
   editorMarkers,
   loadedModelName,
@@ -175,7 +105,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
     () => localStorage.getItem('bng-banner-dismissed') !== 'true'
   );
   // Auto-open on first visit removed so the page isn't blocked by a modal on first load.
-  const [simulationMethod, setSimulationMethod] = useState<'ode' | 'ssa'>('ode');
+  const [simulationMethod, setSimulationMethod] = useState<'default' | 'ode' | 'ssa'>('default');
   const [customAtol, setCustomAtol] = useState<string>('');
   const [customRtol, setCustomRtol] = useState<string>('');
   const [odeSolver, setOdeSolver] = useState<'auto' | 'cvode' | 'cvode_auto' | 'cvode_sparse' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4' | 'webgpu_rk4'>('auto');
@@ -313,16 +243,22 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
           <Button onClick={onParse}>Parse Model</Button>
           <Button
             onClick={() => {
-              const parsed = extractSimulateOptions(code, simulationMethod);
-              const defaults = DEFAULT_SIMULATION[simulationMethod];
-              const atolValue = customAtol ? Number(customAtol) : (parsed.atol ?? 1e-6);
-              const rtolValue = customRtol ? Number(customRtol) : (parsed.rtol ?? 1e-3);
-              onSimulate({
-                method: simulationMethod,
-                t_end: parsed.t_end ?? defaults.t_end,
-                n_steps: parsed.n_steps ?? defaults.n_steps,
-                ...(simulationMethod === 'ode' ? { atol: atolValue, rtol: rtolValue, solver: odeSolver } : {}),
-              });
+              if (!model) return;
+
+              const base = getSimulationOptionsFromParsedModel(model, simulationMethod);
+              if (simulationMethod === 'ode') {
+                const atolValue = customAtol ? Number(customAtol) : (base.atol ?? 1e-6);
+                const rtolValue = customRtol ? Number(customRtol) : (base.rtol ?? 1e-3);
+                onSimulate({
+                  ...base,
+                  atol: atolValue,
+                  rtol: rtolValue,
+                  solver: odeSolver,
+                });
+                return;
+              }
+
+              onSimulate(base);
             }}
             disabled={isSimulating || !modelExists}
             variant="primary"
@@ -337,8 +273,9 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
           <RadioGroup
             name="simulationMethod"
             value={simulationMethod}
-            onChange={(val) => setSimulationMethod(val as 'ode' | 'ssa')}
+            onChange={(val) => setSimulationMethod(val as 'default' | 'ode' | 'ssa')}
             options={[
+              { label: 'Default', value: 'default' },
               { label: 'ODE', value: 'ode' },
               { label: 'SSA', value: 'ssa' },
             ]}

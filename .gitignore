@@ -131,7 +131,8 @@ scripts/comparison_report.json
 
 .agent
 
-bionetgen/*
+bionetgen_python/*
+bionetgen_repo/*
 
 gdat_temp/
 

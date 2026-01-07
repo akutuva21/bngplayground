@@ -1341,7 +1341,7 @@ const NATIVE_TUTORIALS: Example[] = [
   },
   {
     id: 'ABC',
-    name: 'ABC',
+    name: 'ABC Tutorial',
     description: 'Native BNGL Tutorial: ABC',
     code: ABCTutorial,
     tags: ['published', 'tutorial', 'native'],
@@ -1362,21 +1362,21 @@ const NATIVE_TUTORIALS: Example[] = [
   },
   {
     id: 'LV',
-    name: 'LV',
+    name: 'Lotka-Volterra (LV) Tutorial',
     description: 'Native BNGL Tutorial: LV',
     code: LVTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'SIR',
-    name: 'SIR',
+    name: 'SIR Tutorial',
     description: 'Native BNGL Tutorial: SIR',
     code: SIRTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'ABp',
-    name: 'ABp',
+    name: 'ABp Tutorial',
     description: 'Native BNGL Tutorial: ABp',
     code: ABpTutorial,
     tags: ['published', 'tutorial', 'native'],
@@ -1390,7 +1390,7 @@ const NATIVE_TUTORIALS: Example[] = [
   },
   {
     id: 'GK',
-    name: 'GK',
+    name: 'GK Tutorial',
     description: 'Native BNGL Tutorial: GK',
     code: GKTutorial,
     tags: ['published', 'tutorial', 'native'],
@@ -1411,7 +1411,7 @@ const NATIVE_TUTORIALS: Example[] = [
   },
   {
     id: 'BAB',
-    name: 'BAB',
+    name: 'BAB Tutorial',
     description: 'Native BNGL Tutorial: BAB',
     code: BABTutorial,
     tags: ['published', 'tutorial', 'native'],
@@ -1432,7 +1432,7 @@ const NATIVE_TUTORIALS: Example[] = [
   },
   {
     id: 'BLBR',
-    name: 'BLBR',
+    name: 'BLBR Tutorial',
     description: 'Native BNGL Tutorial: BLBR',
     code: BLBRTutorial,
     tags: ['published', 'tutorial', 'native'],
@@ -1446,14 +1446,14 @@ const NATIVE_TUTORIALS: Example[] = [
   },
   {
     id: 'LR',
-    name: 'LR',
+    name: 'LR Tutorial',
     description: 'Native BNGL Tutorial: LR',
     code: LRTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'LRR',
-    name: 'LRR',
+    name: 'LRR Tutorial',
     description: 'Native BNGL Tutorial: LRR',
     code: LRRTutorial,
     tags: ['published', 'tutorial', 'native'],

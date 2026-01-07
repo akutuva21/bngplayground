@@ -1546,11 +1546,18 @@ export class NetworkGenerator {
             // - If the matcher collapses symmetric embeddings to a single match (common with repeated
             //   identical sites/components), BNG2 still applies a stat_factor. Recover it here using
             //   the computed embedding degeneracy *only* in the single-match case.
-            const singleEmbedding = matchesFirst.length === 1 && matchesSecond.length === 1;
             const totalDegeneracy = Math.max(firstDegeneracy * secondDegeneracy, 1);
-            // FIX: Use actual match degeneracy as symmetry factor when matcher collapses symmetric embeddings
-            // Example: A(b) matching A(b,b) returns 1 match with degeneracy 2 (two equivalent b sites)
-            const symmetryFactor = singleEmbedding ? totalDegeneracy : 1;
+            // Recover stat_factor when the matcher collapses symmetric embeddings into a single match.
+            // IMPORTANT: This can happen independently per reactant. When one side enumerates multiple
+            // embeddings (e.g., pattern matches either of two identical molecules in a complex), and the
+            // other side collapses repeated identical sites into a single embedding with degeneracy>1,
+            // we must still apply the degeneracy for the collapsed side.
+            // Example (mixed): A(x) matches A(x).A(x) (2 embeddings enumerated) and B(y) matches B(y,y)
+            // (1 embedding, degeneracy 2). Correct stat_factor is 2*2=4 (enumeration * degeneracy).
+            const degeneracyFactor =
+              (matchesFirst.length === 1 ? firstDegeneracy : 1) *
+              (matchesSecond.length === 1 ? secondDegeneracy : 1);
+            const symmetryFactor = Math.max(degeneracyFactor, 1);
 
             // Semantics: effective rate = (numeric scaling) * (evaluated symbolic expression, if present).
             // Keep scaling in the numeric factor; keep the symbolic rateExpression untouched.

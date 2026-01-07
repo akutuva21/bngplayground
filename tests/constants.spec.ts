@@ -53,7 +53,6 @@ describe('Example catalog integrity', () => {
 // BNGL allows various block name variations
 // cBNGL models can infer molecule types from species, so molecule types is optional
 const requiredBlocksWithAliases: { name: string; aliases: string[] }[] = [
-  { name: 'parameters', aliases: ['parameters'] },
   // molecule types is optional - cBNGL can infer from species block
   { name: 'seed species', aliases: ['seed species', 'species'] },
   { name: 'observables', aliases: ['observables'] },

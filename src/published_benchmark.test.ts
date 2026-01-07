@@ -125,6 +125,13 @@ const SKIP_MODELS = new Set([
     'Lin_Prion_2019',
 ]);
 
+// Models that are known to be slow in the web netgen benchmark.
+// Keep them in the benchmark, but allow longer per-test runtime.
+const SLOW_MODELS = new Set([
+    'Kozer_2013',
+    'BLBR',
+]);
+
 describe('Full Published Models Benchmark', () => {
     // Debug logging
     console.log('STARTING BENCHMARK SUITE');
@@ -207,14 +214,18 @@ describe('Full Published Models Benchmark', () => {
         expect(models.length).toBeGreaterThan(0);
     });
 
-    // Run all models (timeout 150s per test limit, allowing for BNG2 time + setup)
-    it.each(models)('should generate network for %s', async (modelData) => {
+    const normalModels = models.filter(m => !SLOW_MODELS.has(m.name));
+    const slowModels = models.filter(m => SLOW_MODELS.has(m.name));
+
+    const runBenchmarkForModel = async (modelData: { name: string; path: string; category: string }) => {
         const result: BenchmarkResult = {
             model: modelData.name,
             category: modelData.category,
             status: 'error',
             webTimeMs: 0
         };
+
+        const webStart = Date.now();
 
         try {
             const bnglContent = fs.readFileSync(modelData.path, 'utf-8');
@@ -241,81 +252,62 @@ describe('Full Published Models Benchmark', () => {
             console.log(`Testing ${modelData.name}...`);
 
             // --- Web Simulator Run ---
-            // Enforce 120s timeout for Web Simulator logic
-            const webStart = Date.now();
+            // Parse with ANTLR (Strict)
+            const parsedModel = parseBNGLStrict(bnglContent);
+            const seedSpecies = parsedModel.species.map(s => BNGLParser.parseSpeciesGraph(s.name));
+            const parametersMap = new Map(Object.entries(parsedModel.parameters).map(([k, v]) => [k, Number(v)]));
 
-            // Promise wrapper for timeout
-            await new Promise<void>(async (resolve, reject) => {
-                const timeoutId = setTimeout(() => {
-                    reject(new Error("Web Simulator Timeout (>120s)"));
-                }, 120000);
-
+            const rules = parsedModel.reactionRules.flatMap(r => {
+                let rate: number | string = r.rate;
                 try {
-                    // Parse with ANTLR (Strict)
-                    const parsedModel = parseBNGLStrict(bnglContent);
-                    const seedSpecies = parsedModel.species.map(s => BNGLParser.parseSpeciesGraph(s.name));
-                    const parametersMap = new Map(Object.entries(parsedModel.parameters).map(([k, v]) => [k, Number(v)]));
-
-                    const rules = parsedModel.reactionRules.flatMap(r => {
-                        let rate: number | string = r.rate;
-                        try {
-                            const val = BNGLParser.evaluateExpression(r.rate, parametersMap);
-                            if (!isNaN(val)) rate = val;
-                        } catch (e) {
-                            // Keep as string if evaluation fails
-                        }
-
-                        let reverseRate: number | string | undefined;
-                        if (r.reverseRate) {
-                            reverseRate = r.reverseRate;
-                            try {
-                                const val = BNGLParser.evaluateExpression(r.reverseRate, parametersMap);
-                                if (!isNaN(val)) reverseRate = val;
-                            } catch (e) {
-                                // Keep as string
-                            }
-                        } else if (r.isBidirectional) {
-                            reverseRate = rate;
-                        }
-
-                        const formatList = (list: string[]) => list.length > 0 ? list.join(' + ') : '0';
-                        const ruleStr = `${formatList(r.reactants)} -> ${formatList(r.products)}`;
-                        const forwardRule = BNGLParser.parseRxnRule(ruleStr, rate);
-                        if (r.isBidirectional && reverseRate !== undefined) {
-                            const reverseRuleStr = `${formatList(r.products)} -> ${formatList(r.reactants)}`;
-                            const reverseRule = BNGLParser.parseRxnRule(reverseRuleStr, reverseRate);
-                            return [forwardRule, reverseRule];
-                        }
-                        return [forwardRule];
-
-                    });
-
-
-                    // FIX: Respect parsed network options (especially maxStoich)
-                    let maxStoich: number | Record<string, number> = 500;
-                    if (parsedModel.networkOptions?.maxStoich) {
-                         maxStoich = parsedModel.networkOptions.maxStoich;
-                    }
-
-                    // Limit max species 
-                    const generator = new NetworkGenerator({
-                        maxSpecies: 3000,
-                        maxIterations: 1000,
-                        ...parsedModel.networkOptions,
-                        maxStoich
-                    });
-                    const network = await generator.generate(seedSpecies, rules);
-
-                    result.webSpecies = network.species.length;
-                    result.webReactions = network.reactions.length;
-
-                    clearTimeout(timeoutId);
-                    resolve();
+                    const val = BNGLParser.evaluateExpression(r.rate, parametersMap);
+                    if (!isNaN(val)) rate = val;
                 } catch (e) {
-                    clearTimeout(timeoutId);
-                    reject(e);
+                    // Keep as string if evaluation fails
                 }
+
+                let reverseRate: number | string | undefined;
+                if (r.reverseRate) {
+                    reverseRate = r.reverseRate;
+                    try {
+                        const val = BNGLParser.evaluateExpression(r.reverseRate, parametersMap);
+                        if (!isNaN(val)) reverseRate = val;
+                    } catch (e) {
+                        // Keep as string
+                    }
+                } else if (r.isBidirectional) {
+                    reverseRate = rate;
+                }
+
+                const formatList = (list: string[]) => list.length > 0 ? list.join(' + ') : '0';
+                const ruleStr = `${formatList(r.reactants)} -> ${formatList(r.products)}`;
+                const forwardRule = BNGLParser.parseRxnRule(ruleStr, rate);
+                if (r.isBidirectional && reverseRate !== undefined) {
+                    const reverseRuleStr = `${formatList(r.products)} -> ${formatList(r.reactants)}`;
+                    const reverseRule = BNGLParser.parseRxnRule(reverseRuleStr, reverseRate);
+                    return [forwardRule, reverseRule];
+                }
+                return [forwardRule];
+
             });
+
+            // FIX: Respect parsed network options (especially maxStoich)
+            let maxStoich: number | Record<string, number> = 500;
+            if (parsedModel.networkOptions?.maxStoich) {
+                maxStoich = parsedModel.networkOptions.maxStoich;
+            }
+
+            // Limit max species 
+            const generator = new NetworkGenerator({
+                maxSpecies: 3000,
+                maxIterations: 1000,
+                ...parsedModel.networkOptions,
+                maxStoich
+            });
+            const network = await generator.generate(seedSpecies, rules);
+
+            result.webSpecies = network.species.length;
+            result.webReactions = network.reactions.length;
 
             result.webTimeMs = Date.now() - webStart;
             result.status = 'pass';
@@ -395,16 +387,23 @@ describe('Full Published Models Benchmark', () => {
             console.log(`✓ ${modelData.name}: Web=${result.webTimeMs}ms (${result.webSpecies}sp), BNG2=${bngTimeStr} [${matchSym}]`);
 
         } catch (e: any) {
-            result.webTimeMs = Date.now() - result.webTimeMs; // rough adjustment if not set
-            if (result.webTimeMs <= 0) result.webTimeMs = 0;
-
+            result.webTimeMs = Math.max(0, Date.now() - webStart);
             result.status = 'error';
             result.error = e.message || String(e);
             console.log(`✗ ${modelData.name}: ${result.error?.substring(0, 60)}`);
         }
 
         results.push(result);
+    };
+
+    // Run all models. Keep known-slow models in the benchmark, but allow longer runtime.
+    it.each(normalModels)('should generate network for %s', async (modelData) => {
+        await runBenchmarkForModel(modelData);
     }, 180000); // 3 min total test timeout
+
+    it.each(slowModels)('should generate network for %s', async (modelData) => {
+        await runBenchmarkForModel(modelData);
+    }, 600000); // 10 min total test timeout
 
     it('should print full summary', () => {
         console.log('\n\n=== FULL BENCHMARK SUMMARY ===\n');

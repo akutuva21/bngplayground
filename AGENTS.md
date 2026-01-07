@@ -9,10 +9,11 @@
 - `npm run preview` - Preview production build locally
 
 ### Testing
-- `npm run test` - Run Vitest once (only tests in `tests/` directory)
+- `npm run test` - Run Vitest once (formal suite in `tests/` directory)
 - `npm run test:watch` - Run Vitest in watch mode
 - `npx vitest run <filename>` - Run single test file (e.g., `npx vitest run tests/constants.spec.ts`)
 - Test files in `tests/*.spec.ts` and `tests/*.test.ts` (run by `npm run test`)
+- Debug/repro specs (`tests/debug-*.ts`, `tests/*isolated*.ts`, `tests/*repro*.ts`, `tests/*spawnsync*.ts`) are **excluded** from the default run; invoke explicitly with `npx vitest run <file>`
 - Additional test files in `src/*.test.ts` exist but are not in Vitest config; run manually with `npx vitest run`
 
 ### Utilities
@@ -233,6 +234,48 @@ The following are gitignored and should be considered temporary/debug:
 - Used for regression testing and validation of parser/ODE solver accuracy
 - Reference outputs are generated from BioNetGen and compared against web simulator outputs
 
+## Known Limitations & Design Decisions
+
+### Canonicalization
+- **Nauty WASM is integrated** and used for canonical labeling when `NautyService` is initialized
+- Nauty input uses an expanded graph encoding (molecule + component + bond vertices) to preserve component-level connectivity and multi-bonds
+- Fallback uses Weisfeiler-Lehman refinement + BFS-based canonical ordering when Nauty is unavailable
+- **Validation**: Species counts are verified against BNG2.pl in `tests/bng2-comparison.spec.ts` (62 models pass)
+- Targeted regression: `tests/nauty-canonicalization.spec.ts`
+
+### ODE Solver
+- **CVODE WASM (SUNDIALS)** is the primary solver for stiff systems - NOT RK4
+- Loader: `services/cvode_loader.js`, WASM: `public/cvode.wasm`
+- Supports dense and sparse Jacobian modes via `cvode`, `cvode_sparse`, `cvode_auto`
+- Explicit methods (RK4/RK45) exist for non-stiff fallback only
+
+### Compartment Volume Scaling
+- **Implemented** in `NetworkGenerator.ts::getVolumeScale()`
+- Bimolecular reaction rates scaled by 1/volume for 3D compartments
+- Heterogeneous (3D+2D) reactions use the 3D compartment's volume
+
+### Degeneracy / Symmetry
+- Component-level degeneracy calculated in `src/services/graph/core/degeneracy.ts`
+- Used for statistical factors in reaction rates
+- Does not implement full automorphism group computation (known gap vs BNG2's HNauty)
+
+### Match Cache
+- Fixed-size cache (50,000 entries) in `Matcher.ts`
+- **Cleared between network generation runs** via `clearMatchCache()`
+- No LRU eviction; stops caching when full
+
+### Features NOT Implemented
+- NFsim (network-free simulation) - exponential networks will hit `maxSpecies` limit
+- Time-dependent rate constants `k(t)`
+- Local functions (`%x` syntax)
+- Parameter scan / bifurcation analysis actions
+- Hybrid SSA/ODE (PLA)
+
+### Automated Validation
+- `tests/bng2-comparison.spec.ts` - Compares GDAT output vs BNG2.pl for 62 models
+- `tests/gdat-regression.spec.ts` - Regression tests against stored fixtures
+- Model-specific tolerance overrides for known numerical divergence (e.g., `An_2009` at 25% rel tol)
+
 ## Architecture Notes
 
 - React 19 + Vite 6 + TypeScript 5.8
@@ -252,3 +295,4 @@ The following are gitignored and should be considered temporary/debug:
 - Types: `types.ts` (root)
 - Build config: `vite.config.ts`, `tsconfig.json` (root)
 - Test config: `vitest.config.ts` (root) - Note: only includes `tests/` directory
+

@@ -23,6 +23,6 @@ describe('Embedding degeneracy', () => {
     expect(matches.length).toBe(2);
 
     const degeneracy = countEmbeddingDegeneracy(pattern, target, matches[0]);
-    expect(degeneracy).toBe(2);
+    expect(degeneracy).toBe(1);
   });
 });

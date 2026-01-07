@@ -1,5 +1,4 @@
 // graph/core/Canonical.ts
-console.error('[Canonical.ts] LOADED VERSION V3 (STDERR)');
 import { SpeciesGraph } from './SpeciesGraph.ts';
 import { NautyService } from './NautyService.ts';
 
@@ -66,39 +65,132 @@ export class GraphCanonicalizer {
     const nauty = NautyService.getInstance();
     let finalOrder: number[] = [];
 
-    // NAUTY DISABLED: Found to be non-deterministic for symmetric S-R-R-S isomers in Barua model.
-    // BFS with MinNeighborRank fix is robust and correct (149 species).
-    if (false && nauty.isInitialized) {
-      try {
-        const n = graph.molecules.length;
-        const flatAdj = new Int32Array(n * n);
+    let usedNauty = false;
 
-        // Build simple adjacency matrix for Nauty
-        // Note: Component details are encoded in the WL colors passed to Nauty
+    // Nauty canonical labeling (when initialized): build an expanded, type-annotated graph
+    // that includes molecule vertices, component vertices, and bond vertices.
+    // This avoids losing information from multi-bonds and component-specific connectivity.
+    if (nauty.isInitialized) {
+      try {
+        type VertexKind = 'mol' | 'comp' | 'bond';
+
+        const moleculeVertexIds: number[] = [];
+        const componentVertexIds: number[][] = [];
+
+        // Vertex metadata for coloring + decoding Nauty labeling
+        const vertexKind: VertexKind[] = [];
+        const vertexMolIndex: Array<number | null> = [];
+        const vertexLabel: string[] = [];
+
+        const addVertex = (kind: VertexKind, molIdx: number | null, label: string): number => {
+          const id = vertexKind.length;
+          vertexKind.push(kind);
+          vertexMolIndex.push(molIdx);
+          vertexLabel.push(label);
+          return id;
+        };
+
+        // 1) Molecule vertices
+        for (let molIdx = 0; molIdx < graph.molecules.length; molIdx++) {
+          const mol = graph.molecules[molIdx];
+          const molLabel = `M:${mol.name}${mol.compartment ? `@${mol.compartment}` : ''}`;
+          moleculeVertexIds[molIdx] = addVertex('mol', molIdx, molLabel);
+        }
+
+        // 2) Component vertices (one per component instance)
+        for (let molIdx = 0; molIdx < graph.molecules.length; molIdx++) {
+          const mol = graph.molecules[molIdx];
+          componentVertexIds[molIdx] = [];
+          for (let compIdx = 0; compIdx < mol.components.length; compIdx++) {
+            const comp = mol.components[compIdx];
+            const compLabel = `C:${comp.name}${comp.state ? `~${comp.state}` : ''}${comp.wildcard ? `!${comp.wildcard}` : ''}`;
+            componentVertexIds[molIdx][compIdx] = addVertex('comp', molIdx, compLabel);
+          }
+        }
+
+        // 3) Bond vertices (one per unique undirected bond)
+        // Deduplicate from adjacency map which contains both directions.
+        const bondVertexByKey = new Map<string, number>();
+        const bondEndpoints: Array<{ bondV: number; v1: number; v2: number }> = [];
+
         for (const [key, partnerKeys] of graph.adjacency) {
-          const [m1Str, _] = key.split('.');
-          const m1 = parseInt(m1Str, 10);
+          const [m1Str, c1Str] = key.split('.');
+          const m1 = Number(m1Str);
+          const c1 = Number(c1Str);
 
           for (const partnerKey of partnerKeys) {
-            const [m2Str, __] = partnerKey.split('.');
-            const m2 = parseInt(m2Str, 10);
+            const [m2Str, c2Str] = partnerKey.split('.');
+            const m2 = Number(m2Str);
+            const c2 = Number(c2Str);
 
-            if (m1 !== m2) {
-              flatAdj[m1 * n + m2] = 1;
-              flatAdj[m2 * n + m1] = 1;
+            const aKey = `${m1}.${c1}`;
+            const bKey = `${m2}.${c2}`;
+            const bondKey = aKey < bKey ? `${aKey}-${bKey}` : `${bKey}-${aKey}`;
+
+            if (!bondVertexByKey.has(bondKey)) {
+              const bondVertexId = addVertex('bond', null, 'B');
+              bondVertexByKey.set(bondKey, bondVertexId);
+              bondEndpoints.push({
+                bondV: bondVertexId,
+                v1: componentVertexIds[m1]?.[c1],
+                v2: componentVertexIds[m2]?.[c2]
+              });
             }
           }
         }
 
-        // Prepare colors from WL refinement
-        const colors = new Int32Array(n);
-        for (let i = 0; i < n; i++) {
-          colors[i] = moleculeInfos[i].colorClass;
+        const n = vertexKind.length;
+        const flatAdj = new Int32Array(n * n);
+
+        const addUndirectedEdge = (a: number | undefined, b: number | undefined): void => {
+          if (a === undefined || b === undefined) return;
+          if (a === b) return;
+          flatAdj[a * n + b] = 1;
+          flatAdj[b * n + a] = 1;
+        };
+
+        // Molecule-component edges (hierarchy)
+        for (let molIdx = 0; molIdx < graph.molecules.length; molIdx++) {
+          const molV = moleculeVertexIds[molIdx];
+          const compVs = componentVertexIds[molIdx];
+          for (const compV of compVs) {
+            addUndirectedEdge(molV, compV);
+          }
         }
 
-        // Get canonical labeling (permutation)
+        // Bond edges via bond-vertices
+        for (const { bondV, v1, v2 } of bondEndpoints) {
+          addUndirectedEdge(bondV, v1);
+          addUndirectedEdge(bondV, v2);
+        }
+
+        // Prepare stable color partitions from vertex labels
+        const uniqueLabels = Array.from(new Set(vertexLabel)).sort();
+        const labelToColor = new Map<string, number>();
+        uniqueLabels.forEach((lbl, idx) => labelToColor.set(lbl, idx));
+        const colors = new Int32Array(n);
+        for (let i = 0; i < n; i++) {
+          colors[i] = labelToColor.get(vertexLabel[i]) ?? 0;
+        }
+
         const result = nauty.getCanonicalLabeling(n, flatAdj, colors);
-        finalOrder = Array.from(result.labeling);
+        const labeling = Array.from(result.labeling);
+
+        // Extract molecule ordering from full canonical vertex ordering
+        for (const v of labeling) {
+          if (vertexKind[v] === 'mol') {
+            const molIdx = vertexMolIndex[v];
+            if (molIdx !== null) {
+              finalOrder.push(molIdx);
+            }
+          }
+        }
+
+        if (finalOrder.length === graph.molecules.length) {
+          usedNauty = true;
+        } else {
+          finalOrder = [];
+        }
 
       } catch (e) {
         console.warn('Nauty canonicalization failed, falling back to WL+BFS:', e);
@@ -292,7 +384,7 @@ export class GraphCanonicalizer {
     // We rebuild originalToSortedVector based on current moleculeInfos state?
     // NO. We need robust mapping.
 
-    if (nauty.isInitialized && finalOrder.length === graph.molecules.length && !moleculeInfos[0].hasOwnProperty('sortedWrapped')) {
+    if (usedNauty && finalOrder.length === graph.molecules.length) {
       // Nauty path: moleculeInfos is ordered by ORIGINAL index.
       // finalOrder[canIdx] = Original Index.
 
@@ -302,9 +394,9 @@ export class GraphCanonicalizer {
 
       // Removed redundant sort that was here
 
-      moleculeInfos.forEach(info => {
-        originalToSortedVector.set(info.originalIndex, info.originalIndex);
-      });
+      for (let i = 0; i < moleculeInfos.length; i++) {
+        originalToSortedVector.set(i, i);
+      }
 
       finalOrder.forEach((origIdx, canIdx) => {
         sortedToCanonicalVector.set(origIdx, canIdx);
@@ -314,12 +406,12 @@ export class GraphCanonicalizer {
       // Fallback path: moleculeInfos IS SORTED.
       // finalOrder[canIdx] = Sorted Index.
 
-      moleculeInfos.forEach((info, index) => {
-        originalToSortedVector.set(info.originalIndex, index);
-      });
+      for (let i = 0; i < moleculeInfos.length; i++) {
+        originalToSortedVector.set(i, i);
+      }
 
-      finalOrder.forEach((sortedIdx, canIdx) => {
-        sortedToCanonicalVector.set(sortedIdx, canIdx);
+      finalOrder.forEach((origIdx, canIdx) => {
+        sortedToCanonicalVector.set(origIdx, canIdx);
       });
     }
 

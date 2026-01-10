@@ -226,18 +226,34 @@ export class NetworkGenerator {
   }
 
   /**
-   * Calculate volume scaling factor for transport reactions (Unimolecular).
-   * Scaling = V_source / V_dest.
+   * Calculate volume scaling for transport reactions between compartments.
+   *
+   * BNG2 Behavior (from Network3 source code):
+   * - For transport A@C1 -> A@C2, the rate is scaled by V_source/V_dest
+   * - This converts concentration-based rates to molecule counts
+   * - When V_source > V_dest (e.g., cytoplasm to membrane), rate increases
+   * - When V_source < V_dest (e.g., membrane to cytoplasm), rate decreases
    */
   private getTransportVolumeScale(source: SpeciesGraph, dest: SpeciesGraph): number {
     if (this.compartmentVolumes.size === 0) return 1;
 
-    const vSource = source.compartment ? this.compartmentVolumes.get(source.compartment) : undefined;
-    const vDest = dest.compartment ? this.compartmentVolumes.get(dest.compartment) : undefined;
+    const sourceComp = source.compartment;
+    const destComp = dest.compartment;
 
+    // No compartments specified - no scaling
+    if (!sourceComp || !destComp) return 1;
+
+    // Same compartment - no scaling
+    if (sourceComp === destComp) return 1;
+
+    const vSource = this.compartmentVolumes.get(sourceComp);
+    const vDest = this.compartmentVolumes.get(destComp);
+
+    // Both volumes must be defined and destination non-zero
     if (vSource !== undefined && vDest !== undefined && vDest > 0) {
-      return vSource / vDest; // Restore BNG2 parity scaling
+      return vSource / vDest;
     }
+
     return 1;
   }
 
@@ -384,13 +400,17 @@ export class NetworkGenerator {
 
     if (comp1 && comp2) {
       // Bimolecular: 
-      // HYPOTHESIS: For heterogeneous (3D+2D) reactions, BNG2 uses the Surface compartment's 
-      // effective volume (Size) for scaling, effectively treating the reaction as occurring 
-      // in the membrane boundary layer.
+      // RULE: "For elementary bimolecular reactions... the rate constant is divided by the volume of the 
+      // reactant compartment with the highest dimension." (Harris et al. 2009, Winter Simulation Conference)
+      //
+      // Scenarios:
+      // 1. 3D + 3D -> Scale by 3D Volume
+      // 2. 2D + 2D -> Scale by 2D Effective Volume (Area * thickness)
+      // 3. 3D + 2D -> Scale by 3D Volume (Highest Dimension Rule)
       if (comp1.dimension >= 3 && comp2.dimension < 3) {
-        scalingCompartment = comp2;  // Use 2D volume (effective layer)
+        scalingCompartment = comp1;  // FIX: Use 3D volume (Harris et al. 2009 Rule)
       } else if (comp2.dimension >= 3 && comp1.dimension < 3) {
-        scalingCompartment = comp1;  // Use 2D volume (effective layer)
+        scalingCompartment = comp2;  // FIX: Use 3D volume (Harris et al. 2009 Rule)
       } else if (comp1.dimension >= 3 && comp2.dimension >= 3) {
         // Both 3D: use first (should be same compartment typically)
         scalingCompartment = comp1;

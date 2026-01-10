@@ -92,11 +92,19 @@ export interface ReactionRule {
   comment?: string;
 }
 
+export interface BNGLAction {
+  type: string;
+  args: Record<string, any>;
+}
+
 export interface BNGLModel {
+  name?: string;
   parameters: Record<string, number>;
   moleculeTypes: BNGLMoleculeType[];
   species: BNGLSpecies[];
   observables: BNGLObservable[];
+  limitations?: string[];
+  actions?: BNGLAction[];
   reactions: BNGLReaction[];
   reactionRules: ReactionRule[];
   compartments?: BNGLCompartment[];
@@ -129,7 +137,7 @@ export interface SimulationPhase {
   n_steps: number;
   // Maps to BNGL `continue=>1` (true) / `continue=>0` (false).
   // When true, BNG requires t_start to equal the current model time.
-  continue_from_previous?: boolean;
+  continue?: boolean;
   atol?: number;
   rtol?: number;
   suffix?: string;

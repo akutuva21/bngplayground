@@ -18,7 +18,8 @@ import type {
   SimulationOptions,
   SimulationPhase,
   ConcentrationChange,
-  ParameterChange
+  ParameterChange,
+  BNGLAction
 } from '../../types';
 
 export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements BNGParserVisitor<any> {
@@ -36,6 +37,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
   private simulationPhases: SimulationPhase[] = [];
   private concentrationChanges: ConcentrationChange[] = [];
   private parameterChanges: ParameterChange[] = [];
+  private actions: BNGLAction[] = [];
 
   protected defaultResult(): BNGLModel {
     return {
@@ -52,6 +54,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       simulationPhases: this.simulationPhases,
       concentrationChanges: this.concentrationChanges,
       parameterChanges: this.parameterChanges,
+      actions: this.actions,
       paramExpressions: { ...this.paramExpressions },  // Export for setParameter recalculation
     };
   }
@@ -68,7 +71,14 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       }
     }
 
-
+    // Visit top-level action commands (often outside blocks, e.g. at end of file)
+    for (const action of (ctx as any).action_command?.() || []) {
+      try {
+        this.visit(action);
+      } catch (e: any) {
+        console.error('Error visiting top-level action:', e.message);
+      }
+    }
 
     // Visit actions blocks if present
     const actionsBlock = ctx.actions_block();
@@ -537,6 +547,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     if (!argsCtx) return;
 
     const args = this.parseActionArgs(argsCtx);
+    this.actions.push({ type: 'generate_network', args });
 
     if (args.max_agg !== undefined) this.networkOptions!.maxAgg = parseInt(args.max_agg);
     if (args.max_iter !== undefined) this.networkOptions!.maxIter = parseInt(args.max_iter);
@@ -606,22 +617,20 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     else if (cmdText.includes('simulate_ssa') || args.method === 'ssa') method = 'ssa';
     else if (args.method) method = args.method === 'ssa' ? 'ssa' : 'ode';
 
+
     // Build simulation phase
     const phase: SimulationPhase = {
       method,
       t_start: args.t_start !== undefined ? evalNumericArg(args.t_start, 0) : undefined,
       t_end: evalNumericArg(args.t_end, 100),
       n_steps: args.n_steps !== undefined ? evalIntArg(args.n_steps, 100) : 100,
-      continue_from_previous: args.continue !== undefined
+      continue: args.continue !== undefined
         ? (String(args.continue).trim() === '1' || String(args.continue).trim().toLowerCase() === 'true')
         : undefined,
       atol: args.atol !== undefined ? evalNumericArg(args.atol, 1e-8) : (args.atoll !== undefined ? evalNumericArg(args.atoll, 1e-8) : undefined),
       rtol: args.rtol !== undefined ? evalNumericArg(args.rtol, 1e-8) : undefined,
       suffix: args.suffix?.replace(/["']/g, ''),
       // Preserve tri-state sparse flag:
-      // - undefined: not specified
-      // - false: sparse=>0
-      // - true: sparse=>1
       sparse: args.sparse !== undefined
         ? (args.sparse === '1' || args.sparse === 'true')
         : undefined,
@@ -630,6 +639,12 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
         ? (String(args.print_functions).trim() === '1' || String(args.print_functions).trim().toLowerCase() === 'true')
         : undefined,
     };
+
+    // Add to standardized actions list
+    this.actions.push({
+      type: 'simulate',
+      args: { ...args, ...phase } // Include parsed phase props for convenience
+    });
 
     this.simulationPhases.push(phase);
 
@@ -680,6 +695,8 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
         value,
         afterPhaseIndex
       });
+      // Add to standardized actions
+      this.actions.push({ type: 'setConcentration', args: { species, value } });
       return;
     }
 
@@ -707,6 +724,8 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
         value,
         afterPhaseIndex
       });
+      // Add to standardized actions
+      this.actions.push({ type: 'setParameter', args: { parameter, value } });
       return;
     }
 
@@ -733,6 +752,8 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
         value,
         afterPhaseIndex
       });
+      // Add to standardized actions
+      this.actions.push({ type: 'addConcentration', args: { species, value } });
     }
   }
 

@@ -3,7 +3,9 @@ import type { BNGLModel, SimulationOptions, SimulationPhase } from '../../types'
 const DEFAULT_TIMECOURSE = { t_end: 100, n_steps: 100 };
 
 /**
- * For multi-phase ODE models (like Hat_2016), aggregate all phases.
+ * For multi-phase ODE models (like Hat_2016), aggregate all phases for UI display.
+ * NOTE: This is intended for UI total time calculation only. Actual simulation
+ * execution must run phases separately to handle parameter/concentration changes.
  * Returns a synthetic phase with cumulative t_end and total n_steps.
  */
 function aggregateOdePhases(phases: SimulationPhase[]): SimulationPhase | undefined {

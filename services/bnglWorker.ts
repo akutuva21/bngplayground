@@ -12,6 +12,7 @@ import type {
   GeneratorProgress,
 } from '../types';
 import { NetworkGenerator } from '../src/services/graph/NetworkGenerator';
+import { analyzeModelStiffness, getOptimalCVODEConfig, detectModelPreset } from '../src/services/cvodeStiffConfig';
 import { BNGLParser } from '../src/services/graph/core/BNGLParser';
 import { Species } from '../src/services/graph/core/Species';
 import { Rxn } from '../src/services/graph/core/Rxn';
@@ -224,6 +225,12 @@ const isReleaseModelPayload = (p: unknown): p is { modelId: number } => {
   return typeof idVal === 'number';
 };
 
+const safePostMessage = (msg: any) => {
+  if (typeof ctx !== 'undefined' && ctx.postMessage) {
+    ctx.postMessage(msg);
+  }
+};
+
 if (typeof ctx.addEventListener === 'function') {
   ctx.addEventListener('error', (event) => {
     const payload: SerializedWorkerError = {
@@ -234,7 +241,7 @@ if (typeof ctx.addEventListener === 'function') {
         colno: event.colno,
       },
     };
-    ctx.postMessage({ id: -1, type: 'worker_internal_error', payload });
+    safePostMessage({ id: -1, type: 'worker_internal_error', payload });
     event.preventDefault();
   });
 }
@@ -242,7 +249,7 @@ if (typeof ctx.addEventListener === 'function') {
 if (typeof ctx.addEventListener === 'function') {
   ctx.addEventListener('unhandledrejection', (event) => {
     const payload: SerializedWorkerError = serializeError(event.reason ?? 'Unhandled rejection in worker');
-    ctx.postMessage({ id: -1, type: 'worker_internal_error', payload });
+    safePostMessage({ id: -1, type: 'worker_internal_error', payload });
     event.preventDefault();
   });
 }
@@ -725,13 +732,15 @@ async function convertReactionsToGPU(
   return { gpuReactions, rateConstants };
 }
 
-async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Promise<BNGLModel> {
+export async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Promise<BNGLModel> {
   console.log('[Worker] Starting network generation for model with', inputModel.species.length, 'species and', inputModel.reactionRules.length, 'rules');
 
   // Convert BNGLModel to graph structures
+  console.log('[Worker] Parsing seed species...');
   const seedSpecies = inputModel.species.map((s) => BNGLParser.parseSpeciesGraph(s.name));
 
   // Create a map of CANONICAL seed species names to concentrations
+  console.log('[Worker] Canonicalizing seed species...');
   const seedConcentrationMap = new Map<string, number>();
   inputModel.species.forEach((s) => {
     const g = BNGLParser.parseSpeciesGraph(s.name);
@@ -864,7 +873,9 @@ async function generateExpandedNetwork(jobId: number, inputModel: BNGLModel): Pr
     const now = Date.now();
     if (now - lastProgressTime >= 250) {
       lastProgressTime = now;
-      ctx.postMessage({ id: jobId, type: 'generate_network_progress', payload: progress });
+      if (typeof ctx !== 'undefined' && ctx.postMessage) {
+        ctx.postMessage({ id: jobId, type: 'generate_network_progress', payload: progress });
+      }
     }
   };
 
@@ -1043,7 +1054,7 @@ export async function simulate(jobId: number, inputModel: BNGLModel, options: Si
     t_start?: number;
     t_end?: number;
     n_steps?: number;
-    continue_from_previous?: boolean;
+    continue?: boolean;
     atol?: number;
     rtol?: number;
     suffix?: string;
@@ -1096,7 +1107,7 @@ export async function simulate(jobId: number, inputModel: BNGLModel, options: Si
   // For browser CSV export parity with BNG2, we emit the final output series:
   // the last phase plus any immediately-preceding continuation phases.
   let recordFromPhaseIdx = phases.length - 1;
-  while (recordFromPhaseIdx > 0 && (phases[recordFromPhaseIdx].continue_from_previous ?? false)) {
+  while (recordFromPhaseIdx > 0 && (phases[recordFromPhaseIdx].continue ?? false)) {
     recordFromPhaseIdx -= 1;
   }
 
@@ -1403,33 +1414,33 @@ export async function simulate(jobId: number, inputModel: BNGLModel, options: Si
     for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx++) {
       const phase = phases[phaseIdx];
       const recordThisPhase = phaseIdx >= recordFromPhaseIdx;
-      const shouldEmitPhaseStart = recordThisPhase && (phaseIdx === recordFromPhaseIdx || !(phase.continue_from_previous ?? false));
+      const shouldEmitPhaseStart = recordThisPhase && (phaseIdx === recordFromPhaseIdx || !(phase.continue ?? false));
 
       // Apply parameter changes BEFORE this phase
       for (const change of parameterChanges) {
         if (change.afterPhaseIndex === phaseIdx - 1) {
           if (model.parameters) {
             let newValue: number;
-            
+
             if (typeof change.value === 'number') {
               newValue = change.value;
             } else {
-               // Try to evaluate as expression (matches concentration logic)
-               try {
-                  let expr = change.value;
-                  for (const [pName, pVal] of Object.entries(model.parameters || {})) {
-                    expr = expr.replace(new RegExp(`\\b${pName}\\b`, 'g'), String(pVal));
-                  }
-                  expr = expr.replace(/\^/g, '**');
-                  newValue = SafeExpressionEvaluator.evaluateConstant(expr);
-               } catch {
-                  newValue = parseFloat(String(change.value)) || 0;
-               }
+              // Try to evaluate as expression (matches concentration logic)
+              try {
+                let expr = change.value;
+                for (const [pName, pVal] of Object.entries(model.parameters || {})) {
+                  expr = expr.replace(new RegExp(`\\b${pName}\\b`, 'g'), String(pVal));
+                }
+                expr = expr.replace(/\^/g, '**');
+                newValue = SafeExpressionEvaluator.evaluateConstant(expr);
+              } catch {
+                newValue = parseFloat(String(change.value)) || 0;
+              }
             }
-            
+
             model.parameters[change.parameter] = newValue;
             console.log(`[Worker] Phase ${phaseIdx}: setParameter("${change.parameter}") = ${newValue}`);
-            
+
             // Re-evaluate rate constants for reactions that depend on this parameter
             // (Note: functional rates re-evaluate automatically at each step)
           }
@@ -1642,73 +1653,90 @@ export async function simulate(jobId: number, inputModel: BNGLModel, options: Si
     // Import ODESolver dynamically to avoid circular dependency
     const { createSolver } = await import('./ODESolver');
 
-    // OPTIMIZATION: JIT Compile Derivative Function
-    // This avoids array iteration overhead in the hot loop
-    const buildDerivativesFunction = () => {
-      const lines: string[] = [];
-      lines.push('dydt.fill(0);');  // Must reset dydt at start
-      lines.push('var v;');
-
-      for (let i = 0; i < concreteReactions.length; i++) {
-        const rxn = concreteReactions[i];
-        let term = `${rxn.rateConstant * rxn.propensityFactor}`;
-        for (let j = 0; j < rxn.reactants.length; j++) {
-          term += ` * y[${rxn.reactants[j]}]`;
-        }
-        lines.push(`v = ${term};`);
-
-        for (let j = 0; j < rxn.reactants.length; j++) {
-          lines.push(`dydt[${rxn.reactants[j]}] -= v;`);
-        }
-        for (let j = 0; j < rxn.products.length; j++) {
-          lines.push(`dydt[${rxn.products[j]}] += v;`);
-        }
-      }
-
-      return new Function('y', 'dydt', lines.join('\n'));
-    };
-
-    // Fallback to loop if too many reactions (to avoid stack overflow or huge function size)
+    // --- Derivative Function Generation (ODE Hot Loop) ---
+    // We define this as a reusable function so it can be re-called if parameters change between phases.
     let derivatives: (y: Float64Array, dydt: Float64Array) => void;
-    if (concreteReactions.length < 2000) {
-      try {
-        // @ts-ignore - JIT compiled function
-        derivatives = buildDerivativesFunction();
-      } catch (e) {
-        console.warn('[Worker] JIT compilation failed, falling back to loop', e);
-        derivatives = (yIn: Float64Array, dydt: Float64Array) => {
+
+    const buildDerivativesFunction = () => {
+      // If we have functional rates, we use a special derivative function that evaluates rates dynamically
+      if (functionalRateCount > 0) {
+        const computeObservableValues = (yIn: Float64Array): Record<string, number> => {
+          const obsValues: Record<string, number> = {};
+          for (let i = 0; i < concreteObservables.length; i++) {
+            const obs = concreteObservables[i];
+            let sum = 0;
+            for (let j = 0; j < obs.indices.length; j++) {
+              sum += yIn[obs.indices[j]] * obs.coefficients[j];
+            }
+            obsValues[obs.name] = sum;
+          }
+          return obsValues;
+        };
+
+        return (yIn: Float64Array, dydt: Float64Array) => {
           dydt.fill(0);
+          const obsValues = computeObservableValues(yIn);
+          const currentParams = model.parameters || {};
+
           for (let i = 0; i < concreteReactions.length; i++) {
             const rxn = concreteReactions[i];
-            let velocity = rxn.rateConstant * rxn.propensityFactor;
-            for (let j = 0; j < rxn.reactants.length; j++) {
-              velocity *= yIn[rxn.reactants[j]];
+            let rate: number;
+            if (rxn.isFunctionalRate && rxn.rateExpression) {
+              rate = evaluateFunctionalRate(
+                rxn.rateExpression,
+                currentParams,
+                obsValues,
+                model.functions
+              );
+            } else {
+              rate = rxn.rateConstant;
             }
+
+            let velocity = rate * rxn.propensityFactor;
+            for (let j = 0; j < rxn.reactants.length; j++) velocity *= yIn[rxn.reactants[j]];
             for (let j = 0; j < rxn.reactants.length; j++) dydt[rxn.reactants[j]] -= velocity;
             for (let j = 0; j < rxn.products.length; j++) dydt[rxn.products[j]] += velocity;
           }
         };
       }
-    } else if (functionalRateCount === 0) {
-      // Large number of reactions but no functional rates - use loop
-      derivatives = (yIn: Float64Array, dydt: Float64Array) => {
+
+      // Mass-action only model: Use JIT or fast loop
+      if (concreteReactions.length < 2000) {
+        try {
+          const lines: string[] = [];
+          lines.push('dydt.fill(0);');
+          lines.push('var v;');
+          for (let i = 0; i < concreteReactions.length; i++) {
+            const rxn = concreteReactions[i];
+            let term = `${rxn.rateConstant * rxn.propensityFactor}`;
+            for (let j = 0; j < rxn.reactants.length; j++) {
+              term += ` * y[${rxn.reactants[j]}]`;
+            }
+            lines.push(`v = ${term};`);
+            for (let j = 0; j < rxn.reactants.length; j++) lines.push(`dydt[${rxn.reactants[j]}] -= v;`);
+            for (let j = 0; j < rxn.products.length; j++) lines.push(`dydt[${rxn.products[j]}] += v;`);
+          }
+          return new Function('y', 'dydt', lines.join('\n')) as (y: Float64Array, dydt: Float64Array) => void;
+        } catch (e) {
+          console.warn('[Worker] JIT compilation failed, falling back to loop', e);
+        }
+      }
+
+      // Fallback: Standard loop
+      return (yIn: Float64Array, dydt: Float64Array) => {
         dydt.fill(0);
         for (let i = 0; i < concreteReactions.length; i++) {
           const rxn = concreteReactions[i];
           let velocity = rxn.rateConstant * rxn.propensityFactor;
-          for (let j = 0; j < rxn.reactants.length; j++) {
-            velocity *= yIn[rxn.reactants[j]];
-          }
+          for (let j = 0; j < rxn.reactants.length; j++) velocity *= yIn[rxn.reactants[j]];
           for (let j = 0; j < rxn.reactants.length; j++) dydt[rxn.reactants[j]] -= velocity;
           for (let j = 0; j < rxn.products.length; j++) dydt[rxn.products[j]] += velocity;
         }
       };
-    } else {
-      // No JIT compilation possible due to large number; set placeholder and override below
-      derivatives = (_yIn: Float64Array, dydt: Float64Array) => {
-        dydt.fill(0);
-      };
-    }
+    };
+
+    // Initial compilation
+    derivatives = buildDerivativesFunction();
 
     // If there are functional rates, we need a special derivative function
     // that evaluates rates dynamically at each timestep
@@ -2029,17 +2057,75 @@ export async function simulate(jobId: number, inputModel: BNGLModel, options: Si
 
     // Use exactly what user/model specifies (matching native BNG behavior)
     // BNG defaults: atol=1e-8, rtol=1e-8, maxStep=0 (unlimited)
-    const userAtol = options.atol ?? model.simulationOptions?.atol ?? 1e-8;
-    const userRtol = options.rtol ?? model.simulationOptions?.rtol ?? 1e-8;
+
+    // START STIFFNESS ANALYSIS
+    const methodRates = concreteReactions.map(r => r.rateConstant);
+    const stiffnessProfile = analyzeModelStiffness(methodRates, {
+      hasFunctionalRates: functionalRateCount > 0,
+      isMultiPhase: hasMultiPhase,
+      systemSize: numSpecies
+    });
+
+    const stiffConfig = getOptimalCVODEConfig(stiffnessProfile);
+
+    // Check for specific model presets (e.g. Lang_2024, cBNGL_simple)
+    const presetConfig = detectModelPreset(model.name || '');
+    if (presetConfig) {
+      Object.assign(stiffConfig, presetConfig);
+      console.log(`[Worker] Applied specific preset configuration for model: ${model.name}`);
+    }
+
+    if (stiffnessProfile.category !== 'mild') {
+      console.log(`[Worker] Stiff system detected (${stiffnessProfile.category}). Applied advanced settings: ${stiffConfig.rationale}`);
+    }
+
+    // Auto-select solver type based on stiffness if in 'auto' mode
+    if (solverType === 'auto') {
+      if (stiffConfig.useSparse) {
+        solverType = 'cvode_sparse';
+      } else if (stiffConfig.useAnalyticalJacobian) {
+        solverType = 'cvode_jac';
+      }
+    }
+
+    // CRITICAL: Use BNG2 defaults (1e-8) as the final fallback, NOT stiffConfig values.
+    // The stiffness config should only affect ADVANCED solver options (stability detection, etc.),
+    // not the primary tolerances that determine trajectory parity.
+    const BNG2_DEFAULT_ATOL = 1e-8;
+    const BNG2_DEFAULT_RTOL = 1e-8;
+    const BNG2_DEFAULT_MAX_STEPS = 1000000;
+    const BNG2_DEFAULT_MAX_STEP = 0;  // 0 = unlimited
+
+    const userAtol = options.atol ?? model.simulationOptions?.atol ?? BNG2_DEFAULT_ATOL;
+    const userRtol = options.rtol ?? model.simulationOptions?.rtol ?? BNG2_DEFAULT_RTOL;
 
     const solverOptions: any = {
       atol: userAtol,
       rtol: userRtol,
-      maxSteps: options.maxSteps ?? 1000000,
+      maxSteps: options.maxSteps ?? BNG2_DEFAULT_MAX_STEPS,
       minStep: 1e-15,
-      maxStep: options.maxStep ?? 0,  // 0 = unlimited, matching native BNG which uses CVodeSetMaxStep(cvode_mem, 0.0)
+      maxStep: options.maxStep ?? BNG2_DEFAULT_MAX_STEP,
       solver: solverType as 'auto' | 'cvode' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4' | 'sparse_implicit' | 'webgpu_rk4',
+
+      // Advanced CVODE options from stiffness analysis - these DON'T affect trajectory parity,
+      // they only help the solver converge more reliably on stiff systems
+      stabLimDet: stiffConfig.stabLimDet === 1,
+      maxOrd: stiffConfig.maxOrd,
+      maxNonlinIters: stiffConfig.maxNonlinIters,
+      nonlinConvCoef: stiffConfig.nonlinConvCoef,
+      maxErrTestFails: stiffConfig.maxErrTestFails,
+      maxConvFails: stiffConfig.maxConvFails
     };
+
+    console.log(`[Worker] Solver settings for ${model.name}:`);
+    console.log(`  atol: ${userAtol} (model: ${model.simulationOptions?.atol}, options: ${options.atol})`);
+    console.log(`  rtol: ${userRtol} (model: ${model.simulationOptions?.rtol}, options: ${options.rtol})`);
+    console.log(`  maxSteps: ${solverOptions.maxSteps}`);
+    console.log(`  maxStep: ${solverOptions.maxStep}`);
+    console.log(`  stiffness: ${stiffnessProfile.category} (${stiffnessProfile.rateRatio.toExponential(2)})`);
+    if (stiffnessProfile.category !== 'mild') {
+      console.log(`  applied advanced settings: ${stiffConfig.rationale}`);
+    }
 
     // Pass analytical Jacobian if available (correct format for each solver)
     if (jacobianColMajor && solverType === 'cvode_jac') {
@@ -2066,14 +2152,15 @@ export async function simulate(jobId: number, inputModel: BNGLModel, options: Si
       const phase = phases[phaseIdx];
       const isLastPhase = phaseIdx === phases.length - 1;
       const recordThisPhase = phaseIdx >= recordFromPhaseIdx;
-      const shouldEmitPhaseStart = recordThisPhase && (phaseIdx === recordFromPhaseIdx || !(phase.continue_from_previous ?? false));
+      const shouldEmitPhaseStart = recordThisPhase && (phaseIdx === recordFromPhaseIdx || !(phase.continue ?? false));
 
       // Reset per-phase early-stop state
       shouldStop = false;
       let solverError = false;
 
       if (hasMultiPhase) {
-        console.log(`[Worker] Starting phase ${phaseIdx + 1}/${phases.length}: t_end=${phase.t_end}, n_steps=${phase.n_steps}`);
+        console.log(`[Worker] Starting phase ${phaseIdx + 1}/${phases.length}: t_end=${phase.t_end}, n_steps=${phase.n_steps}, continue=${phase.continue}`);
+        console.log(`[Worker] Current model time: ${modelTime}, State[0]: ${y[0]}`);
       }
 
       // Apply concentration changes that should happen BEFORE this phase
@@ -2162,7 +2249,7 @@ export async function simulate(jobId: number, inputModel: BNGLModel, options: Si
 
       // Apply parameter changes that should happen BEFORE this phase
       // (afterPhaseIndex === phaseIdx - 1 means "after previous phase" = "before this phase")
-      
+
       // Track valid parameter updates for re-evaluation trigger
       let parametersUpdated = false;
 
@@ -2172,72 +2259,72 @@ export async function simulate(jobId: number, inputModel: BNGLModel, options: Si
           if (typeof change.value === 'number') {
             newVal = change.value;
           } else {
-             // Try number parsing first
-             const num = parseFloat(change.value);
-             if (!isNaN(num) && String(num).trim() === String(change.value).trim()) {
-                newVal = num;
-             } else {
-                 if (SafeExpressionEvaluatorRef) {
-                   // Use compile for parameterized expressions
-                   try {
-                       const pKeys = Object.keys(model.parameters);
-                       const compiled = SafeExpressionEvaluatorRef.compile(change.value, pKeys);
-                       newVal = compiled(model.parameters);
-                   } catch (e) {
-                       console.warn('[Worker] Failed to evaluate param expr:', change.value, e);
-                       newVal = 0;
-                   }
-                 } else {
-                   console.warn('[Worker] Evaluator not available for parameter expression:', change.value);
-                   newVal = 0;
-                 }
-             }
+            // Try number parsing first
+            const num = parseFloat(change.value);
+            if (!isNaN(num) && String(num).trim() === String(change.value).trim()) {
+              newVal = num;
+            } else {
+              if (SafeExpressionEvaluatorRef) {
+                // Use compile for parameterized expressions
+                try {
+                  const pKeys = Object.keys(model.parameters);
+                  const compiled = SafeExpressionEvaluatorRef.compile(change.value, pKeys);
+                  newVal = compiled(model.parameters);
+                } catch (e) {
+                  console.warn('[Worker] Failed to evaluate param expr:', change.value, e);
+                  newVal = 0;
+                }
+              } else {
+                console.warn('[Worker] Evaluator not available for parameter expression:', change.value);
+                newVal = 0;
+              }
+            }
           }
-          
+
           if (model.parameters && model.parameters[change.parameter] !== newVal) {
-              console.log(`[Worker] Phase ${phaseIdx}: Applying parameter change: ${change.parameter} = ${newVal}`);
-              model.parameters[change.parameter] = newVal;
-              if (inputModel.parameters) inputModel.parameters[change.parameter] = newVal;
-              parametersUpdated = true;
+            console.log(`[Worker] Phase ${phaseIdx}: Applying parameter change: ${change.parameter} = ${newVal}`);
+            model.parameters[change.parameter] = newVal;
+            if (inputModel.parameters) inputModel.parameters[change.parameter] = newVal;
+            parametersUpdated = true;
           }
         }
       }
 
       // Re-evaluate dependent parameters if any changes occurred
       if (parametersUpdated && model.paramExpressions && Object.keys(model.paramExpressions).length > 0) {
-           console.log('[Worker] Re-evaluating dependent parameters...');
-           if (SafeExpressionEvaluatorRef) {
-               const overriddenParams = new Set<string>();
-               parameterChanges.forEach(c => {
-                   if (c.afterPhaseIndex < phaseIdx) {
-                       overriddenParams.add(c.parameter);
-                   }
-               });
+        console.log('[Worker] Re-evaluating dependent parameters...');
+        if (SafeExpressionEvaluatorRef) {
+          const overriddenParams = new Set<string>();
+          parameterChanges.forEach(c => {
+            if (c.afterPhaseIndex < phaseIdx) {
+              overriddenParams.add(c.parameter);
+            }
+          });
 
-               for (let pass = 0; pass < 10; pass++) {
-                   let anyChanged = false;
-                   for (const [name, expr] of Object.entries(model.paramExpressions)) {
-                       if (overriddenParams.has(name)) continue;
+          for (let pass = 0; pass < 10; pass++) {
+            let anyChanged = false;
+            for (const [name, expr] of Object.entries(model.paramExpressions)) {
+              if (overriddenParams.has(name)) continue;
 
-                       try {
-                           const pKeys = Object.keys(model.parameters);
-                           const compiled = SafeExpressionEvaluatorRef.compile(expr, pKeys);
-                           const val = compiled(model.parameters);
-                           
-                           if (Math.abs(val - (model.parameters[name] || 0)) > 1e-12) {
-                               model.parameters[name] = val;
-                               if (inputModel.parameters) inputModel.parameters[name] = val;
-                               anyChanged = true;
-                           }
-                       } catch (e) {
-                           // Ignore transient errors
-                       }
-                   }
-                   if (!anyChanged) break;
-               }
-           } else {
-              console.warn('[Worker] Cannot re-evaluate dependent parameters - Evaluator not loaded.');
-           }
+              try {
+                const pKeys = Object.keys(model.parameters);
+                const compiled = SafeExpressionEvaluatorRef.compile(expr, pKeys);
+                const val = compiled(model.parameters);
+
+                if (Math.abs(val - (model.parameters[name] || 0)) > 1e-12) {
+                  model.parameters[name] = val;
+                  if (inputModel.parameters) inputModel.parameters[name] = val;
+                  anyChanged = true;
+                }
+              } catch (e) {
+                // Ignore transient errors
+              }
+            }
+            if (!anyChanged) break;
+          }
+        } else {
+          console.warn('[Worker] Cannot re-evaluate dependent parameters - Evaluator not loaded.');
+        }
       }
 
 
@@ -2264,12 +2351,12 @@ export async function simulate(jobId: number, inputModel: BNGLModel, options: Si
               // (loadEvaluator ensures SafeExpressionEvaluatorRef is populated)
               const compiled = SafeExpressionEvaluatorRef!.compile(rxn.rate, paramNames);
               const newK = compiled(context);
-              console.log(`[Worker] Recalculating rate for rxn ${rxn.rate}: ${rxn.rateConstant} -> ${newK}`);
               if (!isNaN(newK) && isFinite(newK)) {
                 // Only update if changed
                 if (Math.abs(rxn.rateConstant - newK) > 1e-12) {
-                  console.log(`[Worker] UPDATING rxn rate!`);
+                  console.log(`[Worker] Updating rate constant for ${rxn.rate}: ${rxn.rateConstant} -> ${newK}`);
                   rxn.rateConstant = newK;
+                  parametersUpdated = true; // Trigger re-JIT if needed
                 }
               }
             } catch (e) {
@@ -2278,6 +2365,13 @@ export async function simulate(jobId: number, inputModel: BNGLModel, options: Si
             }
           }
         }
+
+        // --- CRITICAL: Re-compile derivative function if parameters changed ---
+        // This ensures JIT-compiled constant rates are updated.
+        if (parametersUpdated) {
+          console.log('[Worker] Parameters or rate constants changed; re-compiling derivative function...');
+          derivatives = buildDerivativesFunction();
+        }
       }
 
       const phase_t_end = phase.t_end;
@@ -2285,9 +2379,9 @@ export async function simulate(jobId: number, inputModel: BNGLModel, options: Si
 
       const phaseStart = phase.t_start !== undefined
         ? phase.t_start
-        : ((phase.continue_from_previous ?? false) ? modelTime : 0);
+        : ((phase.continue ?? false) ? modelTime : 0);
 
-      if ((phase.continue_from_previous ?? false) && Math.abs(phaseStart - modelTime) > 1e-9) {
+      if ((phase.continue ?? false) && Math.abs(phaseStart - modelTime) > 1e-9) {
         throw new Error(`t_start (${phaseStart}) must equal current model time (${modelTime}) for continuation`);
       }
 
@@ -2447,7 +2541,7 @@ export async function simulate(jobId: number, inputModel: BNGLModel, options: Si
 
             if (data.length > 1 || recordThisPhase) {
               console.warn(`[Worker] Returning ${data.length} partial time points up to t=${phaseStart + t}`);
-              ctx.postMessage({
+              safePostMessage({
                 type: 'progress',
                 message: `Simulation stopped at t=${(phaseStart + t).toFixed(2)} (phase ${phaseIdx + 1}, ${data.length} time points)`,
                 warning: userFriendlyMessage
@@ -2476,17 +2570,17 @@ export async function simulate(jobId: number, inputModel: BNGLModel, options: Si
             speciesData.push(speciesPoint);
           }
 
-          // BNG2 checks for steady state after printing the current output step.
+          // BNG2 (Network3) steady-state behavior:
+          // Termination when max(|dy/dt|) < atol.
           if (steadyStateEnabled) {
             derivatives(y, steadyStateDerivs!);
-            let sumSq = 0;
+            let maxDx = 0;
             for (let k = 0; k < steadyStateDerivs!.length; k++) {
-              const v = steadyStateDerivs![k];
-              sumSq += v * v;
+              const v = Math.abs(steadyStateDerivs![k]);
+              if (v > maxDx) maxDx = v;
             }
-            const dx = Math.sqrt(sumSq) / steadyStateDerivs!.length;
-            if (dx < steadyStateAtol) {
-              console.log(`[Worker] Phase ${phaseIdx}: Steady state reached at t=${phaseStart + tTarget} (dx=${dx})`);
+            if (maxDx < steadyStateAtol) {
+              console.log(`[Worker] Phase ${phaseIdx + 1}: Steady state reached at t=${(phaseStart + tTarget).toFixed(2)} (max|dx/dt|=${maxDx.toExponential(4)})`);
               shouldStop = true;
             }
           }
@@ -2497,7 +2591,7 @@ export async function simulate(jobId: number, inputModel: BNGLModel, options: Si
             const overallProgress = hasMultiPhase
               ? ((phaseIdx + phaseProgress / 100) / phases.length) * 100
               : phaseProgress;
-            ctx.postMessage({
+            safePostMessage({
               type: 'progress',
               message: hasMultiPhase
                 ? `Phase ${phaseIdx + 1}/${phases.length}: ${phaseProgress.toFixed(0)}%`
@@ -2576,6 +2670,7 @@ if (typeof ctx.addEventListener === 'function') {
         const response: WorkerResponse = { id, type: 'parse_success', payload: model };
         ctx.postMessage(response);
       } catch (error) {
+        console.error(`[Worker] Parse error for job ${id}:`, error);
         const response: WorkerResponse = { id, type: 'parse_error', payload: serializeError(error) };
         ctx.postMessage(response);
       } finally {
@@ -2634,8 +2729,9 @@ if (typeof ctx.addEventListener === 'function') {
           const response: WorkerResponse = { id, type: 'simulate_success', payload: results };
           ctx.postMessage(response);
         } catch (error) {
+          console.error(`[Worker] Simulation error for job ${id}:`, error);
           const response: WorkerResponse = { id, type: 'simulate_error', payload: serializeError(error) };
-          ctx.postMessage(response);
+          safePostMessage(response);
         } finally {
           markJobComplete(id);
         }
@@ -2682,10 +2778,11 @@ if (typeof ctx.addEventListener === 'function') {
           // ignore eviction errors
         }
         const response: WorkerResponse = { id, type: 'cache_model_success', payload: { modelId } };
-        ctx.postMessage(response);
+        safePostMessage(response);
       } catch (error) {
+        console.error(`[Worker] Cache model error for job ${id}:`, error);
         const response: WorkerResponse = { id, type: 'cache_model_error', payload: serializeError(error) };
-        ctx.postMessage(response);
+        safePostMessage(response);
       } finally {
         markJobComplete(id);
       }
@@ -2700,10 +2797,11 @@ if (typeof ctx.addEventListener === 'function') {
         if (typeof modelId !== 'number') throw new Error('release_model payload missing modelId');
         cachedModels.delete(modelId);
         const response: WorkerResponse = { id, type: 'release_model_success', payload: { modelId } };
-        ctx.postMessage(response);
+        safePostMessage(response);
       } catch (error) {
+        console.error(`[Worker] Release model error for job ${id}:`, error);
         const response: WorkerResponse = { id, type: 'release_model_error', payload: serializeError(error) };
-        ctx.postMessage(response);
+        safePostMessage(response);
       } finally {
         markJobComplete(id);
       }
@@ -2769,7 +2867,7 @@ if (typeof ctx.addEventListener === 'function') {
             const now = Date.now();
             if (now - lastProgressTime >= 250) { // 250ms = 4Hz
               lastProgressTime = now;
-              ctx.postMessage({ id, type: 'generate_network_progress', payload: progress });
+              safePostMessage({ id, type: 'generate_network_progress', payload: progress });
             }
           };
 
@@ -2820,10 +2918,11 @@ if (typeof ctx.addEventListener === 'function') {
           ensureNotCancelled(id);
 
           const response: WorkerResponse = { id, type: 'generate_network_success', payload: generatedModel };
-          ctx.postMessage(response);
+          safePostMessage(response);
         } catch (error) {
+          console.error(`[Worker] Generate network error for job ${id}:`, error);
           const response: WorkerResponse = { id, type: 'generate_network_error', payload: serializeError(error) };
-          ctx.postMessage(response);
+          safePostMessage(response);
         } finally {
           markJobComplete(id);
         }

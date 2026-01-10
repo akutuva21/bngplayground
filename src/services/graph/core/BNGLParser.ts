@@ -1,6 +1,8 @@
 import { Component } from './Component.ts';
 import { Molecule } from './Molecule.ts';
 import { SpeciesGraph } from './SpeciesGraph.ts';
+
+import { evaluateExpressionHighPrecision, needsHighPrecision } from './highPrecisionEvaluator';
 import { RxnRule } from './RxnRule.ts';
 
 const shouldLogParser = false;
@@ -337,29 +339,29 @@ export class BNGLParser {
       // Handle format: [index] [label:] species_pattern concentration_expression
       // The species pattern is a BNGL molecule pattern (contains letters, digits, parens, dots, bangs, tildes, underscores)
       // The concentration expression follows and can contain spaces (e.g., "a + b", "func(x)")
-      
+
       // First, skip optional leading index (pure digits)
       let remaining = line;
       const leadingMatch = remaining.match(/^(\d+)\s+/);
       if (leadingMatch) {
         remaining = remaining.slice(leadingMatch[0].length);
       }
-      
+
       // Skip optional label (ends with colon)
       const labelMatch = remaining.match(/^(\S+:)\s+/);
       if (labelMatch) {
         remaining = remaining.slice(labelMatch[0].length);
       }
-      
+
       // Now we have: species_pattern concentration_expression
       // The species pattern is a contiguous BNGL pattern (no spaces)
       // It ends at the first whitespace, then the rest is the concentration expression
       const firstSpace = remaining.search(/\s/);
       if (firstSpace === -1) continue;  // No concentration specified
-      
+
       const speciesStr = remaining.slice(0, firstSpace);
       const concentrationStr = remaining.slice(firstSpace).trim();
-      
+
       if (!speciesStr || !concentrationStr) continue;
 
       const amt = this.evaluateExpression(concentrationStr, parameters);
@@ -384,6 +386,29 @@ export class BNGLParser {
       // Return NaN for empty or whitespace-only expressions
       if (!expr || expr.trim() === '') {
         return NaN;
+      }
+
+      // Check if we need high-precision evaluation (e.g. for Repressilator parameters)
+      // Only use if extreme values are present to avoid overhead
+      if (needsHighPrecision(parameters)) {
+        // Construct combined parameter map including observables as 1.0
+        let evalParams = parameters;
+        if (observables) {
+          evalParams = new Map(parameters);
+          const obsNames = observables instanceof Set
+            ? Array.from(observables)
+            : Array.from(observables.keys());
+
+          for (const obs of obsNames) {
+            evalParams.set(obs, 1.0);
+          }
+        }
+
+        const result = evaluateExpressionHighPrecision(expr, evalParams);
+        if (!isNaN(result)) {
+          return result;
+        }
+        // If high precision fails (e.g. unknown function), fall back to standard
       }
 
       // Replace parameter names with values

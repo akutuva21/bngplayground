@@ -19,6 +19,15 @@ export interface SolverOptions {
   initialStep?: number;   // Initial step size (if not provided, computed automatically)
   solver: 'auto' | 'cvode' | 'cvode_auto' | 'cvode_sparse' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4' | 'sparse_implicit' | 'webgpu_rk4';
   jacobianRowMajor?: (y: Float64Array, J: Float64Array) => void;  // Row-major Jacobian for Rosenbrock
+
+  // Advanced CVODE options for stiff systems
+  stabLimDet?: boolean;   // Enable BDF stability limit detection
+  maxOrd?: number;        // Maximum BDF order (1-5)
+  maxNonlinIters?: number;// Maximum nonlinear solver iterations
+  nonlinConvCoef?: number;// Nonlinear convergence coefficient
+  maxErrTestFails?: number;// Max error test failures
+  maxConvFails?: number;  // Max convergence failures
+
 }
 
 export interface SolverResult {
@@ -1281,6 +1290,55 @@ export class CVODESolver {
       }
     }
 
+    // Advanced Stiff Solver Options
+    if (this.options.stabLimDet !== undefined) {
+      // @ts-ignore
+      if (typeof (m as any)._set_stab_lim_det === 'function') {
+        // @ts-ignore
+        (m as any)._set_stab_lim_det(this.solverMem, this.options.stabLimDet ? 1 : 0);
+      }
+    }
+
+    if (this.options.maxOrd !== undefined) {
+      // @ts-ignore
+      if (typeof (m as any)._set_max_ord === 'function') {
+        // @ts-ignore
+        (m as any)._set_max_ord(this.solverMem, this.options.maxOrd);
+      }
+    }
+
+    if (this.options.maxNonlinIters !== undefined) {
+      // @ts-ignore
+      if (typeof (m as any)._set_max_nonlin_iters === 'function') {
+        // @ts-ignore
+        (m as any)._set_max_nonlin_iters(this.solverMem, this.options.maxNonlinIters);
+      }
+    }
+
+    if (this.options.nonlinConvCoef !== undefined) {
+      // @ts-ignore
+      if (typeof (m as any)._set_nonlin_conv_coef === 'function') {
+        // @ts-ignore
+        (m as any)._set_nonlin_conv_coef(this.solverMem, this.options.nonlinConvCoef);
+      }
+    }
+
+    if (this.options.maxErrTestFails !== undefined) {
+      // @ts-ignore
+      if (typeof (m as any)._set_max_err_test_fails === 'function') {
+        // @ts-ignore
+        (m as any)._set_max_err_test_fails(this.solverMem, this.options.maxErrTestFails);
+      }
+    }
+
+    if (this.options.maxConvFails !== undefined) {
+      // @ts-ignore
+      if (typeof (m as any)._set_max_conv_fails === 'function') {
+        // @ts-ignore
+        (m as any)._set_max_conv_fails(this.solverMem, this.options.maxConvFails);
+      }
+    }
+
     return { success: true as const };
   }
 
@@ -1439,7 +1497,7 @@ export class CVODESolver {
  */
 class SparseImplicitSolver {
   private rosenbrock: Rosenbrock23Solver;
-  
+
   constructor(n: number, f: DerivativeFunction, options: Partial<SolverOptions> = {}) {
     // Use very tight tolerances for stiff systems
     const stiffOptions = {
@@ -1453,7 +1511,7 @@ class SparseImplicitSolver {
     this.rosenbrock = new Rosenbrock23Solver(n, f, stiffOptions);
     console.log(`[SparseImplicitSolver] Created with atol=${stiffOptions.atol}, rtol=${stiffOptions.rtol}`);
   }
-  
+
   integrate(
     y0: Float64Array,
     t0: number,

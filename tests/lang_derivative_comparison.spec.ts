@@ -20,7 +20,7 @@ if (typeof window === 'undefined') {
 
 const runDerivativeTest = async () => {
     // Dynamic import to ensure mocks are in place
-    const { simulate } = await import('../services/bnglWorker');
+    const { simulate } = await import('../services/simulation/SimulationLoop');
     const { parseBNGLStrict } = await import('../src/parser/BNGLParserWrapper');
 
     const modelPath = path.join(__dirname, '../public/models/Lang_2024.bngl');
@@ -32,15 +32,15 @@ const runDerivativeTest = async () => {
 
     // Run a very short simulation to get access to expanded network
     console.log('Running minimal simulation to get network...');
-    
-    const results: any = await simulate(123, parsedModel, { 
-        method: 'ode', 
+
+    const results: any = await simulate(123, parsedModel, {
+        method: 'ode',
         t_end: 0.001, // Very short time
         n_steps: 1,
-        atol: 1e-12, 
-        rtol: 1e-12, 
-        solver: 'cvode' 
-    });
+        atol: 1e-12,
+        rtol: 1e-12,
+        solver: 'cvode'
+    }, { checkCancelled: () => {}, postMessage: () => {} });
 
     return results;
 };
@@ -69,22 +69,22 @@ describe('Lang_2024 Derivative Comparison', () => {
         // Compute derivatives manually from reaction data
         console.log('\n--- Computing dydt at t=0 ---');
         const dydt = new Array(y0.length).fill(0);
-        
+
         // Build species name to index map
         const speciesIndex: Map<string, number> = new Map();
         results.expandedSpecies.forEach((sp: any, i: number) => {
             speciesIndex.set(sp.name, i);
         });
-        
+
         for (const rxn of results.expandedReactions) {
             // Compute reaction velocity: v = k * product(y[reactant])
             let velocity = rxn.rateConstant;
-            
+
             // Apply propensity factor (for homodimers)
             if (rxn.propensityFactor !== undefined) {
                 velocity *= rxn.propensityFactor;
             }
-            
+
             // Reactants might be string names or indices
             const reactantIndices: number[] = [];
             for (const r of rxn.reactants) {
@@ -94,12 +94,12 @@ describe('Lang_2024 Derivative Comparison', () => {
                     velocity *= y0[idx];
                 }
             }
-            
+
             // Update dydt for reactants (consumed)
             for (const idx of reactantIndices) {
                 dydt[idx] -= velocity;
             }
-            
+
             // Products might be string names or indices
             for (const p of rxn.products) {
                 const idx = typeof p === 'number' ? p : speciesIndex.get(p);
@@ -113,7 +113,7 @@ describe('Lang_2024 Derivative Comparison', () => {
         // Show species with largest |dydt|
         const dydtWithIdx = dydt.map((d, i) => ({ idx: i, name: results.expandedSpecies[i].name, dydt: d }));
         dydtWithIdx.sort((a, b) => Math.abs(b.dydt) - Math.abs(a.dydt));
-        
+
         console.log('Top 20 by magnitude:');
         dydtWithIdx.slice(0, 20).forEach(item => {
             console.log(`  [${item.idx}] ${item.name}: ${item.dydt.toExponential(6)}`);
@@ -130,7 +130,7 @@ describe('Lang_2024 Derivative Comparison', () => {
         const tCCNE_species = results.expandedSpecies
             .map((sp: any, i: number) => ({ ...sp, idx: i }))
             .filter((sp: any) => sp.name.includes('CCNE'));
-        
+
         console.log('\n--- CCNE species (contributing to tCCNE observable) ---');
         tCCNE_species.forEach((sp: any) => {
             console.log(`  [${sp.idx}] ${sp.name}`);

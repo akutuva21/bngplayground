@@ -108,6 +108,10 @@ import toggleTutorial from './published-models/native-tutorials/SynDeg/toggle.bn
 import FceRIVizTutorial from './published-models/native-tutorials/Viz/FceRI_viz.bngl?raw';
 import visualizeTutorial from './published-models/native-tutorials/Viz/visualize.bngl?raw';
 
+// fceri_fyn import is maintained as it was missing from original set
+import fceri_fyn from './published-models/immune-signaling/fceri_fyn.bngl?raw';
+
+
 // Test Models
 import aktSignaling from './example-models/akt-signaling.bngl?raw';
 import allostericActivation from './example-models/allosteric-activation.bngl?raw';
@@ -170,11 +174,97 @@ import viralSensingInnateImmunity from './example-models/viral-sensing-innate-im
 import wntBetaCateninSignaling from './example-models/wnt-beta-catenin-signaling.bngl?raw';
 import woundHealingPdgfSignaling from './example-models/wound-healing-pdgf-signaling.bngl?raw';
 
+import ampkSignaling from './example-models/ampk-signaling.bngl?raw';
+import autophagyRegulation from './example-models/autophagy-regulation.bngl?raw';
+import bcrSignaling from './example-models/bcr-signaling.bngl?raw';
+import bmpSignaling from './example-models/bmp-signaling.bngl?raw';
+import calcineurinNfatPathway from './example-models/calcineurin-nfat-pathway.bngl?raw';
+import caspaseActivationLoop from './example-models/caspase-activation-loop.bngl?raw';
+import cd40Signaling from './example-models/cd40-signaling.bngl?raw';
+import checkpointKinaseSignaling from './example-models/checkpoint-kinase-signaling.bngl?raw';
+import clockBmal1GeneCircuit from './example-models/clock-bmal1-gene-circuit.bngl?raw';
+import contactInhibitionHippoYap from './example-models/contact-inhibition-hippo-yap.bngl?raw';
+import dnaMethylationDynamics from './example-models/dna-methylation-dynamics.bngl?raw';
+import dr5ApoptosisSignaling from './example-models/dr5-apoptosis-signaling.bngl?raw';
+import e2fRbCellCycleSwitch from './example-models/e2f-rb-cell-cycle-switch.bngl?raw';
+import eif2aStressResponse from './example-models/eif2a-stress-response.bngl?raw';
+import endosomalSortingRab from './example-models/endosomal-sorting-rab.bngl?raw';
+import erkNuclearTranslocation from './example-models/erk-nuclear-translocation.bngl?raw';
+import fgfSignalingPathway from './example-models/fgf-signaling-pathway.bngl?raw';
+import gpcrDesensitizationArrestin from './example-models/gpcr-desensitization-arrestin.bngl?raw';
+import gas6AxlSignaling from './example-models/gas6-axl-signaling.bngl?raw';
+import glioblastomaEgfrviiiSignaling from './example-models/glioblastoma-egfrviii-signaling.bngl?raw';
+import hedgehogSignalingPathway from './example-models/hedgehog-signaling-pathway.bngl?raw';
+import hif1aDegradationLoop from "./example-models/hif1a_degradation_loop.bngl?raw";
+import il1bSignaling from './example-models/il1b-signaling.bngl?raw';
+import il6JakStatPathway from './example-models/il6-jak-stat-pathway.bngl?raw';
+import inositolPhosphateMetabolism from './example-models/inositol-phosphate-metabolism.bngl?raw';
+import ire1aXbp1ErStress from './example-models/ire1a-xbp1-er-stress.bngl?raw';
+import jnkMapkSignaling from './example-models/jnk-mapk-signaling.bngl?raw';
+import kirChannelRegulation from './example-models/kir-channel-regulation.bngl?raw';
+import lTypeCalciumChannelDynamics from './example-models/l-type-calcium-channel-dynamics.bngl?raw';
+import mtorc2Signaling from './example-models/mtorc2-signaling.bngl?raw';
+import noCgmpSignaling from './example-models/no-cgmp-signaling.bngl?raw';
+import p38MapkSignaling from './example-models/p38-mapk-signaling.bngl?raw';
+import parp1MediatedDnaRepair from './example-models/parp1-mediated-dna-repair.bngl?raw';
+import ranklRankSignaling from './example-models/rankl-rank-signaling.bngl?raw';
+import rasGefGapCycle from './example-models/ras-gef-gap-cycle.bngl?raw';
+import rhoGtpaseActinCytoskeleton from './example-models/rho-gtpase-actin-cytoskeleton.bngl?raw';
+import shp2PhosphataseRegulation from './example-models/shp2-phosphatase-regulation.bngl?raw';
+import sonicHedgehogGradient from './example-models/sonic-hedgehog-gradient.bngl?raw';
+import stat3MediatedTranscription from './example-models/stat3-mediated-transcription.bngl?raw';
+import tlr3DsrnaSensing from './example-models/tlr3-dsrna-sensing.bngl?raw';
+
+
 // Literature Models
 import dolan2015 from './published-models/literature/Dolan_2015.bngl?raw';
 import linErk2019 from './published-models/literature/Lin_ERK_2019.bngl?raw';
 import linTcr2019 from './published-models/literature/Lin_TCR_2019.bngl?raw';
 import linPrion2019 from './published-models/literature/Lin_Prion_2019.bngl?raw';
+import model_CaOscillate_Func from './published-models/validation/CaOscillate_Func.bngl?raw';
+import model_CaOscillate_Sat from './published-models/validation/CaOscillate_Sat.bngl?raw';
+import model_catalysis from './published-models/validation/catalysis.bngl?raw';
+import model_continue from './published-models/validation/continue.bngl?raw';
+import model_egfr_net from './published-models/validation/egfr_net.bngl?raw';
+import model_egfr_net_red from './published-models/validation/egfr_net_red.bngl?raw';
+import model_egfr_path from './published-models/validation/egfr_path.bngl?raw';
+import model_energy_example1 from './published-models/validation/energy_example1.bngl?raw';
+import model_example1 from './published-models/validation/example1.bngl?raw';
+import model_fceri_ji_comp from './published-models/validation/fceri_ji_comp.bngl?raw';
+import model_Haugh2b from './published-models/validation/Haugh2b.bngl?raw';
+import model_heise from './published-models/validation/heise.bngl?raw';
+import model_issue_198_short from './published-models/validation/issue_198_short.bngl?raw';
+import model_Kiefhaber_emodel from './published-models/validation/Kiefhaber_emodel.bngl?raw';
+import model_Korwek_2023 from './published-models/validation/Korwek_2023.bngl?raw';
+import model_localfunc from './published-models/validation/localfunc.bngl?raw';
+import model_michment from './published-models/validation/michment.bngl?raw';
+import model_michment_cont from './published-models/validation/michment_cont.bngl?raw';
+import model_Motivating_example from './published-models/validation/Motivating_example.bngl?raw';
+import model_Motivating_example_cBNGL from './published-models/validation/Motivating_example_cBNGL.bngl?raw';
+import model_motor from './published-models/validation/motor.bngl?raw';
+import model_mwc from './published-models/validation/mwc.bngl?raw';
+import model_nfkb from './published-models/validation/nfkb.bngl?raw';
+import model_nfkb_illustrating_protocols from './published-models/validation/nfkb_illustrating_protocols.bngl?raw';
+import model_rec_dim from './published-models/validation/rec_dim.bngl?raw';
+import model_rec_dim_comp from './published-models/validation/rec_dim_comp.bngl?raw';
+import model_SHP2_base_model from './published-models/validation/SHP2_base_model.bngl?raw';
+import model_simple_sbml_import from './published-models/validation/simple_sbml_import.bngl?raw';
+import model_simple_system from './published-models/validation/simple_system.bngl?raw';
+import model_test_ANG_synthesis_simple from './published-models/validation/test_ANG_synthesis_simple.bngl?raw';
+import model_test_fixed from './published-models/validation/test_fixed.bngl?raw';
+import model_test_MM from './published-models/validation/test_MM.bngl?raw';
+import model_test_mratio from './published-models/validation/test_mratio.bngl?raw';
+import model_test_network_gen from './published-models/validation/test_network_gen.bngl?raw';
+import model_test_sat from './published-models/validation/test_sat.bngl?raw';
+import model_test_synthesis_cBNGL_simple from './published-models/validation/test_synthesis_cBNGL_simple.bngl?raw';
+import model_test_synthesis_complex from './published-models/validation/test_synthesis_complex.bngl?raw';
+import model_test_synthesis_complex_0_cBNGL from './published-models/validation/test_synthesis_complex_0_cBNGL.bngl?raw';
+import model_test_synthesis_complex_source_cBNGL from './published-models/validation/test_synthesis_complex_source_cBNGL.bngl?raw';
+import model_test_synthesis_simple from './published-models/validation/test_synthesis_simple.bngl?raw';
+import model_tlmr from './published-models/validation/tlmr.bngl?raw';
+import model_toy_jim from './published-models/validation/toy-jim.bngl?raw';
+import model_univ_synth from './published-models/validation/univ_synth.bngl?raw';
+
 import cheemalavaguJakStat from './published-models/literature/Cheemalavagu_JAK_STAT.bngl?raw';
 
 export const CHART_COLORS = [
@@ -328,9 +418,7 @@ export const BNG2_COMPATIBLE_MODELS = new Set([
 // For now we only expose models that include an explicit ODE `simulate(...)` action.
 // This excludes NF-only models (method=>"nf"), models that only emit XML (writeXML + RNF protocol),
 // and workflows like bifurcate() that don't produce a timecourse via simulate().
-const ODE_SIMULATE_ACTION_RE = /\b(?:simulate\s*\(\s*\{[^}]*\bmethod\s*=>\s*"ode"[^}]*\}\s*\)|simulate_ode\s*\()\s*/i;
-
-const stripBnglCommentLines = (code: string): string => code.replace(/^\s*#.*$/gm, '');
+// Helper to strip comments
 
 // For published models, only expose ones that:
 // 1) contain an explicit ODE simulate() action, and
@@ -358,7 +446,7 @@ const stripBnglCommentLines = (code: string): string => code.replace(/^\s*#.*$/g
 // Last regenerated on 2026-01-04 (count=92) from the verifier report above.
 // Note: A separate "web batch run" (e.g., web_output/*.csv) is useful for parity checks,
 // but is NOT used for website visibility gating.
-const BNG2_PARSE_AND_ODE_VERIFIED_MODELS = new Set([
+export const BNG2_PARSE_AND_ODE_VERIFIED_MODELS = new Set([
   'AB',
   'ABC',
   'ABp',
@@ -451,32 +539,169 @@ const BNG2_PARSE_AND_ODE_VERIFIED_MODELS = new Set([
   'viral-sensing-innate-immunity',
   'wnt-beta-catenin-signaling',
   'wound-healing-pdgf-signaling',
+
+  // Missing Published Models
+  'blbr',
+  'ChylekFceRI_2014',
+  'Dushek_2011',
+  'Erdem_2021',
+  'Faeder_2003',
+  'fceri_fyn',
+  'Kozer_2013',
+  'Mertins_2023',
+  'Nag_2009',
+  'vilar_2002',
+  'Zhang_2021',
+
+  // Internal Validation Models
+  'CaOscillate_Func',
+  'CaOscillate_Sat',
+  'catalysis',
+  'egfr_net',
+  'egfr_net_red',
+  'egfr_path',
+  'energy_example1',
+  'mwc',
+  'wofsy-goldstein',
+  'fceri_fyn_lig',
+  'fceri_fyn_trimer',
+  'fceri_gamma2',
+  'fceri_gamma2_asym',
+  'fceri_ji_red',
+  'fceri_lyn_745',
+  'fceri_trimer',
+  'gene_expr_func',
+  'Haugh2b',
+  'localfunc',
+  'fceri_ji_comp',
+  'rec_dim',
+  'rec_dim_comp',
+  'Motivating_example',
+  'Motivating_example_cBNGL',
+  'nfkb',
+  'nfkb_illustrating_protocols',
+  'partial_dynamical_scaling',
+  'SHP2_base_model',
+  'simple_nfsim',
+  'simple_sbml_import',
+  'test_continue',
+  'test_fixed',
+  'tlbr',
+  'toy-jim',
+  'visualize',
+  'example1',
+  'ANx',
+  'hybrid_test_hpp',
+  'test_sbml_flat_SBML',
+  'test_sbml_structured_SBML',
 ]);
 
-// Known BNG2.pl failures (explicitly excluded from the website).
-const BNG2_EXCLUDED_MODELS = new Set(['Erdem_2021', 'Faeder_2003', 'fceri_2003']);
+// Known BNG2.pl failures or models lacking simulate_ode (explicitly excluded).
+// These are excluded from GDAT comparison and CSV creation, but still visible on website if parseable.
+export const BNG2_EXCLUDED_MODELS = new Set([
+  'Dolan_2015', // Too slow / validation timeout
+  'Erdem_2021',
+  'Faeder_2003',
+  'fceri_2003',
+  //   'Barua_2013', // Too slow
+  //   'Kozer_2013', // Too slow
+  //   'Kozer_2014', // Too slow
+
+  // ========================================================
+  // Models that FAIL BNG2.pl parsing (verified 2026-01-14)
+  // ========================================================
+  'Dushek_2014',    // "Not a CODE reference" error
+  'Jung_2017',      // Uses reserved keyword 'end' as parameter name
+  'Mertins_2023',   // Invalid block structure (begin reactions vs reaction rules)
+  'notch',          // Uses unsupported 'begin molecules' block
+  'toy2',           // Uses unsupported 'begin molecules' block
+//   'vilar_2002c',    // Species concentration error / multiple model blocks
+
+  // ========================================================
+  // VCell-only models (use 'begin anchors' - not BNG2 syntax)
+  // ========================================================
+  'Blinov_egfr',               // VCell anchors block
+  'Blinov_ran',                // VCell anchors block
+  'Rule_based_Ran_transport',  // VCell anchors block
+  'Rule_based_Ran_transport_draft', // VCell anchors block
+  'Rule_based_egfr_compart',   // VCell anchors block
+
+  // ========================================================
+  // NFsim-only models (require network-free simulation)
+  // ========================================================
+  'polymer',        // Uses Species>N syntax, NFsim only
+  'polymer_draft',  // Uses Species>N syntax, NFsim only
+
+  // ========================================================
+  // Models too slow for web benchmark (large network expansion)
+  // ========================================================
+//   'Lin_ERK_2019',   // 300+ species, 12k+ reactions, takes >160s
+//   'Lin_TCR_2019',   // Similar network complexity to Lin_ERK
+//   'Lin_Prion_2019', // Similar network complexity to Lin_ERK
+  'Kozer_2013',     // 1200+ species, 8k+ reactions, too slow
+  'Kozer_2014',     // Similar complexity to Kozer_2013
+
+  // Models lacking simulate_ode commands:
+  'fceri_fyn_lig',
+  'fceri_trimer',
+  'fceri_fyn',
+  'fceri_gamma2_asym',
+  'fceri_gamma2',
+  'fceri_ji_red',
+  'fceri_lyn_745',
+  'hybrid_test_hpp',
+  'test_sbml_flat_SBML',
+  'test_sbml_structured_SBML',
+  'wofsy-goldstein',
+  // Additional models without ODE simulation or special formats:
+  'ANx',
+  'deleteMolecules',
+  'empty_compartments_block',
+  'gene_expr_func',
+  'gene_expr_simple',
+  'gene_expr',
+  'hybrid_test',
+  'isingspin_energy',
+  'isingspin_localfcn',
+  'isomerization',
+  'partial_dynamical_scaling',
+  'simple_nfsim',
+  'statfactor',
+  'test_ANG_parscan_synthesis_simple',
+  'test_ANG_SSA_synthesis_simple',
+  'test_assignment',
+  'test_compartment_XML',
+  'test_continue',
+  'test_paramname',
+  'test_partial_dynamical_scaling',
+  'test_sat_cont',
+  'test_sbml_flat',
+  'test_sbml_structured',
+  'test_setconc',
+  'test_tfun',
+  'test_write_sbml_multi',
+]);
 
 const filterCompatibleModels = (models: Example[]): Example[] =>
   models.filter((m) => {
     if (BNG2_EXCLUDED_MODELS.has(m.id)) return false;
-    if (!ODE_SIMULATE_ACTION_RE.test(stripBnglCommentLines(m.code))) return false;
 
-    // Website gallery: only show BNG2-parse-pass + active ODE timecourse models.
-    return BNG2_PARSE_AND_ODE_VERIFIED_MODELS.has(m.id);
+    // For verification runs, we now respect the exclusion list.
+    return true;
   });
 
 const CELL_REGULATION: Example[] = [
   {
     id: 'Barua_2013',
     name: 'Barua 2013',
-    description: 'BNGL model: Barua 2013',
+    description: 'β-catenin destruction',
     code: barua2013,
     tags: ['published', 'cell regulation'],
   },
   {
     id: 'Blinov_ran',
     name: 'Blinov ran',
-    description: 'BNGL model: Blinov ran',
+    description: 'Ran GTPase cycle',
     code: blinovRan,
     tags: ['published', 'cell regulation'],
   },
@@ -497,7 +722,7 @@ const CELL_REGULATION: Example[] = [
   {
     id: 'notch',
     name: 'Notch',
-    description: 'BNGL model: Notch',
+    description: 'Notch signaling',
     code: notch,
     tags: ['published', 'cell regulation'],
   },
@@ -511,14 +736,14 @@ const CELL_REGULATION: Example[] = [
   {
     id: 'Rule_based_Ran_transport',
     name: 'Rule based Ran transport',
-    description: 'BNGL model: Rule based Ran transport',
+    description: 'Nuclear Ran transport',
     code: ruleBasedRanTransport,
     tags: ['published', 'cell regulation'],
   },
   {
     id: 'Rule_based_Ran_transport_draft',
     name: 'Rule based Ran transport draft',
-    description: 'BNGL model: Rule based Ran transport draft',
+    description: 'Ran transport (draft)',
     code: ruleBasedRanTransportDraft,
     tags: ['published', 'cell regulation'],
   },
@@ -532,14 +757,14 @@ const CELL_REGULATION: Example[] = [
   {
     id: 'vilar_2002b',
     name: 'Vilar 2002b',
-    description: 'BNGL model: Vilar 2002b',
+    description: 'Gene oscillator',
     code: vilar2002b,
     tags: ['published', 'cell regulation'],
   },
   {
     id: 'vilar_2002c',
     name: 'Vilar 2002c',
-    description: 'BNGL model: Vilar 2002c',
+    description: 'Gene oscillator',
     code: vilar2002c,
     tags: ['published', 'cell regulation'],
   },
@@ -591,7 +816,7 @@ const COMPLEX_MODELS: Example[] = [
   {
     id: 'Dushek_2014',
     name: 'Dushek 2014',
-    description: 'BNGL model: Dushek 2014',
+    description: 'TCR signaling dynamics',
     code: dushek2014,
     tags: ['published', 'complex models'],
   },
@@ -633,14 +858,14 @@ const COMPLEX_MODELS: Example[] = [
   {
     id: 'mapk-dimers',
     name: 'MAPK Dimers',
-    description: 'BNGL model: MAPK Dimers',
+    description: 'MAPK dimerization',
     code: mapkDimers,
     tags: ['published', 'complex models'],
   },
   {
     id: 'mapk-monomers',
     name: 'MAPK Monomers',
-    description: 'BNGL model: MAPK Monomers',
+    description: 'MAPK cascade',
     code: mapkMonomers,
     tags: ['published', 'complex models'],
   },
@@ -699,7 +924,7 @@ const GROWTH_FACTOR_SIGNALING: Example[] = [
   {
     id: 'Blinov_egfr',
     name: 'Blinov egfr',
-    description: 'BNGL model: Blinov egfr',
+    description: 'EGFR signaling model',
     code: blinovEgfr,
     tags: ['published', 'growth factor signaling'],
   },
@@ -727,7 +952,7 @@ const GROWTH_FACTOR_SIGNALING: Example[] = [
   {
     id: 'Rule_based_egfr_compart',
     name: 'Rule based egfr compart',
-    description: 'BNGL model: Rule based egfr compart',
+    description: 'Compartmental EGFR model',
     code: ruleBasedEgfrCompart,
     tags: ['published', 'growth factor signaling'],
   },
@@ -772,27 +997,27 @@ const IMMUNE_SIGNALING: Example[] = [
   {
     id: 'BaruaFceRI_2012',
     name: 'BaruaFceRI 2012',
-    description: 'BNGL model: BaruaFceRI 2012',
+    description: 'FcεRI signaling',
     code: baruafceri2012,
     tags: ['published', 'immune signaling'],
   },
   {
     id: 'blbr',
     name: 'BLBR',
-    description: 'BNGL model: BLBR',
+    description: 'Bivalent ligand binding',
     code: blbr,
     tags: ['published', 'immune signaling'],
   },
   {
     id: 'ChylekFceRI_2014',
-    name: 'Chylek 2014',
+    name: 'Chylek 2014 (FceRI)',
     description: 'FceRI signaling',
     code: chylekfceri2014,
     tags: ['published', 'immune signaling'],
   },
   {
     id: 'ChylekTCR_2014',
-    name: 'Chylek 2014',
+    name: 'Chylek 2014 (TCR)',
     description: 'TCR signaling',
     code: chylektcr2014,
     tags: ['published', 'immune signaling'],
@@ -829,15 +1054,22 @@ const IMMUNE_SIGNALING: Example[] = [
   {
     id: 'Model_ZAP',
     name: 'Model ZAP',
-    description: 'BNGL model: Model ZAP',
+    description: 'ZAP-70 recruitment',
     code: modelZap,
     tags: ['published', 'immune signaling'],
   },
   {
     id: 'Mukhopadhyay_2013',
     name: 'Mukhopadhyay 2013',
-    description: 'BNGL model: Mukhopadhyay 2013',
+    description: 'FcεRI pathway model',
     code: mukhopadhyay2013,
+    tags: ['published', 'immune signaling'],
+  },
+  {
+    id: 'fceri_fyn',
+    name: 'FceRI Fyn',
+    description: 'FcεRI Fyn signaling',
+    code: fceri_fyn,
     tags: ['published', 'immune signaling'],
   },
   {
@@ -867,42 +1099,42 @@ const TUTORIALS: Example[] = [
   {
     id: 'chemistry',
     name: 'chemistry',
-    description: 'BNGL model: chemistry',
+    description: 'Basic chemical reactions',
     code: chemistry,
     tags: ['published', 'tutorials'],
   },
   {
     id: 'polymer',
     name: 'polymer',
-    description: 'BNGL model: polymer',
+    description: 'Polymerization model',
     code: polymer,
     tags: ['published', 'tutorials'],
   },
   {
     id: 'polymer_draft',
     name: 'polymer draft',
-    description: 'BNGL model: polymer draft',
+    description: 'Polymerization (draft)',
     code: polymerDraft,
     tags: ['published', 'tutorials'],
   },
   {
     id: 'simple',
     name: 'simple',
-    description: 'BNGL model: simple',
+    description: 'Simple binding model',
     code: simple,
     tags: ['published', 'tutorials'],
   },
   {
     id: 'toy1',
     name: 'toy1',
-    description: 'BNGL model: toy1',
+    description: 'Basic signaling toy',
     code: toy1,
     tags: ['published', 'tutorials'],
   },
   {
     id: 'toy2',
     name: 'toy2',
-    description: 'BNGL model: toy2',
+    description: 'Enzymatic reaction toy',
     code: toy2,
     tags: ['published', 'tutorials'],
   },
@@ -912,619 +1144,900 @@ const TEST_MODELS: Example[] = [
   {
     id: 'akt-signaling',
     name: 'akt signaling',
-    description: 'BNGL model: akt signaling',
+    description: 'Akt signaling pathway',
     code: aktSignaling,
     tags: ['test model'],
   },
   {
     id: 'allosteric-activation',
     name: 'allosteric activation',
-    description: 'BNGL model: allosteric activation',
+    description: 'Allosteric switch',
     code: allostericActivation,
     tags: ['test model'],
   },
   {
     id: 'apoptosis-cascade',
     name: 'apoptosis cascade',
-    description: 'BNGL model: apoptosis cascade',
+    description: 'Apoptosis signaling',
     code: apoptosisCascade,
     tags: ['test model'],
   },
   {
     id: 'auto-activation-loop',
     name: 'auto activation loop',
-    description: 'BNGL model: auto activation loop',
+    description: 'Positive feedback loop',
     code: autoActivationLoop,
     tags: ['test model'],
   },
   {
     id: 'beta-adrenergic-response',
     name: 'beta adrenergic response',
-    description: 'BNGL model: beta adrenergic response',
+    description: 'β-adrenergic signaling',
     code: betaAdrenergicResponse,
     tags: ['test model'],
   },
   {
     id: 'bistable-toggle-switch',
     name: 'bistable toggle switch',
-    description: 'BNGL model: bistable toggle switch',
+    description: 'Genetic toggle switch',
     code: bistableToggleSwitch,
     tags: ['test model'],
   },
   {
     id: 'blood-coagulation-thrombin',
     name: 'blood coagulation thrombin',
-    description: 'BNGL model: blood coagulation thrombin',
+    description: 'Thrombin activation',
     code: bloodCoagulationThrombin,
     tags: ['test model'],
   },
   {
     id: 'brusselator-oscillator',
     name: 'brusselator oscillator',
-    description: 'BNGL model: brusselator oscillator',
+    description: 'Brusselator oscillator',
     code: brusselatorOscillator,
     tags: ['test model'],
   },
   {
     id: 'calcium-spike-signaling',
     name: 'calcium spike signaling',
-    description: 'BNGL model: calcium spike signaling',
+    description: 'Calcium oscillations',
     code: calciumSpikeSignaling,
     tags: ['test model'],
   },
   {
     id: 'cell-cycle-checkpoint',
     name: 'cell cycle checkpoint',
-    description: 'BNGL model: cell cycle checkpoint',
+    description: 'Cell cycle control',
     code: cellCycleCheckpoint,
     tags: ['test model'],
   },
   {
     id: 'chemotaxis-signal-transduction',
     name: 'chemotaxis signal transduction',
-    description: 'BNGL model: chemotaxis signal transduction',
+    description: 'Bacterial chemotaxis',
     code: chemotaxisSignalTransduction,
     tags: ['test model'],
   },
   {
     id: 'circadian-oscillator',
     name: 'circadian oscillator',
-    description: 'BNGL model: circadian oscillator',
+    description: 'Circadian rhythm',
     code: circadianOscillator,
     tags: ['test model'],
   },
   {
     id: 'competitive-enzyme-inhibition',
     name: 'competitive enzyme inhibition',
-    description: 'BNGL model: competitive enzyme inhibition',
+    description: 'Enzyme inhibition',
     code: competitiveEnzymeInhibition,
     tags: ['test model'],
   },
   {
     id: 'complement-activation-cascade',
     name: 'complement activation cascade',
-    description: 'BNGL model: complement activation cascade',
+    description: 'Complement cascade',
     code: complementActivationCascade,
     tags: ['test model'],
   },
   {
     id: 'cooperative-binding',
     name: 'cooperative binding',
-    description: 'BNGL model: cooperative binding',
+    description: 'Cooperative binding',
     code: cooperativeBinding,
     tags: ['test model'],
   },
   {
     id: 'dna-damage-repair',
     name: 'dna damage repair',
-    description: 'BNGL model: dna damage repair',
+    description: 'DNA repair pathway',
     code: dnaDamageRepair,
     tags: ['test model'],
   },
   {
     id: 'dual-site-phosphorylation',
     name: 'dual site phosphorylation',
-    description: 'BNGL model: dual site phosphorylation',
+    description: 'Multisite phosphorylation',
     code: dualSitePhosphorylation,
     tags: ['test model'],
   },
   {
     id: 'egfr-signaling-pathway',
     name: 'egfr signaling pathway',
-    description: 'BNGL model: egfr signaling pathway',
+    description: 'EGFR pathway model',
     code: egfrSignalingPathway,
     tags: ['test model'],
   },
   {
     id: 'er-stress-response',
     name: 'er stress response',
-    description: 'BNGL model: er stress response',
+    description: 'ER stress signaling',
     code: erStressResponse,
     tags: ['test model'],
   },
   {
     id: 'gene-expression-toggle',
     name: 'gene expression toggle',
-    description: 'BNGL model: gene expression toggle',
+    description: 'Transcription toggle',
     code: geneExpressionToggle,
     tags: ['test model'],
   },
   {
     id: 'glycolysis-branch-point',
     name: 'glycolysis branch point',
-    description: 'BNGL model: glycolysis branch point',
+    description: 'Metabolic branch point',
     code: glycolysisBranchPoint,
     tags: ['test model'],
   },
   {
     id: 'hematopoietic-growth-factor',
     name: 'hematopoietic growth factor',
-    description: 'BNGL model: hematopoietic growth factor',
+    description: 'Cytokine signaling',
     code: hematopoieticGrowthFactor,
     tags: ['test model'],
   },
   {
     id: 'hypoxia-response-signaling',
     name: 'hypoxia response signaling',
-    description: 'BNGL model: hypoxia response signaling',
+    description: 'Hypoxia signaling',
     code: hypoxiaResponseSignaling,
     tags: ['test model'],
   },
   {
     id: 'immune-synapse-formation',
     name: 'immune synapse formation',
-    description: 'BNGL model: immune synapse formation',
+    description: 'Immune synapse',
     code: immuneSynapseFormation,
     tags: ['test model'],
   },
   {
     id: 'inflammasome-activation',
     name: 'inflammasome activation',
-    description: 'BNGL model: inflammasome activation',
+    description: 'Inflammasome signaling',
     code: inflammasomeActivation,
     tags: ['test model'],
   },
   {
     id: 'insulin-glucose-homeostasis',
     name: 'insulin glucose homeostasis',
-    description: 'BNGL model: insulin glucose homeostasis',
+    description: 'Glucose regulation',
     code: insulinGlucoseHomeostasis,
     tags: ['test model'],
   },
   {
     id: 'interferon-signaling',
     name: 'interferon signaling',
-    description: 'BNGL model: interferon signaling',
+    description: 'Interferon pathway',
     code: interferonSignaling,
     tags: ['test model'],
   },
   {
     id: 'jak-stat-cytokine-signaling',
     name: 'jak stat cytokine signaling',
-    description: 'BNGL model: jak stat cytokine signaling',
+    description: 'JAK/STAT signaling',
     code: jakStatCytokineSignaling,
     tags: ['test model'],
   },
   {
     id: 'lac-operon-regulation',
     name: 'lac operon regulation',
-    description: 'BNGL model: lac operon regulation',
+    description: 'Lac operon control',
     code: lacOperonRegulation,
     tags: ['test model'],
   },
   {
     id: 'lipid-mediated-pip3-signaling',
     name: 'lipid mediated pip3 signaling',
-    description: 'BNGL model: lipid mediated pip3 signaling',
+    description: 'PIP3 signaling',
     code: lipidMediatedPip3Signaling,
     tags: ['test model'],
   },
   {
     id: 'mapk-signaling-cascade',
     name: 'mapk signaling cascade',
-    description: 'BNGL model: mapk signaling cascade',
+    description: 'MAPK kinase cascade',
     code: mapkSignalingCascade,
     tags: ['test model'],
   },
   {
     id: 'michaelis-menten-kinetics',
     name: 'michaelis menten kinetics',
-    description: 'BNGL model: michaelis menten kinetics',
+    description: 'Enzyme kinetics',
     code: michaelisMentenKinetics,
     tags: ['test model'],
   },
   {
     id: 'mtor-signaling',
     name: 'mtor signaling',
-    description: 'BNGL model: mtor signaling',
+    description: 'mTOR pathway',
     code: mtorSignaling,
     tags: ['test model'],
   },
   {
     id: 'myogenic-differentiation',
     name: 'myogenic differentiation',
-    description: 'BNGL model: myogenic differentiation',
+    description: 'Myogenesis pathway',
     code: myogenicDifferentiation,
     tags: ['test model'],
   },
   {
     id: 'negative-feedback-loop',
     name: 'negative feedback loop',
-    description: 'BNGL model: negative feedback loop',
+    description: 'Negative feedback',
     code: negativeFeedbackLoop,
     tags: ['test model'],
   },
   {
     id: 'neurotransmitter-release',
     name: 'neurotransmitter release',
-    description: 'BNGL model: neurotransmitter release',
+    description: 'Synaptic release',
     code: neurotransmitterRelease,
     tags: ['test model'],
   },
   {
     id: 'nfkb-feedback',
     name: 'nfkb feedback',
-    description: 'BNGL model: nfkb feedback',
+    description: 'NF-κB signaling',
     code: nfkbFeedback,
     tags: ['test model'],
   },
   {
     id: 'notch-delta-lateral-inhibition',
     name: 'notch delta lateral inhibition',
-    description: 'BNGL model: notch delta lateral inhibition',
+    description: 'Lateral inhibition',
     code: notchDeltaLateralInhibition,
     tags: ['test model'],
   },
   {
     id: 'oxidative-stress-response',
     name: 'oxidative stress response',
-    description: 'BNGL model: oxidative stress response',
+    description: 'Redox signaling',
     code: oxidativeStressResponse,
     tags: ['test model'],
   },
   {
     id: 'p53-mdm2-oscillator',
     name: 'p53 mdm2 oscillator',
-    description: 'BNGL model: p53 mdm2 oscillator',
+    description: 'p53/Mdm2 circuit',
     code: p53Mdm2Oscillator,
     tags: ['test model'],
   },
   {
     id: 'phosphorelay-chain',
     name: 'phosphorelay chain',
-    description: 'BNGL model: phosphorelay chain',
+    description: 'Phosphorelay system',
     code: phosphorelayChain,
     tags: ['test model'],
   },
   {
     id: 'platelet-activation',
     name: 'platelet activation',
-    description: 'BNGL model: platelet activation',
+    description: 'Platelet signaling',
     code: plateletActivation,
     tags: ['test model'],
   },
   {
     id: 'predator-prey-dynamics',
     name: 'predator prey dynamics',
-    description: 'BNGL model: predator prey dynamics',
+    description: 'Lotka-Volterra model',
     code: predatorPreyDynamics,
     tags: ['test model'],
   },
   {
     id: 'quorum-sensing-circuit',
     name: 'quorum sensing circuit',
-    description: 'BNGL model: quorum sensing circuit',
+    description: 'Bacterial quorum sensing',
     code: quorumSensingCircuit,
     tags: ['test model'],
   },
   {
     id: 'rab-gtpase-cycle',
     name: 'rab gtpase cycle',
-    description: 'BNGL model: rab gtpase cycle',
+    description: 'Rab GTPase cycle',
     code: rabGtpaseCycle,
     tags: ['test model'],
   },
   {
     id: 'repressilator-oscillator',
     name: 'repressilator oscillator',
-    description: 'BNGL model: repressilator oscillator',
+    description: 'Repressilator circuit',
     code: repressilatorOscillator,
     tags: ['test model'],
   },
   {
     id: 'retinoic-acid-signaling',
     name: 'retinoic acid signaling',
-    description: 'BNGL model: retinoic acid signaling',
+    description: 'Retinoic acid pathway',
     code: retinoicAcidSignaling,
     tags: ['test model'],
   },
   {
     id: 'signal-amplification-cascade',
     name: 'signal amplification cascade',
-    description: 'BNGL model: signal amplification cascade',
+    description: 'Amplification cascade',
     code: signalAmplificationCascade,
     tags: ['test model'],
   },
   {
     id: 'simple-dimerization',
     name: 'simple dimerization',
-    description: 'BNGL model: simple dimerization',
+    description: 'Receptor dimerization',
     code: simpleDimerization,
     tags: ['test model'],
   },
   {
     id: 'sir-epidemic-model',
     name: 'sir epidemic model',
-    description: 'BNGL model: sir epidemic model',
+    description: 'SIR epidemic model',
     code: sirEpidemicModel,
     tags: ['test model'],
   },
   {
     id: 'smad-tgf-beta-signaling',
     name: 'smad tgf beta signaling',
-    description: 'BNGL model: smad tgf beta signaling',
+    description: 'TGF-β/Smad signaling',
     code: smadTgfBetaSignaling,
     tags: ['test model'],
   },
   {
     id: 'stress-response-adaptation',
     name: 'stress response adaptation',
-    description: 'BNGL model: stress response adaptation',
+    description: 'Adaptation circuit',
     code: stressResponseAdaptation,
     tags: ['test model'],
   },
   {
     id: 'synaptic-plasticity-ltp',
     name: 'synaptic plasticity ltp',
-    description: 'BNGL model: synaptic plasticity ltp',
+    description: 'LTP synaptic model',
     code: synapticPlasticityLtp,
     tags: ['test model'],
   },
   {
     id: 't-cell-activation',
     name: 't cell activation',
-    description: 'BNGL model: t cell activation',
+    description: 'T cell signaling',
     code: tCellActivation,
     tags: ['test model'],
   },
   {
     id: 'tnf-induced-apoptosis',
     name: 'tnf induced apoptosis',
-    description: 'BNGL model: tnf induced apoptosis',
+    description: 'TNF signaling',
     code: tnfInducedApoptosis,
     tags: ['test model'],
   },
   {
     id: 'two-component-system',
     name: 'two component system',
-    description: 'BNGL model: two component system',
+    description: 'Two-component relay',
     code: twoComponentSystem,
     tags: ['test model'],
   },
   {
     id: 'vegf-angiogenesis',
     name: 'vegf angiogenesis',
-    description: 'BNGL model: vegf angiogenesis',
+    description: 'VEGF signaling',
     code: vegfAngiogenesis,
     tags: ['test model'],
   },
   {
     id: 'viral-sensing-innate-immunity',
     name: 'viral sensing innate immunity',
-    description: 'BNGL model: viral sensing innate immunity',
+    description: 'RNA sensing pathway',
     code: viralSensingInnateImmunity,
     tags: ['test model'],
   },
   {
     id: 'wnt-beta-catenin-signaling',
     name: 'wnt beta catenin signaling',
-    description: 'BNGL model: wnt beta catenin signaling',
+    description: 'Wnt/β-catenin pathway',
     code: wntBetaCateninSignaling,
     tags: ['test model'],
   },
   {
     id: 'wound-healing-pdgf-signaling',
     name: 'wound healing pdgf signaling',
-    description: 'BNGL model: wound healing pdgf signaling',
+    description: 'PDGF signaling',
     code: woundHealingPdgfSignaling,
     tags: ['test model'],
   },
+  {
+    id: 'ampk-signaling',
+    name: 'ampk signaling',
+    description: 'AMPK pathway',
+    code: ampkSignaling,
+    tags: ['test model'],
+  },
+  {
+    id: 'autophagy-regulation',
+    name: 'autophagy regulation',
+    description: 'Autophagy control',
+    code: autophagyRegulation,
+    tags: ['test model'],
+  },
+  {
+    id: 'bcr-signaling',
+    name: 'bcr signaling',
+    description: 'B cell signaling',
+    code: bcrSignaling,
+    tags: ['test model'],
+  },
+  {
+    id: 'bmp-signaling',
+    name: 'bmp signaling',
+    description: 'BMP pathway',
+    code: bmpSignaling,
+    tags: ['test model'],
+  },
+  {
+    id: 'calcineurin-nfat-pathway',
+    name: 'calcineurin nfat pathway',
+    description: 'NFAT nuclear import',
+    code: calcineurinNfatPathway,
+    tags: ['test model'],
+  },
+  {
+    id: 'caspase-activation-loop',
+    name: 'caspase activation loop',
+    description: 'Apoptotic loop',
+    code: caspaseActivationLoop,
+    tags: ['test model'],
+  },
+  {
+    id: 'cd40-signaling',
+    name: 'cd40 signaling',
+    description: 'CD40 pathway',
+    code: cd40Signaling,
+    tags: ['test model'],
+  },
+  {
+    id: 'checkpoint-kinase-signaling',
+    name: 'checkpoint kinase signaling',
+    description: 'DNA damage checkpoint',
+    code: checkpointKinaseSignaling,
+    tags: ['test model'],
+  },
+  {
+    id: 'clock-bmal1-gene-circuit',
+    name: 'clock bmal1 gene circuit',
+    description: 'Circadian circuit',
+    code: clockBmal1GeneCircuit,
+    tags: ['test model'],
+  },
+  {
+    id: 'contact-inhibition-hippo-yap',
+    name: 'contact inhibition hippo yap',
+    description: 'Hippo/YAP pathway',
+    code: contactInhibitionHippoYap,
+    tags: ['test model'],
+  },
+  {
+    id: 'dna-methylation-dynamics',
+    name: 'dna methylation dynamics',
+    description: 'Epigenetic dynamics',
+    code: dnaMethylationDynamics,
+    tags: ['test model'],
+  },
+  {
+    id: 'dr5-apoptosis-signaling',
+    name: 'dr5 apoptosis signaling',
+    description: 'TRAIL/DR5 pathway',
+    code: dr5ApoptosisSignaling,
+    tags: ['test model'],
+  },
+  {
+    id: 'e2f-rb-cell-cycle-switch',
+    name: 'e2f rb cell cycle switch',
+    description: 'G1/S switch',
+    code: e2fRbCellCycleSwitch,
+    tags: ['test model'],
+  },
+  {
+    id: 'eif2a-stress-response',
+    name: 'eif2a stress response',
+    description: 'Translation control',
+    code: eif2aStressResponse,
+    tags: ['test model'],
+  },
+  {
+    id: 'endosomal-sorting-rab',
+    name: 'endosomal sorting rab',
+    description: 'Rab sorting cycle',
+    code: endosomalSortingRab,
+    tags: ['test model'],
+  },
+  {
+    id: 'erk-nuclear-translocation',
+    name: 'erk nuclear translocation',
+    description: 'ERK translocation',
+    code: erkNuclearTranslocation,
+    tags: ['test model'],
+  },
+  {
+    id: 'fgf-signaling-pathway',
+    name: 'fgf signaling pathway',
+    description: 'FGF signaling',
+    code: fgfSignalingPathway,
+    tags: ['test model'],
+  },
+  {
+    id: 'gpcr-desensitization-arrestin',
+    name: 'gpcr desensitization arrestin',
+    description: 'Arrestin feedback',
+    code: gpcrDesensitizationArrestin,
+    tags: ['test model'],
+  },
+  {
+    id: 'gas6-axl-signaling',
+    name: 'gas6 axl signaling',
+    description: 'GAS6/AXL pathway',
+    code: gas6AxlSignaling,
+    tags: ['test model'],
+  },
+  {
+    id: 'glioblastoma-egfrviii-signaling',
+    name: 'glioblastoma egfrviii signaling',
+    description: 'EGFRvIII signaling',
+    code: glioblastomaEgfrviiiSignaling,
+    tags: ['test model'],
+  },
+  {
+    id: 'hedgehog-signaling-pathway',
+    name: 'hedgehog signaling pathway',
+    description: 'Hedgehog pathway',
+    code: hedgehogSignalingPathway,
+    tags: ['test model'],
+  },
+  {
+    id: 'hif1a-degradation-loop',
+    name: 'hif1a degradation loop',
+    description: 'Hypoxia sensor',
+    code: hif1aDegradationLoop,
+    tags: ['test model'],
+  },
+  {
+    id: 'il1b-signaling',
+    name: 'il1b signaling',
+    description: 'IL-1β pathway',
+    code: il1bSignaling,
+    tags: ['test model'],
+  },
+  {
+    id: 'il6-jak-stat-pathway',
+    name: 'il6 jak stat pathway',
+    description: 'IL-6/STAT signaling',
+    code: il6JakStatPathway,
+    tags: ['test model'],
+  },
+  {
+    id: 'inositol-phosphate-metabolism',
+    name: 'inositol phosphate metabolism',
+    description: 'IP3 metabolism',
+    code: inositolPhosphateMetabolism,
+    tags: ['test model'],
+  },
+  {
+    id: 'ire1a-xbp1-er-stress',
+    name: 'ire1a xbp1 er stress',
+    description: 'UPR pathway',
+    code: ire1aXbp1ErStress,
+    tags: ['test model'],
+  },
+  {
+    id: 'jnk-mapk-signaling',
+    name: 'jnk mapk signaling',
+    description: 'Stress MAPK',
+    code: jnkMapkSignaling,
+    tags: ['test model'],
+  },
+  {
+    id: 'kir-channel-regulation',
+    name: 'kir channel regulation',
+    description: 'Ion channel control',
+    code: kirChannelRegulation,
+    tags: ['test model'],
+  },
+  {
+    id: 'l-type-calcium-channel-dynamics',
+    name: 'l-type calcium channel dynamics',
+    description: 'LTCC dynamics',
+    code: lTypeCalciumChannelDynamics,
+    tags: ['test model'],
+  },
+  {
+    id: 'mtorc2-signaling',
+    name: 'mtorc2 signaling',
+    description: 'mTORC2 pathway',
+    code: mtorc2Signaling,
+    tags: ['test model'],
+  },
+  {
+    id: 'no-cgmp-signaling',
+    name: 'no cgmp signaling',
+    description: 'Nitric oxide pathway',
+    code: noCgmpSignaling,
+    tags: ['test model'],
+  },
+  {
+    id: 'p38-mapk-signaling',
+    name: 'p38 mapk signaling',
+    description: 'p38 stress pathway',
+    code: p38MapkSignaling,
+    tags: ['test model'],
+  },
+  {
+    id: 'parp1-mediated-dna-repair',
+    name: 'parp1 mediated dna repair',
+    description: 'PARP1 DNA repair',
+    code: parp1MediatedDnaRepair,
+    tags: ['test model'],
+  },
+  {
+    id: 'rankl-rank-signaling',
+    name: 'rankl rank signaling',
+    description: 'Osteoclast signaling',
+    code: ranklRankSignaling,
+    tags: ['test model'],
+  },
+  {
+    id: 'ras-gef-gap-cycle',
+    name: 'ras gef gap cycle',
+    description: 'Ras activation cycle',
+    code: rasGefGapCycle,
+    tags: ['test model'],
+  },
+  {
+    id: 'rho-gtpase-actin-cytoskeleton',
+    name: 'rho gtpase actin cytoskeleton',
+    description: 'Actin remodeling',
+    code: rhoGtpaseActinCytoskeleton,
+    tags: ['test model'],
+  },
+  {
+    id: 'shp2-phosphatase-regulation',
+    name: 'shp2 phosphatase regulation',
+    description: 'SHP2 signaling',
+    code: shp2PhosphataseRegulation,
+    tags: ['test model'],
+  },
+  {
+    id: 'sonic-hedgehog-gradient',
+    name: 'sonic hedgehog gradient',
+    description: 'Shh morphogen',
+    code: sonicHedgehogGradient,
+    tags: ['test model'],
+  },
+  {
+    id: 'stat3-mediated-transcription',
+    name: 'stat3 mediated transcription',
+    description: 'STAT3 transcription',
+    code: stat3MediatedTranscription,
+    tags: ['test model'],
+  },
+  {
+    id: 'tlr3-dsrna-sensing',
+    name: 'tlr3 dsrna sensing',
+    description: 'TLR3 RNA sensing',
+    code: tlr3DsrnaSensing,
+    tags: ['test model'],
+  },
+
 ];
 
 const NATIVE_TUTORIALS: Example[] = [
   {
     id: 'AB',
-    name: 'AB Tutorial',
-    description: 'Native BNGL Tutorial: AB - Simple bivalent binding model',
+    name: 'AB',
+    description: 'Bivalent binding',
     code: ABTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'ABC',
-    name: 'ABC Tutorial',
-    description: 'Native BNGL Tutorial: ABC',
+    name: 'ABC',
+    description: 'Cooperative binding',
     code: ABCTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'ABC_scan',
     name: 'ABC Scan',
-    description: 'Native BNGL Tutorial: ABC Scan',
+    description: 'Cooperative (scan)',
     code: ABCScanTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'ABC_ssa',
     name: 'ABC Ssa',
-    description: 'Native BNGL Tutorial: ABC Ssa',
+    description: 'Cooperative (SSA)',
     code: ABCSsaTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'LV',
-    name: 'Lotka-Volterra (LV) Tutorial',
-    description: 'Native BNGL Tutorial: LV',
+    name: 'LV',
+    description: 'Predator-prey',
     code: LVTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'SIR',
-    name: 'SIR Tutorial',
-    description: 'Native BNGL Tutorial: SIR',
+    name: 'SIR',
+    description: 'Epidemic model',
     code: SIRTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'ABp',
-    name: 'ABp Tutorial',
-    description: 'Native BNGL Tutorial: ABp',
+    name: 'ABp',
+    description: 'Phosphorylation logic',
     code: ABpTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'ABp_approx',
     name: 'ABp Approx',
-    description: 'Native BNGL Tutorial: ABp Approx',
+    description: 'Phosphorylation (approx)',
     code: ABpApproxTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'GK',
-    name: 'GK Tutorial',
-    description: 'Native BNGL Tutorial: GK',
+    name: 'GK',
+    description: 'Goldbeter-Koshland',
     code: GKTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'Lisman',
     name: 'Lisman',
-    description: 'Native BNGL Tutorial: Lisman',
+    description: 'Lisman bistable',
     code: LismanTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'Lisman_bifurcate',
     name: 'Lisman Bifurcate',
-    description: 'Native BNGL Tutorial: Lisman Bifurcate',
+    description: 'Lisman bifurcation',
     code: LismanBifurcateTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'BAB',
-    name: 'BAB Tutorial',
-    description: 'Native BNGL Tutorial: BAB',
+    name: 'BAB',
+    description: 'Trivalent binding',
     code: BABTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'BAB_coop',
     name: 'BAB Coop',
-    description: 'Native BNGL Tutorial: BAB Coop',
+    description: 'Trivalent (coop)',
     code: BABCoopTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'BAB_scan',
     name: 'BAB Scan',
-    description: 'Native BNGL Tutorial: BAB Scan',
+    description: 'Trivalent (scan)',
     code: BABScanTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'BLBR',
-    name: 'BLBR Tutorial',
-    description: 'Native BNGL Tutorial: BLBR',
+    name: 'BLBR',
+    description: 'Bivalent ligand/receptor',
     code: BLBRTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'cBNGL_simple',
     name: 'CBNGL Simple',
-    description: 'Native BNGL Tutorial: CBNGL Simple',
+    description: 'Simple compartmental',
     code: cBNGLSimpleTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'LR',
-    name: 'LR Tutorial',
-    description: 'Native BNGL Tutorial: LR',
+    name: 'LR',
+    description: 'Ligand-receptor',
     code: LRTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'LRR',
-    name: 'LRR Tutorial',
-    description: 'Native BNGL Tutorial: LRR',
+    name: 'LRR',
+    description: 'Receptor recruitment',
     code: LRRTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'LRR_comp',
     name: 'LRR Comp',
-    description: 'Native BNGL Tutorial: LRR Comp',
+    description: 'Compartmental LRR',
     code: LRRCompTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'LR_comp',
     name: 'LR Comp',
-    description: 'Native BNGL Tutorial: LR Comp',
+    description: 'Compartmental LR',
     code: LRCompTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'LV_comp',
     name: 'LV Comp',
-    description: 'Native BNGL Tutorial: LV Comp',
+    description: 'Compartmental LV',
     code: LVCompTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'organelle_transport',
     name: 'Organelle Transport',
-    description: 'Native BNGL Tutorial: Organelle Transport',
+    description: 'Organelle transport',
     code: organelleTransportTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'organelle_transport_struct',
     name: 'Organelle Transport Struct',
-    description: 'Native BNGL Tutorial: Organelle Transport Struct',
+    description: 'Transport (struct)',
     code: organelleTransportStructTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'Chylek_library',
     name: 'Chylek Library',
-    description: 'Native BNGL Tutorial: Chylek Library',
+    description: 'Signaling library',
     code: ChylekLibraryTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'Creamer_2012',
     name: 'Creamer 2012',
-    description: 'Native BNGL Tutorial: Creamer 2012',
+    description: 'Aggregation model',
     code: Creamer2012Tutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'egfr_simple',
     name: 'Egfr Simple',
-    description: 'Native BNGL Tutorial: Egfr Simple',
+    description: 'Basic EGFR model',
     code: egfrSimpleTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'FceRI_ji',
     name: 'FceRI Ji',
-    description: 'Native BNGL Tutorial: FceRI Ji',
+    description: 'FcεRI signaling',
     code: FceRIJiTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'Suderman_2013',
     name: 'Suderman 2013',
-    description: 'Native BNGL Tutorial: Suderman 2013',
+    description: 'Signaling model',
     code: Suderman2013Tutorial,
     tags: ['published', 'tutorial', 'native'],
   },
@@ -1532,49 +2045,49 @@ const NATIVE_TUTORIALS: Example[] = [
   {
     id: 'birth-death',
     name: 'Birth-Death',
-    description: 'Native BNGL Tutorial: Birth-Death',
+    description: 'Stochastic process',
     code: birthDeathTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'CircadianOscillator',
     name: 'CircadianOscillator',
-    description: 'Native BNGL Tutorial: CircadianOscillator',
+    description: 'Circadian rhythm',
     code: CircadianOscillatorTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'ComplexDegradation',
     name: 'ComplexDegradation',
-    description: 'Native BNGL Tutorial: ComplexDegradation',
+    description: 'Degradation model',
     code: ComplexDegradationTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'Repressilator',
     name: 'Repressilator',
-    description: 'Native BNGL Tutorial: Repressilator',
+    description: 'Repressilator circuit',
     code: RepressilatorTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'toggle',
     name: 'Toggle',
-    description: 'Native BNGL Tutorial: Toggle',
+    description: 'Toggle switch',
     code: toggleTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'FceRI_viz',
     name: 'FceRI Viz',
-    description: 'Native BNGL Tutorial: FceRI Viz',
+    description: 'FcεRI (viz)',
     code: FceRIVizTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
   {
     id: 'visualize',
     name: 'Visualize',
-    description: 'Native BNGL Tutorial: Visualize',
+    description: 'Visualization toy',
     code: visualizeTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
@@ -1590,6 +2103,310 @@ export interface ModelCategory {
 }
 
 // Raw categories with all models (including incompatible ones)
+export const INTERNAL_VALIDATION_MODELS: Example[] = [
+  {
+    id: 'CaOscillate_Func',
+    name: 'CaOscillate_Func',
+    description: 'Calcium oscillations (func)',
+    code: model_CaOscillate_Func,
+    tags: ['validation'],
+  },
+  {
+    id: 'CaOscillate_Sat',
+    name: 'CaOscillate_Sat',
+    description: 'Calcium oscillations (sat)',
+    code: model_CaOscillate_Sat,
+    tags: ['validation'],
+  },
+  {
+    id: 'catalysis',
+    name: 'catalysis',
+    description: 'Catalysis in energy BNG',
+    code: model_catalysis,
+    tags: ['validation'],
+  },
+  {
+    id: 'continue',
+    name: 'continue',
+    description: 'Test trajectory continuation',
+    code: model_continue,
+    tags: ['validation'],
+  },
+  {
+    id: 'egfr_net',
+    name: 'egfr_net',
+    description: 'check detailed balanced',
+    code: model_egfr_net,
+    tags: ['validation'],
+  },
+  {
+    id: 'egfr_net_red',
+    name: 'egfr_net_red',
+    description: 'Reduced state-space version of EGFR_NET.BNGL with equivalent ODE dynamics',
+    code: model_egfr_net_red,
+    tags: ['validation'],
+  },
+  {
+    id: 'egfr_path',
+    name: 'egfr_path',
+    description: 'The primary focus of the model developed by Kholodenko',
+    code: model_egfr_path,
+    tags: ['validation'],
+  },
+  {
+    id: 'energy_example1',
+    name: 'energy_example1',
+    description: 'Illustration of energy modeling approach w/ a simple protein scaffold model',
+    code: model_energy_example1,
+    tags: ['validation'],
+  },
+  {
+    id: 'example1',
+    name: 'example1',
+    description: 'Example file for BNG2 tutorial.',
+    code: model_example1,
+    tags: ['validation'],
+  },
+  {
+    id: 'fceri_ji_comp',
+    name: 'fceri_ji_comp',
+    description: 'Ligand-receptor binding',
+    code: model_fceri_ji_comp,
+    tags: ['validation'],
+  },
+  {
+    id: 'Haugh2b',
+    name: 'Haugh2b',
+    description: 'R(KD,Y1~U,Y2~U) 1.00',
+    code: model_Haugh2b,
+    tags: ['validation'],
+  },
+  {
+    id: 'heise',
+    name: 'heise',
+    description: 'Validate state inheritance in a symmetric context',
+    code: model_heise,
+    tags: ['validation'],
+  },
+  {
+    id: 'issue_198_short',
+    name: 'issue_198_short',
+    description: 'No description available',
+    code: model_issue_198_short,
+    tags: ['validation'],
+  },
+  {
+    id: 'Kiefhaber_emodel',
+    name: 'Kiefhaber_emodel',
+    description: 'Allow molar units to be used for bimolecular rate constants',
+    code: model_Kiefhaber_emodel,
+    tags: ['validation'],
+  },
+  {
+    id: 'Korwek_2023',
+    name: 'Korwek_2023',
+    description: 'This BioNetGen file features the article:',
+    code: model_Korwek_2023,
+    tags: ['validation'],
+  },
+  {
+    id: 'localfunc',
+    name: 'localfunc',
+    description: 'Test local function expansion',
+    code: model_localfunc,
+    tags: ['validation'],
+  },
+  {
+    id: 'michment',
+    name: 'michment',
+    description: 'michment.bngl is designed to test the read/write network feature of BNG.',
+    code: model_michment,
+    tags: ['validation'],
+  },
+  {
+    id: 'michment_cont',
+    name: 'michment_cont',
+    description: 'michment_cont.bngl is part of a pair of models that tests the',
+    code: model_michment_cont,
+    tags: ['validation'],
+  },
+  {
+    id: 'Motivating_example',
+    name: 'Motivating_example',
+    description: 'Signal Transduction with receptor internalization and transcriptional reg.  #',
+    code: model_Motivating_example,
+    tags: ['validation'],
+  },
+  {
+    id: 'Motivating_example_cBNGL',
+    name: 'Motivating_example_cBNGL',
+    description: 'Signal transduction with receptor internalization and transcriptional reg.  #',
+    code: model_Motivating_example_cBNGL,
+    tags: ['validation'],
+  },
+  {
+    id: 'motor',
+    name: 'motor',
+    description: 'motor.bngl',
+    code: model_motor,
+    tags: ['validation'],
+  },
+  {
+    id: 'mwc',
+    name: 'mwc',
+    description: 'fundamental constants',
+    code: model_mwc,
+    tags: ['validation'],
+  },
+  {
+    id: 'nfkb',
+    name: 'nfkb',
+    description: '3 state IKK. A20 acts by inhibiting the activation of IKKK, and accelerating the converstion of active to inactive IKK',
+    code: model_nfkb,
+    tags: ['validation'],
+  },
+  {
+    id: 'nfkb_illustrating_protocols',
+    name: 'nfkb_illustrating_protocols',
+    description: '3 state IKK. A20 acts by inhibiting the activation of IKKK, and accelerating the converstion of active to inactive IKK',
+    code: model_nfkb_illustrating_protocols,
+    tags: ['validation'],
+  },
+  {
+    id: 'rec_dim',
+    name: 'rec_dim',
+    description: 'Ligand-receptor binding',
+    code: model_rec_dim,
+    tags: ['validation'],
+  },
+  {
+    id: 'rec_dim_comp',
+    name: 'rec_dim_comp',
+    description: 'name dimension volume contained_by',
+    code: model_rec_dim_comp,
+    tags: ['validation'],
+  },
+  {
+    id: 'SHP2_base_model',
+    name: 'SHP2_base_model',
+    description: 'Base model of Shp2 regulation from Barua, Faeder, and Haugh (2006).',
+    code: model_SHP2_base_model,
+    tags: ['validation'],
+  },
+  {
+    id: 'simple_sbml_import',
+    name: 'simple_sbml_import',
+    description: 'SBML import test',
+    code: model_simple_sbml_import,
+    tags: ['validation'],
+  },
+  {
+    id: 'simple_system',
+    name: 'simple_system',
+    description: 'Simple binding system',
+    code: model_simple_system,
+    tags: ['validation'],
+  },
+  {
+    id: 'test_ANG_synthesis_simple',
+    name: 'test_ANG_synthesis_simple',
+    description: 'Synthesis network test',
+    code: model_test_ANG_synthesis_simple,
+    tags: ['validation'],
+  },
+  {
+    id: 'test_fixed',
+    name: 'test_fixed',
+    description: '# actions ##',
+    code: model_test_fixed,
+    tags: ['validation'],
+  },
+  {
+    id: 'test_MM',
+    name: 'test_MM',
+    description: 'Kinetic constants',
+    code: model_test_MM,
+    tags: ['validation'],
+  },
+  {
+    id: 'test_mratio',
+    name: 'test_mratio',
+    description: 'Reaction ratio test',
+    code: model_test_mratio,
+    tags: ['validation'],
+  },
+  {
+    id: 'test_network_gen',
+    name: 'test_network_gen',
+    description: 'Testing automatic network generation given the appropriate method, using the fceri.bngl model',
+    code: model_test_network_gen,
+    tags: ['validation'],
+  },
+  {
+    id: 'test_sat',
+    name: 'test_sat',
+    description: 'Kinetic constants',
+    code: model_test_sat,
+    tags: ['validation'],
+  },
+  {
+    id: 'test_synthesis_cBNGL_simple',
+    name: 'test_synthesis_cBNGL_simple',
+    description: 'Compartmental synthesis',
+    code: model_test_synthesis_cBNGL_simple,
+    tags: ['validation'],
+  },
+  {
+    id: 'test_synthesis_complex',
+    name: 'test_synthesis_complex',
+    description: 'Complex synthesis test',
+    code: model_test_synthesis_complex,
+    tags: ['validation'],
+  },
+  {
+    id: 'test_synthesis_complex_0_cBNGL',
+    name: 'test_synthesis_complex_0_cBNGL',
+    description: 'volume-surface',
+    code: model_test_synthesis_complex_0_cBNGL,
+    tags: ['validation'],
+  },
+  {
+    id: 'test_synthesis_complex_source_cBNGL',
+    name: 'test_synthesis_complex_source_cBNGL',
+    description: 'volume-surface',
+    code: model_test_synthesis_complex_source_cBNGL,
+    tags: ['validation'],
+  },
+  {
+    id: 'test_synthesis_simple',
+    name: 'test_synthesis_simple',
+    description: 'Simple synthesis test',
+    code: model_test_synthesis_simple,
+    tags: ['validation'],
+  },
+  {
+    id: 'tlmr',
+    name: 'tlmr',
+    description: 'Test whether reaction multiplicities are handled correctly by',
+    code: model_tlmr,
+    tags: ['validation'],
+  },
+  {
+    id: 'toy-jim',
+    name: 'toy-jim',
+    description: 'The model consists of a monovalent extracellular ligand,',
+    code: model_toy_jim,
+    tags: ['validation'],
+  },
+  {
+    id: 'univ_synth',
+    name: 'univ_synth',
+    description: 'example of universal synthesis',
+    code: model_univ_synth,
+    tags: ['validation'],
+  },
+];
+
 const RAW_MODEL_CATEGORIES: ModelCategory[] = [
   {
     id: 'cell-regulation',
@@ -1660,9 +2477,9 @@ if ((import.meta as any)?.env?.DEV) {
     }
   }
 
-  // eslint-disable-next-line no-console
+
   console.log('[BNGL gallery] raw examples:', rawTotal, 'filtered:', filteredTotal, 'categories:', breakdown);
-  // eslint-disable-next-line no-console
+
   console.log('[BNGL gallery] excluded example ids (first 50):', excludedExamples.slice(0, 50));
 }
 

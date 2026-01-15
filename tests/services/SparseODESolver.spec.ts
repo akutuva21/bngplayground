@@ -1,0 +1,110 @@
+
+import { describe, it, expect } from 'vitest';
+import { SparseODESolver } from '../../src/services/SparseODESolver';
+
+// Mock Rxn
+interface MockRxn {
+    reactants: number[];
+    products: number[];
+}
+
+describe('SparseODESolver Service', () => {
+
+    it('should integrate simple A -> B', () => {
+        // A -> B, k=1
+        const nSpecies = 2;
+        const reactions: MockRxn[] = [{ reactants: [0], products: [1] }];
+        
+        // Derivatives: dA/dt = -A, dB/dt = A
+        const derivatives = (y: Float64Array, dydt: Float64Array) => {
+            const r = 1.0 * y[0];
+            dydt[0] = -r;
+            dydt[1] = r;
+        };
+        
+        const y0 = new Float64Array([10, 0]);
+        const times = [0, 1];
+        const outputs: number[][] = [];
+        
+        const outputFn = (t: number, y: Float64Array) => {
+            outputs.push(Array.from(y)); // Copy
+        };
+        
+        const solver = new SparseODESolver(
+            nSpecies,
+            reactions as any,
+            derivatives,
+            y0,
+            ['A', 'B'],
+            { atol: 1e-6, rtol: 1e-6 }
+        );
+        
+        const res = solver.integrate(y0, 0, 1, times, outputFn);
+        
+        expect(res.success).toBe(true);
+        // Expect A(1) = 10 * exp(-1) approx 3.678
+        expect(outputs.length).toBeGreaterThanOrEqual(2);
+        
+        const last = outputs[outputs.length - 1]; // At t=1
+        expect(last[0]).toBeCloseTo(10 * Math.exp(-1), 2);
+        expect(last[1]).toBeCloseTo(10 * (1 - Math.exp(-1)), 2);
+    });
+
+    it('should handle conservation laws (reduction)', () => {
+        // A <-> B. Total = 10.
+        // Reduced system should have size 1.
+        const nSpecies = 2;
+        const reactions: MockRxn[] = [
+            { reactants: [0], products: [1] },
+            { reactants: [1], products: [0] }
+        ];
+        
+        const derivatives = (y: Float64Array, dydt: Float64Array) => {
+            // k1=1, k2=1
+            const r1 = y[0];
+            const r2 = y[1];
+            dydt[0] = -r1 + r2;
+            dydt[1] = r1 - r2;
+        };
+        
+        const y0 = new Float64Array([10, 0]);
+        const times = [0, 10]; // Reach steady state A=B=5
+        
+        let callCount = 0;
+        const outputFn = (t: number, y: Float64Array) => {
+             callCount++;
+             if(Math.abs(t - 10) < 1e-5) {
+                 expect(y[0]).toBeCloseTo(5, 1);
+                 expect(y[1]).toBeCloseTo(5, 1);
+             }
+        };
+        
+        const solver = new SparseODESolver(
+            nSpecies,
+            reactions as any,
+            derivatives,
+            y0,
+            ['A', 'B'],
+            { useConservationLaws: true, atol: 1e-4, rtol: 1e-4 }
+        );
+        
+        // Internal check: reduced size
+        // @ts-ignore
+        expect(solver.n).toBe(1);
+        
+        const res = solver.integrate(y0, 0, 10, times, outputFn);
+        expect(res.success).toBe(true);
+    });
+
+    it('should fall back if linear solve fails', () => {
+        // This is hard to trigger without bad matrix, but we verify it runs
+        const nSpecies = 1;
+        const reactions: MockRxn[] = [];
+        const derivatives = (y: Float64Array, dydt: Float64Array) => { dydt[0] = 0; };
+        const y0 = new Float64Array([1]);
+        
+        const solver = new SparseODESolver(nSpecies, reactions as any, derivatives, y0);
+        const res = solver.integrate(y0, 0, 1, [0, 1], () => {});
+        expect(res.success).toBe(true);
+    });
+});

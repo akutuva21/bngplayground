@@ -33,8 +33,8 @@ const PERL_CMD = process.env.PERL_CMD ?? DEFAULT_PERL_CMD;
 const bngAvailable = existsSync(BNG2_PATH);
 
 // Tolerance settings
-const ABS_TOL = 1e-4;  // Absolute tolerance
-const REL_TOL = 0.05;  // 5% relative tolerance
+// Tolerance settings
+// (Overridden below for strict alignment)
 
 // Model-specific tolerance overrides for complex models with inherent numerical drift
 // These models have larger tolerance due to solver differences (BNG2 uses CVODE, web uses similar but not identical)
@@ -43,41 +43,25 @@ const MODEL_REL_TOL_OVERRIDES: Record<string, number> = {
   'cBNGL_simple': 0.08,  // cBNGL compartment model with volume scaling
 };
 
-const TIMEOUT_MS = 120_000; // 120 seconds per model
-const NETWORK_TIMEOUT_MS = 60_000;  // 1 minute baseline for network generation
-const PROGRESS_LOG_INTERVAL = 100;  // Log every 100 new species
 
-// Models to skip due to known issues
-const SKIP_MODELS = new Set([
-  // Network-free models (use simulate_nf, not ODE/SSA)
-  'Model_ZAP',               // simulate_nf - not designed for ODE
-  'Blinov_egfr',             // simulate_nf - not designed for ODE
-  'Blinov_ran',              // simulate_nf - not designed for ODE
-  'Ligon_2014',              // simulate_nf - not designed for ODE
-  'polymer',                 // simulate_nf - not designed for ODE
-  'polymer_draft',           // simulate_nf - not designed for ODE
+const TIMEOUT_MS = 30_000;
+const NETWORK_TIMEOUT_MS = 45_000;
+const PROGRESS_LOG_INTERVAL = 3000; // Log every 3s if stuck
 
-  // Performance issues (very long single-phase simulation)
-  'Barua_2013',              // t_end=250000, n_steps=2500 - no early termination
+// Strict tolerance settings (aligned with compare_outputs.ts)
+// Do not loosen these just to make tests pass.
+const ABS_TOL = 1e-6; // was 1e-9
+const REL_TOL = 2e-4; // was 1e-3
+const TIME_TOL = 1e-10;
 
-  // Network explosion (no maxStoich constraint)
-  'Barua_2007',              // Network explodes without maxStoich constraint
+// Allow steady-state models to have different row counts if values match in overlap
+const STEADY_STATE_MODELS = ['barua_2007'];
 
-  // Network generation takes too long
-  'Blinov_2006',             // Network generation takes too long (356 species, 4025 reactions)
-
-  // Extremely stiff compartment models - CVODE and Rosenbrock both fail at t=0
-  // These require specialized solver tuning (smaller initial step, different tolerances)
-  'cBNGL_simple',            // 7-compartment model with Hill function feedback - CVODE flag -4
-
-  // Vitest Promise resolution bug - works standalone but hangs in bng2-comparison.spec.ts
-  // See tests/an2009-exact-structure.spec.ts which passes with exact same code
-  // 'An_2009',                 // Promise doesn't resolve despite generate() completing
-
-  // Complex multi-phase models 
-  'Lang_2024',               // Multi-phase simulation
-  'Korwek_2023',             // Multi-phase + very long sim time
-  'innate_immunity',         // Multi-phase
+// Models to skip
+const SKIP_MODELS = new Set<string>([
+  // Known issues:
+  'blbr',                    // Analytic Jacobian hang (RepoIntegration skipped)
+  'BLBR',                    // Case sensitivity coverage
 ]);
 
 // Progress logger class to track network generation progress
@@ -517,7 +501,61 @@ function rateContainsObservables(rateExpr: string, observableNames: Set<string>)
     const regex = new RegExp(`\\b${obsName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
     if (regex.test(rateExpr)) return true;
   }
-  return false;
+  return /(?:Sat|MM|Hill|Arrhenius)\s*\(/i.test(rateExpr);
+}
+
+function expandRateLawMacro(
+  rateExpr: string,
+  reactantNames: string[],
+  parameters: Map<string, number>
+): { expanded: string; isFunctional: boolean } {
+  let expanded = rateExpr.trim();
+  const firstReactant = reactantNames.length > 0 ? reactantNames[0] : '0';
+
+  const substitute = (p: string) => {
+    const val = parameters.get(p.trim());
+    return val !== undefined ? val.toString() : p.trim();
+  };
+
+  let isFunctional = false;
+
+  // Global regex for macros
+  // Sat(k, K) -> k / (K + S)
+  if (/Sat\s*\(/i.test(expanded)) {
+    expanded = expanded.replace(/Sat\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi, (_, k, K) => {
+      isFunctional = true;
+      return `((${substitute(k)}) / ((${substitute(K)}) + ${firstReactant}))`;
+    });
+  }
+
+  // MM(kcat, Km) -> kcat / (Km + S)
+  if (/MM\s*\(/i.test(expanded)) {
+    expanded = expanded.replace(/MM\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi, (_, kcat, Km) => {
+      isFunctional = true;
+      return `((${substitute(kcat)}) / ((${substitute(Km)}) + ${firstReactant}))`;
+    });
+  }
+
+  // Hill(Vmax, K, n) -> Vmax * S^(n-1) / (K^n + S^n)
+  if (/Hill\s*\(/i.test(expanded)) {
+    expanded = expanded.replace(/Hill\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*\s*,\s*([^)]+)\s*\)/gi, (_, Vmax, K, n) => {
+      isFunctional = true;
+      const V = substitute(Vmax);
+      const Kval = substitute(K);
+      const nval = substitute(n);
+      return `(((${V}) * pow(${firstReactant}, (${nval}) - 1)) / (pow(${Kval}, ${nval}) + pow(${firstReactant}, ${nval})))`;
+    });
+  }
+  
+  // Arrhenius(A, Ea) -> (A)*exp(-(Ea)/((R)*(T)))
+  if (/Arrhenius\s*\(/i.test(expanded)) {
+    expanded = expanded.replace(/Arrhenius\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi, (_, A, Ea) => {
+      isFunctional = true;
+      return `((${substitute(A)}) * exp(-(${substitute(Ea)}) / ((R) * (T))))`;
+    });
+  }
+
+  return { expanded, isFunctional };
 }
 
 // Create a rate evaluator function for observable-dependent rates
@@ -525,7 +563,7 @@ function createRateEvaluator(
   rateExpr: string,
   parameters: Map<string, number>,
   observableNames: Set<string>
-): (obsValues: Record<string, number>) => number {
+): (obsValues: Record<string, number>, rxnContext?: Record<string, number>) => number {
   // Substitute parameters first
   let expr = rateExpr;
   const sortedParams = Array.from(parameters.entries()).sort((a, b) => b[0].length - a[0].length);
@@ -535,7 +573,7 @@ function createRateEvaluator(
   }
 
   // Now create a function that substitutes observable values at runtime
-  return (obsValues: Record<string, number>) => {
+  return (obsValues: Record<string, number>, rxnContext: Record<string, number> = {}) => {
     let evalExpr = expr;
     const sortedObs = Array.from(observableNames).sort((a, b) => b.length - a.length);
     for (const obsName of sortedObs) {
@@ -543,10 +581,42 @@ function createRateEvaluator(
       const value = obsValues[obsName] ?? 0;
       evalExpr = evalExpr.replace(new RegExp(`\\b${escaped}\\b`, 'g'), value.toString());
     }
+    
+    // Add rxnContext (ridx0, etc.)
+    for (const [key, value] of Object.entries(rxnContext)) {
+      evalExpr = evalExpr.replace(new RegExp(`\\b${key}\\b`, 'g'), value.toString());
+    }
+
     try {
-      const result = new Function(`return ${evalExpr}`)();
-      return typeof result === 'number' && !isNaN(result) && isFinite(result) ? result : 0;
-    } catch {
+      // Provide math functions in scope
+      const context = {
+        Math,
+        exp: Math.exp,
+        log: Math.log,
+        ln: Math.log,
+        pow: Math.pow,
+        sqrt: Math.sqrt,
+        abs: Math.abs,
+        sin: Math.sin, 
+        cos: Math.cos,
+        tan: Math.tan,
+        // Add macro fallbacks (assuming ridx0 is first arg if called directly)
+        Sat: (k: number, K: number) => k / (K + (rxnContext.ridx0 || 0)),
+        MM: (k: number, K: number) => k / (K + (rxnContext.ridx0 || 0)),
+        Hill: (V: number, K: number, n: number) => (V * Math.pow(rxnContext.ridx0 || 0, n - 1)) / (Math.pow(K, n) + Math.pow(rxnContext.ridx0 || 0, n)),
+        Arrhenius: (A: number, Ea: number) => A * Math.exp(-Ea / ((context as any).R * (context as any).T || 1))
+      };
+      
+      const func = new Function(...Object.keys(context), `return ${evalExpr}`);
+      const result = func(...Object.values(context));
+      
+      if (typeof result !== 'number' || isNaN(result) || !isFinite(result)) {
+        console.error(`  [RateEval] Error: ${evalExpr} => ${result}`);
+        return 0;
+      }
+      return result;
+    } catch (e: any) {
+      console.error(`  [RateEval] Exception: ${evalExpr} - ${e.message}`);
       return 0;
     }
   };
@@ -565,11 +635,14 @@ async function runWebSimulator(
   // Generate network
   const seedSpecies = model.species.map(s => BNGLParser.parseSpeciesGraph(s.name));
 
-  const seedConcentrationMap = new Map<string, number>();
+  const seedInfoMap = new Map<string, { concentration: number, isConstant: boolean }>();
   model.species.forEach(s => {
     const g = BNGLParser.parseSpeciesGraph(s.name);
     const canonicalName = GraphCanonicalizer.canonicalize(g);
-    seedConcentrationMap.set(canonicalName, s.initialConcentration);
+    seedInfoMap.set(canonicalName, { 
+      concentration: s.initialConcentration,
+      isConstant: !!s.isConstant
+    });
   });
 
   // Create a set of observable names to pass to evaluateExpression
@@ -580,19 +653,27 @@ async function runWebSimulator(
   const ruleRateExpressions: { forwardRate: string, reverseRate?: string }[] = [];
 
   const rules = model.reactionRules.flatMap((r, _ruleIdx) => {
-    const hasObsInForward = rateContainsObservables(r.rate, observableNames);
-    const hasObsInReverse = r.reverseRate ? rateContainsObservables(r.reverseRate, observableNames) : false;
+    // Expand macros first
+    const forwardMacro = expandRateLawMacro(r.rate, r.reactants.map((_, i) => `ridx${i}`), parametersMap);
+    const hasObsInForward = forwardMacro.isFunctional || rateContainsObservables(forwardMacro.expanded, observableNames);
+    
+    let reverseMacro = { expanded: r.reverseRate || '', isFunctional: false };
+    let hasObsInReverse = false;
+    if (r.reverseRate) {
+      reverseMacro = expandRateLawMacro(r.reverseRate, r.products.map((_, i) => `ridx${i}`), parametersMap);
+      hasObsInReverse = reverseMacro.isFunctional || rateContainsObservables(reverseMacro.expanded, observableNames);
+    }
 
     // Store rate expressions
     ruleRateExpressions.push({
-      forwardRate: r.rate,
-      reverseRate: r.reverseRate
+      forwardRate: forwardMacro.expanded,
+      reverseRate: reverseMacro.expanded || undefined
     });
 
     // For network generation, use placeholder rate (1) if observable-dependent
-    const rate = hasObsInForward ? 1 : BNGLParser.evaluateExpression(r.rate, parametersMap, observableNames);
+    const rate = hasObsInForward ? 1 : BNGLParser.evaluateExpression(forwardMacro.expanded, parametersMap, observableNames);
     const reverseRate = r.reverseRate
-      ? (hasObsInReverse ? 1 : BNGLParser.evaluateExpression(r.reverseRate, parametersMap, observableNames))
+      ? (hasObsInReverse ? 1 : BNGLParser.evaluateExpression(reverseMacro.expanded, parametersMap, observableNames))
       : rate;
 
     const ruleStr = `${formatSpeciesList(r.reactants)} -> ${formatSpeciesList(r.products)}`;
@@ -670,15 +751,20 @@ async function runWebSimulator(
     ...model,
     species: result.species.map(s => {
       const canonicalName = GraphCanonicalizer.canonicalize(s.graph);
-      const concentration = seedConcentrationMap.get(canonicalName) || (s.concentration || 0);
-      return { name: canonicalName, initialConcentration: concentration };
+      const info = seedInfoMap.get(canonicalName);
+      return { 
+        name: canonicalName, 
+        initialConcentration: info?.concentration ?? (s.concentration || 0),
+        isConstant: info?.isConstant ?? false
+      };
     }),
     reactions: result.reactions.map(r => ({
       reactants: r.reactants.map(idx => GraphCanonicalizer.canonicalize(result.species[idx].graph)),
       products: r.products.map(idx => GraphCanonicalizer.canonicalize(result.species[idx].graph)),
       rate: r.rate.toString(),
       rateConstant: r.rate,
-      ruleName: r.name  // Preserve rule name to look up rate expression
+      ruleName: r.name,
+      productStoichiometries: r.productStoichiometries ? Array.from(r.productStoichiometries) : undefined
     })),
   };
 
@@ -693,6 +779,7 @@ async function runWebSimulator(
     products: Int32Array;
     rateConstant: number;
     rateEvaluator: ((obsValues: Record<string, number>) => number) | null;
+    productStoichiometries?: Float64Array;
   };
 
   const concreteReactions: ConcreteReaction[] = (expandedModel.reactions as any[]).map(r => {
@@ -717,7 +804,8 @@ async function runWebSimulator(
       reactants: new Int32Array(reactantIndices as number[]) as unknown as Int32Array<ArrayBuffer>,
       products: new Int32Array(productIndices as number[]) as unknown as Int32Array<ArrayBuffer>,
       rateConstant: r.rateConstant!,
-      rateEvaluator
+      rateEvaluator,
+      productStoichiometries: r.productStoichiometries ? new Float64Array(r.productStoichiometries) : undefined
     };
     // @ts-ignore
   }).filter((r): r is ConcreteReaction => r !== null);
@@ -755,7 +843,11 @@ async function runWebSimulator(
 
   // Initialize state
   const state = new Float64Array(numSpecies);
-  expandedModel.species.forEach((s, i) => state[i] = s.initialConcentration);
+  const isConstantArray = new Uint8Array(numSpecies);
+  expandedModel.species.forEach((s, i) => {
+    state[i] = s.initialConcentration;
+    isConstantArray[i] = (s as any).isConstant ? 1 : 0;
+  });
 
   const evaluateObservables = (currentState: Float64Array) => {
     const obsValues: Record<string, number> = {};
@@ -776,13 +868,31 @@ async function runWebSimulator(
   const derivatives = (yIn: Float64Array, dydt: Float64Array, obsValues: Record<string, number>) => {
     dydt.fill(0);
     for (const rxn of concreteReactions) {
-      const effectiveRate = rxn.rateEvaluator ? rxn.rateEvaluator(obsValues) : rxn.rateConstant;
+      let rxnContext: Record<string, number> = {};
+      if (rxn.rateEvaluator) {
+        for (let j = 0; j < rxn.reactants.length; j++) {
+          rxnContext[`ridx${j}`] = yIn[rxn.reactants[j]];
+        }
+      }
+      
+      const effectiveRate = rxn.rateEvaluator ? (rxn.rateEvaluator as any)(obsValues, rxnContext) : rxn.rateConstant;
       let velocity = effectiveRate;
       for (let j = 0; j < rxn.reactants.length; j++) {
         velocity *= yIn[rxn.reactants[j]];
       }
-      for (let j = 0; j < rxn.reactants.length; j++) dydt[rxn.reactants[j]] -= velocity;
-      for (let j = 0; j < rxn.products.length; j++) dydt[rxn.products[j]] += velocity;
+      
+      for (let j = 0; j < rxn.reactants.length; j++) {
+        const idx = rxn.reactants[j];
+        if (!isConstantArray[idx]) dydt[idx] -= velocity;
+      }
+      
+      for (let j = 0; j < rxn.products.length; j++) {
+        const idx = rxn.products[j];
+        if (!isConstantArray[idx]) {
+          const stoich = rxn.productStoichiometries ? rxn.productStoichiometries[j] : 1;
+          dydt[idx] += velocity * stoich;
+        }
+      }
     }
   };
 
@@ -1448,45 +1558,172 @@ function extractSimParams(bnglContent: string): SimulationParams {
 // Compare GDAT results
 // ============================================================================
 
-function compareGdat(bng2: GdatData, web: GdatData, modelName?: string): { match: boolean; errors: string[] } {
+// ============================================================================
+// Robust Data Comparison (Ported from scripts/compare_outputs.ts)
+// ============================================================================
+
+// Helper to convert internal GdatData (Record[]) to Matrix format for comparison
+function toMatrix(gdat: GdatData): { headers: string[]; data: number[][] } {
+  const headerMap = gdat.headers;
+  const data = gdat.data.map(row => headerMap.map(h => row[h] ?? 0));
+  return { headers: gdat.headers, data };
+}
+
+interface ComparisonDetails {
+  webRows: number;
+  refRows: number;
+  columns: string[];
+  columnMatch: boolean;
+  timeMatch: boolean;
+  maxRelativeError: number;
+  maxAbsoluteError: number;
+  errorAtTime?: number;
+  errorColumn?: string;
+}
+
+function compareData(
+  webData: { headers: string[]; data: number[][] },
+  refData: { headers: string[]; data: number[][] },
+  modelName: string
+): { match: boolean; details: ComparisonDetails; errors: string[] } {
   const errors: string[] = [];
 
-  // Use model-specific tolerance if available
-  const relTol = modelName && MODEL_REL_TOL_OVERRIDES[modelName]
-    ? MODEL_REL_TOL_OVERRIDES[modelName]
-    : REL_TOL;
+  // Normalize headers (lowercase, remove spaces)
+  const normalizeHeader = (h: string) => h.toLowerCase().replace(/\s+/g, '_');
+  const webHeadersNorm = webData.headers.map(normalizeHeader);
+  const refHeadersNorm = refData.headers.map(normalizeHeader);
 
-  // Get observable names (excluding 'time')
-  const bng2Obs = bng2.headers.filter(h => h !== 'time');
-  const webObs = web.headers.filter(h => h !== 'time');
-
-  // Check headers
-  const missingInWeb = bng2Obs.filter(h => !webObs.includes(h));
-
-
-  if (missingInWeb.length > 0) {
-    errors.push(`Missing observables in web: ${missingInWeb.join(', ')}`);
+  // Check column match (excluding 'time' variations)
+  const isTime = (h: string) => h === 'time' || h === 'Time';
+  const webCols = new Set(webHeadersNorm.filter(h => !isTime(h)));
+  const refCols = new Set(refHeadersNorm.filter(h => !isTime(h)));
+  
+  const columnMatch = [...webCols].every(c => refCols.has(c)) && [...refCols].every(c => webCols.has(c));
+  if (!columnMatch) {
+    const missing = [...refCols].filter(c => !webCols.has(c));
+    const extra = [...webCols].filter(c => !refCols.has(c));
+    if (missing.length) errors.push(`Missing columns: ${missing.join(', ')}`);
+    if (extra.length) errors.push(`Extra columns: ${extra.join(', ')}`);
   }
 
-  // Compare common observables at final time
-  const bng2Final = bng2.data[bng2.data.length - 1];
-  const webFinal = web.data[web.data.length - 1];
+  const webTimeIdx = webHeadersNorm.findIndex(isTime);
+  const refTimeIdx = refHeadersNorm.findIndex(isTime);
 
-  for (const obs of bng2Obs) {
-    if (!webObs.includes(obs)) continue;
+  if (webTimeIdx === -1 || refTimeIdx === -1) {
+    return {
+      match: false, 
+      errors: ['Time column missing'], 
+      details: {
+        webRows: webData.data.length,
+        refRows: refData.data.length,
+        columns: webData.headers,
+        columnMatch,
+        timeMatch: false,
+        maxRelativeError: -1,
+        maxAbsoluteError: -1
+      }
+    };
+  }
 
-    const bng2Val = bng2Final[obs];
-    const webVal = webFinal[obs];
+  // Check for steady-state models
+  const isSteadyStateModel = STEADY_STATE_MODELS.some(m =>
+    modelName.toLowerCase().includes(m.toLowerCase())
+  );
+  
+  const isSteadyStateRowMismatch = isSteadyStateModel && webData.data.length !== refData.data.length;
 
-    const diff = Math.abs(bng2Val - webVal);
-    const relDiff = Math.abs(bng2Val) > 1e-10 ? diff / Math.abs(bng2Val) : diff;
+  const refColIndexByNorm = new Map<string, number>();
+  for (let i = 0; i < refHeadersNorm.length; i++) refColIndexByNorm.set(refHeadersNorm[i], i);
 
-    if (relDiff > relTol && diff > ABS_TOL) {
-      errors.push(`${obs}: BNG2=${bng2Val.toFixed(6)}, Web=${webVal.toFixed(6)}, relDiff=${(relDiff * 100).toFixed(2)}%`);
+  const minRows = Math.min(webData.data.length, refData.data.length);
+  const rowCountMatch = webData.data.length === refData.data.length;
+
+  // Check time grid alignment
+  let timeGridMatches = true;
+  for (let i = 0; i < minRows; i++) {
+    const wt = webData.data[i][webTimeIdx];
+    const rt = refData.data[i][refTimeIdx];
+    if (Math.abs(wt - rt) > TIME_TOL) {
+      timeGridMatches = false;
+      break;
     }
   }
 
-  return { match: errors.length === 0, errors };
+  let timeMatch = rowCountMatch && timeGridMatches;
+  let valuesMatchInOverlap = true;
+  let maxRelativeError = 0;
+  let maxAbsoluteError = 0;
+  let errorAtTime: number | undefined;
+  let errorColumn: string | undefined;
+
+  // Steady-state exemption: if time grid matches in overlap and values match, accept it.
+  if (isSteadyStateRowMismatch && timeGridMatches) {
+     timeMatch = true; // tentative, will check values
+  }
+
+  for (let rowIdx = 0; rowIdx < minRows; rowIdx++) {
+    const webRow = webData.data[rowIdx];
+    const refRow = refData.data[rowIdx];
+    const webTime = webRow[webTimeIdx];
+
+    for (let ci = 0; ci < webData.headers.length; ci++) {
+      const colName = webData.headers[ci];
+      const colNameNorm = normalizeHeader(colName);
+      if (isTime(colNameNorm)) continue;
+
+      const refColIdx = refColIndexByNorm.get(colNameNorm);
+      if (refColIdx === undefined) continue;
+
+      const webVal = webRow[ci];
+      const refVal = refRow[refColIdx];
+      const absError = Math.abs(webVal - refVal);
+      const denom = Math.max(Math.abs(refVal), Math.abs(webVal), 1e-30);
+      const relError = absError / denom;
+
+      if (absError > maxAbsoluteError) maxAbsoluteError = absError;
+      if (relError > maxRelativeError) {
+        maxRelativeError = relError;
+        errorAtTime = webTime;
+        errorColumn = colName;
+      }
+
+      if (absError > ABS_TOL && relError > REL_TOL) {
+         valuesMatchInOverlap = false;
+         if (errors.length < 5) {
+             errors.push(`${colName} @ t=${webTime}: web=${webVal.toPrecision(6)}, ref=${refVal.toPrecision(6)} (rel=${(relError*100).toFixed(4)}%)`);
+         }
+      }
+    }
+  }
+
+  if (errors.length > 0) valuesMatchInOverlap = false;
+
+  // Final verdict logic
+  let match = columnMatch && valuesMatchInOverlap;
+  
+  if (!timeMatch && !isSteadyStateRowMismatch) {
+      match = false;
+      errors.unshift(`Time grid mismatch or row count mismatch (web=${webData.data.length}, ref=${refData.data.length})`);
+  } else if (isSteadyStateRowMismatch && valuesMatchInOverlap) {
+      // Pass with note
+      // console.log(`    (Steady-state row mismatch accepted for ${modelName})`);
+  }
+
+  return {
+    match,
+    errors,
+    details: {
+        webRows: webData.data.length,
+        refRows: refData.data.length,
+        columns: webData.headers,
+        columnMatch,
+        timeMatch,
+        maxRelativeError,
+        maxAbsoluteError,
+        errorAtTime,
+        errorColumn
+    }
+  };
 }
 
 // ============================================================================
@@ -1494,31 +1731,58 @@ function compareGdat(bng2: GdatData, web: GdatData, modelName?: string): { match
 // ============================================================================
 
 // Get list of test models from bng2_test_report.json AND example-models
+// Get list of test models from valid_models.json (generated by RepoIntegration) or fallback
 function getTestModels(): { model: string; path: string }[] {
   const models: { model: string; path: string }[] = [];
+  const seenPaths = new Set<string>();
 
-  // 1. Add models from bng2_test_report.json (published + test models that BNG2.pl can run)
-  const reportPath = join(projectRoot, 'bng2_test_report.json');
-  if (existsSync(reportPath)) {
-    const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
-    // Report format: { passed: [...], failed: [...] }
-    // Each entry has: { model, path, hasGdat, ... }
-    for (const r of (report.passed || [])) {
-      if (r.hasGdat) {
-        models.push({ model: r.model, path: r.path });
-      }
+  // 1. Try valid_models.json from RepoIntegration (Verified runnable models)
+  const validModelsPath = join(projectRoot, 'tests', 'bionetgen-repo', 'valid_models.json');
+  if (existsSync(validModelsPath)) {
+    try {
+      const validFiles: string[] = JSON.parse(readFileSync(validModelsPath, 'utf-8'));
+      validFiles.forEach(absPath => {
+        const modelName = basename(absPath).replace(/\.bngl$/i, '');
+        if (!seenPaths.has(absPath)) {
+            models.push({ model: modelName, path: absPath });
+            seenPaths.add(absPath);
+        }
+      });
+      console.log(`[Discovery] Loaded ${models.length} authenticated models from valid_models.json`);
+    } catch (e) {
+      console.warn(`[Discovery] Failed to parse valid_models.json:`, e);
     }
   }
 
-  // 2. Add example-models (AI-generated, should all pass)
+  // 2. If valid_models.json missed anything or didn't exist, try bng2_test_report.json
+  const reportPath = join(projectRoot, 'bng2_test_report.json');
+  if (existsSync(reportPath)) {
+    try {
+        const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
+        for (const r of (report.passed || [])) {
+        if (r.hasGdat) {
+            // Check if path is absolute or relative, resolve if needed
+            // The report usually has absolute paths from the machine that ran it
+            // We'll trust checking existsSync
+            if (existsSync(r.path) && !seenPaths.has(r.path)) {
+                models.push({ model: r.model, path: r.path });
+                seenPaths.add(r.path);
+            }
+        }
+        }
+    } catch (e) { console.warn(`[Discovery] Failed to parse bng2_test_report.json`, e); }
+  }
+
+  // 3. Add example-models (AI-generated, should all pass)
   const exampleDir = join(projectRoot, 'example-models');
   if (existsSync(exampleDir)) {
     const exampleFiles = readdirSync(exampleDir).filter(f => f.endsWith('.bngl'));
     for (const file of exampleFiles) {
       const modelName = file.replace('.bngl', '');
-      // Skip if already in list
-      if (!models.some(m => m.model === modelName)) {
-        models.push({ model: modelName, path: join(exampleDir, file) });
+      const fullPath = join(exampleDir, file);
+      if (!seenPaths.has(fullPath)) {
+        models.push({ model: modelName, path: fullPath });
+        seenPaths.add(fullPath);
       }
     }
   }
@@ -1541,7 +1805,7 @@ describeFn('Web Simulator vs BNG2.pl GDAT Comparison', () => {
   }
 
   // Filter out models with known performance issues
-  let modelsToTest = testModels.filter(m => !SKIP_MODELS.has(m.model));
+  const modelsToTest = testModels.filter(m => !SKIP_MODELS.has(m.model));
   const skippedModels = testModels.filter(m => SKIP_MODELS.has(m.model));
 
   console.log(`\n╔════════════════════════════════════════════════════════════════╗`);
@@ -1588,7 +1852,7 @@ describeFn('Web Simulator vs BNG2.pl GDAT Comparison', () => {
         const webResult = await runWebSimulator(model, params, modelName);
 
         // Compare (pass modelName for model-specific tolerance)
-        const comparison = compareGdat(bng2Result!, webResult, modelName);
+        const comparison = compareData(toMatrix(webResult), toMatrix(bng2Result!), modelName);
 
         if (!comparison.match) {
           console.log(`\n  ❌ [${modelName}] MISMATCH:`);

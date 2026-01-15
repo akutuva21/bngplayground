@@ -9,13 +9,13 @@ if (typeof self === 'undefined') {
 if (typeof window === 'undefined') {
     (global as any).window = global;
 }
-(global as any).postMessage = (msg: any) => {
+(global as any).postMessage = (_msg: any) => {
     // console.log('[Worker.postMessage]', msg.type);
 };
 
 // Lazy import to ensure mocks are in place
 const runSimulation = async (modelName: string) => {
-    const { simulate } = await import('../services/bnglWorker');
+    const { simulate } = await import('../services/simulation/SimulationLoop');
     const { parseBNGLStrict } = await import('../src/parser/BNGLParserWrapper');
 
     const modelPath = path.join(__dirname, `../public/models/${modelName}`);
@@ -25,7 +25,15 @@ const runSimulation = async (modelName: string) => {
     const parsedModel = parseBNGLStrict(modelContent);
     console.log('Model parsed.');
 
-    const results = await simulate(123, parsedModel, { atol: 1e-12, rtol: 1e-12, solver: 'cvode', maxStep: 100 });
+    const results = await simulate(123, parsedModel, {
+        method: 'ode',
+        t_end: 100,
+        n_steps: 100,
+        atol: 1e-12,
+        rtol: 1e-12,
+        solver: 'cvode',
+        maxStep: 100
+    }, { checkCancelled: () => {}, postMessage: () => {} });
     return results;
 };
 

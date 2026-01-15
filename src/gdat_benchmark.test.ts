@@ -112,7 +112,7 @@ function createExpressionEvaluator(
     if (cached) return cached;
 
     const js = normalizeToJS(expr);
-    // eslint-disable-next-line no-new-func
+     
     const fn = new Function('params', 'obs', 'fn', `"use strict"; return (${js});`) as any;
     const wrapped = (paramsObj: Record<string, number>, obsObj: Record<string, number>, fnObj: any) => {
       const out = fn(paramsObj, obsObj, fnObj);
@@ -132,7 +132,7 @@ function createExpressionEvaluator(
       if (cached) return cached(...args);
 
       const jsBody = normalizeToJS(def.expression);
-      // eslint-disable-next-line no-new-func
+       
       const compiled = new Function(
         'params',
         'obs',

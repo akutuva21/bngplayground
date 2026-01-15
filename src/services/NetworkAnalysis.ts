@@ -86,7 +86,7 @@ function complexToString(comp: Map<number, number>): string {
 function findComplexes(reactions: Rxn[]): Complex[] {
   const complexMap = new Map<string, Complex>();
   let nextId = 0;
-  
+
   for (const rxn of reactions) {
     // Source complex (reactants)
     const sourceComp = parseComplex(rxn.reactants);
@@ -94,7 +94,7 @@ function findComplexes(reactions: Rxn[]): Complex[] {
     if (!complexMap.has(sourceStr)) {
       complexMap.set(sourceStr, { id: nextId++, composition: sourceComp, repr: sourceStr });
     }
-    
+
     // Product complex
     const prodComp = parseComplex(rxn.products);
     const prodStr = complexToString(prodComp);
@@ -102,7 +102,7 @@ function findComplexes(reactions: Rxn[]): Complex[] {
       complexMap.set(prodStr, { id: nextId++, composition: prodComp, repr: prodStr });
     }
   }
-  
+
   return Array.from(complexMap.values());
 }
 
@@ -117,21 +117,21 @@ function buildComplexGraph(
   for (const c of complexes) {
     strToId.set(c.repr, c.id);
   }
-  
+
   const graph = new Map<number, Set<number>>();
   for (const c of complexes) {
     graph.set(c.id, new Set());
   }
-  
+
   for (const rxn of reactions) {
     const sourceStr = complexToString(parseComplex(rxn.reactants));
     const prodStr = complexToString(parseComplex(rxn.products));
     const sourceId = strToId.get(sourceStr)!;
     const prodId = strToId.get(prodStr)!;
-    
+
     graph.get(sourceId)!.add(prodId);
   }
-  
+
   return graph;
 }
 
@@ -145,7 +145,7 @@ function findLinkageClasses(
   const n = complexes.length;
   const visited = new Set<number>();
   const classes: number[][] = [];
-  
+
   // Build undirected graph for weak connectivity
   const undirected = new Map<number, Set<number>>();
   for (let i = 0; i < n; i++) {
@@ -157,29 +157,29 @@ function findLinkageClasses(
       undirected.get(to)!.add(from);
     }
   }
-  
+
   for (let start = 0; start < n; start++) {
     if (visited.has(start)) continue;
-    
+
     const component: number[] = [];
     const stack = [start];
-    
+
     while (stack.length > 0) {
       const node = stack.pop()!;
       if (visited.has(node)) continue;
       visited.add(node);
       component.push(node);
-      
+
       for (const neighbor of undirected.get(node)!) {
         if (!visited.has(neighbor)) {
           stack.push(neighbor);
         }
       }
     }
-    
+
     classes.push(component.sort((a, b) => a - b));
   }
-  
+
   return classes;
 }
 
@@ -193,24 +193,24 @@ function checkWeaklyReversible(
 ): boolean {
   for (const linkageClass of linkageClasses) {
     if (linkageClass.length <= 1) continue;
-    
+
     // Check that every node can reach every other node
     for (const start of linkageClass) {
       const reachable = new Set<number>();
       const stack = [start];
-      
+
       while (stack.length > 0) {
         const node = stack.pop()!;
         if (reachable.has(node)) continue;
         reachable.add(node);
-        
+
         for (const neighbor of graph.get(node)!) {
           if (!reachable.has(neighbor)) {
             stack.push(neighbor);
           }
         }
       }
-      
+
       // Check if all nodes in linkage class are reachable
       for (const target of linkageClass) {
         if (!reachable.has(target)) {
@@ -219,7 +219,7 @@ function checkWeaklyReversible(
       }
     }
   }
-  
+
   return true;
 }
 
@@ -228,25 +228,25 @@ function checkWeaklyReversible(
  */
 function computeStoichiometricRank(reactions: Rxn[], nSpecies: number): number {
   if (reactions.length === 0 || nSpecies === 0) return 0;
-  
+
   // Build stoichiometric matrix
   const N: number[][] = Array.from(
     { length: nSpecies },
     () => Array(reactions.length).fill(0)
   );
-  
+
   for (let r = 0; r < reactions.length; r++) {
     const rxn = reactions[r];
     for (const s of rxn.reactants) N[s][r] -= 1;
     for (const s of rxn.products) N[s][r] += 1;
   }
-  
+
   // Gaussian elimination
   const EPS = 1e-10;
   let rank = 0;
   const nRows = nSpecies;
   const nCols = reactions.length;
-  
+
   let pivotRow = 0;
   for (let col = 0; col < nCols && pivotRow < nRows; col++) {
     // Find pivot
@@ -258,14 +258,14 @@ function computeStoichiometricRank(reactions: Rxn[], nSpecies: number): number {
         maxRow = r;
       }
     }
-    
+
     if (maxVal < EPS) continue;
-    
+
     // Swap rows
     if (maxRow !== pivotRow) {
       [N[pivotRow], N[maxRow]] = [N[maxRow], N[pivotRow]];
     }
-    
+
     // Eliminate
     const pivot = N[pivotRow][col];
     for (let r = pivotRow + 1; r < nRows; r++) {
@@ -274,11 +274,11 @@ function computeStoichiometricRank(reactions: Rxn[], nSpecies: number): number {
         N[r][c] -= factor * N[pivotRow][c];
       }
     }
-    
+
     rank++;
     pivotRow++;
   }
-  
+
   return rank;
 }
 
@@ -291,26 +291,26 @@ function classifySpecies(
 ): { boundary: number[]; floating: number[] } {
   const appearsAsReactant = new Set<number>();
   const appearsAsProduct = new Set<number>();
-  
+
   for (const rxn of reactions) {
     for (const s of rxn.reactants) appearsAsReactant.add(s);
     for (const s of rxn.products) appearsAsProduct.add(s);
   }
-  
+
   const boundary: number[] = [];
   const floating: number[] = [];
-  
+
   for (let s = 0; s < nSpecies; s++) {
     const isReactant = appearsAsReactant.has(s);
     const isProduct = appearsAsProduct.has(s);
-    
+
     if (isReactant && isProduct) {
       floating.push(s);
     } else if (isReactant || isProduct) {
       boundary.push(s);
     }
   }
-  
+
   return { boundary, floating };
 }
 
@@ -323,33 +323,32 @@ function classifySpecies(
  */
 export function analyzeNetwork(reactions: Rxn[], nSpecies: number): NetworkAnalysis {
   console.log(`[NetworkAnalysis] Analyzing network with ${nSpecies} species, ${reactions.length} reactions`);
-  
+
   // Find complexes
   const complexes = findComplexes(reactions);
   const numComplexes = complexes.length;
-  
+
   // Build reaction graph
   const graph = buildComplexGraph(reactions, complexes);
-  
+
   // Find linkage classes
   const linkageClasses = findLinkageClasses(complexes, graph);
   const numLinkageClasses = linkageClasses.length;
-  
+
   // Compute stoichiometric rank
   const stoichiometricRank = computeStoichiometricRank(reactions, nSpecies);
-  
+
   // Deficiency: δ = n - l - s
   // where n = number of complexes, l = number of linkage classes, s = stoichiometric rank
   const deficiency = numComplexes - numLinkageClasses - stoichiometricRank;
-  
+
   // Check reversibility
   const isWeaklyReversible = checkWeaklyReversible(graph, linkageClasses);
-  
+
   // Check if all reactions have a reverse
   const reactionPairs = new Set<string>();
   for (const rxn of reactions) {
     const fwd = `${complexToString(parseComplex(rxn.reactants))}->${complexToString(parseComplex(rxn.products))}`;
-    const rev = `${complexToString(parseComplex(rxn.products))}->${complexToString(parseComplex(rxn.reactants))}`;
     reactionPairs.add(fwd);
   }
   let isReversible = true;
@@ -360,13 +359,13 @@ export function analyzeNetwork(reactions: Rxn[], nSpecies: number): NetworkAnaly
       break;
     }
   }
-  
+
   // Classify species
   const { boundary, floating } = classifySpecies(reactions, nSpecies);
-  
+
   console.log(`[NetworkAnalysis] Complexes: ${numComplexes}, Linkage classes: ${numLinkageClasses}, Rank: ${stoichiometricRank}, Deficiency: ${deficiency}`);
   console.log(`[NetworkAnalysis] Weakly reversible: ${isWeaklyReversible}, Reversible: ${isReversible}`);
-  
+
   return {
     numSpecies: nSpecies,
     numReactions: reactions.length,
@@ -402,7 +401,7 @@ export function checkDeficiencyZeroTheorem(analysis: NetworkAnalysis): {
       explanation: 'Deficiency Zero Theorem: Network has unique, asymptotically stable positive steady state per stoichiometric compatibility class.'
     };
   }
-  
+
   if (analysis.deficiency === 0) {
     return {
       applies: false,
@@ -410,7 +409,7 @@ export function checkDeficiencyZeroTheorem(analysis: NetworkAnalysis): {
       explanation: 'Deficiency is zero but network is not weakly reversible.'
     };
   }
-  
+
   return {
     applies: false,
     hasUniqueStableSSS: false,

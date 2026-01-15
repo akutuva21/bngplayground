@@ -11,6 +11,73 @@ jsep.removeBinaryOp(',');
 // Maximum allowed expression length in characters
 const MAX_EXPRESSION_SIZE = 10000;
 
+/**
+ * Compute the ratio of Kummer hypergeometric functions M(a+1,b+1,z)/M(a,b,z)
+ * using a continued fraction method.
+ * Based on BioNetGen's Network3 implementation (misc.cpp::Mratio).
+ * Original Fortran code by William Hlavacek (2018), translated to C++ by Leonard A. Harris (2019).
+ * 
+ * Uses the modified Lentz method: Lentz WJ (1976) Applied Optics 15:668-671
+ * Reference: Thompson IJ, Barnett AR (1986) J Comput Phys 64: 490-509
+ */
+function mratio(a: number, b: number, z: number): number {
+  const eps = 1e-16;
+  const tiny = 1e-32;
+
+  let f = tiny;
+  let C = f;
+  let D = 0.0;
+  let err = 1.0 + eps;
+
+  let odd = 1;
+  let even = 0;
+  let iodd = 0;
+  let ieven = 0;
+  let j = 0;
+
+  while (err > eps && j < 10000) { // Add iteration limit for safety
+    j++;
+
+    let p: number;
+    if (j === 1) {
+      p = 1.0;
+    } else {
+      const den = (b + (j - 2)) * (b + (j - 1));
+      let num: number;
+      if (odd === 1) {
+        iodd++;
+        num = z * (a + iodd);
+      } else if (even === 1) {
+        ieven++;
+        num = z * (a - (b + ieven - 1));
+      } else {
+        throw new Error(`mratio: invalid state iodd=${iodd}, ieven=${ieven}`);
+      }
+      p = num / den;
+    }
+
+    const q = 1.0;
+
+    D = q + p * D;
+    if (Math.abs(D) < tiny) D = tiny;
+    C = q + p / C;
+    if (Math.abs(C) < tiny) C = tiny;
+    D = 1.0 / D;
+
+    const Delta = C * D;
+    f = Delta * f;
+
+    err = Math.abs(Delta - 1.0);
+
+    // Swap odd/even for next iteration
+    const tmp = odd;
+    odd = even;
+    even = tmp;
+  }
+
+  return f;
+}
+
 // Allowlist of math functions supported in BNGL-like expressions
 const ALLOWED_FUNCTIONS: Record<string, (...args: number[]) => number> = {
   abs: Math.abs,
@@ -23,6 +90,8 @@ const ALLOWED_FUNCTIONS: Record<string, (...args: number[]) => number> = {
   exp: Math.exp,
   expm1: Math.expm1 ?? ((x: number) => Math.exp(x) - 1),
   floor: Math.floor,
+  // BioNetGen if(cond, trueVal, falseVal) function - returns trueVal if cond != 0, else falseVal
+  if: (cond: number, trueVal: number, falseVal: number) => (cond !== 0 ? trueVal : falseVal),
   ln: Math.log,
   log: Math.log,
   log10: Math.log10 ?? ((x: number) => Math.log(x) / Math.LN10),
@@ -37,6 +106,7 @@ const ALLOWED_FUNCTIONS: Record<string, (...args: number[]) => number> = {
   }),
   max: Math.max,
   min: Math.min,
+  mratio: mratio, // BioNetGen special function for Kummer hypergeometric ratio
   sign: Math.sign ?? ((x: number) => (x > 0 ? 1 : x < 0 ? -1 : 0)),
   trunc: Math.trunc ?? ((x: number) => (x < 0 ? Math.ceil(x) : Math.floor(x))),
   hypot: Math.hypot ?? ((...xs: number[]) => Math.sqrt(xs.reduce((s, v) => s + v * v, 0))),
@@ -245,7 +315,7 @@ function evaluateNode(node: JsepNode, context: Record<string, number>, stepRef: 
 function getVariables(node: JsepNode): string[] {
   // Validate once at top level (Issue #9 fix - avoid O(n²) re-validation)
   validateASTStructure(node);
-  
+
   const vars = new Set<string>();
   function traverse(n: JsepNode) {
     if (!n) return;

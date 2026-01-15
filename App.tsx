@@ -45,7 +45,7 @@ function App() {
         bnglService.terminate('App unmounted');
       } catch (err) {
         // swallow errors during teardown
-        // eslint-disable-next-line no-console
+         
         console.warn('Error terminating bnglService on App unmount', err);
       }
     };

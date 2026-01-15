@@ -28,7 +28,7 @@ begin observables
 end observables
 
 begin reaction rules
-    Ligand() + Receptor(state~inactive) <-> Ligand() + Receptor(state~active) k_bind, k_unbind
+    Ligand() + Receptor(state~inactive) <-> Ligand() + Receptor(state~active) k_bind,k_unbind
     Receptor(state~active) + Effector(state~inactive) -> Receptor(state~active) + Effector(state~active) k_act
     Effector(state~active) -> Effector(state~inactive) k_deact
     Effector(state~active) -> Effector(state~active) + Messenger() k_prod
@@ -37,6 +37,7 @@ end reaction rules
 
 begin actions
     generate_network({overwrite=>1})
-    simulate({method=>"ode",t_end=>120,n_steps=>240})
+    simulate({method=>"ode",t_end=>20,n_steps=>240})
 end actions
 end model
+

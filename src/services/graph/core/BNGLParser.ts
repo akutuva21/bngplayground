@@ -328,6 +328,69 @@ export class BNGLParser {
   }
 
   /**
+   * BioNetGen special function: mratio(a, b, z)
+   * Computes M(a+1,b+1,z) / M(a,b,z) where M is Kummer's confluent hypergeometric function.
+   * Used in parameter expressions for models with hypergeometric kinetics.
+   */
+  static mratio(a: number, b: number, z: number): number {
+    const eps = 1e-16; // Convergence tolerance
+    const tiny = 1e-32; // Small number to prevent division by zero
+
+    let f = tiny;
+    let C = f;
+    let D = 0.0;
+    let err = 1.0 + eps;
+
+    let odd = 1;
+    let even = 0;
+    let iodd = 0;
+    let ieven = 0;
+    let j = 0;
+
+    while (err > eps && j < 10000) { // Add iteration limit for safety
+      j++;
+
+      let p: number;
+      if (j === 1) {
+        p = 1.0;
+      } else {
+        const den = (b + (j - 2)) * (b + (j - 1));
+        let num: number;
+        if (odd === 1) {
+          iodd++;
+          num = z * (a + iodd);
+        } else if (even === 1) {
+          ieven++;
+          num = z * (a - (b + ieven - 1));
+        } else {
+          throw new Error(`mratio: invalid state iodd=${iodd}, ieven=${ieven}`);
+        }
+        p = num / den;
+      }
+
+      const q = 1.0;
+
+      D = q + p * D;
+      if (Math.abs(D) < tiny) D = tiny;
+      C = q + p / C;
+      if (Math.abs(C) < tiny) C = tiny;
+      D = 1.0 / D;
+
+      const Delta = C * D;
+      f = Delta * f;
+
+      err = Math.abs(Delta - 1.0);
+
+      // Swap odd/even for next iteration
+      const tmp = odd;
+      odd = even;
+      even = tmp;
+    }
+
+    return f;
+  }
+
+  /**
    * Parse seed species block and evaluate expressions
    */
   static parseSeedSpecies(block: string, parameters: Map<string, number>): Map<string, number> {
@@ -380,7 +443,8 @@ export class BNGLParser {
   static evaluateExpression(
     expr: string,
     parameters: Map<string, number>,
-    observables?: Map<string, number> | Set<string>
+    observables?: Map<string, number> | Set<string>,
+    functions?: Map<string, { args: string[], expr: string }>
   ): number {
     try {
       // Return NaN for empty or whitespace-only expressions
@@ -421,7 +485,10 @@ export class BNGLParser {
         // Use word boundary but allow underscores - escape special regex chars
         const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(`\\b${escapedName}\\b`, 'g');
-        evaluable = evaluable.replace(regex, value.toString());
+        // Wrap negative numbers and NaN in parentheses to avoid syntax errors
+        // e.g., -a becomes -(-1000) not --1000, and NaN expressions fail gracefully
+        const valueStr = (value < 0 || isNaN(value)) ? `(${value})` : value.toString();
+        evaluable = evaluable.replace(regex, valueStr);
       }
 
       // If observables are provided, replace observable names with placeholder values (1)
@@ -450,7 +517,7 @@ export class BNGLParser {
       evaluable = evaluable.replace(/\b_pi\b/g, String(Math.PI));
       evaluable = evaluable.replace(/\b_e\b/g, String(Math.E));
 
-      // Replace BNGL math functions with JavaScript equivalents
+      // BNGL math functions with JavaScript equivalents
       evaluable = evaluable.replace(/\bexp\(/g, 'Math.exp(');
       evaluable = evaluable.replace(/\bln\(/g, 'Math.log(');
       evaluable = evaluable.replace(/\blog10\(/g, 'Math.log10(');
@@ -459,7 +526,49 @@ export class BNGLParser {
       evaluable = evaluable.replace(/\bsin\(/g, 'Math.sin(');
       evaluable = evaluable.replace(/\bcos\(/g, 'Math.cos(');
       evaluable = evaluable.replace(/\btan\(/g, 'Math.tan(');
+      evaluable = evaluable.replace(/\basin\(/g, 'Math.asin(');
+      evaluable = evaluable.replace(/\bacos\(/g, 'Math.acos(');
+      evaluable = evaluable.replace(/\batan\(/g, 'Math.atan(');
+      evaluable = evaluable.replace(/\batan2\(/g, 'Math.atan2(');
       evaluable = evaluable.replace(/\bpow\(/g, 'Math.pow(');
+      evaluable = evaluable.replace(/\bmin\(/g, 'Math.min(');
+      evaluable = evaluable.replace(/\bmax\(/g, 'Math.max(');
+      evaluable = evaluable.replace(/\bfloor\(/g, 'Math.floor(');
+      evaluable = evaluable.replace(/\bceil\(/g, 'Math.ceil(');
+
+      // Check if mratio or if is used
+      const usesMratio = /\bmratio\s*\(/g.test(evaluable);
+      const usesIf = /\bif\s*\(/g.test(evaluable);
+      let needsHP = usesIf || usesMratio;
+
+      // Also check if any custom function is used
+      if (functions) {
+        for (const fname of functions.keys()) {
+           // Regex to check if fname( is in expression
+           // Escape fname
+           const escaped = fname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+           if (new RegExp(`\\b${escaped}\\s*\\(`, 'g').test(evaluable)) {
+             needsHP = true;
+             break;
+           }
+        }
+      }
+
+      if (needsHP) {
+        // Force high precision evaluator (ANTLR-based) for these complex functions
+        let evalParams = parameters;
+        if (observables) {
+          evalParams = new Map(parameters);
+          const obsNames = observables instanceof Set
+            ? Array.from(observables)
+            : Array.from(observables.keys());
+
+          for (const obs of obsNames) {
+            evalParams.set(obs, 1.0);
+          }
+        }
+        return evaluateExpressionHighPrecision(expr, evalParams, functions);
+      }
 
       // Use Function constructor for safe evaluation
       const result = new Function(`return ${evaluable}`)();

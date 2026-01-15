@@ -47,7 +47,7 @@ function evaluateExpression(expression: string, variables: Record<string, number
     }
 
     // Use Function constructor for safe evaluation (only math operations)
-    // eslint-disable-next-line no-new-func
+     
     const result = new Function(`return ${expr}`)();
 
     if (typeof result !== 'number' || !Number.isFinite(result)) {

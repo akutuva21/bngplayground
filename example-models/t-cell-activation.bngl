@@ -25,7 +25,7 @@ begin observables
 end observables
 
 begin reaction rules
-    TCR(state~inactive) + Antigen() <-> TCR(state~active) + Antigen() k_bind, k_unbind
+    TCR(state~inactive) + Antigen() <-> TCR(state~active) + Antigen() k_bind,k_unbind
     TCR(state~active) -> TCR(state~inactive) k_deact
     TCR(state~active) -> TCR(state~active) + Cytokine() k_cyt
     Cytokine() -> 0 k_cyt_deg
@@ -33,6 +33,7 @@ end reaction rules
 
 begin actions
     generate_network({overwrite=>1})
-    simulate({method=>"ode",t_end=>120,n_steps=>240})
+    simulate({method=>"ode",t_end=>100,n_steps=>240})
 end actions
 end model
+

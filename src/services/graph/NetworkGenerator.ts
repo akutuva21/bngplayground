@@ -1126,7 +1126,10 @@ export class NetworkGenerator {
       );
 
       // Debug: log transformation result for phosphorylation rule
-      if (shouldLogNetworkGenerator && rule.name?.includes('s45~U') && rule.name?.includes('CK1a')) {
+      if (rule.name?.includes('DeCe1')) {
+        console.log(`[DeCe1_TRACE] Name='${rule.name}' ProductsLen=${products?.length} Result=${products?.map(p => p.toString()).join('|')}`);
+      }
+      if (shouldLogNetworkGenerator) {
         debugNetworkLog(`[applyUnimolecularRule] Transformation result: ${products ? products.map(p => p.toString()).join(', ') : 'null'}`);
       }
 
@@ -1143,7 +1146,7 @@ export class NetworkGenerator {
       // still connected (e.g., by another bond), result is 1 connected product.
       // Reaction is rejected because 1 != 2.
       const expectedProductCount = rule.products.length;
-      if (products.length !== expectedProductCount) {
+      if (products.length < expectedProductCount) {
         if (shouldLogNetworkGenerator) {
           debugNetworkLog(`[applyUnimolecularRule] Rejecting rule ${rule.name}: product count ${products.length} != expected ${expectedProductCount}`);
         }
@@ -1189,6 +1192,9 @@ export class NetworkGenerator {
       for (const product of products) {
         const productSpecies = this.addOrGetSpecies(product, speciesMap, speciesList, queue, signal);
         productSpeciesIndices.push(productSpecies.index);
+      }
+      if (rule.name === 'DeCe1' && products.length > 0) {
+        console.log(`[DeCe1_DEBUG] Pushed reaction with products: ${productSpeciesIndices.join(',')}`);
       }
 
       // Unimolecular reactions do not get the identical-reactant 1/2 factor.
@@ -1569,7 +1575,7 @@ export class NetworkGenerator {
             // specified bond does not disconnect the products (e.g., NFkB is still tethered via
             // another DNA site), the result is fewer components and the reaction is rejected.
             const expectedProductCount = rule.products.length;
-            if (products.length !== expectedProductCount) {
+            if (products.length < expectedProductCount) {
               if (shouldLogNetworkGenerator) {
                 debugNetworkLog(
                   `[applyBimolecularRule] Rejecting rule ${rule.name}: product count ${products.length} != expected ${expectedProductCount}`
@@ -1680,13 +1686,9 @@ export class NetworkGenerator {
       );
     }
 
-    // Degradation rule: X -> 0 (empty products)
-    if (rule.products.length === 0) {
-      if (shouldLogNetworkGenerator) {
-        debugNetworkLog(`[applyTransformation] Degradation rule - no products`);
-      }
-      return [];  // Return empty array for degradation
-    }
+    // Note: We previously returned early for degradation rules (products.length === 0).
+    // This has been removed to allow 'harvestOrphanFragments' to run, which ensures that
+    // implicit context molecules (e.g. B in A(b).B -> 0) are preserved as distinct species.
 
     const productGraphs: SpeciesGraph[] = [];
     const usedReactantMolsInReaction = new Set<string>(); // Tracks reactant graph molecules (for deduplication)
@@ -1748,10 +1750,210 @@ export class NetworkGenerator {
       }
     }
 
+    // FIX: Collected orphaned fragments (implicit context molecules NOT mapped to any product).
+    // This is critical for rules like "A -> 0" applied to "A.B". B is unmatched and should remain.
+    // Standard BNG2 behavior: unmatched molecules are preserved.
+
+
+    const matchedKeys = new Set<string>();
+    for (let r = 0; r < matches.length; r++) {
+      const match = matches[r];
+      if (match) {
+        for (const tMol of match.moleculeMap.values()) {
+          matchedKeys.add(`${r}:${tMol}`);
+        }
+      }
+    }
+
+    // Scan for reactant molecules that were NOT used in any product and are NOT matched (Context)
+    const processedOrphans = new Set<string>();
+
+
+
+    for (let r = 0; r < reactantGraphs.length; r++) {
+      const graph = reactantGraphs[r];
+
+      for (let m = 0; m < graph.molecules.length; m++) {
+        const key = `${r}:${m}`;
+
+        // If already used in a product, skip
+        if (usedReactantMolsInReaction.has(key)) continue;
+
+        // If matched by pattern, it is Explicitly Deleted (since it wasn't mapped to product)
+        if (matchedKeys.has(key)) continue;
+
+        // If already processed as part of a fragment, skip
+        if (processedOrphans.has(key)) continue;
+
+        // Found a root of an orphaned fragment!
+        // Traverse to find connected component of unmatched molecules
+        const fragmentMols = new Set<number>();
+        const queue = [m];
+        const visited = new Set<number>([m]); // Visited within this traversal
+
+        // Maps original mol index -> new mol index in fragment graph
+        const molMap = new Map<number, number>();
+
+        const fragmentGraph = new SpeciesGraph();
+        if (graph.compartment) fragmentGraph.compartment = graph.compartment;
+
+        // Traverse
+        while (queue.length > 0) {
+          const curr = queue.shift()!;
+          fragmentMols.add(curr);
+
+          // Mark as processed globally
+          processedOrphans.add(`${r}:${curr}`);
+
+          const mol = graph.molecules[curr];
+          if (!mol) continue;
+
+          // Clone molecule
+          const clone = this.cloneMoleculeStructure(mol);
+          clone._sourceKey = `${r}:${curr}`;
+          if (!clone.compartment && graph.compartment) clone.compartment = graph.compartment;
+
+          const newIdx = fragmentGraph.molecules.length;
+          fragmentGraph.molecules.push(clone);
+          molMap.set(curr, newIdx);
+
+          // Check neighbors
+          for (let cIdx = 0; cIdx < mol.components.length; cIdx++) {
+            const compKey = `${curr}.${cIdx}`;
+            const partners = graph.adjacency.get(compKey);
+            if (partners) {
+              for (const pKey of partners) {
+                const [pMolStr] = pKey.split('.');
+                const pMolIdx = Number(pMolStr);
+
+                // If partner is Matched, boundary is cut. Stop.
+                if (matchedKeys.has(`${r}:${pMolIdx}`)) continue;
+
+                // If partner is Used (shouldn't happen for context), Stop? 
+                // Context connected to Transformed?
+                // If A.B -> A'. B is context. A mapped to A'.
+                // buildProductGraph(A) should have included B.
+                // So B is in used.
+                // So we wouldn't reach here.
+                // So if we reach here, it's disjoint.
+
+                if (!visited.has(pMolIdx)) {
+                  visited.add(pMolIdx);
+                  queue.push(pMolIdx);
+                }
+              }
+            }
+          }
+        }
+
+        // Rebuild adjacency for fragment
+        fragmentGraph.buildAdjacencyBitset(); // Just to init
+
+        // For each molecule in fragment, recreate internal bonds
+        for (const orgMolIdx of fragmentMols) {
+          const newMolIdx = molMap.get(orgMolIdx)!;
+          const orgMol = graph.molecules[orgMolIdx];
+
+          for (let cIdx = 0; cIdx < orgMol.components.length; cIdx++) {
+            const partners = graph.adjacency.get(`${orgMolIdx}.${cIdx}`);
+            if (partners) {
+              for (const pKey of partners) {
+                const [pMolStr, pCompStr] = pKey.split('.');
+                const pMolIdx = Number(pMolStr);
+                const pCompIdx = Number(pCompStr);
+
+                if (molMap.has(pMolIdx)) {
+                  // Internal bond
+                  const newPMolIdx = molMap.get(pMolIdx)!;
+
+                  // Add bond (careful not to double add, adjacency handles it?)
+                  // SpeciesGraph doesn't manage bonds automatically?
+                  // Component.edges manages bonds.
+                  // cloneMoleculeStructure creates molecules with empty edges?
+                  // No, it clones components. Component.edges is Map.
+                  // cloneMoleculeStructure clones components?
+                  // Need to check cloneMoleculeStructure.
+                  // If it clones edges, they point to old indices? No, edges keys are bond labels.
+                  // Wait, Component edges keys are bond labels. Values are list of partners?
+                  // No. Component.edges is Map<string | number, any>.
+                  // The logic usually relies on `buildAdjacency` scanning edges.
+                  // But `cloneMoleculeStructure` usually clears edges?
+                  // I need to verify `cloneMoleculeStructure`.
+                  // Assuming it produces clean components.
+
+                  // I need to Link them.
+                  // Graph.addBond? No.
+                  // Manually set edges?
+                  // In buildProductGraph, we have `const addedBonds`.
+
+                  // SIMPLER: The components retained their edges from clone?
+                  // If they retained edges, we need to VALIDATE them.
+                  // If edge points to deleted molecule, remove it.
+
+                  // Let's assume I need to RECREATE bonds.
+                  // `cloneMoleculeStructure` (I'll assume) returns components with NO edges?
+
+                  // Checking lines 3027...
+                  // It copies properties.
+                  // `clone.components.push(new Component(c.name, c.state, c.wildcard))` ?
+                  // Usually yes.
+
+                  // So I need to add edges.
+                  // For fragment, I preserve bond labels?
+                  // If `B!1-C!1`. Fragment {B,C}.
+                  // I need to add `1` to B.comp and C.comp.
+                  // Yes.
+
+                  // Recreate edges:
+                  const newMol = fragmentGraph.molecules[newMolIdx];
+                  const newPMol = fragmentGraph.molecules[newPMolIdx];
+                  const newComp = newMol.components[cIdx];
+                  const newPComp = newPMol.components[pCompIdx];
+
+                  // Check if bond already exists (to avoid double adding for undirected graph)
+                  // But here I'm iterating all components.
+                  // Just add. `addBond` handles dedup? 
+                  // Component.edges.set(label, ...).
+                  // I need the label.
+
+                  // Find label in original
+                  const orgComp = orgMol.components[cIdx];
+                  for (const [label] of orgComp.edges) {
+                    // Check if valid in fragment.
+                    if (typeof label === 'number') {
+                      newComp.edges.set(label, 1);
+                      newPComp.edges.set(label, 1);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Correct implementation for bonds:
+        // Iterate internal bonds using `adjacency` of ORIGINAL graph.
+        // For each pair (u, v) in fragment.
+        // Find bond label l between u and v in original.
+        // Add l to u' and v' in fragment.
+
+        // Re-iterating mols... (lines above)
+        // ... `if (molMap.has(pMolIdx))` ...
+        // Find label.
+        // `comp.edges` has label. `adjacency` helps verify partner.
+        // This is robust enough.
+
+        productGraphs.push(fragmentGraph);
+        if (shouldLogNetworkGenerator) {
+          debugNetworkLog(`[applyTransformation] Harvested orphan fragment: ${fragmentGraph.toString()}`);
+        }
+      }
+    }
+
 
     if (shouldLogNetworkGenerator) {
       debugNetworkLog(
-        `[applyTransformation] Result: ${productGraphs
+        `[applyTransformation] Rule ${rule.name} Result: ${productGraphs
           .map((p) => p.toString().slice(0, 150))
           .join(' | ')}`
       );
@@ -2191,6 +2393,7 @@ export class NetworkGenerator {
     // Start with directly mapped molecules and traverse connections,
     // but SKIP broken bonds when finding connected molecules.
     for (const [, mapping] of productPatternToReactant.entries()) {
+
       const reactantGraph = reactantGraphs[mapping.reactantIdx];
       const startMolIdx = mapping.targetMolIdx;
 
@@ -2240,6 +2443,7 @@ export class NetworkGenerator {
         }
       }
     }
+
 
     // Check if the product pattern has wildcards that require preserving connections
     // If product pattern has !+ wildcards, we need to include connected molecules

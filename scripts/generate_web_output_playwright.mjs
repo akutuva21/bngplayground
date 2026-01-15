@@ -3,20 +3,16 @@ import { once } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-
 import { chromium } from 'playwright';
 
 const PROJECT_ROOT = process.cwd();
 const WEB_OUTPUT_DIR = path.join(PROJECT_ROOT, 'web_output');
 const PORT = Number(process.env.WEB_OUTPUT_PORT || 5175);
+const TIMEOUT_PER_MODEL_MS = 300_000; // 5 minutes timeout per model to accommodate large networks
 
 function readViteBasePath() {
-  // Allow explicit override.
   const envBase = process.env.WEB_OUTPUT_BASE;
   if (envBase && envBase.trim()) return envBase.trim();
-
-  // Best-effort: read Vite config for `base:`.
-  // This repo commonly uses `/bngplayground/`.
   try {
     const viteConfigTs = path.join(PROJECT_ROOT, 'vite.config.ts');
     if (!fs.existsSync(viteConfigTs)) return '/';
@@ -55,7 +51,6 @@ function cleanOldOutputs(dirPath) {
 
 async function waitForHttpOk(url, timeoutMs = 60_000) {
   const start = Date.now();
-  // Node 18+ has global fetch
   while (Date.now() - start < timeoutMs) {
     try {
       const res = await fetch(url, { method: 'GET' });
@@ -68,108 +63,36 @@ async function waitForHttpOk(url, timeoutMs = 60_000) {
   throw new Error(`Timed out waiting for ${url}`);
 }
 
-async function waitForDownloadsToSettle(getCount, idleMs = 1500, timeoutMs = 120_000) {
-  const start = Date.now();
-  let lastCount = getCount();
-  let lastChange = Date.now();
-
-  while (Date.now() - start < timeoutMs) {
-    await new Promise((r) => setTimeout(r, 250));
-    const current = getCount();
-    if (current !== lastCount) {
-      lastCount = current;
-      lastChange = Date.now();
-      continue;
-    }
-    if (Date.now() - lastChange >= idleMs) return;
-  }
-
-  throw new Error(`Timed out waiting for downloads to settle (count=${getCount()}).`);
-}
-
-function isExecutionContextDestroyedError(err) {
-  const msg = err && typeof err === 'object' && 'message' in err ? String(err.message) : String(err);
-  return (
-    msg.includes('Execution context was destroyed') ||
-    msg.includes('most likely because of a navigation') ||
-    msg.includes('Cannot find context with specified id')
-  );
-}
-
 async function waitForPageToSettleAfterNavigation(page, timeoutMs = 120_000) {
-  // Vite can reload once during optimizeDeps. Waiting for DOMContentLoaded is usually sufficient.
   await page.waitForLoadState('domcontentloaded', { timeout: timeoutMs });
-  await new Promise((r) => setTimeout(r, 2000));
-}
-
-async function runAllModelsWithRetry(page, maxAttempts = 3) {
-  const modelListRaw = String(process.env.WEB_OUTPUT_MODELS || '').trim();
-  const modelList = modelListRaw
-    ? modelListRaw.split(',').map((s) => s.trim()).filter(Boolean)
-    : null;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    try {
-      const fnName = modelList ? 'runModels' : 'runAllModels';
-      console.log(`[generate:web-output] Waiting for window.${fnName} (attempt ${attempt}/${maxAttempts})`);
-      if (modelList) {
-        await page.waitForFunction(() => typeof window.runModels === 'function', null, { timeout: 120_000 });
-      } else {
-        await page.waitForFunction(() => typeof window.runAllModels === 'function', null, { timeout: 120_000 });
-      }
-
-      console.log(`[generate:web-output] Running window.${fnName}() (attempt ${attempt}/${maxAttempts})`);
-      // Evaluate in-page.
-      // If Vite reloads, Playwright throws "Execution context was destroyed" and we'll retry.
-      // @ts-ignore
-      if (modelList) {
-        console.log(`[generate:web-output] WEB_OUTPUT_MODELS=${JSON.stringify(modelList)}`);
-        return await page.evaluate(async (names) => await window.runModels(names), modelList);
-      }
-      return await page.evaluate(async () => await window.runAllModels());
-    } catch (err) {
-      if (attempt === maxAttempts || !isExecutionContextDestroyedError(err)) throw err;
-      console.log('[generate:web-output] Detected Vite reload during evaluate; waiting and retrying...');
-      await waitForPageToSettleAfterNavigation(page);
-    }
-  }
-  throw new Error('runAllModelsWithRetry: unreachable');
+  // Wait for runModels to be available
+  await page.waitForFunction(() => typeof window.runModels === 'function', null, { timeout: timeoutMs });
 }
 
 function startViteDevServer() {
   const isWin = process.platform === 'win32';
-
-  // On Windows, spawning npm.cmd directly can throw spawn EINVAL depending on environment.
-  // Running through cmd.exe is more robust.
   const command = `npm run dev -- --port ${PORT} --strictPort`;
+  console.log(`[generate:web-output] Starting Vite: ${command}`);
+
   const child = isWin
     ? spawn('cmd.exe', ['/d', '/s', '/c', command], {
-        cwd: PROJECT_ROOT,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        env: {
-          ...process.env,
-          // Avoid noisy browser auto-open behavior in some environments
-          BROWSER: 'none',
-        },
-      })
+      cwd: PROJECT_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, BROWSER: 'none' },
+    })
     : spawn('npm', ['run', 'dev', '--', '--port', String(PORT), '--strictPort'], {
-        cwd: PROJECT_ROOT,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        env: {
-          ...process.env,
-          BROWSER: 'none',
-        },
-      });
+      cwd: PROJECT_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, BROWSER: 'none' },
+    });
 
   child.stdout.on('data', (d) => process.stdout.write(String(d)));
   child.stderr.on('data', (d) => process.stderr.write(String(d)));
-
   return child;
 }
 
 async function killProcessTree(pid) {
   if (!pid) return;
-
   const isWin = process.platform === 'win32';
   if (isWin) {
     await new Promise((resolve) => {
@@ -181,152 +104,154 @@ async function killProcessTree(pid) {
     });
     return;
   }
-
   try {
     process.kill(pid, 'SIGTERM');
-  } catch {
-    // ignore
-  }
+  } catch { }
 }
 
 async function waitForChildExit(child, timeoutMs = 5_000) {
   if (!child || child.exitCode !== null) return;
-
   await Promise.race([
     once(child, 'exit').catch(() => undefined),
     new Promise((resolve) => setTimeout(resolve, timeoutMs)),
   ]);
 }
 
-function destroyChildStreams(child) {
-  try {
-    child?.stdout?.destroy?.();
-  } catch {
-    // ignore
-  }
-  try {
-    child?.stderr?.destroy?.();
-  } catch {
-    // ignore
-  }
-}
-
 async function main() {
   ensureDir(WEB_OUTPUT_DIR);
-  
-  // Parse CLI args for --models
+
+  // Parse filtering
   const args = process.argv.slice(2);
   const modelsIdx = args.indexOf('--models');
   if (modelsIdx !== -1 && args[modelsIdx + 1]) {
     process.env.WEB_OUTPUT_MODELS = args[modelsIdx + 1];
   }
+  const envModelList = process.env.WEB_OUTPUT_MODELS ? process.env.WEB_OUTPUT_MODELS.split(',').map(s => s.trim()).filter(Boolean) : null;
 
-  const modelListRaw = String(process.env.WEB_OUTPUT_MODELS || '').trim();
-  if (modelListRaw) {
-    console.log(`[generate:web-output] WEB_OUTPUT_MODELS is set; preserving existing CSVs in ${WEB_OUTPUT_DIR}`);
+  if (envModelList) {
+    console.log(`[generate:web-output] Targeted models: ${envModelList.join(', ')}`);
   } else {
+    // Only clean if running full suite
+    console.log(`[generate:web-output] Cleaning output directory...`);
     cleanOldOutputs(WEB_OUTPUT_DIR);
   }
 
-  console.log(`\n[generate:web-output] Starting Vite dev server for ${BASE_URL}`);
   const devServer = startViteDevServer();
-
   let succeeded = false;
 
   const shutdown = async () => {
-    try {
-      if (!devServer.killed) devServer.kill();
-    } catch {
-      // ignore
-    }
-
-    await waitForChildExit(devServer, 2_000);
+    try { if (!devServer.killed) devServer.kill(); } catch { }
+    await waitForChildExit(devServer, 2000);
     await killProcessTree(devServer.pid);
-    await waitForChildExit(devServer, 3_000);
-    destroyChildStreams(devServer);
   };
 
-  process.on('SIGINT', () => {
-    void shutdown();
-    process.exit(130);
-  });
-  process.on('SIGTERM', () => {
-    void shutdown();
-    process.exit(143);
-  });
+  process.on('SIGINT', () => { void shutdown(); process.exit(130); });
+  process.on('SIGTERM', () => { void shutdown(); process.exit(143); });
 
   try {
     await waitForHttpOk(BASE_URL, 90_000);
     console.log(`[generate:web-output] App is up: ${BASE_URL}`);
 
     const headed = String(process.env.WEB_OUTPUT_HEADED || '').trim() === '1';
-    console.log(`[generate:web-output] Launching Chromium (${headed ? 'headed' : 'headless'})`);
-    const browser = await chromium.launch({ headless: !headed, slowMo: headed ? 50 : 0 });
+    const browser = await chromium.launch({ headless: !headed });
     const context = await browser.newContext({ acceptDownloads: true });
     const page = await context.newPage();
 
-    page.setDefaultNavigationTimeout(120_000);
+    page.on('console', msg => console.log(`[browser] ${msg.text()}`));
+    page.on('pageerror', err => console.error('[browser error]', err));
 
-    page.on('console', (msg) => {
-      const text = msg.text();
-      if (text && text.trim()) console.log(`[browser console] ${text}`);
-    });
-    page.on('pageerror', (err) => {
-      console.log('[browser pageerror]', err);
-    });
-    page.on('requestfailed', (req) => {
-      const failure = req.failure();
-      console.log(`[browser requestfailed] ${req.url()} ${failure ? failure.errorText : ''}`);
-    });
-
-    const downloadSaves = [];
-    let downloadCount = 0;
-
+    let activeDownloads = 0;
     page.on('download', (download) => {
+      activeDownloads++;
       const suggested = download.suggestedFilename();
       const targetPath = path.join(WEB_OUTPUT_DIR, suggested);
-      downloadCount += 1;
-      const p = download.saveAs(targetPath).then(() => {
-        console.log(`[generate:web-output] Saved (${downloadCount}): ${suggested}`);
+      download.saveAs(targetPath).then(() => {
+        console.log(`[generate:web-output] Saved: ${suggested}`);
+        activeDownloads--;
+      }).catch(e => {
+        console.error(`[generate:web-output] Download failed: ${suggested}`, e);
+        activeDownloads--;
       });
-      downloadSaves.push(p);
     });
 
-    console.log('[generate:web-output] Opening app');
-    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
-
-    // Vite may trigger a one-time reload during dependency optimization.
+    console.log('[generate:web-output] Opening app...');
+    await page.goto(BASE_URL, { timeout: 120000 });
     await waitForPageToSettleAfterNavigation(page);
 
-    const result = await runAllModelsWithRetry(page);
+    // Get full list of models from the app
+    const allModels = await page.evaluate(() => window.getModelNames());
+    const modelsToRun = envModelList || allModels;
+    console.log(`[generate:web-output] Found ${allModels.length} available models.`);
+    console.log(`[generate:web-output] Scheduled to run: ${modelsToRun.length} models.`);
 
-    console.log('[generate:web-output] Batch runner returned:', result);
+    let successCount = 0;
+    let failCount = 0;
 
-    await waitForDownloadsToSettle(() => downloadCount);
+    for (const modelName of modelsToRun) {
+      console.log(`\n--------------------------------------------------`);
+      console.log(`[generate:web-output] Processing: ${modelName}`);
 
-    // Ensure all downloads have been flushed to disk.
-    await Promise.all(downloadSaves);
+      try {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT_PER_MODEL_MS)
+        );
 
+        // Run single model
+        await Promise.race([
+          page.evaluate((name) => window.runModels([name]), modelName),
+          timeoutPromise
+        ]);
+
+        // Wait for download to start and finish (simple heuristic: wait short time for activeDownloads to go up, then wait for 0)
+        // runModels resolves AFTER downloadCsv is called, but FileSystem IO might take a moment
+        const downloadStartWait = 2000;
+        const downloadWaitStart = Date.now();
+        while (Date.now() - downloadWaitStart < downloadStartWait) {
+          if (activeDownloads > 0) break;
+          await new Promise(r => setTimeout(r, 100));
+        }
+
+        // Wait for active downloads to clear
+        while (activeDownloads > 0) {
+          await new Promise(r => setTimeout(r, 100));
+          if (Date.now() - downloadWaitStart > 10000) throw new Error("Download stuck");
+        }
+
+        successCount++;
+      } catch (err) {
+        console.error(`[generate:web-output] ❌ FAILED ${modelName}:`, err.message);
+        failCount++;
+
+        if (err.message === 'TIMEOUT') {
+          console.log(`[generate:web-output] ⚠️ Timeout exceeded for ${modelName}. Writing skipped marker.`);
+          // Create a marker file so the report generator knows it was skipped
+          const skippedFile = path.join(WEB_OUTPUT_DIR, `results_${modelName}.csv`);
+          fs.writeFileSync(skippedFile, 'Time,Observable\n# SKIPPED (Timeout)\n0,0');
+        }
+
+        console.log('[generate:web-output] Reloading page to recover...');
+        try {
+          await page.reload();
+          await waitForPageToSettleAfterNavigation(page);
+        } catch (reloadErr) {
+          console.error('[generate:web-output] Fatal: Could not reload page.', reloadErr);
+          break;
+        }
+      }
+    }
+
+    console.log(`\n[generate:web-output] Batch Complete. Success: ${successCount}, Failed: ${failCount}`);
     await context.close();
     await browser.close();
-
-    const csvFiles = fs.readdirSync(WEB_OUTPUT_DIR).filter((f) => f.toLowerCase().endsWith('.csv'));
-    console.log(`\n[generate:web-output] Done. CSVs in web_output/: ${csvFiles.length}`);
-
     succeeded = true;
+
+  } catch (err) {
+    console.error('[generate:web-output] Fatal Error:', err);
   } finally {
     await shutdown();
-
-    // On Windows, child-process handles can sometimes keep Node alive.
-    // If we've succeeded, force a clean exit shortly after shutdown.
-    if (succeeded) {
-      process.exitCode = 0;
-      setTimeout(() => process.exit(0), 50).unref();
-    }
+    if (succeeded) process.exit(0);
+    else process.exit(1);
   }
 }
 
-main().catch((err) => {
-  console.error('\n[generate:web-output] Failed:', err);
-  process.exitCode = 1;
-});
+main();

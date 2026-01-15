@@ -1,6 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { defineConfig } from 'vite';
+// cache bust
 import react from '@vitejs/plugin-react';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -23,7 +24,22 @@ export default defineConfig(() => {
         'cytoscape',
         'cytoscape-cose-bilkent',
         'd3',
-        'antlr4ts'
+        'antlr4ts',
+        'antlr4ts/tree/AbstractParseTreeVisitor',
+        'antlr4ts/atn/ATNDeserializer',
+        'antlr4ts/Lexer',
+        'antlr4ts/atn/LexerATNSimulator',
+        'antlr4ts/VocabularyImpl',
+        'antlr4ts/misc/Utils',
+        'antlr4ts/atn/ATN',
+        'antlr4ts/FailedPredicateException',
+        'antlr4ts/NoViableAltException',
+        'antlr4ts/Parser',
+        'antlr4ts/ParserRuleContext',
+        'antlr4ts/atn/ParserATNSimulator',
+        'antlr4ts/RecognitionException',
+        'antlr4ts/Token',
+        'jsep'
       ],
       force: true
     },
@@ -53,7 +69,8 @@ export default defineConfig(() => {
     },
     test: {
       environment: 'node',
-      include: ['tests/**/*.spec.ts', 'tests/**/*.test.ts']
+      include: ['tests/**/*.spec.ts', 'tests/**/*.test.ts', 'tests/**/*.test.tsx'],
+      setupFiles: ['./tests/setup.ts']
     },
     // Polyfill process for ANTLR4 browser/worker compatibility
     define: {

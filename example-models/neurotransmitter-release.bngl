@@ -1,11 +1,14 @@
 begin model
 begin parameters
-    k_influx 0.5
-    k_clear 0.1
-    k_snare 0.4
-    k_fusion 0.35
-    k_response 0.3
-    k_reset 0.08
+    # Neurotransmitter Release
+    # Models Calcium-triggered synaptic vesicle fusion via SNARE complex.
+    
+    k_influx 0.5    # Calcium entry
+    k_clear 0.1     # Calcium clearance
+    k_snare 0.4     # SNARE complex opening
+    k_fusion 0.35   # Vesicle fusion
+    k_response 0.3  # Postsynaptic activation
+    k_reset 0.08    # System reset
 end parameters
 
 begin molecule types
@@ -23,10 +26,21 @@ begin seed species
 end seed species
 
 begin reaction rules
+    # 1. Calcium Influx
     Calcium(level~low) -> Calcium(level~high) k_influx
+    
+    # 2. SNARE Activation
+    # Calcium sensors trigger SNARE opening
     Calcium(level~high) + SNARE(state~closed) -> Calcium(level~high) + SNARE(state~open) k_snare
+    
+    # 3. Vesicle Fusion
+    # Open SNAREs drive vesicle fusion
     SNARE(state~open) + Vesicle(state~docked) -> SNARE(state~open) + Vesicle(state~fused) k_fusion
+    
+    # 4. Postsynaptic Response
     Vesicle(state~fused) + Postsynaptic(state~rest) -> Vesicle(state~fused) + Postsynaptic(state~active) k_response
+    
+    # 5. Reset / Re-uptake
     Postsynaptic(state~active) -> Postsynaptic(state~rest) k_reset
     Vesicle(state~fused) -> Vesicle(state~docked) k_reset
     SNARE(state~open) -> SNARE(state~closed) k_reset
@@ -42,6 +56,7 @@ end observables
 
 begin actions
     generate_network({overwrite=>1})
-    simulate({method=>"ode",t_start=>0,t_end=>40,n_steps=>120})
+    simulate({method=>"ode",t_start=>0,t_end=>20,n_steps=>120})
 end actions
 end model
+

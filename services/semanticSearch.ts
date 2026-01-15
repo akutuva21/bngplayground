@@ -43,6 +43,13 @@ let embeddingsIndex: EmbeddingsIndex | null = null;
 let isLoading = false;
 let loadError: Error | null = null;
 
+export function resetSemanticSearchState() {
+  embedder = null;
+  embeddingsIndex = null;
+  isLoading = false;
+  loadError = null;
+}
+
 /**
  * Load the embedding model (lazy, cached).
  * Uses all-MiniLM-L6-v2 (~22MB download, cached in IndexedDB).
@@ -98,7 +105,7 @@ async function getEmbeddingsIndex(): Promise<EmbeddingsIndex> {
 /**
  * Compute cosine similarity between two vectors.
  */
-function cosineSimilarity(a: number[], b: number[]): number {
+export function cosineSimilarity(a: number[], b: number[]): number {
   let dotProduct = 0;
   let normA = 0;
   let normB = 0;

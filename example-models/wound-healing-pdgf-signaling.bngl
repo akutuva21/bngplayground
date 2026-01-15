@@ -23,7 +23,7 @@ begin seed species
 end seed species
 
 begin reaction rules
-    PDGF(r) + PDGFR(l,state~inactive) <-> PDGF(r!1).PDGFR(l!1,state~inactive) k_bind, k_unbind
+    PDGF(r) + PDGFR(l,state~inactive) <-> PDGF(r!1).PDGFR(l!1,state~inactive) k_bind,k_unbind
     PDGF(r!1).PDGFR(l!1,state~inactive) -> PDGF(r!1).PDGFR(l!1,state~active) k_receptor
     PDGFR(l,state~active) + STAT3(phos~U) -> PDGFR(l,state~active) + STAT3(phos~P) k_stat3
     STAT3(phos~P) + Fibroblast(state~resting) -> STAT3(phos~P) + Fibroblast(state~migratory) k_response
@@ -40,6 +40,7 @@ end observables
 
 begin actions
     generate_network({overwrite=>1})
-    simulate({method=>"ode",t_start=>0,t_end=>90,n_steps=>180})
+    simulate({method=>"ode",t_start=>0,t_end=>40,n_steps=>180})
 end actions
 end model
+

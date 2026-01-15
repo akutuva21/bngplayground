@@ -1,36 +1,97 @@
 begin model
 begin parameters
-    k_on 0.0005
-    k_off 0.0002
-    k_prod 1.2
-    k_deg 0.05
+    # Auto-activation loop: A positive feedback circuit.
+    # Advanced features: if function for pulsatile stimulation and TotalRate driver.
+    
+    # Transcription & Feedback
+    k_trans_basal 0.05 # Leakiness
+    k_trans_max 2.0    # Stimulated peak
+    k_bind_prom 1.0    # TF binding
+    
+    # Translation & Stability
+    k_translat_max 10.0 # Peak translation drive
+    Km_ribo 500         # Structural constraint
+    k_deg_mrna 0.2
+    k_deg_prot 0.05
+    
+    # Complex Dynamics
+    k_dimer 1e-3
+    k_dimer_off 0.1
+    
+    # Regulatory Sequestration (RBP)
+    k_rbp_bind 2.0     # Sequesters mRNA
+    
+    # Initials
+    Gene_sites 1
+    mRNA_init 0
+    Prot_init 10
+    RBP_tot 100
+    v_stim_current 0.1  # Current stimulation level
 end parameters
 
 begin molecule types
     Gene(prom~off~on)
-    Protein()
+    mRNA(b)
+    Protein(b)
+    RBP(b)
 end molecule types
 
 begin seed species
-    Gene(prom~off) 1
-    Protein() 5
+    Gene(prom~off) Gene_sites
+    mRNA(b) mRNA_init
+    Protein(b) Prot_init
+    RBP(b) RBP_tot
 end seed species
 
 begin observables
-    Molecules Promoter_on Gene(prom~on)
-    Molecules Promoter_off Gene(prom~off)
-    Molecules Effector Protein()
+    # KEY BIOLOGICAL OUTPUTS
+    Molecules Active_Protein   Protein(b)               # Functional pool
+    Molecules Transcript_Mass mRNA()                   # RNA reservoir
+    Molecules Promoter_State  Gene(prom~on)            # Circuit status
+    Molecules Sequest_mRNA    mRNA(b!1).RBP(b!1)       # Regulation overhead
+    Molecules TF_Dimers       Protein(b!1).Protein(b!1) # Active driver
 end observables
 
+begin functions
+end functions
+
 begin reaction rules
-    Gene(prom~off) + Protein() -> Gene(prom~on) + Protein() k_on
-    Gene(prom~on) -> Gene(prom~off) k_off
-    Gene(prom~on) -> Gene(prom~on) + Protein() k_prod
-    Protein() -> 0 k_deg
+    ## TRANSCRIPTION
+    # Basal and TF-mediated production
+    Gene(prom~off) -> Gene(prom~off) + mRNA(b) k_trans_basal
+    Gene(prom~on) -> Gene(prom~on) + mRNA(b) k_trans_max
+    
+    ## TRANSLATION (Driver-dependent)
+    # TotalRate: driven by ribosome/metabolic status (functional proxy)
+    mRNA(b) -> mRNA(b) + Protein(b) k_translat_max * v_stim_current TotalRate
+    
+    ## FEEDBACK & ASSEMBLY
+    # Protein dimerization to form TF
+    Protein(b) + Protein(b) <-> Protein(b!1).Protein(b!1) k_dimer,k_dimer_off
+    
+    # TF binds promoter
+    Protein(b!1).Protein(b!1) + Gene(prom~off) <-> Protein(b!1).Protein(b!1).Gene(prom~on) k_bind_prom,0.1
+    
+    ## SEQUESTRATION
+    # RBP binds and silences mRNA
+    mRNA(b) + RBP(b) <-> mRNA(b!1).RBP(b!1) k_rbp_bind,0.2
+    
+    ## RESET
+    mRNA() -> 0 k_deg_mrna
+    Protein(b) -> 0 k_deg_prot
+    RBP() -> 0 0.01  # Slow turnover
 end reaction rules
 
 begin actions
     generate_network({overwrite=>1})
-    simulate({method=>"ode",t_end=>150,n_steps=>150})
+    # Approximate oscillation with 4 phases
+    simulate({method=>"ode",t_end=>50,n_steps=>100})
+    setParameter("v_stim_current",5.0)
+    simulate({method=>"ode",t_end=>50,n_steps=>100,continue=>1})
+    setParameter("v_stim_current",0.1)
+    simulate({method=>"ode",t_end=>50,n_steps=>100,continue=>1})
+    setParameter("v_stim_current",5.0)
+    simulate({method=>"ode",t_end=>50,n_steps=>100,continue=>1})
 end actions
 end model
+

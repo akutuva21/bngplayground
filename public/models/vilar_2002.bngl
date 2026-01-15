@@ -30,8 +30,8 @@ begin seed species      # initial conditions
   RmRNA  0
   A(b)  0
   R(a)  0
-  C  
-  trash
+  C  0
+  trash  0
 
 end seed species
 begin observables       # model outputs
@@ -65,9 +65,9 @@ end model
 generate_network({overwrite=>1,max_iter=>12,max_agg=>12});
 
 saveConcentrations();             # Save concentrations (in memory) for later use.
-simulate_ode({suffix=>ode,t_start=>0,t_end=>400,n_steps=>1200});
+simulate_ode({suffix=>"ode",t_start=>0,t_end=>400,n_steps=>1200});
 
-resetConcentrations();            # reset concentrations to last saved values.
-simulate_ssa({suffix=>ssa,t_start=>0,t_end=>12,n_steps=>120});
+# resetConcentrations();            # reset concentrations to last saved values.
+# simulate_ssa({suffix=>ssa,t_start=>0,t_end=>12,n_steps=>120});
 
 writeSBML();                   # Output file as SBML.

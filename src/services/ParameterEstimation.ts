@@ -35,6 +35,37 @@ export interface SimulationData {
   observables: Map<string, number[]>;
 }
 
+// Helpers exported for testing
+export const safeLog = (x: number): number => Math.log(Math.max(x, 1e-12));
+export const clamp = (x: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, x));
+
+export const deriveBounds = (prior: ParameterPrior | undefined): { logMin: number; logMax: number } => {
+  const mean = Math.max(prior?.mean ?? 1, 1e-12);
+  const min = Math.max(prior?.min ?? mean * 0.1, 1e-12);
+  const max = Math.max(prior?.max ?? mean * 10, min * 1.000001);
+  // Keep log-bounds numerically safe.
+  const logMin = clamp(safeLog(min), -30, 30);
+  const logMax = clamp(safeLog(max), -30, 30);
+  return {
+    logMin: Math.min(logMin, logMax),
+    logMax: Math.max(logMin, logMax)
+  };
+};
+
+// Convert (mean,std) on original scale to lognormal (mu,sigma) in log-space.
+// sigma_log = sqrt(log(1 + (std/mean)^2))
+// mu_log = log(mean) - 0.5*sigma_log^2
+export const priorToLogNormal = (prior: ParameterPrior | undefined): { muLog: number; sigmaLog: number } => {
+  const mean = Math.max(prior?.mean ?? 1, 1e-12);
+  const std = Math.max(prior?.std ?? mean * 0.5, 1e-12);
+  const cv = std / mean;
+  const sigmaLog = Math.sqrt(Math.log(1 + cv * cv));
+  const muLog = safeLog(mean) - 0.5 * sigmaLog * sigmaLog;
+  // Bound sigma in log-space to avoid explosive sampling.
+  const sigmaLogClamped = clamp(sigmaLog, 0.02, 1.0);
+  return { muLog, sigmaLog: sigmaLogClamped };
+};
+
 /**
  * Variational Bayesian Parameter Estimator using TensorFlow.js
  * Implements stochastic variational inference (SVI) for parameter estimation
@@ -63,36 +94,7 @@ export class VariationalParameterEstimator {
     this.priors = priors;
     this.nParams = parameterNames.length;
 
-    const safeLog = (x: number): number => Math.log(Math.max(x, 1e-12));
 
-    const clamp = (x: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, x));
-
-    const deriveBounds = (prior: ParameterPrior | undefined): { logMin: number; logMax: number } => {
-      const mean = Math.max(prior?.mean ?? 1, 1e-12);
-      const min = Math.max(prior?.min ?? mean * 0.1, 1e-12);
-      const max = Math.max(prior?.max ?? mean * 10, min * 1.000001);
-      // Keep log-bounds numerically safe.
-      const logMin = clamp(safeLog(min), -30, 30);
-      const logMax = clamp(safeLog(max), -30, 30);
-      return {
-        logMin: Math.min(logMin, logMax),
-        logMax: Math.max(logMin, logMax)
-      };
-    };
-
-    // Convert (mean,std) on original scale to lognormal (mu,sigma) in log-space.
-    // sigma_log = sqrt(log(1 + (std/mean)^2))
-    // mu_log = log(mean) - 0.5*sigma_log^2
-    const priorToLogNormal = (prior: ParameterPrior | undefined): { muLog: number; sigmaLog: number } => {
-      const mean = Math.max(prior?.mean ?? 1, 1e-12);
-      const std = Math.max(prior?.std ?? mean * 0.5, 1e-12);
-      const cv = std / mean;
-      const sigmaLog = Math.sqrt(Math.log(1 + cv * cv));
-      const muLog = safeLog(mean) - 0.5 * sigmaLog * sigmaLog;
-      // Bound sigma in log-space to avoid explosive sampling.
-      const sigmaLogClamped = clamp(sigmaLog, 0.02, 1.0);
-      return { muLog, sigmaLog: sigmaLogClamped };
-    };
 
     // Initialize variational parameters from priors (lognormal in log-space)
     const initialMu = parameterNames.map((name) => {
@@ -216,7 +218,7 @@ export class VariationalParameterEstimator {
     const candidatesPerIter = Math.max(2, batchSize);
     const step = Math.max(0.001, Math.min(0.2, learningRate));
 
-    const clamp = (x: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, x));
+
     const logSigmaMin = Math.log(0.02);
     const logSigmaMax = Math.log(1.0);
 

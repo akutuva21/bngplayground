@@ -109,9 +109,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   const [customAtol, setCustomAtol] = useState<string>('');
   const [customRtol, setCustomRtol] = useState<string>('');
   const [odeSolver, setOdeSolver] = useState<'auto' | 'cvode' | 'cvode_auto' | 'cvode_sparse' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4' | 'webgpu_rk4'>('auto');
-  const [showAllSolvers, setShowAllSolvers] = useState(
-    () => localStorage.getItem('bng-show-all-solvers') === 'true'
-  );
+  const [showAllSolvers, setShowAllSolvers] = useState(true);  // Show all solvers by default
   const [isParamsOpen, setIsParamsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 

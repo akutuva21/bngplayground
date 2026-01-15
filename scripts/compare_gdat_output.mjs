@@ -204,7 +204,7 @@ async function loadWebSimulator() {
 
 // Find all BNGL models in published-models
 function findAllModels() {
-  const modelsDir = path.join(PROJECT_ROOT, 'published-models');
+  const modelsDir = path.join(PROJECT_ROOT, 'example-models');
   const models = [];
 
   function scanDir(dir) {

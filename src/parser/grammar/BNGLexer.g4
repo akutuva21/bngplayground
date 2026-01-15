@@ -35,6 +35,8 @@ POPULATION: 'population';
 MAPS: 'maps';
 ENERGY: 'energy';
 PATTERNS: 'patterns';
+ANCHORS: 'anchors';
+MOLECULAR: 'molecular';
 
 // Keywords - Modifiers
 MATCHONCE: 'MatchOnce';

@@ -36,16 +36,7 @@ export class JITCompiler {
     private cache: Map<string, JITCompiledFunction> = new Map();
     private maxCacheSize: number = 50;
 
-    /**
-     * Generate a cache key from reactions array
-     */
-    private getCacheKey(reactions: Rxn[], nSpecies: number): string {
-        // Simple hash based on reactions structure
-        const reactionHashes = reactions.map(r =>
-            `${r.reactants.map(i => i).join(',')}:${r.products.map(i => i).join(',')}:${r.rateExpression || r.rate}`
-        ).join('|');
-        return `${nSpecies}:${reactionHashes}`;
-    }
+
 
     /**
      * Compile a reaction network into an optimized RHS function
@@ -157,7 +148,7 @@ export class JITCompiler {
 
         let evaluate: CompiledRHS;
         try {
-            // eslint-disable-next-line no-eval
+             
             evaluate = eval(fullSource) as CompiledRHS;
         } catch (error) {
             console.error('[JITCompiler] Failed to compile RHS function:', error);
@@ -187,7 +178,7 @@ export class JITCompiler {
     compileFromRxns(
         reactions: Rxn[],
         nSpecies: number,
-        speciesIndexMap: Map<string, number>,
+        _speciesIndexMap: Map<string, number>,
         parameters?: Record<string, number>
     ): JITCompiledFunction {
         // Convert Rxn to simpler format

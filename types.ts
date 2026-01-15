@@ -41,6 +41,7 @@ export interface BNGLMoleculeType {
 export interface BNGLSpecies {
   name: string;
   initialConcentration: number;
+  isConstant?: boolean;
 }
 
 export interface BNGLObservable {
@@ -152,6 +153,7 @@ export interface SimulationPhase {
 export interface ConcentrationChange {
   species: string;           // Species pattern or name
   value: number | string;    // New concentration (can be parameter reference)
+  mode?: 'set' | 'add';      // setConcentration() vs addConcentration() (default: 'set')
   afterPhaseIndex: number;   // Execute after this simulation phase (-1 = before first)
 }
 
@@ -189,6 +191,10 @@ export interface SimulationOptions {
   steadyState?: boolean;
   steadyStateTolerance?: number;
   steadyStateWindow?: number;
+  // BNG2 parity options
+  print_functions?: boolean;
+  sparse?: boolean;
+  recordFromPhase?: number;
 }
 
 

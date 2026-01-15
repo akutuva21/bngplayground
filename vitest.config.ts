@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     // Limit default test discovery to the formal suite.
     // Other test/benchmark files under src/ or root can be run explicitly.
-    include: ['tests/**/*.{test,spec}.ts'],
+    include: ['tests/**/*.{test,spec}.ts', 'tests/**/*.{test,spec}.tsx'],
 
     // Exclude local debugging / reproduction specs from the default run.
     // (These can be invoked explicitly via `npx vitest run <file>`.)
@@ -37,5 +37,7 @@ export default defineConfig({
     deps: {
       interopDefault: true,
     },
+    
+    setupFiles: ['./tests/setup.ts'],
   },
 });

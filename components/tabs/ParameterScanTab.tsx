@@ -59,7 +59,7 @@ const generateRange = (start: number, end: number, steps: number, isLog = false)
   if (isLog) {
     // Log scale requires positive start/end; fall back to linear if invalid
     if (start <= 0 || end <= 0) {
-      // eslint-disable-next-line no-console
+       
       console.warn('Log scale requires positive start/end values. Falling back to linear.');
       isLog = false;
     }
@@ -718,7 +718,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
       // Best-effort release of the prepared model to avoid leaking cached worker state.
       if (typeof modelId === 'number') {
         bnglService.releaseModel(modelId).catch((err) => {
-          // eslint-disable-next-line no-console
+           
           console.warn('Failed to release cached model after parameter scan', modelId, err);
         });
         if (cachedModelIdRef.current === modelId) cachedModelIdRef.current = null;
@@ -749,7 +749,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
       const id = cachedModelIdRef.current;
       if (typeof id === 'number') {
         bnglService.releaseModel(id).catch((err) => {
-          // eslint-disable-next-line no-console
+           
           console.warn('Failed to release cached model on ParameterScanTab unmount', id, err);
         });
         cachedModelIdRef.current = null;

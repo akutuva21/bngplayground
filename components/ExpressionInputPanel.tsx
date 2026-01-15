@@ -38,7 +38,7 @@ export function evaluateExpression(expression: string, variables: Record<string,
       return null;
     }
     
-    // eslint-disable-next-line no-new-func
+     
     const result = new Function(`return ${expr}`)();
     
     if (typeof result !== 'number' || !Number.isFinite(result)) {

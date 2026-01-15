@@ -23,7 +23,7 @@ begin seed species
 end seed species
 
 begin reaction rules
-    TGFB(r) + TGFBR(l,state~inactive) <-> TGFB(r!1).TGFBR(l!1,state~inactive) k_bind, k_unbind
+    TGFB(r) + TGFBR(l,state~inactive) <-> TGFB(r!1).TGFBR(l!1,state~inactive) k_bind,k_unbind
     TGFB(r!1).TGFBR(l!1,state~inactive) -> TGFB(r!1).TGFBR(l!1,state~active) k_receptor
     TGFBR(l,state~active) + SMAD2(phos~U) -> TGFBR(l,state~active) + SMAD2(phos~P) k_smad
     SMAD2(phos~P) + SMAD4(state~free) -> SMAD2(phos~P!1).SMAD4(state~complexed!1) k_complex
@@ -39,6 +39,7 @@ end observables
 
 begin actions
     generate_network({overwrite=>1})
-    simulate({method=>"ode",t_start=>0,t_end=>90,n_steps=>180})
+    simulate({method=>"ode",t_start=>0,t_end=>40,n_steps=>180})
 end actions
 end model
+

@@ -54,7 +54,7 @@ async function main() {
     // Note: y0 for L1 is 0.
     
     // Count effective firing
-    let firingCount = 0;
+    const firingCount = 0;
     // Map species names to indices to set y0
     // ... (simplified check)
     

@@ -352,7 +352,7 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
         cy.fit(undefined, 30);
       });
     } catch (err) {
-      // eslint-disable-next-line no-console
+       
       console.error('Layout failed', err);
       setIsLayoutRunning(false);
     }
@@ -376,7 +376,7 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      // eslint-disable-next-line no-console
+       
       console.error('Export PNG failed', err);
     }
   };

@@ -41,12 +41,12 @@ export interface SolverResult {
 type DerivativeFunction = (y: Float64Array, dydt: Float64Array) => void;
 
 const DEFAULT_OPTIONS: SolverOptions = {
-  atol: 1e-6,
-  rtol: 1e-3,
-  maxSteps: 1000000,
+  atol: 1e-6,          // Absolute tolerance (matches BNG2 CVODE default)
+  rtol: 1e-8,          // Relative tolerance (matches BNG2 CVODE default)
+  maxSteps: 2000,      // Maximum steps (matches BNG2 CVODE default)
   minStep: 1e-15,
   maxStep: Infinity,
-  solver: 'auto',
+  solver: 'auto',      // 'auto' now uses CVODE with fallback to Rosenbrock23 (matches BNG2 behavior)
 };
 
 
@@ -1383,8 +1383,8 @@ export class CVODESolver {
         if (checkCancelled) checkCancelled();
 
         // Hard limit on steps within a single integrate() call to prevent infinite loops
-        if (steps >= 100000) {
-          console.warn(`[CVODESolver] Reached 100000 steps at t=${t}, target=${tEnd}, stopping`);
+        if (steps >= 1000000) {
+          console.warn(`[CVODESolver] Reached 1000000 steps at t=${t}, target=${tEnd}, stopping`);
           m._get_y(solverMem, yPtr);
           const currentHeap = m.HEAPF64;
           yOut.set(currentHeap.subarray(yPtr >> 3, (yPtr >> 3) + neq));
@@ -1566,8 +1566,10 @@ export async function createSolver(
       return new FastRK4Solver(n, f, opts);
     case 'auto':
     default:
-      // Auto could also use CVODE if verified stable, for now keep SmartAutoSolver
-      return new SmartAutoSolver(n, f, opts);
+      // Use CVODE as the primary solver (matches BNG2 behavior)
+      // Falls back to Rosenbrock23 only if CVODE fails
+      await CVODESolver.init();
+      return new CVODEAutoSolver(n, f, opts, new CVODESolver(n, f, opts, false));
   }
 }
 

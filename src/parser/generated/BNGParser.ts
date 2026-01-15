@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Generated from src/parser/grammar/BNGParser.g4 by ANTLR 4.9.0-SNAPSHOT
 
 
@@ -24,6 +23,7 @@ import { VocabularyImpl } from "antlr4ts/VocabularyImpl";
 
 import * as Utils from "antlr4ts/misc/Utils";
 
+import { BNGParserListener } from "./BNGParserListener";
 import { BNGParserVisitor } from "./BNGParserVisitor";
 
 
@@ -54,205 +54,207 @@ export class BNGParser extends Parser {
 	public static readonly MAPS = 24;
 	public static readonly ENERGY = 25;
 	public static readonly PATTERNS = 26;
-	public static readonly MATCHONCE = 27;
-	public static readonly DELETEMOLECULES = 28;
-	public static readonly MOVECONNECTED = 29;
-	public static readonly INCLUDE_REACTANTS = 30;
-	public static readonly INCLUDE_PRODUCTS = 31;
-	public static readonly EXCLUDE_REACTANTS = 32;
-	public static readonly EXCLUDE_PRODUCTS = 33;
-	public static readonly TOTALRATE = 34;
-	public static readonly VERSION = 35;
-	public static readonly SET_OPTION = 36;
-	public static readonly SET_MODEL_NAME = 37;
-	public static readonly SUBSTANCEUNITS = 38;
-	public static readonly PREFIX = 39;
-	public static readonly SUFFIX = 40;
-	public static readonly GENERATENETWORK = 41;
-	public static readonly OVERWRITE = 42;
-	public static readonly MAX_AGG = 43;
-	public static readonly MAX_ITER = 44;
-	public static readonly MAX_STOICH = 45;
-	public static readonly PRINT_ITER = 46;
-	public static readonly CHECK_ISO = 47;
-	public static readonly GENERATEHYBRIDMODEL = 48;
-	public static readonly SAFE = 49;
-	public static readonly EXECUTE = 50;
-	public static readonly SIMULATE = 51;
-	public static readonly METHOD = 52;
-	public static readonly ODE = 53;
-	public static readonly SSA = 54;
-	public static readonly PLA = 55;
-	public static readonly NF = 56;
-	public static readonly VERBOSE = 57;
-	public static readonly NETFILE = 58;
-	public static readonly ARGFILE = 59;
-	public static readonly CONTINUE = 60;
-	public static readonly T_START = 61;
-	public static readonly T_END = 62;
-	public static readonly N_STEPS = 63;
-	public static readonly N_OUTPUT_STEPS = 64;
-	public static readonly MAX_SIM_STEPS = 65;
-	public static readonly OUTPUT_STEP_INTERVAL = 66;
-	public static readonly SAMPLE_TIMES = 67;
-	public static readonly SAVE_PROGRESS = 68;
-	public static readonly PRINT_CDAT = 69;
-	public static readonly PRINT_FUNCTIONS = 70;
-	public static readonly PRINT_NET = 71;
-	public static readonly PRINT_END = 72;
-	public static readonly STOP_IF = 73;
-	public static readonly PRINT_ON_STOP = 74;
-	public static readonly SIMULATE_ODE = 75;
-	public static readonly ATOL = 76;
-	public static readonly RTOL = 77;
-	public static readonly STEADY_STATE = 78;
-	public static readonly SPARSE = 79;
-	public static readonly SIMULATE_SSA = 80;
-	public static readonly SIMULATE_PLA = 81;
-	public static readonly PLA_CONFIG = 82;
-	public static readonly PLA_OUTPUT = 83;
-	public static readonly SIMULATE_NF = 84;
-	public static readonly SIMULATE_RM = 85;
-	public static readonly PARAM = 86;
-	public static readonly COMPLEX = 87;
-	public static readonly GET_FINAL_STATE = 88;
-	public static readonly GML = 89;
-	public static readonly NOCSLF = 90;
-	public static readonly NOTF = 91;
-	public static readonly BINARY_OUTPUT = 92;
-	public static readonly UTL = 93;
-	public static readonly EQUIL = 94;
-	public static readonly PARAMETER_SCAN = 95;
-	public static readonly BIFURCATE = 96;
-	public static readonly PARAMETER = 97;
-	public static readonly PAR_MIN = 98;
-	public static readonly PAR_MAX = 99;
-	public static readonly N_SCAN_PTS = 100;
-	public static readonly LOG_SCALE = 101;
-	public static readonly RESET_CONC = 102;
-	public static readonly READFILE = 103;
-	public static readonly FILE = 104;
-	public static readonly ATOMIZE = 105;
-	public static readonly BLOCKS = 106;
-	public static readonly SKIPACTIONS = 107;
-	public static readonly VISUALIZE = 108;
-	public static readonly TYPE = 109;
-	public static readonly BACKGROUND = 110;
-	public static readonly COLLAPSE = 111;
-	public static readonly OPTS = 112;
-	public static readonly WRITESSC = 113;
-	public static readonly WRITESSCCFG = 114;
-	public static readonly FORMAT = 115;
-	public static readonly WRITEFILE = 116;
-	public static readonly WRITEMODEL = 117;
-	public static readonly WRITEXML = 118;
-	public static readonly WRITENETWORK = 119;
-	public static readonly WRITESBML = 120;
-	public static readonly WRITEMDL = 121;
-	public static readonly WRITELATEX = 122;
-	public static readonly INCLUDE_MODEL = 123;
-	public static readonly INCLUDE_NETWORK = 124;
-	public static readonly PRETTY_FORMATTING = 125;
-	public static readonly EVALUATE_EXPRESSIONS = 126;
-	public static readonly TEXTREACTION = 127;
-	public static readonly TEXTSPECIES = 128;
-	public static readonly WRITEMFILE = 129;
-	public static readonly WRITEMEXFILE = 130;
-	public static readonly BDF = 131;
-	public static readonly MAX_STEP = 132;
-	public static readonly MAXORDER = 133;
-	public static readonly STATS = 134;
-	public static readonly MAX_NUM_STEPS = 135;
-	public static readonly MAX_ERR_TEST_FAILS = 136;
-	public static readonly MAX_CONV_FAILS = 137;
-	public static readonly STIFF = 138;
-	public static readonly SETCONCENTRATION = 139;
-	public static readonly ADDCONCENTRATION = 140;
-	public static readonly SAVECONCENTRATIONS = 141;
-	public static readonly RESETCONCENTRATIONS = 142;
-	public static readonly SETPARAMETER = 143;
-	public static readonly SAVEPARAMETERS = 144;
-	public static readonly RESETPARAMETERS = 145;
-	public static readonly QUIT = 146;
-	public static readonly TRUE = 147;
-	public static readonly FALSE = 148;
-	public static readonly SAT = 149;
-	public static readonly MM = 150;
-	public static readonly HILL = 151;
-	public static readonly ARRHENIUS = 152;
-	public static readonly MRATIO = 153;
-	public static readonly TFUN = 154;
-	public static readonly FUNCTIONPRODUCT = 155;
-	public static readonly PRIORITY = 156;
-	public static readonly IF = 157;
-	public static readonly EXP = 158;
-	public static readonly LN = 159;
-	public static readonly LOG10 = 160;
-	public static readonly LOG2 = 161;
-	public static readonly SQRT = 162;
-	public static readonly RINT = 163;
-	public static readonly ABS = 164;
-	public static readonly SIN = 165;
-	public static readonly COS = 166;
-	public static readonly TAN = 167;
-	public static readonly ASIN = 168;
-	public static readonly ACOS = 169;
-	public static readonly ATAN = 170;
-	public static readonly SINH = 171;
-	public static readonly COSH = 172;
-	public static readonly TANH = 173;
-	public static readonly ASINH = 174;
-	public static readonly ACOSH = 175;
-	public static readonly ATANH = 176;
-	public static readonly PI = 177;
-	public static readonly EULERIAN = 178;
-	public static readonly MIN = 179;
-	public static readonly MAX = 180;
-	public static readonly SUM = 181;
-	public static readonly AVG = 182;
-	public static readonly TIME = 183;
-	public static readonly FLOAT = 184;
-	public static readonly INT = 185;
-	public static readonly STRING = 186;
-	public static readonly SEMI = 187;
-	public static readonly COLON = 188;
-	public static readonly LSBRACKET = 189;
-	public static readonly RSBRACKET = 190;
-	public static readonly LBRACKET = 191;
-	public static readonly RBRACKET = 192;
-	public static readonly COMMA = 193;
-	public static readonly DOT = 194;
-	public static readonly LPAREN = 195;
-	public static readonly RPAREN = 196;
-	public static readonly UNI_REACTION_SIGN = 197;
-	public static readonly BI_REACTION_SIGN = 198;
-	public static readonly DOLLAR = 199;
-	public static readonly TILDE = 200;
-	public static readonly AT = 201;
-	public static readonly GTE = 202;
-	public static readonly GT = 203;
-	public static readonly LTE = 204;
-	public static readonly LT = 205;
-	public static readonly ASSIGNS = 206;
-	public static readonly EQUALS = 207;
-	public static readonly NOT_EQUALS = 208;
-	public static readonly BECOMES = 209;
-	public static readonly LOGICAL_AND = 210;
-	public static readonly LOGICAL_OR = 211;
-	public static readonly DIV = 212;
-	public static readonly TIMES = 213;
-	public static readonly MINUS = 214;
-	public static readonly PLUS = 215;
-	public static readonly POWER = 216;
-	public static readonly MOD = 217;
-	public static readonly PIPE = 218;
-	public static readonly QMARK = 219;
-	public static readonly EMARK = 220;
-	public static readonly DBQUOTES = 221;
-	public static readonly SQUOTE = 222;
-	public static readonly AMPERSAND = 223;
-	public static readonly VERSION_NUMBER = 224;
-	public static readonly ULB = 225;
+	public static readonly ANCHORS = 27;
+	public static readonly MOLECULAR = 28;
+	public static readonly MATCHONCE = 29;
+	public static readonly DELETEMOLECULES = 30;
+	public static readonly MOVECONNECTED = 31;
+	public static readonly INCLUDE_REACTANTS = 32;
+	public static readonly INCLUDE_PRODUCTS = 33;
+	public static readonly EXCLUDE_REACTANTS = 34;
+	public static readonly EXCLUDE_PRODUCTS = 35;
+	public static readonly TOTALRATE = 36;
+	public static readonly VERSION = 37;
+	public static readonly SET_OPTION = 38;
+	public static readonly SET_MODEL_NAME = 39;
+	public static readonly SUBSTANCEUNITS = 40;
+	public static readonly PREFIX = 41;
+	public static readonly SUFFIX = 42;
+	public static readonly GENERATENETWORK = 43;
+	public static readonly OVERWRITE = 44;
+	public static readonly MAX_AGG = 45;
+	public static readonly MAX_ITER = 46;
+	public static readonly MAX_STOICH = 47;
+	public static readonly PRINT_ITER = 48;
+	public static readonly CHECK_ISO = 49;
+	public static readonly GENERATEHYBRIDMODEL = 50;
+	public static readonly SAFE = 51;
+	public static readonly EXECUTE = 52;
+	public static readonly SIMULATE = 53;
+	public static readonly METHOD = 54;
+	public static readonly ODE = 55;
+	public static readonly SSA = 56;
+	public static readonly PLA = 57;
+	public static readonly NF = 58;
+	public static readonly VERBOSE = 59;
+	public static readonly NETFILE = 60;
+	public static readonly ARGFILE = 61;
+	public static readonly CONTINUE = 62;
+	public static readonly T_START = 63;
+	public static readonly T_END = 64;
+	public static readonly N_STEPS = 65;
+	public static readonly N_OUTPUT_STEPS = 66;
+	public static readonly MAX_SIM_STEPS = 67;
+	public static readonly OUTPUT_STEP_INTERVAL = 68;
+	public static readonly SAMPLE_TIMES = 69;
+	public static readonly SAVE_PROGRESS = 70;
+	public static readonly PRINT_CDAT = 71;
+	public static readonly PRINT_FUNCTIONS = 72;
+	public static readonly PRINT_NET = 73;
+	public static readonly PRINT_END = 74;
+	public static readonly STOP_IF = 75;
+	public static readonly PRINT_ON_STOP = 76;
+	public static readonly SIMULATE_ODE = 77;
+	public static readonly ATOL = 78;
+	public static readonly RTOL = 79;
+	public static readonly STEADY_STATE = 80;
+	public static readonly SPARSE = 81;
+	public static readonly SIMULATE_SSA = 82;
+	public static readonly SIMULATE_PLA = 83;
+	public static readonly PLA_CONFIG = 84;
+	public static readonly PLA_OUTPUT = 85;
+	public static readonly SIMULATE_NF = 86;
+	public static readonly SIMULATE_RM = 87;
+	public static readonly PARAM = 88;
+	public static readonly COMPLEX = 89;
+	public static readonly GET_FINAL_STATE = 90;
+	public static readonly GML = 91;
+	public static readonly NOCSLF = 92;
+	public static readonly NOTF = 93;
+	public static readonly BINARY_OUTPUT = 94;
+	public static readonly UTL = 95;
+	public static readonly EQUIL = 96;
+	public static readonly PARAMETER_SCAN = 97;
+	public static readonly BIFURCATE = 98;
+	public static readonly PARAMETER = 99;
+	public static readonly PAR_MIN = 100;
+	public static readonly PAR_MAX = 101;
+	public static readonly N_SCAN_PTS = 102;
+	public static readonly LOG_SCALE = 103;
+	public static readonly RESET_CONC = 104;
+	public static readonly READFILE = 105;
+	public static readonly FILE = 106;
+	public static readonly ATOMIZE = 107;
+	public static readonly BLOCKS = 108;
+	public static readonly SKIPACTIONS = 109;
+	public static readonly VISUALIZE = 110;
+	public static readonly TYPE = 111;
+	public static readonly BACKGROUND = 112;
+	public static readonly COLLAPSE = 113;
+	public static readonly OPTS = 114;
+	public static readonly WRITESSC = 115;
+	public static readonly WRITESSCCFG = 116;
+	public static readonly FORMAT = 117;
+	public static readonly WRITEFILE = 118;
+	public static readonly WRITEMODEL = 119;
+	public static readonly WRITEXML = 120;
+	public static readonly WRITENETWORK = 121;
+	public static readonly WRITESBML = 122;
+	public static readonly WRITEMDL = 123;
+	public static readonly WRITELATEX = 124;
+	public static readonly INCLUDE_MODEL = 125;
+	public static readonly INCLUDE_NETWORK = 126;
+	public static readonly PRETTY_FORMATTING = 127;
+	public static readonly EVALUATE_EXPRESSIONS = 128;
+	public static readonly TEXTREACTION = 129;
+	public static readonly TEXTSPECIES = 130;
+	public static readonly WRITEMFILE = 131;
+	public static readonly WRITEMEXFILE = 132;
+	public static readonly BDF = 133;
+	public static readonly MAX_STEP = 134;
+	public static readonly MAXORDER = 135;
+	public static readonly STATS = 136;
+	public static readonly MAX_NUM_STEPS = 137;
+	public static readonly MAX_ERR_TEST_FAILS = 138;
+	public static readonly MAX_CONV_FAILS = 139;
+	public static readonly STIFF = 140;
+	public static readonly SETCONCENTRATION = 141;
+	public static readonly ADDCONCENTRATION = 142;
+	public static readonly SAVECONCENTRATIONS = 143;
+	public static readonly RESETCONCENTRATIONS = 144;
+	public static readonly SETPARAMETER = 145;
+	public static readonly SAVEPARAMETERS = 146;
+	public static readonly RESETPARAMETERS = 147;
+	public static readonly QUIT = 148;
+	public static readonly TRUE = 149;
+	public static readonly FALSE = 150;
+	public static readonly SAT = 151;
+	public static readonly MM = 152;
+	public static readonly HILL = 153;
+	public static readonly ARRHENIUS = 154;
+	public static readonly MRATIO = 155;
+	public static readonly TFUN = 156;
+	public static readonly FUNCTIONPRODUCT = 157;
+	public static readonly PRIORITY = 158;
+	public static readonly IF = 159;
+	public static readonly EXP = 160;
+	public static readonly LN = 161;
+	public static readonly LOG10 = 162;
+	public static readonly LOG2 = 163;
+	public static readonly SQRT = 164;
+	public static readonly RINT = 165;
+	public static readonly ABS = 166;
+	public static readonly SIN = 167;
+	public static readonly COS = 168;
+	public static readonly TAN = 169;
+	public static readonly ASIN = 170;
+	public static readonly ACOS = 171;
+	public static readonly ATAN = 172;
+	public static readonly SINH = 173;
+	public static readonly COSH = 174;
+	public static readonly TANH = 175;
+	public static readonly ASINH = 176;
+	public static readonly ACOSH = 177;
+	public static readonly ATANH = 178;
+	public static readonly PI = 179;
+	public static readonly EULERIAN = 180;
+	public static readonly MIN = 181;
+	public static readonly MAX = 182;
+	public static readonly SUM = 183;
+	public static readonly AVG = 184;
+	public static readonly TIME = 185;
+	public static readonly FLOAT = 186;
+	public static readonly INT = 187;
+	public static readonly STRING = 188;
+	public static readonly SEMI = 189;
+	public static readonly COLON = 190;
+	public static readonly LSBRACKET = 191;
+	public static readonly RSBRACKET = 192;
+	public static readonly LBRACKET = 193;
+	public static readonly RBRACKET = 194;
+	public static readonly COMMA = 195;
+	public static readonly DOT = 196;
+	public static readonly LPAREN = 197;
+	public static readonly RPAREN = 198;
+	public static readonly UNI_REACTION_SIGN = 199;
+	public static readonly BI_REACTION_SIGN = 200;
+	public static readonly DOLLAR = 201;
+	public static readonly TILDE = 202;
+	public static readonly AT = 203;
+	public static readonly GTE = 204;
+	public static readonly GT = 205;
+	public static readonly LTE = 206;
+	public static readonly LT = 207;
+	public static readonly ASSIGNS = 208;
+	public static readonly EQUALS = 209;
+	public static readonly NOT_EQUALS = 210;
+	public static readonly BECOMES = 211;
+	public static readonly LOGICAL_AND = 212;
+	public static readonly LOGICAL_OR = 213;
+	public static readonly DIV = 214;
+	public static readonly TIMES = 215;
+	public static readonly MINUS = 216;
+	public static readonly PLUS = 217;
+	public static readonly POWER = 218;
+	public static readonly MOD = 219;
+	public static readonly PIPE = 220;
+	public static readonly QMARK = 221;
+	public static readonly EMARK = 222;
+	public static readonly DBQUOTES = 223;
+	public static readonly SQUOTE = 224;
+	public static readonly AMPERSAND = 225;
+	public static readonly VERSION_NUMBER = 226;
+	public static readonly ULB = 227;
 	public static readonly RULE_prog = 0;
 	public static readonly RULE_header_block = 1;
 	public static readonly RULE_version_def = 2;
@@ -268,96 +270,100 @@ export class BNGParser extends Parser {
 	public static readonly RULE_molecule_def = 12;
 	public static readonly RULE_component_def_list = 13;
 	public static readonly RULE_component_def = 14;
-	public static readonly RULE_state_list = 15;
-	public static readonly RULE_state_name = 16;
-	public static readonly RULE_seed_species_block = 17;
-	public static readonly RULE_seed_species_def = 18;
-	public static readonly RULE_species_def = 19;
-	public static readonly RULE_molecule_compartment = 20;
-	public static readonly RULE_molecule_pattern = 21;
-	public static readonly RULE_molecule_tag = 22;
-	public static readonly RULE_component_pattern_list = 23;
-	public static readonly RULE_component_pattern = 24;
-	public static readonly RULE_state_value = 25;
-	public static readonly RULE_bond_spec = 26;
-	public static readonly RULE_bond_id = 27;
-	public static readonly RULE_observables_block = 28;
-	public static readonly RULE_observable_def = 29;
-	public static readonly RULE_observable_type = 30;
-	public static readonly RULE_observable_pattern_list = 31;
-	public static readonly RULE_observable_pattern = 32;
-	public static readonly RULE_reaction_rules_block = 33;
-	public static readonly RULE_reaction_rule_def = 34;
-	public static readonly RULE_label_def = 35;
-	public static readonly RULE_reactant_patterns = 36;
-	public static readonly RULE_product_patterns = 37;
-	public static readonly RULE_reaction_sign = 38;
-	public static readonly RULE_rate_law = 39;
-	public static readonly RULE_rule_modifiers = 40;
-	public static readonly RULE_pattern_list = 41;
-	public static readonly RULE_functions_block = 42;
-	public static readonly RULE_function_def = 43;
-	public static readonly RULE_param_list = 44;
-	public static readonly RULE_compartments_block = 45;
-	public static readonly RULE_compartment_def = 46;
-	public static readonly RULE_energy_patterns_block = 47;
-	public static readonly RULE_energy_pattern_def = 48;
-	public static readonly RULE_population_maps_block = 49;
-	public static readonly RULE_population_map_def = 50;
-	public static readonly RULE_actions_block = 51;
-	public static readonly RULE_wrapped_actions_block = 52;
-	public static readonly RULE_begin_actions_block = 53;
-	public static readonly RULE_action_command = 54;
-	public static readonly RULE_generate_network_cmd = 55;
-	public static readonly RULE_simulate_cmd = 56;
-	public static readonly RULE_write_cmd = 57;
-	public static readonly RULE_set_cmd = 58;
-	public static readonly RULE_other_action_cmd = 59;
-	public static readonly RULE_action_args = 60;
-	public static readonly RULE_action_arg_list = 61;
-	public static readonly RULE_action_arg = 62;
-	public static readonly RULE_action_arg_value = 63;
-	public static readonly RULE_keyword_as_value = 64;
-	public static readonly RULE_nested_hash_list = 65;
-	public static readonly RULE_nested_hash_item = 66;
-	public static readonly RULE_arg_name = 67;
-	public static readonly RULE_expression_list = 68;
-	public static readonly RULE_expression = 69;
-	public static readonly RULE_conditional_expr = 70;
-	public static readonly RULE_or_expr = 71;
-	public static readonly RULE_and_expr = 72;
-	public static readonly RULE_equality_expr = 73;
-	public static readonly RULE_relational_expr = 74;
-	public static readonly RULE_additive_expr = 75;
-	public static readonly RULE_multiplicative_expr = 76;
-	public static readonly RULE_power_expr = 77;
-	public static readonly RULE_unary_expr = 78;
-	public static readonly RULE_primary_expr = 79;
-	public static readonly RULE_function_call = 80;
-	public static readonly RULE_observable_ref = 81;
-	public static readonly RULE_literal = 82;
+	public static readonly RULE_keyword_as_component_name = 15;
+	public static readonly RULE_state_list = 16;
+	public static readonly RULE_state_name = 17;
+	public static readonly RULE_seed_species_block = 18;
+	public static readonly RULE_seed_species_def = 19;
+	public static readonly RULE_species_def = 20;
+	public static readonly RULE_molecule_compartment = 21;
+	public static readonly RULE_molecule_pattern = 22;
+	public static readonly RULE_pattern_bond_wildcard = 23;
+	public static readonly RULE_molecule_tag = 24;
+	public static readonly RULE_component_pattern_list = 25;
+	public static readonly RULE_component_pattern = 26;
+	public static readonly RULE_state_value = 27;
+	public static readonly RULE_bond_spec = 28;
+	public static readonly RULE_bond_id = 29;
+	public static readonly RULE_observables_block = 30;
+	public static readonly RULE_observable_def = 31;
+	public static readonly RULE_observable_type = 32;
+	public static readonly RULE_observable_pattern_list = 33;
+	public static readonly RULE_observable_pattern = 34;
+	public static readonly RULE_reaction_rules_block = 35;
+	public static readonly RULE_reaction_rule_def = 36;
+	public static readonly RULE_label_def = 37;
+	public static readonly RULE_reactant_patterns = 38;
+	public static readonly RULE_product_patterns = 39;
+	public static readonly RULE_reaction_sign = 40;
+	public static readonly RULE_rate_law = 41;
+	public static readonly RULE_rule_modifiers = 42;
+	public static readonly RULE_pattern_list = 43;
+	public static readonly RULE_functions_block = 44;
+	public static readonly RULE_function_def = 45;
+	public static readonly RULE_param_list = 46;
+	public static readonly RULE_compartments_block = 47;
+	public static readonly RULE_compartment_def = 48;
+	public static readonly RULE_energy_patterns_block = 49;
+	public static readonly RULE_energy_pattern_def = 50;
+	public static readonly RULE_population_maps_block = 51;
+	public static readonly RULE_population_map_def = 52;
+	public static readonly RULE_anchors_block = 53;
+	public static readonly RULE_anchor_def = 54;
+	public static readonly RULE_actions_block = 55;
+	public static readonly RULE_wrapped_actions_block = 56;
+	public static readonly RULE_begin_actions_block = 57;
+	public static readonly RULE_action_command = 58;
+	public static readonly RULE_generate_network_cmd = 59;
+	public static readonly RULE_simulate_cmd = 60;
+	public static readonly RULE_write_cmd = 61;
+	public static readonly RULE_set_cmd = 62;
+	public static readonly RULE_other_action_cmd = 63;
+	public static readonly RULE_action_args = 64;
+	public static readonly RULE_action_arg_list = 65;
+	public static readonly RULE_action_arg = 66;
+	public static readonly RULE_action_arg_value = 67;
+	public static readonly RULE_keyword_as_value = 68;
+	public static readonly RULE_nested_hash_list = 69;
+	public static readonly RULE_nested_hash_item = 70;
+	public static readonly RULE_arg_name = 71;
+	public static readonly RULE_expression_list = 72;
+	public static readonly RULE_expression = 73;
+	public static readonly RULE_conditional_expr = 74;
+	public static readonly RULE_or_expr = 75;
+	public static readonly RULE_and_expr = 76;
+	public static readonly RULE_equality_expr = 77;
+	public static readonly RULE_relational_expr = 78;
+	public static readonly RULE_additive_expr = 79;
+	public static readonly RULE_multiplicative_expr = 80;
+	public static readonly RULE_power_expr = 81;
+	public static readonly RULE_unary_expr = 82;
+	public static readonly RULE_primary_expr = 83;
+	public static readonly RULE_function_call = 84;
+	public static readonly RULE_observable_ref = 85;
+	public static readonly RULE_literal = 86;
 	// tslint:disable:no-trailing-whitespace
 	public static readonly ruleNames: string[] = [
 		"prog", "header_block", "version_def", "substance_def", "set_option", 
 		"set_model_name", "program_block", "parameters_block", "parameter_def", 
 		"param_name", "molecule_types_block", "molecule_type_def", "molecule_def", 
-		"component_def_list", "component_def", "state_list", "state_name", "seed_species_block", 
-		"seed_species_def", "species_def", "molecule_compartment", "molecule_pattern", 
-		"molecule_tag", "component_pattern_list", "component_pattern", "state_value", 
-		"bond_spec", "bond_id", "observables_block", "observable_def", "observable_type", 
-		"observable_pattern_list", "observable_pattern", "reaction_rules_block", 
-		"reaction_rule_def", "label_def", "reactant_patterns", "product_patterns", 
-		"reaction_sign", "rate_law", "rule_modifiers", "pattern_list", "functions_block", 
-		"function_def", "param_list", "compartments_block", "compartment_def", 
-		"energy_patterns_block", "energy_pattern_def", "population_maps_block", 
-		"population_map_def", "actions_block", "wrapped_actions_block", "begin_actions_block", 
-		"action_command", "generate_network_cmd", "simulate_cmd", "write_cmd", 
-		"set_cmd", "other_action_cmd", "action_args", "action_arg_list", "action_arg", 
-		"action_arg_value", "keyword_as_value", "nested_hash_list", "nested_hash_item", 
-		"arg_name", "expression_list", "expression", "conditional_expr", "or_expr", 
-		"and_expr", "equality_expr", "relational_expr", "additive_expr", "multiplicative_expr", 
-		"power_expr", "unary_expr", "primary_expr", "function_call", "observable_ref", 
-		"literal",
+		"component_def_list", "component_def", "keyword_as_component_name", "state_list", 
+		"state_name", "seed_species_block", "seed_species_def", "species_def", 
+		"molecule_compartment", "molecule_pattern", "pattern_bond_wildcard", "molecule_tag", 
+		"component_pattern_list", "component_pattern", "state_value", "bond_spec", 
+		"bond_id", "observables_block", "observable_def", "observable_type", "observable_pattern_list", 
+		"observable_pattern", "reaction_rules_block", "reaction_rule_def", "label_def", 
+		"reactant_patterns", "product_patterns", "reaction_sign", "rate_law", 
+		"rule_modifiers", "pattern_list", "functions_block", "function_def", "param_list", 
+		"compartments_block", "compartment_def", "energy_patterns_block", "energy_pattern_def", 
+		"population_maps_block", "population_map_def", "anchors_block", "anchor_def", 
+		"actions_block", "wrapped_actions_block", "begin_actions_block", "action_command", 
+		"generate_network_cmd", "simulate_cmd", "write_cmd", "set_cmd", "other_action_cmd", 
+		"action_args", "action_arg_list", "action_arg", "action_arg_value", "keyword_as_value", 
+		"nested_hash_list", "nested_hash_item", "arg_name", "expression_list", 
+		"expression", "conditional_expr", "or_expr", "and_expr", "equality_expr", 
+		"relational_expr", "additive_expr", "multiplicative_expr", "power_expr", 
+		"unary_expr", "primary_expr", "function_call", "observable_ref", "literal",
 	];
 
 	private static readonly _LITERAL_NAMES: Array<string | undefined> = [
@@ -365,67 +371,68 @@ export class BNGParser extends Parser {
 		"'parameters'", "'compartments'", undefined, undefined, "'types'", "'seed'", 
 		undefined, "'observables'", "'functions'", "'reaction'", undefined, "'rules'", 
 		"'reaction_rules'", "'molecule_types'", "'groups'", "'actions'", "'population'", 
-		"'maps'", "'energy'", "'patterns'", "'MatchOnce'", "'DeleteMolecules'", 
-		"'MoveConnected'", "'include_reactants'", "'include_products'", "'exclude_reactants'", 
-		"'exclude_products'", "'TotalRate'", "'version'", "'setOption'", "'setModelName'", 
-		"'substanceUnits'", "'prefix'", "'suffix'", "'generate_network'", "'overwrite'", 
-		"'max_agg'", "'max_iter'", "'max_stoich'", "'print_iter'", "'check_iso'", 
-		"'generate_hybrid_model'", "'safe'", "'execute'", "'simulate'", "'method'", 
-		"'ode'", "'ssa'", "'pla'", "'nf'", "'verbose'", "'netfile'", "'argfile'", 
-		"'continue'", "'t_start'", "'t_end'", "'n_steps'", "'n_output_steps'", 
-		"'max_sim_steps'", "'output_step_interval'", "'sample_times'", "'save_progress'", 
-		"'print_CDAT'", "'print_functions'", "'print_net'", "'print_end'", "'stop_if'", 
-		"'print_on_stop'", "'simulate_ode'", "'atol'", "'rtol'", "'steady_state'", 
-		"'sparse'", "'simulate_ssa'", "'simulate_pla'", "'pla_config'", "'pla_output'", 
-		"'simulate_nf'", "'simulate_rm'", "'param'", "'complex'", "'get_final_state'", 
-		"'gml'", "'nocslf'", "'notf'", "'binary_output'", "'utl'", "'equil'", 
-		"'parameter_scan'", "'bifurcate'", "'parameter'", "'par_min'", "'par_max'", 
-		"'n_scan_pts'", "'log_scale'", "'reset_conc'", "'readFile'", "'file'", 
-		"'atomize'", "'blocks'", "'skip_actions'", "'visualize'", "'type'", "'background'", 
-		"'collapse'", "'opts'", "'writeSSC'", "'writeSSCcfg'", "'format'", "'writeFile'", 
-		"'writeModel'", "'writeXML'", "'writeNetwork'", "'writeSBML'", "'writeMDL'", 
-		"'writeLatex'", "'include_model'", "'include_network'", "'pretty_formatting'", 
-		"'evaluate_expressions'", "'TextReaction'", "'TextSpecies'", "'writeMfile'", 
-		"'writeMexfile'", "'bdf'", "'max_step'", "'maxOrder'", "'stats'", "'max_num_steps'", 
-		"'max_err_test_fails'", "'max_conv_fails'", "'stiff'", "'setConcentration'", 
-		"'addConcentration'", "'saveConcentrations'", "'resetConcentrations'", 
-		"'setParameter'", "'saveParameters'", "'resetParameters'", "'quit'", "'true'", 
-		"'false'", "'Sat'", "'MM'", "'Hill'", "'Arrhenius'", "'mratio'", "'TFUN'", 
-		"'FunctionProduct'", "'priority'", "'if'", "'exp'", "'ln'", "'log10'", 
-		"'log2'", "'sqrt'", "'rint'", "'abs'", "'sin'", "'cos'", "'tan'", "'asin'", 
-		"'acos'", "'atan'", "'sinh'", "'cosh'", "'tanh'", "'asinh'", "'acosh'", 
-		"'atanh'", "'_pi'", "'_e'", "'min'", "'max'", "'sum'", "'avg'", "'time'", 
-		undefined, undefined, undefined, "';'", "':'", "'['", "']'", "'{'", "'}'", 
-		"','", "'.'", "'('", "')'", "'->'", "'<->'", "'$'", "'~'", "'@'", "'>='", 
-		"'>'", "'<='", "'<'", "'=>'", "'=='", undefined, "'='", "'&&'", "'||'", 
-		"'/'", "'*'", "'-'", "'+'", undefined, "'%'", "'|'", "'?'", "'!'", "'\"'", 
-		"'''", "'&'",
+		"'maps'", "'energy'", "'patterns'", "'anchors'", "'molecular'", "'MatchOnce'", 
+		"'DeleteMolecules'", "'MoveConnected'", "'include_reactants'", "'include_products'", 
+		"'exclude_reactants'", "'exclude_products'", "'TotalRate'", "'version'", 
+		"'setOption'", "'setModelName'", "'substanceUnits'", "'prefix'", "'suffix'", 
+		"'generate_network'", "'overwrite'", "'max_agg'", "'max_iter'", "'max_stoich'", 
+		"'print_iter'", "'check_iso'", "'generate_hybrid_model'", "'safe'", "'execute'", 
+		"'simulate'", "'method'", "'ode'", "'ssa'", "'pla'", "'nf'", "'verbose'", 
+		"'netfile'", "'argfile'", "'continue'", "'t_start'", "'t_end'", "'n_steps'", 
+		"'n_output_steps'", "'max_sim_steps'", "'output_step_interval'", "'sample_times'", 
+		"'save_progress'", "'print_CDAT'", "'print_functions'", "'print_net'", 
+		"'print_end'", "'stop_if'", "'print_on_stop'", "'simulate_ode'", "'atol'", 
+		"'rtol'", "'steady_state'", "'sparse'", "'simulate_ssa'", "'simulate_pla'", 
+		"'pla_config'", "'pla_output'", "'simulate_nf'", "'simulate_rm'", "'param'", 
+		"'complex'", "'get_final_state'", "'gml'", "'nocslf'", "'notf'", "'binary_output'", 
+		"'utl'", "'equil'", "'parameter_scan'", "'bifurcate'", "'parameter'", 
+		"'par_min'", "'par_max'", "'n_scan_pts'", "'log_scale'", "'reset_conc'", 
+		"'readFile'", "'file'", "'atomize'", "'blocks'", "'skip_actions'", "'visualize'", 
+		"'type'", "'background'", "'collapse'", "'opts'", "'writeSSC'", "'writeSSCcfg'", 
+		"'format'", "'writeFile'", "'writeModel'", "'writeXML'", "'writeNetwork'", 
+		"'writeSBML'", "'writeMDL'", "'writeLatex'", "'include_model'", "'include_network'", 
+		"'pretty_formatting'", "'evaluate_expressions'", "'TextReaction'", "'TextSpecies'", 
+		"'writeMfile'", "'writeMexfile'", "'bdf'", "'max_step'", "'maxOrder'", 
+		"'stats'", "'max_num_steps'", "'max_err_test_fails'", "'max_conv_fails'", 
+		"'stiff'", "'setConcentration'", "'addConcentration'", "'saveConcentrations'", 
+		"'resetConcentrations'", "'setParameter'", "'saveParameters'", "'resetParameters'", 
+		"'quit'", "'true'", "'false'", "'Sat'", "'MM'", "'Hill'", "'Arrhenius'", 
+		"'mratio'", "'TFUN'", "'FunctionProduct'", "'priority'", "'if'", "'exp'", 
+		"'ln'", "'log10'", "'log2'", "'sqrt'", "'rint'", "'abs'", "'sin'", "'cos'", 
+		"'tan'", "'asin'", "'acos'", "'atan'", "'sinh'", "'cosh'", "'tanh'", "'asinh'", 
+		"'acosh'", "'atanh'", "'_pi'", "'_e'", "'min'", "'max'", "'sum'", "'avg'", 
+		"'time'", undefined, undefined, undefined, "';'", "':'", "'['", "']'", 
+		"'{'", "'}'", "','", "'.'", "'('", "')'", "'->'", "'<->'", "'$'", "'~'", 
+		"'@'", "'>='", "'>'", "'<='", "'<'", "'=>'", "'=='", undefined, "'='", 
+		"'&&'", "'||'", "'/'", "'*'", "'-'", "'+'", undefined, "'%'", "'|'", "'?'", 
+		"'!'", "'\"'", "'''", "'&'",
 	];
 	private static readonly _SYMBOLIC_NAMES: Array<string | undefined> = [
 		undefined, "LINE_COMMENT", "LB", "WS", "BEGIN", "END", "MODEL", "PARAMETERS", 
 		"COMPARTMENTS", "MOLECULE", "MOLECULES", "TYPES", "SEED", "SPECIES", "OBSERVABLES", 
 		"FUNCTIONS", "REACTION", "REACTIONS", "RULES", "REACTION_RULES", "MOLECULE_TYPES", 
-		"GROUPS", "ACTIONS", "POPULATION", "MAPS", "ENERGY", "PATTERNS", "MATCHONCE", 
-		"DELETEMOLECULES", "MOVECONNECTED", "INCLUDE_REACTANTS", "INCLUDE_PRODUCTS", 
-		"EXCLUDE_REACTANTS", "EXCLUDE_PRODUCTS", "TOTALRATE", "VERSION", "SET_OPTION", 
-		"SET_MODEL_NAME", "SUBSTANCEUNITS", "PREFIX", "SUFFIX", "GENERATENETWORK", 
-		"OVERWRITE", "MAX_AGG", "MAX_ITER", "MAX_STOICH", "PRINT_ITER", "CHECK_ISO", 
-		"GENERATEHYBRIDMODEL", "SAFE", "EXECUTE", "SIMULATE", "METHOD", "ODE", 
-		"SSA", "PLA", "NF", "VERBOSE", "NETFILE", "ARGFILE", "CONTINUE", "T_START", 
-		"T_END", "N_STEPS", "N_OUTPUT_STEPS", "MAX_SIM_STEPS", "OUTPUT_STEP_INTERVAL", 
-		"SAMPLE_TIMES", "SAVE_PROGRESS", "PRINT_CDAT", "PRINT_FUNCTIONS", "PRINT_NET", 
-		"PRINT_END", "STOP_IF", "PRINT_ON_STOP", "SIMULATE_ODE", "ATOL", "RTOL", 
-		"STEADY_STATE", "SPARSE", "SIMULATE_SSA", "SIMULATE_PLA", "PLA_CONFIG", 
-		"PLA_OUTPUT", "SIMULATE_NF", "SIMULATE_RM", "PARAM", "COMPLEX", "GET_FINAL_STATE", 
-		"GML", "NOCSLF", "NOTF", "BINARY_OUTPUT", "UTL", "EQUIL", "PARAMETER_SCAN", 
-		"BIFURCATE", "PARAMETER", "PAR_MIN", "PAR_MAX", "N_SCAN_PTS", "LOG_SCALE", 
-		"RESET_CONC", "READFILE", "FILE", "ATOMIZE", "BLOCKS", "SKIPACTIONS", 
-		"VISUALIZE", "TYPE", "BACKGROUND", "COLLAPSE", "OPTS", "WRITESSC", "WRITESSCCFG", 
-		"FORMAT", "WRITEFILE", "WRITEMODEL", "WRITEXML", "WRITENETWORK", "WRITESBML", 
-		"WRITEMDL", "WRITELATEX", "INCLUDE_MODEL", "INCLUDE_NETWORK", "PRETTY_FORMATTING", 
-		"EVALUATE_EXPRESSIONS", "TEXTREACTION", "TEXTSPECIES", "WRITEMFILE", "WRITEMEXFILE", 
-		"BDF", "MAX_STEP", "MAXORDER", "STATS", "MAX_NUM_STEPS", "MAX_ERR_TEST_FAILS", 
-		"MAX_CONV_FAILS", "STIFF", "SETCONCENTRATION", "ADDCONCENTRATION", "SAVECONCENTRATIONS", 
+		"GROUPS", "ACTIONS", "POPULATION", "MAPS", "ENERGY", "PATTERNS", "ANCHORS", 
+		"MOLECULAR", "MATCHONCE", "DELETEMOLECULES", "MOVECONNECTED", "INCLUDE_REACTANTS", 
+		"INCLUDE_PRODUCTS", "EXCLUDE_REACTANTS", "EXCLUDE_PRODUCTS", "TOTALRATE", 
+		"VERSION", "SET_OPTION", "SET_MODEL_NAME", "SUBSTANCEUNITS", "PREFIX", 
+		"SUFFIX", "GENERATENETWORK", "OVERWRITE", "MAX_AGG", "MAX_ITER", "MAX_STOICH", 
+		"PRINT_ITER", "CHECK_ISO", "GENERATEHYBRIDMODEL", "SAFE", "EXECUTE", "SIMULATE", 
+		"METHOD", "ODE", "SSA", "PLA", "NF", "VERBOSE", "NETFILE", "ARGFILE", 
+		"CONTINUE", "T_START", "T_END", "N_STEPS", "N_OUTPUT_STEPS", "MAX_SIM_STEPS", 
+		"OUTPUT_STEP_INTERVAL", "SAMPLE_TIMES", "SAVE_PROGRESS", "PRINT_CDAT", 
+		"PRINT_FUNCTIONS", "PRINT_NET", "PRINT_END", "STOP_IF", "PRINT_ON_STOP", 
+		"SIMULATE_ODE", "ATOL", "RTOL", "STEADY_STATE", "SPARSE", "SIMULATE_SSA", 
+		"SIMULATE_PLA", "PLA_CONFIG", "PLA_OUTPUT", "SIMULATE_NF", "SIMULATE_RM", 
+		"PARAM", "COMPLEX", "GET_FINAL_STATE", "GML", "NOCSLF", "NOTF", "BINARY_OUTPUT", 
+		"UTL", "EQUIL", "PARAMETER_SCAN", "BIFURCATE", "PARAMETER", "PAR_MIN", 
+		"PAR_MAX", "N_SCAN_PTS", "LOG_SCALE", "RESET_CONC", "READFILE", "FILE", 
+		"ATOMIZE", "BLOCKS", "SKIPACTIONS", "VISUALIZE", "TYPE", "BACKGROUND", 
+		"COLLAPSE", "OPTS", "WRITESSC", "WRITESSCCFG", "FORMAT", "WRITEFILE", 
+		"WRITEMODEL", "WRITEXML", "WRITENETWORK", "WRITESBML", "WRITEMDL", "WRITELATEX", 
+		"INCLUDE_MODEL", "INCLUDE_NETWORK", "PRETTY_FORMATTING", "EVALUATE_EXPRESSIONS", 
+		"TEXTREACTION", "TEXTSPECIES", "WRITEMFILE", "WRITEMEXFILE", "BDF", "MAX_STEP", 
+		"MAXORDER", "STATS", "MAX_NUM_STEPS", "MAX_ERR_TEST_FAILS", "MAX_CONV_FAILS", 
+		"STIFF", "SETCONCENTRATION", "ADDCONCENTRATION", "SAVECONCENTRATIONS", 
 		"RESETCONCENTRATIONS", "SETPARAMETER", "SAVEPARAMETERS", "RESETPARAMETERS", 
 		"QUIT", "TRUE", "FALSE", "SAT", "MM", "HILL", "ARRHENIUS", "MRATIO", "TFUN", 
 		"FUNCTIONPRODUCT", "PRIORITY", "IF", "EXP", "LN", "LOG10", "LOG2", "SQRT", 
@@ -474,87 +481,87 @@ export class BNGParser extends Parser {
 			let _alt: number;
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 169;
+			this.state = 177;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 166;
+				this.state = 174;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 171;
+				this.state = 179;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 175;
+			this.state = 183;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (((((_la - 35)) & ~0x1F) === 0 && ((1 << (_la - 35)) & ((1 << (BNGParser.VERSION - 35)) | (1 << (BNGParser.SET_OPTION - 35)) | (1 << (BNGParser.SET_MODEL_NAME - 35)) | (1 << (BNGParser.SUBSTANCEUNITS - 35)))) !== 0)) {
+			while (((((_la - 37)) & ~0x1F) === 0 && ((1 << (_la - 37)) & ((1 << (BNGParser.VERSION - 37)) | (1 << (BNGParser.SET_OPTION - 37)) | (1 << (BNGParser.SET_MODEL_NAME - 37)) | (1 << (BNGParser.SUBSTANCEUNITS - 37)))) !== 0)) {
 				{
 				{
-				this.state = 172;
+				this.state = 180;
 				this.header_block();
 				}
 				}
-				this.state = 177;
+				this.state = 185;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 205;
+			this.state = 213;
 			this._errHandler.sync(this);
 			switch ( this.interpreter.adaptivePredict(this._input, 6, this._ctx) ) {
 			case 1:
 				{
 				{
-				this.state = 178;
+				this.state = 186;
 				this.match(BNGParser.BEGIN);
-				this.state = 179;
+				this.state = 187;
 				this.match(BNGParser.MODEL);
-				this.state = 181;
+				this.state = 189;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 180;
+					this.state = 188;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 183;
+					this.state = 191;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				} while (_la === BNGParser.LB);
-				this.state = 188;
+				this.state = 196;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la === BNGParser.BEGIN) {
 					{
 					{
-					this.state = 185;
+					this.state = 193;
 					this.program_block();
 					}
 					}
-					this.state = 190;
+					this.state = 198;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 191;
+				this.state = 199;
 				this.match(BNGParser.END);
-				this.state = 192;
+				this.state = 200;
 				this.match(BNGParser.MODEL);
-				this.state = 196;
+				this.state = 204;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la === BNGParser.LB) {
 					{
 					{
-					this.state = 193;
+					this.state = 201;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 198;
+					this.state = 206;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
@@ -564,31 +571,31 @@ export class BNGParser extends Parser {
 
 			case 2:
 				{
-				this.state = 202;
+				this.state = 210;
 				this._errHandler.sync(this);
 				_alt = this.interpreter.adaptivePredict(this._input, 5, this._ctx);
 				while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
 					if (_alt === 1) {
 						{
 						{
-						this.state = 199;
+						this.state = 207;
 						this.program_block();
 						}
 						}
 					}
-					this.state = 204;
+					this.state = 212;
 					this._errHandler.sync(this);
 					_alt = this.interpreter.adaptivePredict(this._input, 5, this._ctx);
 				}
 				}
 				break;
 			}
-			this.state = 209;
+			this.state = 217;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case BNGParser.BEGIN:
 				{
-				this.state = 207;
+				this.state = 215;
 				this.wrapped_actions_block();
 				}
 				break;
@@ -621,7 +628,7 @@ export class BNGParser extends Parser {
 			case BNGParser.RESETPARAMETERS:
 			case BNGParser.QUIT:
 				{
-				this.state = 208;
+				this.state = 216;
 				this.actions_block();
 				}
 				break;
@@ -630,7 +637,7 @@ export class BNGParser extends Parser {
 			default:
 				break;
 			}
-			this.state = 211;
+			this.state = 219;
 			this.match(BNGParser.EOF);
 			}
 		}
@@ -653,34 +660,34 @@ export class BNGParser extends Parser {
 		let _localctx: Header_blockContext = new Header_blockContext(this._ctx, this.state);
 		this.enterRule(_localctx, 2, BNGParser.RULE_header_block);
 		try {
-			this.state = 217;
+			this.state = 225;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case BNGParser.VERSION:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 213;
+				this.state = 221;
 				this.version_def();
 				}
 				break;
 			case BNGParser.SUBSTANCEUNITS:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 214;
+				this.state = 222;
 				this.substance_def();
 				}
 				break;
 			case BNGParser.SET_OPTION:
 				this.enterOuterAlt(_localctx, 3);
 				{
-				this.state = 215;
+				this.state = 223;
 				this.set_option();
 				}
 				break;
 			case BNGParser.SET_MODEL_NAME:
 				this.enterOuterAlt(_localctx, 4);
 				{
-				this.state = 216;
+				this.state = 224;
 				this.set_model_name();
 				}
 				break;
@@ -710,49 +717,49 @@ export class BNGParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 219;
+			this.state = 227;
 			this.match(BNGParser.VERSION);
-			this.state = 220;
+			this.state = 228;
 			this.match(BNGParser.LPAREN);
-			this.state = 221;
+			this.state = 229;
 			this.match(BNGParser.DBQUOTES);
-			this.state = 222;
+			this.state = 230;
 			this.match(BNGParser.VERSION_NUMBER);
-			this.state = 224;
+			this.state = 232;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.STRING) {
 				{
-				this.state = 223;
+				this.state = 231;
 				this.match(BNGParser.STRING);
 				}
 			}
 
-			this.state = 226;
+			this.state = 234;
 			this.match(BNGParser.DBQUOTES);
-			this.state = 227;
+			this.state = 235;
 			this.match(BNGParser.RPAREN);
-			this.state = 229;
+			this.state = 237;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.SEMI) {
 				{
-				this.state = 228;
+				this.state = 236;
 				this.match(BNGParser.SEMI);
 				}
 			}
 
-			this.state = 232;
+			this.state = 240;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			do {
 				{
 				{
-				this.state = 231;
+				this.state = 239;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 234;
+				this.state = 242;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			} while (_la === BNGParser.LB);
@@ -780,39 +787,39 @@ export class BNGParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 236;
+			this.state = 244;
 			this.match(BNGParser.SUBSTANCEUNITS);
-			this.state = 237;
+			this.state = 245;
 			this.match(BNGParser.LPAREN);
-			this.state = 238;
+			this.state = 246;
 			this.match(BNGParser.DBQUOTES);
-			this.state = 239;
+			this.state = 247;
 			this.match(BNGParser.STRING);
-			this.state = 240;
+			this.state = 248;
 			this.match(BNGParser.DBQUOTES);
-			this.state = 241;
+			this.state = 249;
 			this.match(BNGParser.RPAREN);
-			this.state = 243;
+			this.state = 251;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.SEMI) {
 				{
-				this.state = 242;
+				this.state = 250;
 				this.match(BNGParser.SEMI);
 				}
 			}
 
-			this.state = 246;
+			this.state = 254;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			do {
 				{
 				{
-				this.state = 245;
+				this.state = 253;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 248;
+				this.state = 256;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			} while (_la === BNGParser.LB);
@@ -840,49 +847,19 @@ export class BNGParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 250;
+			this.state = 258;
 			this.match(BNGParser.SET_OPTION);
-			this.state = 251;
-			this.match(BNGParser.LPAREN);
-			this.state = 252;
-			this.match(BNGParser.DBQUOTES);
-			this.state = 256;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED) | (1 << BNGParser.INCLUDE_REACTANTS) | (1 << BNGParser.INCLUDE_PRODUCTS))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)) | (1 << (BNGParser.T_END - 32)) | (1 << (BNGParser.N_STEPS - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)) | (1 << (BNGParser.EQUIL - 64)) | (1 << (BNGParser.PARAMETER_SCAN - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 96)) | (1 << (BNGParser.TEXTREACTION - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)) | (1 << (BNGParser.EXP - 128)) | (1 << (BNGParser.LN - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)) | (1 << (BNGParser.RSBRACKET - 160)) | (1 << (BNGParser.LBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)) | (1 << (BNGParser.SQUOTE - 192)) | (1 << (BNGParser.AMPERSAND - 192)))) !== 0) || _la === BNGParser.VERSION_NUMBER || _la === BNGParser.ULB) {
-				{
-				{
-				this.state = 253;
-				_la = this._input.LA(1);
-				if (_la <= 0 || (_la === BNGParser.DBQUOTES)) {
-				this._errHandler.recoverInline(this);
-				} else {
-					if (this._input.LA(1) === Token.EOF) {
-						this.matchedEOF = true;
-					}
-
-					this._errHandler.reportMatch(this);
-					this.consume();
-				}
-				}
-				}
-				this.state = 258;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-			}
 			this.state = 259;
-			this.match(BNGParser.DBQUOTES);
+			this.match(BNGParser.LPAREN);
 			this.state = 260;
-			this.match(BNGParser.COMMA);
-			this.state = 261;
 			this.match(BNGParser.DBQUOTES);
-			this.state = 265;
+			this.state = 264;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED) | (1 << BNGParser.INCLUDE_REACTANTS) | (1 << BNGParser.INCLUDE_PRODUCTS))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)) | (1 << (BNGParser.T_END - 32)) | (1 << (BNGParser.N_STEPS - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)) | (1 << (BNGParser.EQUIL - 64)) | (1 << (BNGParser.PARAMETER_SCAN - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 96)) | (1 << (BNGParser.TEXTREACTION - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)) | (1 << (BNGParser.EXP - 128)) | (1 << (BNGParser.LN - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)) | (1 << (BNGParser.RSBRACKET - 160)) | (1 << (BNGParser.LBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)) | (1 << (BNGParser.SQUOTE - 192)) | (1 << (BNGParser.AMPERSAND - 192)))) !== 0) || _la === BNGParser.VERSION_NUMBER || _la === BNGParser.ULB) {
+			while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.ANCHORS) | (1 << BNGParser.MOLECULAR) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.INCLUDE_REACTANTS - 32)) | (1 << (BNGParser.INCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.T_END - 64)) | (1 << (BNGParser.N_STEPS - 64)) | (1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.EQUIL - 96)) | (1 << (BNGParser.PARAMETER_SCAN - 96)) | (1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.EVALUATE_EXPRESSIONS - 128)) | (1 << (BNGParser.TEXTREACTION - 128)) | (1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.EXP - 160)) | (1 << (BNGParser.LN - 160)) | (1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RSBRACKET - 192)) | (1 << (BNGParser.LBRACKET - 192)) | (1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)))) !== 0) || ((((_la - 224)) & ~0x1F) === 0 && ((1 << (_la - 224)) & ((1 << (BNGParser.SQUOTE - 224)) | (1 << (BNGParser.AMPERSAND - 224)) | (1 << (BNGParser.VERSION_NUMBER - 224)) | (1 << (BNGParser.ULB - 224)))) !== 0)) {
 				{
 				{
-				this.state = 262;
+				this.state = 261;
 				_la = this._input.LA(1);
 				if (_la <= 0 || (_la === BNGParser.DBQUOTES)) {
 				this._errHandler.recoverInline(this);
@@ -896,59 +873,59 @@ export class BNGParser extends Parser {
 				}
 				}
 				}
-				this.state = 267;
+				this.state = 266;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 268;
+			this.state = 267;
 			this.match(BNGParser.DBQUOTES);
-			this.state = 289;
+			this.state = 268;
+			this.match(BNGParser.COMMA);
+			this.state = 269;
+			this.match(BNGParser.DBQUOTES);
+			this.state = 273;
+			this._errHandler.sync(this);
+			_la = this._input.LA(1);
+			while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.ANCHORS) | (1 << BNGParser.MOLECULAR) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.INCLUDE_REACTANTS - 32)) | (1 << (BNGParser.INCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.T_END - 64)) | (1 << (BNGParser.N_STEPS - 64)) | (1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.EQUIL - 96)) | (1 << (BNGParser.PARAMETER_SCAN - 96)) | (1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.EVALUATE_EXPRESSIONS - 128)) | (1 << (BNGParser.TEXTREACTION - 128)) | (1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.EXP - 160)) | (1 << (BNGParser.LN - 160)) | (1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RSBRACKET - 192)) | (1 << (BNGParser.LBRACKET - 192)) | (1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)))) !== 0) || ((((_la - 224)) & ~0x1F) === 0 && ((1 << (_la - 224)) & ((1 << (BNGParser.SQUOTE - 224)) | (1 << (BNGParser.AMPERSAND - 224)) | (1 << (BNGParser.VERSION_NUMBER - 224)) | (1 << (BNGParser.ULB - 224)))) !== 0)) {
+				{
+				{
+				this.state = 270;
+				_la = this._input.LA(1);
+				if (_la <= 0 || (_la === BNGParser.DBQUOTES)) {
+				this._errHandler.recoverInline(this);
+				} else {
+					if (this._input.LA(1) === Token.EOF) {
+						this.matchedEOF = true;
+					}
+
+					this._errHandler.reportMatch(this);
+					this.consume();
+				}
+				}
+				}
+				this.state = 275;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+			}
+			this.state = 276;
+			this.match(BNGParser.DBQUOTES);
+			this.state = 297;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.COMMA) {
 				{
 				{
-				this.state = 269;
-				this.match(BNGParser.COMMA);
-				this.state = 270;
-				this.match(BNGParser.DBQUOTES);
-				this.state = 274;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED) | (1 << BNGParser.INCLUDE_REACTANTS) | (1 << BNGParser.INCLUDE_PRODUCTS))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)) | (1 << (BNGParser.T_END - 32)) | (1 << (BNGParser.N_STEPS - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)) | (1 << (BNGParser.EQUIL - 64)) | (1 << (BNGParser.PARAMETER_SCAN - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 96)) | (1 << (BNGParser.TEXTREACTION - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)) | (1 << (BNGParser.EXP - 128)) | (1 << (BNGParser.LN - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)) | (1 << (BNGParser.RSBRACKET - 160)) | (1 << (BNGParser.LBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)) | (1 << (BNGParser.SQUOTE - 192)) | (1 << (BNGParser.AMPERSAND - 192)))) !== 0) || _la === BNGParser.VERSION_NUMBER || _la === BNGParser.ULB) {
-					{
-					{
-					this.state = 271;
-					_la = this._input.LA(1);
-					if (_la <= 0 || (_la === BNGParser.DBQUOTES)) {
-					this._errHandler.recoverInline(this);
-					} else {
-						if (this._input.LA(1) === Token.EOF) {
-							this.matchedEOF = true;
-						}
-
-						this._errHandler.reportMatch(this);
-						this.consume();
-					}
-					}
-					}
-					this.state = 276;
-					this._errHandler.sync(this);
-					_la = this._input.LA(1);
-				}
 				this.state = 277;
-				this.match(BNGParser.DBQUOTES);
-				this.state = 278;
 				this.match(BNGParser.COMMA);
-				this.state = 279;
+				this.state = 278;
 				this.match(BNGParser.DBQUOTES);
-				this.state = 283;
+				this.state = 282;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED) | (1 << BNGParser.INCLUDE_REACTANTS) | (1 << BNGParser.INCLUDE_PRODUCTS))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)) | (1 << (BNGParser.T_END - 32)) | (1 << (BNGParser.N_STEPS - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)) | (1 << (BNGParser.EQUIL - 64)) | (1 << (BNGParser.PARAMETER_SCAN - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 96)) | (1 << (BNGParser.TEXTREACTION - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)) | (1 << (BNGParser.EXP - 128)) | (1 << (BNGParser.LN - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)) | (1 << (BNGParser.RSBRACKET - 160)) | (1 << (BNGParser.LBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)) | (1 << (BNGParser.SQUOTE - 192)) | (1 << (BNGParser.AMPERSAND - 192)))) !== 0) || _la === BNGParser.VERSION_NUMBER || _la === BNGParser.ULB) {
+				while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.ANCHORS) | (1 << BNGParser.MOLECULAR) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.INCLUDE_REACTANTS - 32)) | (1 << (BNGParser.INCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.T_END - 64)) | (1 << (BNGParser.N_STEPS - 64)) | (1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.EQUIL - 96)) | (1 << (BNGParser.PARAMETER_SCAN - 96)) | (1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.EVALUATE_EXPRESSIONS - 128)) | (1 << (BNGParser.TEXTREACTION - 128)) | (1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.EXP - 160)) | (1 << (BNGParser.LN - 160)) | (1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RSBRACKET - 192)) | (1 << (BNGParser.LBRACKET - 192)) | (1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)))) !== 0) || ((((_la - 224)) & ~0x1F) === 0 && ((1 << (_la - 224)) & ((1 << (BNGParser.SQUOTE - 224)) | (1 << (BNGParser.AMPERSAND - 224)) | (1 << (BNGParser.VERSION_NUMBER - 224)) | (1 << (BNGParser.ULB - 224)))) !== 0)) {
 					{
 					{
-					this.state = 280;
+					this.state = 279;
 					_la = this._input.LA(1);
 					if (_la <= 0 || (_la === BNGParser.DBQUOTES)) {
 					this._errHandler.recoverInline(this);
@@ -962,41 +939,71 @@ export class BNGParser extends Parser {
 					}
 					}
 					}
-					this.state = 285;
+					this.state = 284;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 286;
+				this.state = 285;
 				this.match(BNGParser.DBQUOTES);
-				}
-				}
+				this.state = 286;
+				this.match(BNGParser.COMMA);
+				this.state = 287;
+				this.match(BNGParser.DBQUOTES);
 				this.state = 291;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
+				while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.ANCHORS) | (1 << BNGParser.MOLECULAR) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.INCLUDE_REACTANTS - 32)) | (1 << (BNGParser.INCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.T_END - 64)) | (1 << (BNGParser.N_STEPS - 64)) | (1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.EQUIL - 96)) | (1 << (BNGParser.PARAMETER_SCAN - 96)) | (1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.EVALUATE_EXPRESSIONS - 128)) | (1 << (BNGParser.TEXTREACTION - 128)) | (1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.EXP - 160)) | (1 << (BNGParser.LN - 160)) | (1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RSBRACKET - 192)) | (1 << (BNGParser.LBRACKET - 192)) | (1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)))) !== 0) || ((((_la - 224)) & ~0x1F) === 0 && ((1 << (_la - 224)) & ((1 << (BNGParser.SQUOTE - 224)) | (1 << (BNGParser.AMPERSAND - 224)) | (1 << (BNGParser.VERSION_NUMBER - 224)) | (1 << (BNGParser.ULB - 224)))) !== 0)) {
+					{
+					{
+					this.state = 288;
+					_la = this._input.LA(1);
+					if (_la <= 0 || (_la === BNGParser.DBQUOTES)) {
+					this._errHandler.recoverInline(this);
+					} else {
+						if (this._input.LA(1) === Token.EOF) {
+							this.matchedEOF = true;
+						}
+
+						this._errHandler.reportMatch(this);
+						this.consume();
+					}
+					}
+					}
+					this.state = 293;
+					this._errHandler.sync(this);
+					_la = this._input.LA(1);
+				}
+				this.state = 294;
+				this.match(BNGParser.DBQUOTES);
+				}
+				}
+				this.state = 299;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
 			}
-			this.state = 292;
+			this.state = 300;
 			this.match(BNGParser.RPAREN);
-			this.state = 294;
+			this.state = 302;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.SEMI) {
 				{
-				this.state = 293;
+				this.state = 301;
 				this.match(BNGParser.SEMI);
 				}
 			}
 
-			this.state = 297;
+			this.state = 305;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			do {
 				{
 				{
-				this.state = 296;
+				this.state = 304;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 299;
+				this.state = 307;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			} while (_la === BNGParser.LB);
@@ -1024,39 +1031,39 @@ export class BNGParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 301;
+			this.state = 309;
 			this.match(BNGParser.SET_MODEL_NAME);
-			this.state = 302;
+			this.state = 310;
 			this.match(BNGParser.LPAREN);
-			this.state = 303;
+			this.state = 311;
 			this.match(BNGParser.DBQUOTES);
-			this.state = 304;
+			this.state = 312;
 			this.match(BNGParser.STRING);
-			this.state = 305;
+			this.state = 313;
 			this.match(BNGParser.DBQUOTES);
-			this.state = 306;
+			this.state = 314;
 			this.match(BNGParser.RPAREN);
-			this.state = 308;
+			this.state = 316;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.SEMI) {
 				{
-				this.state = 307;
+				this.state = 315;
 				this.match(BNGParser.SEMI);
 				}
 			}
 
-			this.state = 311;
+			this.state = 319;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			do {
 				{
 				{
-				this.state = 310;
+				this.state = 318;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 313;
+				this.state = 321;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			} while (_la === BNGParser.LB);
@@ -1081,13 +1088,13 @@ export class BNGParser extends Parser {
 		let _localctx: Program_blockContext = new Program_blockContext(this._ctx, this.state);
 		this.enterRule(_localctx, 12, BNGParser.RULE_program_block);
 		try {
-			this.state = 326;
+			this.state = 335;
 			this._errHandler.sync(this);
 			switch ( this.interpreter.adaptivePredict(this._input, 23, this._ctx) ) {
 			case 1:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 315;
+				this.state = 323;
 				this.parameters_block();
 				}
 				break;
@@ -1095,7 +1102,7 @@ export class BNGParser extends Parser {
 			case 2:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 316;
+				this.state = 324;
 				this.molecule_types_block();
 				}
 				break;
@@ -1103,7 +1110,7 @@ export class BNGParser extends Parser {
 			case 3:
 				this.enterOuterAlt(_localctx, 3);
 				{
-				this.state = 317;
+				this.state = 325;
 				this.seed_species_block();
 				}
 				break;
@@ -1111,7 +1118,7 @@ export class BNGParser extends Parser {
 			case 4:
 				this.enterOuterAlt(_localctx, 4);
 				{
-				this.state = 318;
+				this.state = 326;
 				this.observables_block();
 				}
 				break;
@@ -1119,7 +1126,7 @@ export class BNGParser extends Parser {
 			case 5:
 				this.enterOuterAlt(_localctx, 5);
 				{
-				this.state = 319;
+				this.state = 327;
 				this.reaction_rules_block();
 				}
 				break;
@@ -1127,7 +1134,7 @@ export class BNGParser extends Parser {
 			case 6:
 				this.enterOuterAlt(_localctx, 6);
 				{
-				this.state = 320;
+				this.state = 328;
 				this.functions_block();
 				}
 				break;
@@ -1135,7 +1142,7 @@ export class BNGParser extends Parser {
 			case 7:
 				this.enterOuterAlt(_localctx, 7);
 				{
-				this.state = 321;
+				this.state = 329;
 				this.compartments_block();
 				}
 				break;
@@ -1143,7 +1150,7 @@ export class BNGParser extends Parser {
 			case 8:
 				this.enterOuterAlt(_localctx, 8);
 				{
-				this.state = 322;
+				this.state = 330;
 				this.energy_patterns_block();
 				}
 				break;
@@ -1151,7 +1158,7 @@ export class BNGParser extends Parser {
 			case 9:
 				this.enterOuterAlt(_localctx, 9);
 				{
-				this.state = 323;
+				this.state = 331;
 				this.population_maps_block();
 				}
 				break;
@@ -1159,15 +1166,23 @@ export class BNGParser extends Parser {
 			case 10:
 				this.enterOuterAlt(_localctx, 10);
 				{
-				this.state = 324;
-				this.wrapped_actions_block();
+				this.state = 332;
+				this.anchors_block();
 				}
 				break;
 
 			case 11:
 				this.enterOuterAlt(_localctx, 11);
 				{
-				this.state = 325;
+				this.state = 333;
+				this.wrapped_actions_block();
+				}
+				break;
+
+			case 12:
+				this.enterOuterAlt(_localctx, 12);
+				{
+				this.state = 334;
 				this.begin_actions_block();
 				}
 				break;
@@ -1195,67 +1210,67 @@ export class BNGParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 328;
+			this.state = 337;
 			this.match(BNGParser.BEGIN);
-			this.state = 329;
+			this.state = 338;
 			this.match(BNGParser.PARAMETERS);
-			this.state = 331;
+			this.state = 340;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			do {
 				{
 				{
-				this.state = 330;
+				this.state = 339;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 333;
+				this.state = 342;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			} while (_la === BNGParser.LB);
-			this.state = 343;
+			this.state = 352;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (((((_la - 39)) & ~0x1F) === 0 && ((1 << (_la - 39)) & ((1 << (BNGParser.PREFIX - 39)) | (1 << (BNGParser.SUFFIX - 39)) | (1 << (BNGParser.OVERWRITE - 39)) | (1 << (BNGParser.MAX_AGG - 39)) | (1 << (BNGParser.MAX_ITER - 39)) | (1 << (BNGParser.MAX_STOICH - 39)) | (1 << (BNGParser.PRINT_ITER - 39)) | (1 << (BNGParser.CHECK_ISO - 39)) | (1 << (BNGParser.SAFE - 39)) | (1 << (BNGParser.EXECUTE - 39)) | (1 << (BNGParser.METHOD - 39)) | (1 << (BNGParser.VERBOSE - 39)) | (1 << (BNGParser.NETFILE - 39)) | (1 << (BNGParser.CONTINUE - 39)) | (1 << (BNGParser.T_START - 39)) | (1 << (BNGParser.T_END - 39)) | (1 << (BNGParser.N_STEPS - 39)) | (1 << (BNGParser.N_OUTPUT_STEPS - 39)) | (1 << (BNGParser.MAX_SIM_STEPS - 39)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 39)) | (1 << (BNGParser.SAMPLE_TIMES - 39)) | (1 << (BNGParser.SAVE_PROGRESS - 39)) | (1 << (BNGParser.PRINT_CDAT - 39)) | (1 << (BNGParser.PRINT_FUNCTIONS - 39)))) !== 0) || ((((_la - 71)) & ~0x1F) === 0 && ((1 << (_la - 71)) & ((1 << (BNGParser.PRINT_NET - 71)) | (1 << (BNGParser.PRINT_END - 71)) | (1 << (BNGParser.STOP_IF - 71)) | (1 << (BNGParser.PRINT_ON_STOP - 71)) | (1 << (BNGParser.ATOL - 71)) | (1 << (BNGParser.RTOL - 71)) | (1 << (BNGParser.STEADY_STATE - 71)) | (1 << (BNGParser.SPARSE - 71)) | (1 << (BNGParser.PLA_CONFIG - 71)) | (1 << (BNGParser.PLA_OUTPUT - 71)) | (1 << (BNGParser.PARAM - 71)) | (1 << (BNGParser.COMPLEX - 71)) | (1 << (BNGParser.GET_FINAL_STATE - 71)) | (1 << (BNGParser.GML - 71)) | (1 << (BNGParser.NOCSLF - 71)) | (1 << (BNGParser.NOTF - 71)) | (1 << (BNGParser.BINARY_OUTPUT - 71)) | (1 << (BNGParser.UTL - 71)) | (1 << (BNGParser.EQUIL - 71)) | (1 << (BNGParser.PARAMETER - 71)) | (1 << (BNGParser.PAR_MIN - 71)) | (1 << (BNGParser.PAR_MAX - 71)) | (1 << (BNGParser.N_SCAN_PTS - 71)) | (1 << (BNGParser.LOG_SCALE - 71)) | (1 << (BNGParser.RESET_CONC - 71)))) !== 0) || ((((_la - 104)) & ~0x1F) === 0 && ((1 << (_la - 104)) & ((1 << (BNGParser.FILE - 104)) | (1 << (BNGParser.ATOMIZE - 104)) | (1 << (BNGParser.BLOCKS - 104)) | (1 << (BNGParser.SKIPACTIONS - 104)) | (1 << (BNGParser.TYPE - 104)) | (1 << (BNGParser.BACKGROUND - 104)) | (1 << (BNGParser.COLLAPSE - 104)) | (1 << (BNGParser.OPTS - 104)) | (1 << (BNGParser.FORMAT - 104)) | (1 << (BNGParser.INCLUDE_MODEL - 104)) | (1 << (BNGParser.INCLUDE_NETWORK - 104)) | (1 << (BNGParser.PRETTY_FORMATTING - 104)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 104)) | (1 << (BNGParser.TEXTREACTION - 104)) | (1 << (BNGParser.TEXTSPECIES - 104)) | (1 << (BNGParser.BDF - 104)) | (1 << (BNGParser.MAX_STEP - 104)) | (1 << (BNGParser.MAXORDER - 104)) | (1 << (BNGParser.STATS - 104)) | (1 << (BNGParser.MAX_NUM_STEPS - 104)))) !== 0) || ((((_la - 136)) & ~0x1F) === 0 && ((1 << (_la - 136)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 136)) | (1 << (BNGParser.MAX_CONV_FAILS - 136)) | (1 << (BNGParser.STIFF - 136)))) !== 0) || _la === BNGParser.INT || _la === BNGParser.STRING) {
+			while (((((_la - 41)) & ~0x1F) === 0 && ((1 << (_la - 41)) & ((1 << (BNGParser.PREFIX - 41)) | (1 << (BNGParser.SUFFIX - 41)) | (1 << (BNGParser.OVERWRITE - 41)) | (1 << (BNGParser.MAX_AGG - 41)) | (1 << (BNGParser.MAX_ITER - 41)) | (1 << (BNGParser.MAX_STOICH - 41)) | (1 << (BNGParser.PRINT_ITER - 41)) | (1 << (BNGParser.CHECK_ISO - 41)) | (1 << (BNGParser.SAFE - 41)) | (1 << (BNGParser.EXECUTE - 41)) | (1 << (BNGParser.METHOD - 41)) | (1 << (BNGParser.VERBOSE - 41)) | (1 << (BNGParser.NETFILE - 41)) | (1 << (BNGParser.CONTINUE - 41)) | (1 << (BNGParser.T_START - 41)) | (1 << (BNGParser.T_END - 41)) | (1 << (BNGParser.N_STEPS - 41)) | (1 << (BNGParser.N_OUTPUT_STEPS - 41)) | (1 << (BNGParser.MAX_SIM_STEPS - 41)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 41)) | (1 << (BNGParser.SAMPLE_TIMES - 41)) | (1 << (BNGParser.SAVE_PROGRESS - 41)) | (1 << (BNGParser.PRINT_CDAT - 41)) | (1 << (BNGParser.PRINT_FUNCTIONS - 41)))) !== 0) || ((((_la - 73)) & ~0x1F) === 0 && ((1 << (_la - 73)) & ((1 << (BNGParser.PRINT_NET - 73)) | (1 << (BNGParser.PRINT_END - 73)) | (1 << (BNGParser.STOP_IF - 73)) | (1 << (BNGParser.PRINT_ON_STOP - 73)) | (1 << (BNGParser.ATOL - 73)) | (1 << (BNGParser.RTOL - 73)) | (1 << (BNGParser.STEADY_STATE - 73)) | (1 << (BNGParser.SPARSE - 73)) | (1 << (BNGParser.PLA_CONFIG - 73)) | (1 << (BNGParser.PLA_OUTPUT - 73)) | (1 << (BNGParser.PARAM - 73)) | (1 << (BNGParser.COMPLEX - 73)) | (1 << (BNGParser.GET_FINAL_STATE - 73)) | (1 << (BNGParser.GML - 73)) | (1 << (BNGParser.NOCSLF - 73)) | (1 << (BNGParser.NOTF - 73)) | (1 << (BNGParser.BINARY_OUTPUT - 73)) | (1 << (BNGParser.UTL - 73)) | (1 << (BNGParser.EQUIL - 73)) | (1 << (BNGParser.PARAMETER - 73)) | (1 << (BNGParser.PAR_MIN - 73)) | (1 << (BNGParser.PAR_MAX - 73)) | (1 << (BNGParser.N_SCAN_PTS - 73)) | (1 << (BNGParser.LOG_SCALE - 73)) | (1 << (BNGParser.RESET_CONC - 73)))) !== 0) || ((((_la - 106)) & ~0x1F) === 0 && ((1 << (_la - 106)) & ((1 << (BNGParser.FILE - 106)) | (1 << (BNGParser.ATOMIZE - 106)) | (1 << (BNGParser.BLOCKS - 106)) | (1 << (BNGParser.SKIPACTIONS - 106)) | (1 << (BNGParser.TYPE - 106)) | (1 << (BNGParser.BACKGROUND - 106)) | (1 << (BNGParser.COLLAPSE - 106)) | (1 << (BNGParser.OPTS - 106)) | (1 << (BNGParser.FORMAT - 106)) | (1 << (BNGParser.INCLUDE_MODEL - 106)) | (1 << (BNGParser.INCLUDE_NETWORK - 106)) | (1 << (BNGParser.PRETTY_FORMATTING - 106)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 106)) | (1 << (BNGParser.TEXTREACTION - 106)) | (1 << (BNGParser.TEXTSPECIES - 106)) | (1 << (BNGParser.BDF - 106)) | (1 << (BNGParser.MAX_STEP - 106)) | (1 << (BNGParser.MAXORDER - 106)) | (1 << (BNGParser.STATS - 106)) | (1 << (BNGParser.MAX_NUM_STEPS - 106)))) !== 0) || ((((_la - 138)) & ~0x1F) === 0 && ((1 << (_la - 138)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 138)) | (1 << (BNGParser.MAX_CONV_FAILS - 138)) | (1 << (BNGParser.STIFF - 138)))) !== 0) || _la === BNGParser.INT || _la === BNGParser.STRING) {
 				{
 				{
-				this.state = 335;
+				this.state = 344;
 				this.parameter_def();
-				this.state = 337;
+				this.state = 346;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 336;
+					this.state = 345;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 339;
+					this.state = 348;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				} while (_la === BNGParser.LB);
 				}
 				}
-				this.state = 345;
+				this.state = 354;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 346;
+			this.state = 355;
 			this.match(BNGParser.END);
-			this.state = 347;
+			this.state = 356;
 			this.match(BNGParser.PARAMETERS);
-			this.state = 351;
+			this.state = 360;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 348;
+				this.state = 357;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 353;
+				this.state = 362;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -1283,46 +1298,46 @@ export class BNGParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 355;
+			this.state = 364;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.INT) {
 				{
-				this.state = 354;
+				this.state = 363;
 				this.match(BNGParser.INT);
 				}
 			}
 
-			this.state = 360;
+			this.state = 369;
 			this._errHandler.sync(this);
 			switch ( this.interpreter.adaptivePredict(this._input, 29, this._ctx) ) {
 			case 1:
 				{
-				this.state = 357;
+				this.state = 366;
 				this.param_name();
-				this.state = 358;
+				this.state = 367;
 				this.match(BNGParser.COLON);
 				}
 				break;
 			}
-			this.state = 362;
+			this.state = 371;
 			this.param_name();
-			this.state = 364;
+			this.state = 373;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.BECOMES) {
 				{
-				this.state = 363;
+				this.state = 372;
 				this.match(BNGParser.BECOMES);
 				}
 			}
 
-			this.state = 367;
+			this.state = 376;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (((((_la - 39)) & ~0x1F) === 0 && ((1 << (_la - 39)) & ((1 << (BNGParser.PREFIX - 39)) | (1 << (BNGParser.SUFFIX - 39)) | (1 << (BNGParser.OVERWRITE - 39)) | (1 << (BNGParser.MAX_AGG - 39)) | (1 << (BNGParser.MAX_ITER - 39)) | (1 << (BNGParser.MAX_STOICH - 39)) | (1 << (BNGParser.PRINT_ITER - 39)) | (1 << (BNGParser.CHECK_ISO - 39)) | (1 << (BNGParser.SAFE - 39)) | (1 << (BNGParser.EXECUTE - 39)) | (1 << (BNGParser.METHOD - 39)) | (1 << (BNGParser.VERBOSE - 39)) | (1 << (BNGParser.NETFILE - 39)) | (1 << (BNGParser.CONTINUE - 39)) | (1 << (BNGParser.T_START - 39)) | (1 << (BNGParser.T_END - 39)) | (1 << (BNGParser.N_STEPS - 39)) | (1 << (BNGParser.N_OUTPUT_STEPS - 39)) | (1 << (BNGParser.MAX_SIM_STEPS - 39)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 39)) | (1 << (BNGParser.SAMPLE_TIMES - 39)) | (1 << (BNGParser.SAVE_PROGRESS - 39)) | (1 << (BNGParser.PRINT_CDAT - 39)) | (1 << (BNGParser.PRINT_FUNCTIONS - 39)))) !== 0) || ((((_la - 71)) & ~0x1F) === 0 && ((1 << (_la - 71)) & ((1 << (BNGParser.PRINT_NET - 71)) | (1 << (BNGParser.PRINT_END - 71)) | (1 << (BNGParser.STOP_IF - 71)) | (1 << (BNGParser.PRINT_ON_STOP - 71)) | (1 << (BNGParser.ATOL - 71)) | (1 << (BNGParser.RTOL - 71)) | (1 << (BNGParser.STEADY_STATE - 71)) | (1 << (BNGParser.SPARSE - 71)) | (1 << (BNGParser.PLA_CONFIG - 71)) | (1 << (BNGParser.PLA_OUTPUT - 71)) | (1 << (BNGParser.PARAM - 71)) | (1 << (BNGParser.COMPLEX - 71)) | (1 << (BNGParser.GET_FINAL_STATE - 71)) | (1 << (BNGParser.GML - 71)) | (1 << (BNGParser.NOCSLF - 71)) | (1 << (BNGParser.NOTF - 71)) | (1 << (BNGParser.BINARY_OUTPUT - 71)) | (1 << (BNGParser.UTL - 71)) | (1 << (BNGParser.EQUIL - 71)) | (1 << (BNGParser.PARAMETER - 71)) | (1 << (BNGParser.PAR_MIN - 71)) | (1 << (BNGParser.PAR_MAX - 71)) | (1 << (BNGParser.N_SCAN_PTS - 71)) | (1 << (BNGParser.LOG_SCALE - 71)) | (1 << (BNGParser.RESET_CONC - 71)))) !== 0) || ((((_la - 104)) & ~0x1F) === 0 && ((1 << (_la - 104)) & ((1 << (BNGParser.FILE - 104)) | (1 << (BNGParser.ATOMIZE - 104)) | (1 << (BNGParser.BLOCKS - 104)) | (1 << (BNGParser.SKIPACTIONS - 104)) | (1 << (BNGParser.TYPE - 104)) | (1 << (BNGParser.BACKGROUND - 104)) | (1 << (BNGParser.COLLAPSE - 104)) | (1 << (BNGParser.OPTS - 104)) | (1 << (BNGParser.FORMAT - 104)) | (1 << (BNGParser.INCLUDE_MODEL - 104)) | (1 << (BNGParser.INCLUDE_NETWORK - 104)) | (1 << (BNGParser.PRETTY_FORMATTING - 104)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 104)) | (1 << (BNGParser.TEXTREACTION - 104)) | (1 << (BNGParser.TEXTSPECIES - 104)) | (1 << (BNGParser.BDF - 104)) | (1 << (BNGParser.MAX_STEP - 104)) | (1 << (BNGParser.MAXORDER - 104)) | (1 << (BNGParser.STATS - 104)) | (1 << (BNGParser.MAX_NUM_STEPS - 104)))) !== 0) || ((((_la - 136)) & ~0x1F) === 0 && ((1 << (_la - 136)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 136)) | (1 << (BNGParser.MAX_CONV_FAILS - 136)) | (1 << (BNGParser.STIFF - 136)) | (1 << (BNGParser.SAT - 136)) | (1 << (BNGParser.MM - 136)) | (1 << (BNGParser.HILL - 136)) | (1 << (BNGParser.ARRHENIUS - 136)) | (1 << (BNGParser.MRATIO - 136)) | (1 << (BNGParser.TFUN - 136)) | (1 << (BNGParser.FUNCTIONPRODUCT - 136)) | (1 << (BNGParser.IF - 136)) | (1 << (BNGParser.EXP - 136)) | (1 << (BNGParser.LN - 136)) | (1 << (BNGParser.LOG10 - 136)) | (1 << (BNGParser.LOG2 - 136)) | (1 << (BNGParser.SQRT - 136)) | (1 << (BNGParser.RINT - 136)) | (1 << (BNGParser.ABS - 136)) | (1 << (BNGParser.SIN - 136)) | (1 << (BNGParser.COS - 136)) | (1 << (BNGParser.TAN - 136)))) !== 0) || ((((_la - 168)) & ~0x1F) === 0 && ((1 << (_la - 168)) & ((1 << (BNGParser.ASIN - 168)) | (1 << (BNGParser.ACOS - 168)) | (1 << (BNGParser.ATAN - 168)) | (1 << (BNGParser.SINH - 168)) | (1 << (BNGParser.COSH - 168)) | (1 << (BNGParser.TANH - 168)) | (1 << (BNGParser.ASINH - 168)) | (1 << (BNGParser.ACOSH - 168)) | (1 << (BNGParser.ATANH - 168)) | (1 << (BNGParser.PI - 168)) | (1 << (BNGParser.EULERIAN - 168)) | (1 << (BNGParser.MIN - 168)) | (1 << (BNGParser.MAX - 168)) | (1 << (BNGParser.SUM - 168)) | (1 << (BNGParser.AVG - 168)) | (1 << (BNGParser.TIME - 168)) | (1 << (BNGParser.FLOAT - 168)) | (1 << (BNGParser.INT - 168)) | (1 << (BNGParser.STRING - 168)) | (1 << (BNGParser.LPAREN - 168)))) !== 0) || ((((_la - 200)) & ~0x1F) === 0 && ((1 << (_la - 200)) & ((1 << (BNGParser.TILDE - 200)) | (1 << (BNGParser.MINUS - 200)) | (1 << (BNGParser.PLUS - 200)) | (1 << (BNGParser.EMARK - 200)))) !== 0)) {
+			if (((((_la - 41)) & ~0x1F) === 0 && ((1 << (_la - 41)) & ((1 << (BNGParser.PREFIX - 41)) | (1 << (BNGParser.SUFFIX - 41)) | (1 << (BNGParser.OVERWRITE - 41)) | (1 << (BNGParser.MAX_AGG - 41)) | (1 << (BNGParser.MAX_ITER - 41)) | (1 << (BNGParser.MAX_STOICH - 41)) | (1 << (BNGParser.PRINT_ITER - 41)) | (1 << (BNGParser.CHECK_ISO - 41)) | (1 << (BNGParser.SAFE - 41)) | (1 << (BNGParser.EXECUTE - 41)) | (1 << (BNGParser.METHOD - 41)) | (1 << (BNGParser.VERBOSE - 41)) | (1 << (BNGParser.NETFILE - 41)) | (1 << (BNGParser.CONTINUE - 41)) | (1 << (BNGParser.T_START - 41)) | (1 << (BNGParser.T_END - 41)) | (1 << (BNGParser.N_STEPS - 41)) | (1 << (BNGParser.N_OUTPUT_STEPS - 41)) | (1 << (BNGParser.MAX_SIM_STEPS - 41)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 41)) | (1 << (BNGParser.SAMPLE_TIMES - 41)) | (1 << (BNGParser.SAVE_PROGRESS - 41)) | (1 << (BNGParser.PRINT_CDAT - 41)) | (1 << (BNGParser.PRINT_FUNCTIONS - 41)))) !== 0) || ((((_la - 73)) & ~0x1F) === 0 && ((1 << (_la - 73)) & ((1 << (BNGParser.PRINT_NET - 73)) | (1 << (BNGParser.PRINT_END - 73)) | (1 << (BNGParser.STOP_IF - 73)) | (1 << (BNGParser.PRINT_ON_STOP - 73)) | (1 << (BNGParser.ATOL - 73)) | (1 << (BNGParser.RTOL - 73)) | (1 << (BNGParser.STEADY_STATE - 73)) | (1 << (BNGParser.SPARSE - 73)) | (1 << (BNGParser.PLA_CONFIG - 73)) | (1 << (BNGParser.PLA_OUTPUT - 73)) | (1 << (BNGParser.PARAM - 73)) | (1 << (BNGParser.COMPLEX - 73)) | (1 << (BNGParser.GET_FINAL_STATE - 73)) | (1 << (BNGParser.GML - 73)) | (1 << (BNGParser.NOCSLF - 73)) | (1 << (BNGParser.NOTF - 73)) | (1 << (BNGParser.BINARY_OUTPUT - 73)) | (1 << (BNGParser.UTL - 73)) | (1 << (BNGParser.EQUIL - 73)) | (1 << (BNGParser.PARAMETER - 73)) | (1 << (BNGParser.PAR_MIN - 73)) | (1 << (BNGParser.PAR_MAX - 73)) | (1 << (BNGParser.N_SCAN_PTS - 73)) | (1 << (BNGParser.LOG_SCALE - 73)) | (1 << (BNGParser.RESET_CONC - 73)))) !== 0) || ((((_la - 106)) & ~0x1F) === 0 && ((1 << (_la - 106)) & ((1 << (BNGParser.FILE - 106)) | (1 << (BNGParser.ATOMIZE - 106)) | (1 << (BNGParser.BLOCKS - 106)) | (1 << (BNGParser.SKIPACTIONS - 106)) | (1 << (BNGParser.TYPE - 106)) | (1 << (BNGParser.BACKGROUND - 106)) | (1 << (BNGParser.COLLAPSE - 106)) | (1 << (BNGParser.OPTS - 106)) | (1 << (BNGParser.FORMAT - 106)) | (1 << (BNGParser.INCLUDE_MODEL - 106)) | (1 << (BNGParser.INCLUDE_NETWORK - 106)) | (1 << (BNGParser.PRETTY_FORMATTING - 106)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 106)) | (1 << (BNGParser.TEXTREACTION - 106)) | (1 << (BNGParser.TEXTSPECIES - 106)) | (1 << (BNGParser.BDF - 106)) | (1 << (BNGParser.MAX_STEP - 106)) | (1 << (BNGParser.MAXORDER - 106)) | (1 << (BNGParser.STATS - 106)) | (1 << (BNGParser.MAX_NUM_STEPS - 106)))) !== 0) || ((((_la - 138)) & ~0x1F) === 0 && ((1 << (_la - 138)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 138)) | (1 << (BNGParser.MAX_CONV_FAILS - 138)) | (1 << (BNGParser.STIFF - 138)) | (1 << (BNGParser.SAT - 138)) | (1 << (BNGParser.MM - 138)) | (1 << (BNGParser.HILL - 138)) | (1 << (BNGParser.ARRHENIUS - 138)) | (1 << (BNGParser.MRATIO - 138)) | (1 << (BNGParser.TFUN - 138)) | (1 << (BNGParser.FUNCTIONPRODUCT - 138)) | (1 << (BNGParser.IF - 138)) | (1 << (BNGParser.EXP - 138)) | (1 << (BNGParser.LN - 138)) | (1 << (BNGParser.LOG10 - 138)) | (1 << (BNGParser.LOG2 - 138)) | (1 << (BNGParser.SQRT - 138)) | (1 << (BNGParser.RINT - 138)) | (1 << (BNGParser.ABS - 138)) | (1 << (BNGParser.SIN - 138)) | (1 << (BNGParser.COS - 138)) | (1 << (BNGParser.TAN - 138)))) !== 0) || ((((_la - 170)) & ~0x1F) === 0 && ((1 << (_la - 170)) & ((1 << (BNGParser.ASIN - 170)) | (1 << (BNGParser.ACOS - 170)) | (1 << (BNGParser.ATAN - 170)) | (1 << (BNGParser.SINH - 170)) | (1 << (BNGParser.COSH - 170)) | (1 << (BNGParser.TANH - 170)) | (1 << (BNGParser.ASINH - 170)) | (1 << (BNGParser.ACOSH - 170)) | (1 << (BNGParser.ATANH - 170)) | (1 << (BNGParser.PI - 170)) | (1 << (BNGParser.EULERIAN - 170)) | (1 << (BNGParser.MIN - 170)) | (1 << (BNGParser.MAX - 170)) | (1 << (BNGParser.SUM - 170)) | (1 << (BNGParser.AVG - 170)) | (1 << (BNGParser.TIME - 170)) | (1 << (BNGParser.FLOAT - 170)) | (1 << (BNGParser.INT - 170)) | (1 << (BNGParser.STRING - 170)) | (1 << (BNGParser.LPAREN - 170)))) !== 0) || ((((_la - 202)) & ~0x1F) === 0 && ((1 << (_la - 202)) & ((1 << (BNGParser.TILDE - 202)) | (1 << (BNGParser.MINUS - 202)) | (1 << (BNGParser.PLUS - 202)) | (1 << (BNGParser.EMARK - 202)))) !== 0)) {
 				{
-				this.state = 366;
+				this.state = 375;
 				this.expression();
 				}
 			}
@@ -1348,13 +1363,13 @@ export class BNGParser extends Parser {
 		let _localctx: Param_nameContext = new Param_nameContext(this._ctx, this.state);
 		this.enterRule(_localctx, 18, BNGParser.RULE_param_name);
 		try {
-			this.state = 371;
+			this.state = 380;
 			this._errHandler.sync(this);
 			switch ( this.interpreter.adaptivePredict(this._input, 32, this._ctx) ) {
 			case 1:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 369;
+				this.state = 378;
 				this.match(BNGParser.STRING);
 				}
 				break;
@@ -1362,7 +1377,7 @@ export class BNGParser extends Parser {
 			case 2:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 370;
+				this.state = 379;
 				this.arg_name();
 				}
 				break;
@@ -1388,77 +1403,77 @@ export class BNGParser extends Parser {
 		this.enterRule(_localctx, 20, BNGParser.RULE_molecule_types_block);
 		let _la: number;
 		try {
-			this.state = 453;
+			this.state = 490;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 45, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 49, this._ctx) ) {
 			case 1:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 373;
+				this.state = 382;
 				this.match(BNGParser.BEGIN);
-				this.state = 374;
+				this.state = 383;
 				this.match(BNGParser.MOLECULE);
-				this.state = 375;
+				this.state = 384;
 				this.match(BNGParser.TYPES);
-				this.state = 377;
+				this.state = 386;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 376;
+					this.state = 385;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 379;
+					this.state = 388;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				} while (_la === BNGParser.LB);
-				this.state = 389;
+				this.state = 398;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la === BNGParser.STRING) {
 					{
 					{
-					this.state = 381;
+					this.state = 390;
 					this.molecule_type_def();
-					this.state = 383;
+					this.state = 392;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 					do {
 						{
 						{
-						this.state = 382;
+						this.state = 391;
 						this.match(BNGParser.LB);
 						}
 						}
-						this.state = 385;
+						this.state = 394;
 						this._errHandler.sync(this);
 						_la = this._input.LA(1);
 					} while (_la === BNGParser.LB);
 					}
 					}
-					this.state = 391;
+					this.state = 400;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 392;
+				this.state = 401;
 				this.match(BNGParser.END);
-				this.state = 393;
+				this.state = 402;
 				this.match(BNGParser.MOLECULE);
-				this.state = 394;
+				this.state = 403;
 				this.match(BNGParser.TYPES);
-				this.state = 398;
+				this.state = 407;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la === BNGParser.LB) {
 					{
 					{
-					this.state = 395;
+					this.state = 404;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 400;
+					this.state = 409;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
@@ -1468,67 +1483,67 @@ export class BNGParser extends Parser {
 			case 2:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 401;
+				this.state = 410;
 				this.match(BNGParser.BEGIN);
-				this.state = 402;
+				this.state = 411;
 				this.match(BNGParser.MOLECULES);
-				this.state = 404;
+				this.state = 413;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 403;
+					this.state = 412;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 406;
+					this.state = 415;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				} while (_la === BNGParser.LB);
-				this.state = 416;
+				this.state = 425;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la === BNGParser.STRING) {
 					{
 					{
-					this.state = 408;
+					this.state = 417;
 					this.molecule_type_def();
-					this.state = 410;
+					this.state = 419;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 					do {
 						{
 						{
-						this.state = 409;
+						this.state = 418;
 						this.match(BNGParser.LB);
 						}
 						}
-						this.state = 412;
+						this.state = 421;
 						this._errHandler.sync(this);
 						_la = this._input.LA(1);
 					} while (_la === BNGParser.LB);
 					}
 					}
-					this.state = 418;
+					this.state = 427;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 419;
+				this.state = 428;
 				this.match(BNGParser.END);
-				this.state = 420;
+				this.state = 429;
 				this.match(BNGParser.MOLECULES);
-				this.state = 424;
+				this.state = 433;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la === BNGParser.LB) {
 					{
 					{
-					this.state = 421;
+					this.state = 430;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 426;
+					this.state = 435;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
@@ -1538,67 +1553,141 @@ export class BNGParser extends Parser {
 			case 3:
 				this.enterOuterAlt(_localctx, 3);
 				{
-				this.state = 427;
+				this.state = 436;
 				this.match(BNGParser.BEGIN);
-				this.state = 428;
+				this.state = 437;
 				this.match(BNGParser.MOLECULE_TYPES);
-				this.state = 430;
+				this.state = 439;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 429;
+					this.state = 438;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 432;
+					this.state = 441;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				} while (_la === BNGParser.LB);
-				this.state = 442;
+				this.state = 451;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la === BNGParser.STRING) {
 					{
 					{
-					this.state = 434;
+					this.state = 443;
 					this.molecule_type_def();
-					this.state = 436;
+					this.state = 445;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 					do {
 						{
 						{
-						this.state = 435;
+						this.state = 444;
 						this.match(BNGParser.LB);
 						}
 						}
-						this.state = 438;
+						this.state = 447;
 						this._errHandler.sync(this);
 						_la = this._input.LA(1);
 					} while (_la === BNGParser.LB);
 					}
 					}
-					this.state = 444;
+					this.state = 453;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 445;
+				this.state = 454;
 				this.match(BNGParser.END);
-				this.state = 446;
+				this.state = 455;
 				this.match(BNGParser.MOLECULE_TYPES);
-				this.state = 450;
+				this.state = 459;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la === BNGParser.LB) {
 					{
 					{
-					this.state = 447;
+					this.state = 456;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 452;
+					this.state = 461;
+					this._errHandler.sync(this);
+					_la = this._input.LA(1);
+				}
+				}
+				break;
+
+			case 4:
+				this.enterOuterAlt(_localctx, 4);
+				{
+				this.state = 462;
+				this.match(BNGParser.BEGIN);
+				this.state = 463;
+				this.match(BNGParser.MOLECULAR);
+				this.state = 464;
+				this.match(BNGParser.TYPES);
+				this.state = 466;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				do {
+					{
+					{
+					this.state = 465;
+					this.match(BNGParser.LB);
+					}
+					}
+					this.state = 468;
+					this._errHandler.sync(this);
+					_la = this._input.LA(1);
+				} while (_la === BNGParser.LB);
+				this.state = 478;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				while (_la === BNGParser.STRING) {
+					{
+					{
+					this.state = 470;
+					this.molecule_type_def();
+					this.state = 472;
+					this._errHandler.sync(this);
+					_la = this._input.LA(1);
+					do {
+						{
+						{
+						this.state = 471;
+						this.match(BNGParser.LB);
+						}
+						}
+						this.state = 474;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+					} while (_la === BNGParser.LB);
+					}
+					}
+					this.state = 480;
+					this._errHandler.sync(this);
+					_la = this._input.LA(1);
+				}
+				this.state = 481;
+				this.match(BNGParser.END);
+				this.state = 482;
+				this.match(BNGParser.MOLECULAR);
+				this.state = 483;
+				this.match(BNGParser.TYPES);
+				this.state = 487;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				while (_la === BNGParser.LB) {
+					{
+					{
+					this.state = 484;
+					this.match(BNGParser.LB);
+					}
+					}
+					this.state = 489;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
@@ -1628,26 +1717,26 @@ export class BNGParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 457;
+			this.state = 494;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 46, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 50, this._ctx) ) {
 			case 1:
 				{
-				this.state = 455;
+				this.state = 492;
 				this.match(BNGParser.STRING);
-				this.state = 456;
+				this.state = 493;
 				this.match(BNGParser.COLON);
 				}
 				break;
 			}
-			this.state = 459;
+			this.state = 496;
 			this.molecule_def();
-			this.state = 461;
+			this.state = 498;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.POPULATION) {
 				{
-				this.state = 460;
+				this.state = 497;
 				this.match(BNGParser.POPULATION);
 				}
 			}
@@ -1676,26 +1765,26 @@ export class BNGParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 463;
+			this.state = 500;
 			this.match(BNGParser.STRING);
-			this.state = 469;
+			this.state = 506;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.LPAREN) {
 				{
-				this.state = 464;
+				this.state = 501;
 				this.match(BNGParser.LPAREN);
-				this.state = 466;
+				this.state = 503;
 				this._errHandler.sync(this);
-				switch ( this.interpreter.adaptivePredict(this._input, 48, this._ctx) ) {
+				switch ( this.interpreter.adaptivePredict(this._input, 52, this._ctx) ) {
 				case 1:
 					{
-					this.state = 465;
+					this.state = 502;
 					this.component_def_list();
 					}
 					break;
 				}
-				this.state = 468;
+				this.state = 505;
 				this.match(BNGParser.RPAREN);
 				}
 			}
@@ -1724,37 +1813,37 @@ export class BNGParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 472;
+			this.state = 509;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (_la === BNGParser.STRING) {
+			if (((((_la - 151)) & ~0x1F) === 0 && ((1 << (_la - 151)) & ((1 << (BNGParser.SAT - 151)) | (1 << (BNGParser.MM - 151)) | (1 << (BNGParser.HILL - 151)) | (1 << (BNGParser.ARRHENIUS - 151)) | (1 << (BNGParser.MRATIO - 151)) | (1 << (BNGParser.TFUN - 151)) | (1 << (BNGParser.FUNCTIONPRODUCT - 151)) | (1 << (BNGParser.IF - 151)) | (1 << (BNGParser.EXP - 151)) | (1 << (BNGParser.LN - 151)) | (1 << (BNGParser.LOG10 - 151)) | (1 << (BNGParser.LOG2 - 151)) | (1 << (BNGParser.SQRT - 151)) | (1 << (BNGParser.ABS - 151)) | (1 << (BNGParser.SIN - 151)) | (1 << (BNGParser.COS - 151)) | (1 << (BNGParser.TAN - 151)) | (1 << (BNGParser.ASIN - 151)) | (1 << (BNGParser.ACOS - 151)) | (1 << (BNGParser.ATAN - 151)) | (1 << (BNGParser.SINH - 151)) | (1 << (BNGParser.COSH - 151)) | (1 << (BNGParser.TANH - 151)) | (1 << (BNGParser.ASINH - 151)) | (1 << (BNGParser.ACOSH - 151)) | (1 << (BNGParser.ATANH - 151)) | (1 << (BNGParser.MIN - 151)) | (1 << (BNGParser.MAX - 151)))) !== 0) || ((((_la - 183)) & ~0x1F) === 0 && ((1 << (_la - 183)) & ((1 << (BNGParser.SUM - 183)) | (1 << (BNGParser.AVG - 183)) | (1 << (BNGParser.TIME - 183)) | (1 << (BNGParser.INT - 183)) | (1 << (BNGParser.STRING - 183)))) !== 0)) {
 				{
-				this.state = 471;
+				this.state = 508;
 				this.component_def();
 				}
 			}
 
-			this.state = 480;
+			this.state = 517;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.COMMA) {
 				{
 				{
-				this.state = 474;
+				this.state = 511;
 				this.match(BNGParser.COMMA);
-				this.state = 476;
+				this.state = 513;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if (_la === BNGParser.STRING) {
+				if (((((_la - 151)) & ~0x1F) === 0 && ((1 << (_la - 151)) & ((1 << (BNGParser.SAT - 151)) | (1 << (BNGParser.MM - 151)) | (1 << (BNGParser.HILL - 151)) | (1 << (BNGParser.ARRHENIUS - 151)) | (1 << (BNGParser.MRATIO - 151)) | (1 << (BNGParser.TFUN - 151)) | (1 << (BNGParser.FUNCTIONPRODUCT - 151)) | (1 << (BNGParser.IF - 151)) | (1 << (BNGParser.EXP - 151)) | (1 << (BNGParser.LN - 151)) | (1 << (BNGParser.LOG10 - 151)) | (1 << (BNGParser.LOG2 - 151)) | (1 << (BNGParser.SQRT - 151)) | (1 << (BNGParser.ABS - 151)) | (1 << (BNGParser.SIN - 151)) | (1 << (BNGParser.COS - 151)) | (1 << (BNGParser.TAN - 151)) | (1 << (BNGParser.ASIN - 151)) | (1 << (BNGParser.ACOS - 151)) | (1 << (BNGParser.ATAN - 151)) | (1 << (BNGParser.SINH - 151)) | (1 << (BNGParser.COSH - 151)) | (1 << (BNGParser.TANH - 151)) | (1 << (BNGParser.ASINH - 151)) | (1 << (BNGParser.ACOSH - 151)) | (1 << (BNGParser.ATANH - 151)) | (1 << (BNGParser.MIN - 151)) | (1 << (BNGParser.MAX - 151)))) !== 0) || ((((_la - 183)) & ~0x1F) === 0 && ((1 << (_la - 183)) & ((1 << (BNGParser.SUM - 183)) | (1 << (BNGParser.AVG - 183)) | (1 << (BNGParser.TIME - 183)) | (1 << (BNGParser.INT - 183)) | (1 << (BNGParser.STRING - 183)))) !== 0)) {
 					{
-					this.state = 475;
+					this.state = 512;
 					this.component_def();
 					}
 				}
 
 				}
 				}
-				this.state = 482;
+				this.state = 519;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -1782,16 +1871,68 @@ export class BNGParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 483;
-			this.match(BNGParser.STRING);
-			this.state = 486;
+			this.state = 523;
+			this._errHandler.sync(this);
+			switch (this._input.LA(1)) {
+			case BNGParser.STRING:
+				{
+				this.state = 520;
+				this.match(BNGParser.STRING);
+				}
+				break;
+			case BNGParser.INT:
+				{
+				this.state = 521;
+				this.match(BNGParser.INT);
+				}
+				break;
+			case BNGParser.SAT:
+			case BNGParser.MM:
+			case BNGParser.HILL:
+			case BNGParser.ARRHENIUS:
+			case BNGParser.MRATIO:
+			case BNGParser.TFUN:
+			case BNGParser.FUNCTIONPRODUCT:
+			case BNGParser.IF:
+			case BNGParser.EXP:
+			case BNGParser.LN:
+			case BNGParser.LOG10:
+			case BNGParser.LOG2:
+			case BNGParser.SQRT:
+			case BNGParser.ABS:
+			case BNGParser.SIN:
+			case BNGParser.COS:
+			case BNGParser.TAN:
+			case BNGParser.ASIN:
+			case BNGParser.ACOS:
+			case BNGParser.ATAN:
+			case BNGParser.SINH:
+			case BNGParser.COSH:
+			case BNGParser.TANH:
+			case BNGParser.ASINH:
+			case BNGParser.ACOSH:
+			case BNGParser.ATANH:
+			case BNGParser.MIN:
+			case BNGParser.MAX:
+			case BNGParser.SUM:
+			case BNGParser.AVG:
+			case BNGParser.TIME:
+				{
+				this.state = 522;
+				this.keyword_as_component_name();
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
+			}
+			this.state = 527;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.TILDE) {
 				{
-				this.state = 484;
+				this.state = 525;
 				this.match(BNGParser.TILDE);
-				this.state = 485;
+				this.state = 526;
 				this.state_list();
 				}
 			}
@@ -1813,28 +1954,64 @@ export class BNGParser extends Parser {
 		return _localctx;
 	}
 	// @RuleVersion(0)
-	public state_list(): State_listContext {
-		let _localctx: State_listContext = new State_listContext(this._ctx, this.state);
-		this.enterRule(_localctx, 30, BNGParser.RULE_state_list);
+	public keyword_as_component_name(): Keyword_as_component_nameContext {
+		let _localctx: Keyword_as_component_nameContext = new Keyword_as_component_nameContext(this._ctx, this.state);
+		this.enterRule(_localctx, 30, BNGParser.RULE_keyword_as_component_name);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 488;
+			this.state = 529;
+			_la = this._input.LA(1);
+			if (!(((((_la - 151)) & ~0x1F) === 0 && ((1 << (_la - 151)) & ((1 << (BNGParser.SAT - 151)) | (1 << (BNGParser.MM - 151)) | (1 << (BNGParser.HILL - 151)) | (1 << (BNGParser.ARRHENIUS - 151)) | (1 << (BNGParser.MRATIO - 151)) | (1 << (BNGParser.TFUN - 151)) | (1 << (BNGParser.FUNCTIONPRODUCT - 151)) | (1 << (BNGParser.IF - 151)) | (1 << (BNGParser.EXP - 151)) | (1 << (BNGParser.LN - 151)) | (1 << (BNGParser.LOG10 - 151)) | (1 << (BNGParser.LOG2 - 151)) | (1 << (BNGParser.SQRT - 151)) | (1 << (BNGParser.ABS - 151)) | (1 << (BNGParser.SIN - 151)) | (1 << (BNGParser.COS - 151)) | (1 << (BNGParser.TAN - 151)) | (1 << (BNGParser.ASIN - 151)) | (1 << (BNGParser.ACOS - 151)) | (1 << (BNGParser.ATAN - 151)) | (1 << (BNGParser.SINH - 151)) | (1 << (BNGParser.COSH - 151)) | (1 << (BNGParser.TANH - 151)) | (1 << (BNGParser.ASINH - 151)) | (1 << (BNGParser.ACOSH - 151)) | (1 << (BNGParser.ATANH - 151)) | (1 << (BNGParser.MIN - 151)) | (1 << (BNGParser.MAX - 151)))) !== 0) || ((((_la - 183)) & ~0x1F) === 0 && ((1 << (_la - 183)) & ((1 << (BNGParser.SUM - 183)) | (1 << (BNGParser.AVG - 183)) | (1 << (BNGParser.TIME - 183)))) !== 0))) {
+			this._errHandler.recoverInline(this);
+			} else {
+				if (this._input.LA(1) === Token.EOF) {
+					this.matchedEOF = true;
+				}
+
+				this._errHandler.reportMatch(this);
+				this.consume();
+			}
+			}
+		}
+		catch (re) {
+			if (re instanceof RecognitionException) {
+				_localctx.exception = re;
+				this._errHandler.reportError(this, re);
+				this._errHandler.recover(this, re);
+			} else {
+				throw re;
+			}
+		}
+		finally {
+			this.exitRule();
+		}
+		return _localctx;
+	}
+	// @RuleVersion(0)
+	public state_list(): State_listContext {
+		let _localctx: State_listContext = new State_listContext(this._ctx, this.state);
+		this.enterRule(_localctx, 32, BNGParser.RULE_state_list);
+		let _la: number;
+		try {
+			this.enterOuterAlt(_localctx, 1);
+			{
+			this.state = 531;
 			this.state_name();
-			this.state = 493;
+			this.state = 536;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.TILDE) {
 				{
 				{
-				this.state = 489;
+				this.state = 532;
 				this.match(BNGParser.TILDE);
-				this.state = 490;
+				this.state = 533;
 				this.state_name();
 				}
 				}
-				this.state = 495;
+				this.state = 538;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -1857,30 +2034,30 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public state_name(): State_nameContext {
 		let _localctx: State_nameContext = new State_nameContext(this._ctx, this.state);
-		this.enterRule(_localctx, 32, BNGParser.RULE_state_name);
+		this.enterRule(_localctx, 34, BNGParser.RULE_state_name);
 		let _la: number;
 		try {
-			this.state = 501;
+			this.state = 544;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case BNGParser.STRING:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 496;
+				this.state = 539;
 				this.match(BNGParser.STRING);
 				}
 				break;
 			case BNGParser.INT:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 497;
+				this.state = 540;
 				this.match(BNGParser.INT);
-				this.state = 499;
+				this.state = 542;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				if (_la === BNGParser.STRING) {
 					{
-					this.state = 498;
+					this.state = 541;
 					this.match(BNGParser.STRING);
 					}
 				}
@@ -1908,108 +2085,108 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public seed_species_block(): Seed_species_blockContext {
 		let _localctx: Seed_species_blockContext = new Seed_species_blockContext(this._ctx, this.state);
-		this.enterRule(_localctx, 34, BNGParser.RULE_seed_species_block);
+		this.enterRule(_localctx, 36, BNGParser.RULE_seed_species_block);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 503;
+			this.state = 546;
 			this.match(BNGParser.BEGIN);
-			this.state = 507;
+			this.state = 550;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case BNGParser.SEED:
 				{
-				this.state = 504;
+				this.state = 547;
 				this.match(BNGParser.SEED);
-				this.state = 505;
+				this.state = 548;
 				this.match(BNGParser.SPECIES);
 				}
 				break;
 			case BNGParser.SPECIES:
 				{
-				this.state = 506;
+				this.state = 549;
 				this.match(BNGParser.SPECIES);
 				}
 				break;
 			default:
 				throw new NoViableAltException(this);
 			}
-			this.state = 510;
+			this.state = 553;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			do {
 				{
 				{
-				this.state = 509;
+				this.state = 552;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 512;
+				this.state = 555;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			} while (_la === BNGParser.LB);
-			this.state = 522;
+			this.state = 565;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (((((_la - 185)) & ~0x1F) === 0 && ((1 << (_la - 185)) & ((1 << (BNGParser.INT - 185)) | (1 << (BNGParser.STRING - 185)) | (1 << (BNGParser.DOLLAR - 185)) | (1 << (BNGParser.AT - 185)))) !== 0)) {
+			while (((((_la - 187)) & ~0x1F) === 0 && ((1 << (_la - 187)) & ((1 << (BNGParser.INT - 187)) | (1 << (BNGParser.STRING - 187)) | (1 << (BNGParser.DOLLAR - 187)) | (1 << (BNGParser.AT - 187)))) !== 0)) {
 				{
 				{
-				this.state = 514;
+				this.state = 557;
 				this.seed_species_def();
-				this.state = 516;
+				this.state = 559;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 515;
+					this.state = 558;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 518;
+					this.state = 561;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				} while (_la === BNGParser.LB);
 				}
 				}
-				this.state = 524;
+				this.state = 567;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 525;
+			this.state = 568;
 			this.match(BNGParser.END);
-			this.state = 529;
+			this.state = 572;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case BNGParser.SEED:
 				{
-				this.state = 526;
+				this.state = 569;
 				this.match(BNGParser.SEED);
-				this.state = 527;
+				this.state = 570;
 				this.match(BNGParser.SPECIES);
 				}
 				break;
 			case BNGParser.SPECIES:
 				{
-				this.state = 528;
+				this.state = 571;
 				this.match(BNGParser.SPECIES);
 				}
 				break;
 			default:
 				throw new NoViableAltException(this);
 			}
-			this.state = 534;
+			this.state = 577;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 531;
+				this.state = 574;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 536;
+				this.state = 579;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -2032,65 +2209,65 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public seed_species_def(): Seed_species_defContext {
 		let _localctx: Seed_species_defContext = new Seed_species_defContext(this._ctx, this.state);
-		this.enterRule(_localctx, 36, BNGParser.RULE_seed_species_def);
+		this.enterRule(_localctx, 38, BNGParser.RULE_seed_species_def);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 538;
+			this.state = 581;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.INT) {
 				{
-				this.state = 537;
+				this.state = 580;
 				this.match(BNGParser.INT);
 				}
 			}
 
-			this.state = 542;
+			this.state = 585;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 64, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 69, this._ctx) ) {
 			case 1:
 				{
-				this.state = 540;
+				this.state = 583;
 				this.match(BNGParser.STRING);
-				this.state = 541;
+				this.state = 584;
 				this.match(BNGParser.COLON);
 				}
 				break;
 			}
-			this.state = 545;
+			this.state = 588;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.DOLLAR) {
 				{
-				this.state = 544;
+				this.state = 587;
 				this.match(BNGParser.DOLLAR);
 				}
 			}
 
-			this.state = 550;
+			this.state = 593;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 66, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 71, this._ctx) ) {
 			case 1:
 				{
-				this.state = 547;
+				this.state = 590;
 				this.match(BNGParser.AT);
-				this.state = 548;
+				this.state = 591;
 				this.match(BNGParser.STRING);
-				this.state = 549;
+				this.state = 592;
 				this.match(BNGParser.COLON);
 				}
 				break;
 			}
-			this.state = 552;
+			this.state = 595;
 			this.species_def();
-			this.state = 554;
+			this.state = 597;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (((((_la - 39)) & ~0x1F) === 0 && ((1 << (_la - 39)) & ((1 << (BNGParser.PREFIX - 39)) | (1 << (BNGParser.SUFFIX - 39)) | (1 << (BNGParser.OVERWRITE - 39)) | (1 << (BNGParser.MAX_AGG - 39)) | (1 << (BNGParser.MAX_ITER - 39)) | (1 << (BNGParser.MAX_STOICH - 39)) | (1 << (BNGParser.PRINT_ITER - 39)) | (1 << (BNGParser.CHECK_ISO - 39)) | (1 << (BNGParser.SAFE - 39)) | (1 << (BNGParser.EXECUTE - 39)) | (1 << (BNGParser.METHOD - 39)) | (1 << (BNGParser.VERBOSE - 39)) | (1 << (BNGParser.NETFILE - 39)) | (1 << (BNGParser.CONTINUE - 39)) | (1 << (BNGParser.T_START - 39)) | (1 << (BNGParser.T_END - 39)) | (1 << (BNGParser.N_STEPS - 39)) | (1 << (BNGParser.N_OUTPUT_STEPS - 39)) | (1 << (BNGParser.MAX_SIM_STEPS - 39)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 39)) | (1 << (BNGParser.SAMPLE_TIMES - 39)) | (1 << (BNGParser.SAVE_PROGRESS - 39)) | (1 << (BNGParser.PRINT_CDAT - 39)) | (1 << (BNGParser.PRINT_FUNCTIONS - 39)))) !== 0) || ((((_la - 71)) & ~0x1F) === 0 && ((1 << (_la - 71)) & ((1 << (BNGParser.PRINT_NET - 71)) | (1 << (BNGParser.PRINT_END - 71)) | (1 << (BNGParser.STOP_IF - 71)) | (1 << (BNGParser.PRINT_ON_STOP - 71)) | (1 << (BNGParser.ATOL - 71)) | (1 << (BNGParser.RTOL - 71)) | (1 << (BNGParser.STEADY_STATE - 71)) | (1 << (BNGParser.SPARSE - 71)) | (1 << (BNGParser.PLA_CONFIG - 71)) | (1 << (BNGParser.PLA_OUTPUT - 71)) | (1 << (BNGParser.PARAM - 71)) | (1 << (BNGParser.COMPLEX - 71)) | (1 << (BNGParser.GET_FINAL_STATE - 71)) | (1 << (BNGParser.GML - 71)) | (1 << (BNGParser.NOCSLF - 71)) | (1 << (BNGParser.NOTF - 71)) | (1 << (BNGParser.BINARY_OUTPUT - 71)) | (1 << (BNGParser.UTL - 71)) | (1 << (BNGParser.EQUIL - 71)) | (1 << (BNGParser.PARAMETER - 71)) | (1 << (BNGParser.PAR_MIN - 71)) | (1 << (BNGParser.PAR_MAX - 71)) | (1 << (BNGParser.N_SCAN_PTS - 71)) | (1 << (BNGParser.LOG_SCALE - 71)) | (1 << (BNGParser.RESET_CONC - 71)))) !== 0) || ((((_la - 104)) & ~0x1F) === 0 && ((1 << (_la - 104)) & ((1 << (BNGParser.FILE - 104)) | (1 << (BNGParser.ATOMIZE - 104)) | (1 << (BNGParser.BLOCKS - 104)) | (1 << (BNGParser.SKIPACTIONS - 104)) | (1 << (BNGParser.TYPE - 104)) | (1 << (BNGParser.BACKGROUND - 104)) | (1 << (BNGParser.COLLAPSE - 104)) | (1 << (BNGParser.OPTS - 104)) | (1 << (BNGParser.FORMAT - 104)) | (1 << (BNGParser.INCLUDE_MODEL - 104)) | (1 << (BNGParser.INCLUDE_NETWORK - 104)) | (1 << (BNGParser.PRETTY_FORMATTING - 104)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 104)) | (1 << (BNGParser.TEXTREACTION - 104)) | (1 << (BNGParser.TEXTSPECIES - 104)) | (1 << (BNGParser.BDF - 104)) | (1 << (BNGParser.MAX_STEP - 104)) | (1 << (BNGParser.MAXORDER - 104)) | (1 << (BNGParser.STATS - 104)) | (1 << (BNGParser.MAX_NUM_STEPS - 104)))) !== 0) || ((((_la - 136)) & ~0x1F) === 0 && ((1 << (_la - 136)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 136)) | (1 << (BNGParser.MAX_CONV_FAILS - 136)) | (1 << (BNGParser.STIFF - 136)) | (1 << (BNGParser.SAT - 136)) | (1 << (BNGParser.MM - 136)) | (1 << (BNGParser.HILL - 136)) | (1 << (BNGParser.ARRHENIUS - 136)) | (1 << (BNGParser.MRATIO - 136)) | (1 << (BNGParser.TFUN - 136)) | (1 << (BNGParser.FUNCTIONPRODUCT - 136)) | (1 << (BNGParser.IF - 136)) | (1 << (BNGParser.EXP - 136)) | (1 << (BNGParser.LN - 136)) | (1 << (BNGParser.LOG10 - 136)) | (1 << (BNGParser.LOG2 - 136)) | (1 << (BNGParser.SQRT - 136)) | (1 << (BNGParser.RINT - 136)) | (1 << (BNGParser.ABS - 136)) | (1 << (BNGParser.SIN - 136)) | (1 << (BNGParser.COS - 136)) | (1 << (BNGParser.TAN - 136)))) !== 0) || ((((_la - 168)) & ~0x1F) === 0 && ((1 << (_la - 168)) & ((1 << (BNGParser.ASIN - 168)) | (1 << (BNGParser.ACOS - 168)) | (1 << (BNGParser.ATAN - 168)) | (1 << (BNGParser.SINH - 168)) | (1 << (BNGParser.COSH - 168)) | (1 << (BNGParser.TANH - 168)) | (1 << (BNGParser.ASINH - 168)) | (1 << (BNGParser.ACOSH - 168)) | (1 << (BNGParser.ATANH - 168)) | (1 << (BNGParser.PI - 168)) | (1 << (BNGParser.EULERIAN - 168)) | (1 << (BNGParser.MIN - 168)) | (1 << (BNGParser.MAX - 168)) | (1 << (BNGParser.SUM - 168)) | (1 << (BNGParser.AVG - 168)) | (1 << (BNGParser.TIME - 168)) | (1 << (BNGParser.FLOAT - 168)) | (1 << (BNGParser.INT - 168)) | (1 << (BNGParser.STRING - 168)) | (1 << (BNGParser.LPAREN - 168)))) !== 0) || ((((_la - 200)) & ~0x1F) === 0 && ((1 << (_la - 200)) & ((1 << (BNGParser.TILDE - 200)) | (1 << (BNGParser.MINUS - 200)) | (1 << (BNGParser.PLUS - 200)) | (1 << (BNGParser.EMARK - 200)))) !== 0)) {
+			if (((((_la - 41)) & ~0x1F) === 0 && ((1 << (_la - 41)) & ((1 << (BNGParser.PREFIX - 41)) | (1 << (BNGParser.SUFFIX - 41)) | (1 << (BNGParser.OVERWRITE - 41)) | (1 << (BNGParser.MAX_AGG - 41)) | (1 << (BNGParser.MAX_ITER - 41)) | (1 << (BNGParser.MAX_STOICH - 41)) | (1 << (BNGParser.PRINT_ITER - 41)) | (1 << (BNGParser.CHECK_ISO - 41)) | (1 << (BNGParser.SAFE - 41)) | (1 << (BNGParser.EXECUTE - 41)) | (1 << (BNGParser.METHOD - 41)) | (1 << (BNGParser.VERBOSE - 41)) | (1 << (BNGParser.NETFILE - 41)) | (1 << (BNGParser.CONTINUE - 41)) | (1 << (BNGParser.T_START - 41)) | (1 << (BNGParser.T_END - 41)) | (1 << (BNGParser.N_STEPS - 41)) | (1 << (BNGParser.N_OUTPUT_STEPS - 41)) | (1 << (BNGParser.MAX_SIM_STEPS - 41)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 41)) | (1 << (BNGParser.SAMPLE_TIMES - 41)) | (1 << (BNGParser.SAVE_PROGRESS - 41)) | (1 << (BNGParser.PRINT_CDAT - 41)) | (1 << (BNGParser.PRINT_FUNCTIONS - 41)))) !== 0) || ((((_la - 73)) & ~0x1F) === 0 && ((1 << (_la - 73)) & ((1 << (BNGParser.PRINT_NET - 73)) | (1 << (BNGParser.PRINT_END - 73)) | (1 << (BNGParser.STOP_IF - 73)) | (1 << (BNGParser.PRINT_ON_STOP - 73)) | (1 << (BNGParser.ATOL - 73)) | (1 << (BNGParser.RTOL - 73)) | (1 << (BNGParser.STEADY_STATE - 73)) | (1 << (BNGParser.SPARSE - 73)) | (1 << (BNGParser.PLA_CONFIG - 73)) | (1 << (BNGParser.PLA_OUTPUT - 73)) | (1 << (BNGParser.PARAM - 73)) | (1 << (BNGParser.COMPLEX - 73)) | (1 << (BNGParser.GET_FINAL_STATE - 73)) | (1 << (BNGParser.GML - 73)) | (1 << (BNGParser.NOCSLF - 73)) | (1 << (BNGParser.NOTF - 73)) | (1 << (BNGParser.BINARY_OUTPUT - 73)) | (1 << (BNGParser.UTL - 73)) | (1 << (BNGParser.EQUIL - 73)) | (1 << (BNGParser.PARAMETER - 73)) | (1 << (BNGParser.PAR_MIN - 73)) | (1 << (BNGParser.PAR_MAX - 73)) | (1 << (BNGParser.N_SCAN_PTS - 73)) | (1 << (BNGParser.LOG_SCALE - 73)) | (1 << (BNGParser.RESET_CONC - 73)))) !== 0) || ((((_la - 106)) & ~0x1F) === 0 && ((1 << (_la - 106)) & ((1 << (BNGParser.FILE - 106)) | (1 << (BNGParser.ATOMIZE - 106)) | (1 << (BNGParser.BLOCKS - 106)) | (1 << (BNGParser.SKIPACTIONS - 106)) | (1 << (BNGParser.TYPE - 106)) | (1 << (BNGParser.BACKGROUND - 106)) | (1 << (BNGParser.COLLAPSE - 106)) | (1 << (BNGParser.OPTS - 106)) | (1 << (BNGParser.FORMAT - 106)) | (1 << (BNGParser.INCLUDE_MODEL - 106)) | (1 << (BNGParser.INCLUDE_NETWORK - 106)) | (1 << (BNGParser.PRETTY_FORMATTING - 106)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 106)) | (1 << (BNGParser.TEXTREACTION - 106)) | (1 << (BNGParser.TEXTSPECIES - 106)) | (1 << (BNGParser.BDF - 106)) | (1 << (BNGParser.MAX_STEP - 106)) | (1 << (BNGParser.MAXORDER - 106)) | (1 << (BNGParser.STATS - 106)) | (1 << (BNGParser.MAX_NUM_STEPS - 106)))) !== 0) || ((((_la - 138)) & ~0x1F) === 0 && ((1 << (_la - 138)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 138)) | (1 << (BNGParser.MAX_CONV_FAILS - 138)) | (1 << (BNGParser.STIFF - 138)) | (1 << (BNGParser.SAT - 138)) | (1 << (BNGParser.MM - 138)) | (1 << (BNGParser.HILL - 138)) | (1 << (BNGParser.ARRHENIUS - 138)) | (1 << (BNGParser.MRATIO - 138)) | (1 << (BNGParser.TFUN - 138)) | (1 << (BNGParser.FUNCTIONPRODUCT - 138)) | (1 << (BNGParser.IF - 138)) | (1 << (BNGParser.EXP - 138)) | (1 << (BNGParser.LN - 138)) | (1 << (BNGParser.LOG10 - 138)) | (1 << (BNGParser.LOG2 - 138)) | (1 << (BNGParser.SQRT - 138)) | (1 << (BNGParser.RINT - 138)) | (1 << (BNGParser.ABS - 138)) | (1 << (BNGParser.SIN - 138)) | (1 << (BNGParser.COS - 138)) | (1 << (BNGParser.TAN - 138)))) !== 0) || ((((_la - 170)) & ~0x1F) === 0 && ((1 << (_la - 170)) & ((1 << (BNGParser.ASIN - 170)) | (1 << (BNGParser.ACOS - 170)) | (1 << (BNGParser.ATAN - 170)) | (1 << (BNGParser.SINH - 170)) | (1 << (BNGParser.COSH - 170)) | (1 << (BNGParser.TANH - 170)) | (1 << (BNGParser.ASINH - 170)) | (1 << (BNGParser.ACOSH - 170)) | (1 << (BNGParser.ATANH - 170)) | (1 << (BNGParser.PI - 170)) | (1 << (BNGParser.EULERIAN - 170)) | (1 << (BNGParser.MIN - 170)) | (1 << (BNGParser.MAX - 170)) | (1 << (BNGParser.SUM - 170)) | (1 << (BNGParser.AVG - 170)) | (1 << (BNGParser.TIME - 170)) | (1 << (BNGParser.FLOAT - 170)) | (1 << (BNGParser.INT - 170)) | (1 << (BNGParser.STRING - 170)) | (1 << (BNGParser.LPAREN - 170)))) !== 0) || ((((_la - 202)) & ~0x1F) === 0 && ((1 << (_la - 202)) & ((1 << (BNGParser.TILDE - 202)) | (1 << (BNGParser.MINUS - 202)) | (1 << (BNGParser.PLUS - 202)) | (1 << (BNGParser.EMARK - 202)))) !== 0)) {
 				{
-				this.state = 553;
+				this.state = 596;
 				this.expression();
 				}
 			}
@@ -2114,71 +2291,71 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public species_def(): Species_defContext {
 		let _localctx: Species_defContext = new Species_defContext(this._ctx, this.state);
-		this.enterRule(_localctx, 38, BNGParser.RULE_species_def);
+		this.enterRule(_localctx, 40, BNGParser.RULE_species_def);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 559;
+			this.state = 602;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.AT) {
 				{
-				this.state = 556;
+				this.state = 599;
 				this.match(BNGParser.AT);
-				this.state = 557;
+				this.state = 600;
 				this.match(BNGParser.STRING);
-				this.state = 558;
+				this.state = 601;
 				this.match(BNGParser.COLON);
 				}
 			}
 
-			this.state = 561;
+			this.state = 604;
 			this.molecule_pattern();
-			this.state = 563;
+			this.state = 606;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 69, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 74, this._ctx) ) {
 			case 1:
 				{
-				this.state = 562;
+				this.state = 605;
 				this.molecule_compartment();
 				}
 				break;
 			}
-			this.state = 572;
+			this.state = 615;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.DOT) {
 				{
 				{
-				this.state = 565;
+				this.state = 608;
 				this.match(BNGParser.DOT);
-				this.state = 566;
+				this.state = 609;
 				this.molecule_pattern();
-				this.state = 568;
+				this.state = 611;
 				this._errHandler.sync(this);
-				switch ( this.interpreter.adaptivePredict(this._input, 70, this._ctx) ) {
+				switch ( this.interpreter.adaptivePredict(this._input, 75, this._ctx) ) {
 				case 1:
 					{
-					this.state = 567;
+					this.state = 610;
 					this.molecule_compartment();
 					}
 					break;
 				}
 				}
 				}
-				this.state = 574;
+				this.state = 617;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 577;
+			this.state = 620;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 72, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 77, this._ctx) ) {
 			case 1:
 				{
-				this.state = 575;
+				this.state = 618;
 				this.match(BNGParser.AT);
-				this.state = 576;
+				this.state = 619;
 				this.match(BNGParser.STRING);
 				}
 				break;
@@ -2202,13 +2379,13 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public molecule_compartment(): Molecule_compartmentContext {
 		let _localctx: Molecule_compartmentContext = new Molecule_compartmentContext(this._ctx, this.state);
-		this.enterRule(_localctx, 40, BNGParser.RULE_molecule_compartment);
+		this.enterRule(_localctx, 42, BNGParser.RULE_molecule_compartment);
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 579;
+			this.state = 622;
 			this.match(BNGParser.AT);
-			this.state = 580;
+			this.state = 623;
 			this.match(BNGParser.STRING);
 			}
 		}
@@ -2229,41 +2406,51 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public molecule_pattern(): Molecule_patternContext {
 		let _localctx: Molecule_patternContext = new Molecule_patternContext(this._ctx, this.state);
-		this.enterRule(_localctx, 42, BNGParser.RULE_molecule_pattern);
+		this.enterRule(_localctx, 44, BNGParser.RULE_molecule_pattern);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 582;
+			this.state = 625;
 			this.match(BNGParser.STRING);
-			this.state = 588;
+			this.state = 631;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 74, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 79, this._ctx) ) {
 			case 1:
 				{
-				this.state = 583;
+				this.state = 626;
 				this.match(BNGParser.LPAREN);
-				this.state = 585;
+				this.state = 628;
 				this._errHandler.sync(this);
-				switch ( this.interpreter.adaptivePredict(this._input, 73, this._ctx) ) {
+				switch ( this.interpreter.adaptivePredict(this._input, 78, this._ctx) ) {
 				case 1:
 					{
-					this.state = 584;
+					this.state = 627;
 					this.component_pattern_list();
 					}
 					break;
 				}
-				this.state = 587;
+				this.state = 630;
 				this.match(BNGParser.RPAREN);
 				}
 				break;
 			}
-			this.state = 591;
+			this.state = 634;
+			this._errHandler.sync(this);
+			switch ( this.interpreter.adaptivePredict(this._input, 80, this._ctx) ) {
+			case 1:
+				{
+				this.state = 633;
+				this.pattern_bond_wildcard();
+				}
+				break;
+			}
+			this.state = 637;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.MOD) {
 				{
-				this.state = 590;
+				this.state = 636;
 				this.molecule_tag();
 				}
 			}
@@ -2285,15 +2472,68 @@ export class BNGParser extends Parser {
 		return _localctx;
 	}
 	// @RuleVersion(0)
+	public pattern_bond_wildcard(): Pattern_bond_wildcardContext {
+		let _localctx: Pattern_bond_wildcardContext = new Pattern_bond_wildcardContext(this._ctx, this.state);
+		this.enterRule(_localctx, 46, BNGParser.RULE_pattern_bond_wildcard);
+		try {
+			this.state = 645;
+			this._errHandler.sync(this);
+			switch ( this.interpreter.adaptivePredict(this._input, 82, this._ctx) ) {
+			case 1:
+				this.enterOuterAlt(_localctx, 1);
+				{
+				this.state = 639;
+				this.match(BNGParser.EMARK);
+				this.state = 640;
+				this.match(BNGParser.PLUS);
+				}
+				break;
+
+			case 2:
+				this.enterOuterAlt(_localctx, 2);
+				{
+				this.state = 641;
+				this.match(BNGParser.EMARK);
+				this.state = 642;
+				this.match(BNGParser.QMARK);
+				}
+				break;
+
+			case 3:
+				this.enterOuterAlt(_localctx, 3);
+				{
+				this.state = 643;
+				this.match(BNGParser.EMARK);
+				this.state = 644;
+				this.match(BNGParser.MINUS);
+				}
+				break;
+			}
+		}
+		catch (re) {
+			if (re instanceof RecognitionException) {
+				_localctx.exception = re;
+				this._errHandler.reportError(this, re);
+				this._errHandler.recover(this, re);
+			} else {
+				throw re;
+			}
+		}
+		finally {
+			this.exitRule();
+		}
+		return _localctx;
+	}
+	// @RuleVersion(0)
 	public molecule_tag(): Molecule_tagContext {
 		let _localctx: Molecule_tagContext = new Molecule_tagContext(this._ctx, this.state);
-		this.enterRule(_localctx, 44, BNGParser.RULE_molecule_tag);
+		this.enterRule(_localctx, 48, BNGParser.RULE_molecule_tag);
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 593;
+			this.state = 647;
 			this.match(BNGParser.MOD);
-			this.state = 594;
+			this.state = 648;
 			this.match(BNGParser.INT);
 			}
 		}
@@ -2314,42 +2554,42 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public component_pattern_list(): Component_pattern_listContext {
 		let _localctx: Component_pattern_listContext = new Component_pattern_listContext(this._ctx, this.state);
-		this.enterRule(_localctx, 46, BNGParser.RULE_component_pattern_list);
+		this.enterRule(_localctx, 50, BNGParser.RULE_component_pattern_list);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 597;
+			this.state = 651;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (_la === BNGParser.STRING) {
+			if (((((_la - 151)) & ~0x1F) === 0 && ((1 << (_la - 151)) & ((1 << (BNGParser.SAT - 151)) | (1 << (BNGParser.MM - 151)) | (1 << (BNGParser.HILL - 151)) | (1 << (BNGParser.ARRHENIUS - 151)) | (1 << (BNGParser.MRATIO - 151)) | (1 << (BNGParser.TFUN - 151)) | (1 << (BNGParser.FUNCTIONPRODUCT - 151)) | (1 << (BNGParser.IF - 151)) | (1 << (BNGParser.EXP - 151)) | (1 << (BNGParser.LN - 151)) | (1 << (BNGParser.LOG10 - 151)) | (1 << (BNGParser.LOG2 - 151)) | (1 << (BNGParser.SQRT - 151)) | (1 << (BNGParser.ABS - 151)) | (1 << (BNGParser.SIN - 151)) | (1 << (BNGParser.COS - 151)) | (1 << (BNGParser.TAN - 151)) | (1 << (BNGParser.ASIN - 151)) | (1 << (BNGParser.ACOS - 151)) | (1 << (BNGParser.ATAN - 151)) | (1 << (BNGParser.SINH - 151)) | (1 << (BNGParser.COSH - 151)) | (1 << (BNGParser.TANH - 151)) | (1 << (BNGParser.ASINH - 151)) | (1 << (BNGParser.ACOSH - 151)) | (1 << (BNGParser.ATANH - 151)) | (1 << (BNGParser.MIN - 151)) | (1 << (BNGParser.MAX - 151)))) !== 0) || ((((_la - 183)) & ~0x1F) === 0 && ((1 << (_la - 183)) & ((1 << (BNGParser.SUM - 183)) | (1 << (BNGParser.AVG - 183)) | (1 << (BNGParser.TIME - 183)) | (1 << (BNGParser.INT - 183)) | (1 << (BNGParser.STRING - 183)))) !== 0)) {
 				{
-				this.state = 596;
+				this.state = 650;
 				this.component_pattern();
 				}
 			}
 
-			this.state = 605;
+			this.state = 659;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.COMMA) {
 				{
 				{
-				this.state = 599;
+				this.state = 653;
 				this.match(BNGParser.COMMA);
-				this.state = 601;
+				this.state = 655;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if (_la === BNGParser.STRING) {
+				if (((((_la - 151)) & ~0x1F) === 0 && ((1 << (_la - 151)) & ((1 << (BNGParser.SAT - 151)) | (1 << (BNGParser.MM - 151)) | (1 << (BNGParser.HILL - 151)) | (1 << (BNGParser.ARRHENIUS - 151)) | (1 << (BNGParser.MRATIO - 151)) | (1 << (BNGParser.TFUN - 151)) | (1 << (BNGParser.FUNCTIONPRODUCT - 151)) | (1 << (BNGParser.IF - 151)) | (1 << (BNGParser.EXP - 151)) | (1 << (BNGParser.LN - 151)) | (1 << (BNGParser.LOG10 - 151)) | (1 << (BNGParser.LOG2 - 151)) | (1 << (BNGParser.SQRT - 151)) | (1 << (BNGParser.ABS - 151)) | (1 << (BNGParser.SIN - 151)) | (1 << (BNGParser.COS - 151)) | (1 << (BNGParser.TAN - 151)) | (1 << (BNGParser.ASIN - 151)) | (1 << (BNGParser.ACOS - 151)) | (1 << (BNGParser.ATAN - 151)) | (1 << (BNGParser.SINH - 151)) | (1 << (BNGParser.COSH - 151)) | (1 << (BNGParser.TANH - 151)) | (1 << (BNGParser.ASINH - 151)) | (1 << (BNGParser.ACOSH - 151)) | (1 << (BNGParser.ATANH - 151)) | (1 << (BNGParser.MIN - 151)) | (1 << (BNGParser.MAX - 151)))) !== 0) || ((((_la - 183)) & ~0x1F) === 0 && ((1 << (_la - 183)) & ((1 << (BNGParser.SUM - 183)) | (1 << (BNGParser.AVG - 183)) | (1 << (BNGParser.TIME - 183)) | (1 << (BNGParser.INT - 183)) | (1 << (BNGParser.STRING - 183)))) !== 0)) {
 					{
-					this.state = 600;
+					this.state = 654;
 					this.component_pattern();
 					}
 				}
 
 				}
 				}
-				this.state = 607;
+				this.state = 661;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -2372,40 +2612,100 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public component_pattern(): Component_patternContext {
 		let _localctx: Component_patternContext = new Component_patternContext(this._ctx, this.state);
-		this.enterRule(_localctx, 48, BNGParser.RULE_component_pattern);
+		this.enterRule(_localctx, 52, BNGParser.RULE_component_pattern);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 608;
-			this.match(BNGParser.STRING);
-			this.state = 614;
+			this.state = 665;
+			this._errHandler.sync(this);
+			switch (this._input.LA(1)) {
+			case BNGParser.STRING:
+				{
+				this.state = 662;
+				this.match(BNGParser.STRING);
+				}
+				break;
+			case BNGParser.INT:
+				{
+				this.state = 663;
+				this.match(BNGParser.INT);
+				}
+				break;
+			case BNGParser.SAT:
+			case BNGParser.MM:
+			case BNGParser.HILL:
+			case BNGParser.ARRHENIUS:
+			case BNGParser.MRATIO:
+			case BNGParser.TFUN:
+			case BNGParser.FUNCTIONPRODUCT:
+			case BNGParser.IF:
+			case BNGParser.EXP:
+			case BNGParser.LN:
+			case BNGParser.LOG10:
+			case BNGParser.LOG2:
+			case BNGParser.SQRT:
+			case BNGParser.ABS:
+			case BNGParser.SIN:
+			case BNGParser.COS:
+			case BNGParser.TAN:
+			case BNGParser.ASIN:
+			case BNGParser.ACOS:
+			case BNGParser.ATAN:
+			case BNGParser.SINH:
+			case BNGParser.COSH:
+			case BNGParser.TANH:
+			case BNGParser.ASINH:
+			case BNGParser.ACOSH:
+			case BNGParser.ATANH:
+			case BNGParser.MIN:
+			case BNGParser.MAX:
+			case BNGParser.SUM:
+			case BNGParser.AVG:
+			case BNGParser.TIME:
+				{
+				this.state = 664;
+				this.keyword_as_component_name();
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
+			}
+			this.state = 673;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (_la === BNGParser.TILDE || _la === BNGParser.EMARK) {
+			while (((((_la - 196)) & ~0x1F) === 0 && ((1 << (_la - 196)) & ((1 << (BNGParser.DOT - 196)) | (1 << (BNGParser.TILDE - 196)) | (1 << (BNGParser.EMARK - 196)))) !== 0)) {
 				{
-				this.state = 612;
+				this.state = 671;
 				this._errHandler.sync(this);
-				switch (this._input.LA(1)) {
-				case BNGParser.TILDE:
+				switch ( this.interpreter.adaptivePredict(this._input, 87, this._ctx) ) {
+				case 1:
 					{
-					this.state = 609;
+					{
+					this.state = 667;
 					this.match(BNGParser.TILDE);
-					this.state = 610;
+					this.state = 668;
 					this.state_value();
 					}
+					}
 					break;
-				case BNGParser.EMARK:
+
+				case 2:
 					{
-					this.state = 611;
+					this.state = 669;
 					this.bond_spec();
 					}
 					break;
-				default:
-					throw new NoViableAltException(this);
+
+				case 3:
+					{
+					this.state = 670;
+					this.match(BNGParser.DOT);
+					}
+					break;
 				}
 				}
-				this.state = 616;
+				this.state = 675;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -2428,30 +2728,30 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public state_value(): State_valueContext {
 		let _localctx: State_valueContext = new State_valueContext(this._ctx, this.state);
-		this.enterRule(_localctx, 50, BNGParser.RULE_state_value);
+		this.enterRule(_localctx, 54, BNGParser.RULE_state_value);
 		let _la: number;
 		try {
-			this.state = 623;
+			this.state = 682;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case BNGParser.STRING:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 617;
+				this.state = 676;
 				this.match(BNGParser.STRING);
 				}
 				break;
 			case BNGParser.INT:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 618;
+				this.state = 677;
 				this.match(BNGParser.INT);
-				this.state = 620;
+				this.state = 679;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				if (_la === BNGParser.STRING) {
 					{
-					this.state = 619;
+					this.state = 678;
 					this.match(BNGParser.STRING);
 					}
 				}
@@ -2461,7 +2761,7 @@ export class BNGParser extends Parser {
 			case BNGParser.QMARK:
 				this.enterOuterAlt(_localctx, 3);
 				{
-				this.state = 622;
+				this.state = 681;
 				this.match(BNGParser.QMARK);
 				}
 				break;
@@ -2486,47 +2786,55 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public bond_spec(): Bond_specContext {
 		let _localctx: Bond_specContext = new Bond_specContext(this._ctx, this.state);
-		this.enterRule(_localctx, 52, BNGParser.RULE_bond_spec);
+		this.enterRule(_localctx, 56, BNGParser.RULE_bond_spec);
 		try {
-			this.state = 633;
+			this.state = 693;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 83, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 91, this._ctx) ) {
 			case 1:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 625;
-				this.match(BNGParser.EMARK);
-				this.state = 626;
-				this.bond_id();
+				this.state = 684;
+				this.match(BNGParser.DOT);
 				}
 				break;
 
 			case 2:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 627;
+				this.state = 685;
 				this.match(BNGParser.EMARK);
-				this.state = 628;
-				this.match(BNGParser.PLUS);
+				this.state = 686;
+				this.bond_id();
 				}
 				break;
 
 			case 3:
 				this.enterOuterAlt(_localctx, 3);
 				{
-				this.state = 629;
+				this.state = 687;
 				this.match(BNGParser.EMARK);
-				this.state = 630;
-				this.match(BNGParser.QMARK);
+				this.state = 688;
+				this.match(BNGParser.PLUS);
 				}
 				break;
 
 			case 4:
 				this.enterOuterAlt(_localctx, 4);
 				{
-				this.state = 631;
+				this.state = 689;
 				this.match(BNGParser.EMARK);
-				this.state = 632;
+				this.state = 690;
+				this.match(BNGParser.QMARK);
+				}
+				break;
+
+			case 5:
+				this.enterOuterAlt(_localctx, 5);
+				{
+				this.state = 691;
+				this.match(BNGParser.EMARK);
+				this.state = 692;
 				this.match(BNGParser.MINUS);
 				}
 				break;
@@ -2549,12 +2857,12 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public bond_id(): Bond_idContext {
 		let _localctx: Bond_idContext = new Bond_idContext(this._ctx, this.state);
-		this.enterRule(_localctx, 54, BNGParser.RULE_bond_id);
+		this.enterRule(_localctx, 58, BNGParser.RULE_bond_id);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 635;
+			this.state = 695;
 			_la = this._input.LA(1);
 			if (!(_la === BNGParser.INT || _la === BNGParser.STRING)) {
 			this._errHandler.recoverInline(this);
@@ -2585,72 +2893,72 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public observables_block(): Observables_blockContext {
 		let _localctx: Observables_blockContext = new Observables_blockContext(this._ctx, this.state);
-		this.enterRule(_localctx, 56, BNGParser.RULE_observables_block);
+		this.enterRule(_localctx, 60, BNGParser.RULE_observables_block);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 637;
+			this.state = 697;
 			this.match(BNGParser.BEGIN);
-			this.state = 638;
+			this.state = 698;
 			this.match(BNGParser.OBSERVABLES);
-			this.state = 640;
+			this.state = 700;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			do {
 				{
 				{
-				this.state = 639;
+				this.state = 699;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 642;
+				this.state = 702;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			} while (_la === BNGParser.LB);
-			this.state = 652;
+			this.state = 712;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.MOLECULES || _la === BNGParser.SPECIES || _la === BNGParser.STRING) {
 				{
 				{
-				this.state = 644;
+				this.state = 704;
 				this.observable_def();
-				this.state = 646;
+				this.state = 706;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 645;
+					this.state = 705;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 648;
+					this.state = 708;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				} while (_la === BNGParser.LB);
 				}
 				}
-				this.state = 654;
+				this.state = 714;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 655;
+			this.state = 715;
 			this.match(BNGParser.END);
-			this.state = 656;
+			this.state = 716;
 			this.match(BNGParser.OBSERVABLES);
-			this.state = 660;
+			this.state = 720;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 657;
+				this.state = 717;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 662;
+				this.state = 722;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -2673,35 +2981,35 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public observable_def(): Observable_defContext {
 		let _localctx: Observable_defContext = new Observable_defContext(this._ctx, this.state);
-		this.enterRule(_localctx, 58, BNGParser.RULE_observable_def);
+		this.enterRule(_localctx, 62, BNGParser.RULE_observable_def);
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 665;
+			this.state = 725;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 88, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 96, this._ctx) ) {
 			case 1:
 				{
-				this.state = 663;
+				this.state = 723;
 				this.match(BNGParser.STRING);
-				this.state = 664;
+				this.state = 724;
 				this.match(BNGParser.COLON);
 				}
 				break;
 			}
-			this.state = 668;
+			this.state = 728;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 89, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 97, this._ctx) ) {
 			case 1:
 				{
-				this.state = 667;
+				this.state = 727;
 				this.observable_type();
 				}
 				break;
 			}
-			this.state = 670;
+			this.state = 730;
 			this.match(BNGParser.STRING);
-			this.state = 671;
+			this.state = 731;
 			this.observable_pattern_list();
 			}
 		}
@@ -2722,12 +3030,12 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public observable_type(): Observable_typeContext {
 		let _localctx: Observable_typeContext = new Observable_typeContext(this._ctx, this.state);
-		this.enterRule(_localctx, 60, BNGParser.RULE_observable_type);
+		this.enterRule(_localctx, 64, BNGParser.RULE_observable_type);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 673;
+			this.state = 733;
 			_la = this._input.LA(1);
 			if (!(_la === BNGParser.MOLECULES || _la === BNGParser.SPECIES || _la === BNGParser.STRING)) {
 			this._errHandler.recoverInline(this);
@@ -2758,34 +3066,34 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public observable_pattern_list(): Observable_pattern_listContext {
 		let _localctx: Observable_pattern_listContext = new Observable_pattern_listContext(this._ctx, this.state);
-		this.enterRule(_localctx, 62, BNGParser.RULE_observable_pattern_list);
+		this.enterRule(_localctx, 66, BNGParser.RULE_observable_pattern_list);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 675;
+			this.state = 735;
 			this.observable_pattern();
-			this.state = 682;
+			this.state = 742;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (((((_la - 186)) & ~0x1F) === 0 && ((1 << (_la - 186)) & ((1 << (BNGParser.STRING - 186)) | (1 << (BNGParser.COMMA - 186)) | (1 << (BNGParser.AT - 186)))) !== 0)) {
+			while (((((_la - 188)) & ~0x1F) === 0 && ((1 << (_la - 188)) & ((1 << (BNGParser.STRING - 188)) | (1 << (BNGParser.COMMA - 188)) | (1 << (BNGParser.AT - 188)))) !== 0)) {
 				{
 				{
-				this.state = 677;
+				this.state = 737;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				if (_la === BNGParser.COMMA) {
 					{
-					this.state = 676;
+					this.state = 736;
 					this.match(BNGParser.COMMA);
 					}
 				}
 
-				this.state = 679;
+				this.state = 739;
 				this.observable_pattern();
 				}
 				}
-				this.state = 684;
+				this.state = 744;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -2808,16 +3116,16 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public observable_pattern(): Observable_patternContext {
 		let _localctx: Observable_patternContext = new Observable_patternContext(this._ctx, this.state);
-		this.enterRule(_localctx, 64, BNGParser.RULE_observable_pattern);
+		this.enterRule(_localctx, 68, BNGParser.RULE_observable_pattern);
 		let _la: number;
 		try {
-			this.state = 689;
+			this.state = 749;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 92, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 100, this._ctx) ) {
 			case 1:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 685;
+				this.state = 745;
 				this.species_def();
 				}
 				break;
@@ -2825,11 +3133,11 @@ export class BNGParser extends Parser {
 			case 2:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 686;
+				this.state = 746;
 				this.match(BNGParser.STRING);
-				this.state = 687;
+				this.state = 747;
 				_la = this._input.LA(1);
-				if (!(((((_la - 202)) & ~0x1F) === 0 && ((1 << (_la - 202)) & ((1 << (BNGParser.GTE - 202)) | (1 << (BNGParser.GT - 202)) | (1 << (BNGParser.LTE - 202)) | (1 << (BNGParser.LT - 202)) | (1 << (BNGParser.EQUALS - 202)))) !== 0))) {
+				if (!(((((_la - 204)) & ~0x1F) === 0 && ((1 << (_la - 204)) & ((1 << (BNGParser.GTE - 204)) | (1 << (BNGParser.GT - 204)) | (1 << (BNGParser.LTE - 204)) | (1 << (BNGParser.LT - 204)) | (1 << (BNGParser.EQUALS - 204)))) !== 0))) {
 				this._errHandler.recoverInline(this);
 				} else {
 					if (this._input.LA(1) === Token.EOF) {
@@ -2839,7 +3147,7 @@ export class BNGParser extends Parser {
 					this._errHandler.reportMatch(this);
 					this.consume();
 				}
-				this.state = 688;
+				this.state = 748;
 				this.match(BNGParser.INT);
 				}
 				break;
@@ -2862,80 +3170,80 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public reaction_rules_block(): Reaction_rules_blockContext {
 		let _localctx: Reaction_rules_blockContext = new Reaction_rules_blockContext(this._ctx, this.state);
-		this.enterRule(_localctx, 66, BNGParser.RULE_reaction_rules_block);
+		this.enterRule(_localctx, 70, BNGParser.RULE_reaction_rules_block);
 		let _la: number;
 		try {
-			this.state = 771;
+			this.state = 831;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 105, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 113, this._ctx) ) {
 			case 1:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 691;
+				this.state = 751;
 				this.match(BNGParser.BEGIN);
-				this.state = 692;
+				this.state = 752;
 				this.match(BNGParser.REACTION);
-				this.state = 693;
+				this.state = 753;
 				this.match(BNGParser.RULES);
-				this.state = 695;
+				this.state = 755;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 694;
+					this.state = 754;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 697;
+					this.state = 757;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				} while (_la === BNGParser.LB);
-				this.state = 707;
+				this.state = 767;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				while (((((_la - 185)) & ~0x1F) === 0 && ((1 << (_la - 185)) & ((1 << (BNGParser.INT - 185)) | (1 << (BNGParser.STRING - 185)) | (1 << (BNGParser.LBRACKET - 185)) | (1 << (BNGParser.AT - 185)))) !== 0)) {
+				while (((((_la - 187)) & ~0x1F) === 0 && ((1 << (_la - 187)) & ((1 << (BNGParser.INT - 187)) | (1 << (BNGParser.STRING - 187)) | (1 << (BNGParser.LBRACKET - 187)) | (1 << (BNGParser.AT - 187)))) !== 0)) {
 					{
 					{
-					this.state = 699;
+					this.state = 759;
 					this.reaction_rule_def();
-					this.state = 701;
+					this.state = 761;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 					do {
 						{
 						{
-						this.state = 700;
+						this.state = 760;
 						this.match(BNGParser.LB);
 						}
 						}
-						this.state = 703;
+						this.state = 763;
 						this._errHandler.sync(this);
 						_la = this._input.LA(1);
 					} while (_la === BNGParser.LB);
 					}
 					}
-					this.state = 709;
+					this.state = 769;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 710;
+				this.state = 770;
 				this.match(BNGParser.END);
-				this.state = 711;
+				this.state = 771;
 				this.match(BNGParser.REACTION);
-				this.state = 712;
+				this.state = 772;
 				this.match(BNGParser.RULES);
-				this.state = 716;
+				this.state = 776;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la === BNGParser.LB) {
 					{
 					{
-					this.state = 713;
+					this.state = 773;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 718;
+					this.state = 778;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
@@ -2945,67 +3253,67 @@ export class BNGParser extends Parser {
 			case 2:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 719;
+				this.state = 779;
 				this.match(BNGParser.BEGIN);
-				this.state = 720;
+				this.state = 780;
 				this.match(BNGParser.REACTION_RULES);
-				this.state = 722;
+				this.state = 782;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 721;
+					this.state = 781;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 724;
+					this.state = 784;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				} while (_la === BNGParser.LB);
-				this.state = 734;
+				this.state = 794;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				while (((((_la - 185)) & ~0x1F) === 0 && ((1 << (_la - 185)) & ((1 << (BNGParser.INT - 185)) | (1 << (BNGParser.STRING - 185)) | (1 << (BNGParser.LBRACKET - 185)) | (1 << (BNGParser.AT - 185)))) !== 0)) {
+				while (((((_la - 187)) & ~0x1F) === 0 && ((1 << (_la - 187)) & ((1 << (BNGParser.INT - 187)) | (1 << (BNGParser.STRING - 187)) | (1 << (BNGParser.LBRACKET - 187)) | (1 << (BNGParser.AT - 187)))) !== 0)) {
 					{
 					{
-					this.state = 726;
+					this.state = 786;
 					this.reaction_rule_def();
-					this.state = 728;
+					this.state = 788;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 					do {
 						{
 						{
-						this.state = 727;
+						this.state = 787;
 						this.match(BNGParser.LB);
 						}
 						}
-						this.state = 730;
+						this.state = 790;
 						this._errHandler.sync(this);
 						_la = this._input.LA(1);
 					} while (_la === BNGParser.LB);
 					}
 					}
-					this.state = 736;
+					this.state = 796;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 737;
+				this.state = 797;
 				this.match(BNGParser.END);
-				this.state = 738;
+				this.state = 798;
 				this.match(BNGParser.REACTION_RULES);
-				this.state = 742;
+				this.state = 802;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la === BNGParser.LB) {
 					{
 					{
-					this.state = 739;
+					this.state = 799;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 744;
+					this.state = 804;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
@@ -3015,67 +3323,67 @@ export class BNGParser extends Parser {
 			case 3:
 				this.enterOuterAlt(_localctx, 3);
 				{
-				this.state = 745;
+				this.state = 805;
 				this.match(BNGParser.BEGIN);
-				this.state = 746;
+				this.state = 806;
 				this.match(BNGParser.REACTIONS);
-				this.state = 748;
+				this.state = 808;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 747;
+					this.state = 807;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 750;
+					this.state = 810;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				} while (_la === BNGParser.LB);
-				this.state = 760;
+				this.state = 820;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				while (((((_la - 185)) & ~0x1F) === 0 && ((1 << (_la - 185)) & ((1 << (BNGParser.INT - 185)) | (1 << (BNGParser.STRING - 185)) | (1 << (BNGParser.LBRACKET - 185)) | (1 << (BNGParser.AT - 185)))) !== 0)) {
+				while (((((_la - 187)) & ~0x1F) === 0 && ((1 << (_la - 187)) & ((1 << (BNGParser.INT - 187)) | (1 << (BNGParser.STRING - 187)) | (1 << (BNGParser.LBRACKET - 187)) | (1 << (BNGParser.AT - 187)))) !== 0)) {
 					{
 					{
-					this.state = 752;
+					this.state = 812;
 					this.reaction_rule_def();
-					this.state = 754;
+					this.state = 814;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 					do {
 						{
 						{
-						this.state = 753;
+						this.state = 813;
 						this.match(BNGParser.LB);
 						}
 						}
-						this.state = 756;
+						this.state = 816;
 						this._errHandler.sync(this);
 						_la = this._input.LA(1);
 					} while (_la === BNGParser.LB);
 					}
 					}
-					this.state = 762;
+					this.state = 822;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 763;
+				this.state = 823;
 				this.match(BNGParser.END);
-				this.state = 764;
+				this.state = 824;
 				this.match(BNGParser.REACTIONS);
-				this.state = 768;
+				this.state = 828;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la === BNGParser.LB) {
 					{
 					{
-					this.state = 765;
+					this.state = 825;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 770;
+					this.state = 830;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
@@ -3100,49 +3408,49 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public reaction_rule_def(): Reaction_rule_defContext {
 		let _localctx: Reaction_rule_defContext = new Reaction_rule_defContext(this._ctx, this.state);
-		this.enterRule(_localctx, 68, BNGParser.RULE_reaction_rule_def);
+		this.enterRule(_localctx, 72, BNGParser.RULE_reaction_rule_def);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 774;
+			this.state = 834;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 106, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 114, this._ctx) ) {
 			case 1:
 				{
-				this.state = 773;
+				this.state = 833;
 				this.label_def();
 				}
 				break;
 			}
-			this.state = 780;
+			this.state = 840;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.LBRACKET) {
 				{
-				this.state = 776;
+				this.state = 836;
 				this.match(BNGParser.LBRACKET);
-				this.state = 777;
+				this.state = 837;
 				this.rule_modifiers();
-				this.state = 778;
+				this.state = 838;
 				this.match(BNGParser.RBRACKET);
 				}
 			}
 
-			this.state = 782;
+			this.state = 842;
 			this.reactant_patterns();
-			this.state = 783;
+			this.state = 843;
 			this.reaction_sign();
-			this.state = 784;
+			this.state = 844;
 			this.product_patterns();
-			this.state = 785;
+			this.state = 845;
 			this.rate_law();
-			this.state = 787;
+			this.state = 847;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (((((_la - 27)) & ~0x1F) === 0 && ((1 << (_la - 27)) & ((1 << (BNGParser.MATCHONCE - 27)) | (1 << (BNGParser.DELETEMOLECULES - 27)) | (1 << (BNGParser.MOVECONNECTED - 27)) | (1 << (BNGParser.INCLUDE_REACTANTS - 27)) | (1 << (BNGParser.INCLUDE_PRODUCTS - 27)) | (1 << (BNGParser.EXCLUDE_REACTANTS - 27)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 27)) | (1 << (BNGParser.TOTALRATE - 27)))) !== 0) || _la === BNGParser.PRIORITY) {
+			if (((((_la - 29)) & ~0x1F) === 0 && ((1 << (_la - 29)) & ((1 << (BNGParser.MATCHONCE - 29)) | (1 << (BNGParser.DELETEMOLECULES - 29)) | (1 << (BNGParser.MOVECONNECTED - 29)) | (1 << (BNGParser.INCLUDE_REACTANTS - 29)) | (1 << (BNGParser.INCLUDE_PRODUCTS - 29)) | (1 << (BNGParser.EXCLUDE_REACTANTS - 29)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 29)) | (1 << (BNGParser.TOTALRATE - 29)))) !== 0) || _la === BNGParser.PRIORITY) {
 				{
-				this.state = 786;
+				this.state = 846;
 				this.rule_modifiers();
 				}
 			}
@@ -3166,16 +3474,16 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public label_def(): Label_defContext {
 		let _localctx: Label_defContext = new Label_defContext(this._ctx, this.state);
-		this.enterRule(_localctx, 70, BNGParser.RULE_label_def);
+		this.enterRule(_localctx, 74, BNGParser.RULE_label_def);
 		let _la: number;
 		try {
-			this.state = 804;
+			this.state = 864;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 112, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 120, this._ctx) ) {
 			case 1:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 789;
+				this.state = 849;
 				_la = this._input.LA(1);
 				if (!(_la === BNGParser.INT || _la === BNGParser.STRING)) {
 				this._errHandler.recoverInline(this);
@@ -3187,41 +3495,41 @@ export class BNGParser extends Parser {
 					this._errHandler.reportMatch(this);
 					this.consume();
 				}
-				this.state = 799;
+				this.state = 859;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				while (((((_la - 185)) & ~0x1F) === 0 && ((1 << (_la - 185)) & ((1 << (BNGParser.INT - 185)) | (1 << (BNGParser.STRING - 185)) | (1 << (BNGParser.LPAREN - 185)))) !== 0)) {
+				while (((((_la - 187)) & ~0x1F) === 0 && ((1 << (_la - 187)) & ((1 << (BNGParser.INT - 187)) | (1 << (BNGParser.STRING - 187)) | (1 << (BNGParser.LPAREN - 187)))) !== 0)) {
 					{
-					this.state = 797;
+					this.state = 857;
 					this._errHandler.sync(this);
 					switch (this._input.LA(1)) {
 					case BNGParser.STRING:
 						{
-						this.state = 790;
+						this.state = 850;
 						this.match(BNGParser.STRING);
 						}
 						break;
 					case BNGParser.INT:
 						{
-						this.state = 791;
+						this.state = 851;
 						this.match(BNGParser.INT);
 						}
 						break;
 					case BNGParser.LPAREN:
 						{
-						this.state = 792;
+						this.state = 852;
 						this.match(BNGParser.LPAREN);
-						this.state = 794;
+						this.state = 854;
 						this._errHandler.sync(this);
 						_la = this._input.LA(1);
 						if (_la === BNGParser.STRING) {
 							{
-							this.state = 793;
+							this.state = 853;
 							this.match(BNGParser.STRING);
 							}
 						}
 
-						this.state = 796;
+						this.state = 856;
 						this.match(BNGParser.RPAREN);
 						}
 						break;
@@ -3229,11 +3537,11 @@ export class BNGParser extends Parser {
 						throw new NoViableAltException(this);
 					}
 					}
-					this.state = 801;
+					this.state = 861;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 802;
+				this.state = 862;
 				this.match(BNGParser.COLON);
 				}
 				break;
@@ -3241,7 +3549,7 @@ export class BNGParser extends Parser {
 			case 2:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 803;
+				this.state = 863;
 				this.match(BNGParser.INT);
 				}
 				break;
@@ -3264,45 +3572,63 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public reactant_patterns(): Reactant_patternsContext {
 		let _localctx: Reactant_patternsContext = new Reactant_patternsContext(this._ctx, this.state);
-		this.enterRule(_localctx, 72, BNGParser.RULE_reactant_patterns);
+		this.enterRule(_localctx, 76, BNGParser.RULE_reactant_patterns);
 		let _la: number;
 		try {
-			this.state = 815;
+			this.enterOuterAlt(_localctx, 1);
+			{
+			this.state = 868;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case BNGParser.STRING:
 			case BNGParser.AT:
-				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 806;
+				this.state = 866;
 				this.species_def();
-				this.state = 811;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				while (_la === BNGParser.PLUS) {
-					{
-					{
-					this.state = 807;
-					this.match(BNGParser.PLUS);
-					this.state = 808;
-					this.species_def();
-					}
-					}
-					this.state = 813;
-					this._errHandler.sync(this);
-					_la = this._input.LA(1);
-				}
 				}
 				break;
 			case BNGParser.INT:
-				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 814;
+				this.state = 867;
 				this.match(BNGParser.INT);
 				}
 				break;
 			default:
 				throw new NoViableAltException(this);
+			}
+			this.state = 877;
+			this._errHandler.sync(this);
+			_la = this._input.LA(1);
+			while (_la === BNGParser.PLUS) {
+				{
+				{
+				this.state = 870;
+				this.match(BNGParser.PLUS);
+				this.state = 873;
+				this._errHandler.sync(this);
+				switch (this._input.LA(1)) {
+				case BNGParser.STRING:
+				case BNGParser.AT:
+					{
+					this.state = 871;
+					this.species_def();
+					}
+					break;
+				case BNGParser.INT:
+					{
+					this.state = 872;
+					this.match(BNGParser.INT);
+					}
+					break;
+				default:
+					throw new NoViableAltException(this);
+				}
+				}
+				}
+				this.state = 879;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+			}
 			}
 		}
 		catch (re) {
@@ -3322,47 +3648,65 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public product_patterns(): Product_patternsContext {
 		let _localctx: Product_patternsContext = new Product_patternsContext(this._ctx, this.state);
-		this.enterRule(_localctx, 74, BNGParser.RULE_product_patterns);
+		this.enterRule(_localctx, 78, BNGParser.RULE_product_patterns);
 		try {
 			let _alt: number;
-			this.state = 826;
+			this.enterOuterAlt(_localctx, 1);
+			{
+			this.state = 882;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case BNGParser.STRING:
 			case BNGParser.AT:
-				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 817;
+				this.state = 880;
 				this.species_def();
-				this.state = 822;
-				this._errHandler.sync(this);
-				_alt = this.interpreter.adaptivePredict(this._input, 115, this._ctx);
-				while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
-					if (_alt === 1) {
-						{
-						{
-						this.state = 818;
-						this.match(BNGParser.PLUS);
-						this.state = 819;
-						this.species_def();
-						}
-						}
-					}
-					this.state = 824;
-					this._errHandler.sync(this);
-					_alt = this.interpreter.adaptivePredict(this._input, 115, this._ctx);
-				}
 				}
 				break;
 			case BNGParser.INT:
-				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 825;
+				this.state = 881;
 				this.match(BNGParser.INT);
 				}
 				break;
 			default:
 				throw new NoViableAltException(this);
+			}
+			this.state = 891;
+			this._errHandler.sync(this);
+			_alt = this.interpreter.adaptivePredict(this._input, 126, this._ctx);
+			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
+				if (_alt === 1) {
+					{
+					{
+					this.state = 884;
+					this.match(BNGParser.PLUS);
+					this.state = 887;
+					this._errHandler.sync(this);
+					switch (this._input.LA(1)) {
+					case BNGParser.STRING:
+					case BNGParser.AT:
+						{
+						this.state = 885;
+						this.species_def();
+						}
+						break;
+					case BNGParser.INT:
+						{
+						this.state = 886;
+						this.match(BNGParser.INT);
+						}
+						break;
+					default:
+						throw new NoViableAltException(this);
+					}
+					}
+					}
+				}
+				this.state = 893;
+				this._errHandler.sync(this);
+				_alt = this.interpreter.adaptivePredict(this._input, 126, this._ctx);
+			}
 			}
 		}
 		catch (re) {
@@ -3382,12 +3726,12 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public reaction_sign(): Reaction_signContext {
 		let _localctx: Reaction_signContext = new Reaction_signContext(this._ctx, this.state);
-		this.enterRule(_localctx, 76, BNGParser.RULE_reaction_sign);
+		this.enterRule(_localctx, 80, BNGParser.RULE_reaction_sign);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 828;
+			this.state = 894;
 			_la = this._input.LA(1);
 			if (!(_la === BNGParser.UNI_REACTION_SIGN || _la === BNGParser.BI_REACTION_SIGN)) {
 			this._errHandler.recoverInline(this);
@@ -3418,21 +3762,21 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public rate_law(): Rate_lawContext {
 		let _localctx: Rate_lawContext = new Rate_lawContext(this._ctx, this.state);
-		this.enterRule(_localctx, 78, BNGParser.RULE_rate_law);
+		this.enterRule(_localctx, 82, BNGParser.RULE_rate_law);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 830;
+			this.state = 896;
 			this.expression();
-			this.state = 833;
+			this.state = 899;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.COMMA) {
 				{
-				this.state = 831;
+				this.state = 897;
 				this.match(BNGParser.COMMA);
-				this.state = 832;
+				this.state = 898;
 				this.expression();
 				}
 			}
@@ -3456,115 +3800,115 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public rule_modifiers(): Rule_modifiersContext {
 		let _localctx: Rule_modifiersContext = new Rule_modifiersContext(this._ctx, this.state);
-		this.enterRule(_localctx, 80, BNGParser.RULE_rule_modifiers);
+		this.enterRule(_localctx, 84, BNGParser.RULE_rule_modifiers);
 		try {
-			this.state = 870;
+			this.state = 936;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case BNGParser.DELETEMOLECULES:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 835;
+				this.state = 901;
 				this.match(BNGParser.DELETEMOLECULES);
 				}
 				break;
 			case BNGParser.MOVECONNECTED:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 836;
+				this.state = 902;
 				this.match(BNGParser.MOVECONNECTED);
 				}
 				break;
 			case BNGParser.MATCHONCE:
 				this.enterOuterAlt(_localctx, 3);
 				{
-				this.state = 837;
+				this.state = 903;
 				this.match(BNGParser.MATCHONCE);
 				}
 				break;
 			case BNGParser.TOTALRATE:
 				this.enterOuterAlt(_localctx, 4);
 				{
-				this.state = 838;
+				this.state = 904;
 				this.match(BNGParser.TOTALRATE);
 				}
 				break;
 			case BNGParser.PRIORITY:
 				this.enterOuterAlt(_localctx, 5);
 				{
-				this.state = 839;
+				this.state = 905;
 				this.match(BNGParser.PRIORITY);
-				this.state = 840;
+				this.state = 906;
 				this.match(BNGParser.BECOMES);
-				this.state = 841;
+				this.state = 907;
 				this.expression();
 				}
 				break;
 			case BNGParser.INCLUDE_REACTANTS:
 				this.enterOuterAlt(_localctx, 6);
 				{
-				this.state = 842;
+				this.state = 908;
 				this.match(BNGParser.INCLUDE_REACTANTS);
-				this.state = 843;
+				this.state = 909;
 				this.match(BNGParser.LPAREN);
-				this.state = 844;
+				this.state = 910;
 				this.match(BNGParser.INT);
-				this.state = 845;
+				this.state = 911;
 				this.match(BNGParser.COMMA);
-				this.state = 846;
+				this.state = 912;
 				this.pattern_list();
-				this.state = 847;
+				this.state = 913;
 				this.match(BNGParser.RPAREN);
 				}
 				break;
 			case BNGParser.EXCLUDE_REACTANTS:
 				this.enterOuterAlt(_localctx, 7);
 				{
-				this.state = 849;
+				this.state = 915;
 				this.match(BNGParser.EXCLUDE_REACTANTS);
-				this.state = 850;
+				this.state = 916;
 				this.match(BNGParser.LPAREN);
-				this.state = 851;
+				this.state = 917;
 				this.match(BNGParser.INT);
-				this.state = 852;
+				this.state = 918;
 				this.match(BNGParser.COMMA);
-				this.state = 853;
+				this.state = 919;
 				this.pattern_list();
-				this.state = 854;
+				this.state = 920;
 				this.match(BNGParser.RPAREN);
 				}
 				break;
 			case BNGParser.INCLUDE_PRODUCTS:
 				this.enterOuterAlt(_localctx, 8);
 				{
-				this.state = 856;
+				this.state = 922;
 				this.match(BNGParser.INCLUDE_PRODUCTS);
-				this.state = 857;
+				this.state = 923;
 				this.match(BNGParser.LPAREN);
-				this.state = 858;
+				this.state = 924;
 				this.match(BNGParser.INT);
-				this.state = 859;
+				this.state = 925;
 				this.match(BNGParser.COMMA);
-				this.state = 860;
+				this.state = 926;
 				this.pattern_list();
-				this.state = 861;
+				this.state = 927;
 				this.match(BNGParser.RPAREN);
 				}
 				break;
 			case BNGParser.EXCLUDE_PRODUCTS:
 				this.enterOuterAlt(_localctx, 9);
 				{
-				this.state = 863;
+				this.state = 929;
 				this.match(BNGParser.EXCLUDE_PRODUCTS);
-				this.state = 864;
+				this.state = 930;
 				this.match(BNGParser.LPAREN);
-				this.state = 865;
+				this.state = 931;
 				this.match(BNGParser.INT);
-				this.state = 866;
+				this.state = 932;
 				this.match(BNGParser.COMMA);
-				this.state = 867;
+				this.state = 933;
 				this.pattern_list();
-				this.state = 868;
+				this.state = 934;
 				this.match(BNGParser.RPAREN);
 				}
 				break;
@@ -3589,26 +3933,26 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public pattern_list(): Pattern_listContext {
 		let _localctx: Pattern_listContext = new Pattern_listContext(this._ctx, this.state);
-		this.enterRule(_localctx, 82, BNGParser.RULE_pattern_list);
+		this.enterRule(_localctx, 86, BNGParser.RULE_pattern_list);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 872;
+			this.state = 938;
 			this.species_def();
-			this.state = 877;
+			this.state = 943;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.COMMA) {
 				{
 				{
-				this.state = 873;
+				this.state = 939;
 				this.match(BNGParser.COMMA);
-				this.state = 874;
+				this.state = 940;
 				this.species_def();
 				}
 				}
-				this.state = 879;
+				this.state = 945;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -3631,72 +3975,72 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public functions_block(): Functions_blockContext {
 		let _localctx: Functions_blockContext = new Functions_blockContext(this._ctx, this.state);
-		this.enterRule(_localctx, 84, BNGParser.RULE_functions_block);
+		this.enterRule(_localctx, 88, BNGParser.RULE_functions_block);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 880;
+			this.state = 946;
 			this.match(BNGParser.BEGIN);
-			this.state = 881;
+			this.state = 947;
 			this.match(BNGParser.FUNCTIONS);
-			this.state = 883;
+			this.state = 949;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			do {
 				{
 				{
-				this.state = 882;
+				this.state = 948;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 885;
+				this.state = 951;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			} while (_la === BNGParser.LB);
-			this.state = 895;
+			this.state = 961;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.STRING) {
 				{
 				{
-				this.state = 887;
+				this.state = 953;
 				this.function_def();
-				this.state = 889;
+				this.state = 955;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 888;
+					this.state = 954;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 891;
+					this.state = 957;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				} while (_la === BNGParser.LB);
 				}
 				}
-				this.state = 897;
+				this.state = 963;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 898;
+			this.state = 964;
 			this.match(BNGParser.END);
-			this.state = 899;
+			this.state = 965;
 			this.match(BNGParser.FUNCTIONS);
-			this.state = 903;
+			this.state = 969;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 900;
+				this.state = 966;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 905;
+				this.state = 971;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -3719,58 +4063,58 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public function_def(): Function_defContext {
 		let _localctx: Function_defContext = new Function_defContext(this._ctx, this.state);
-		this.enterRule(_localctx, 86, BNGParser.RULE_function_def);
+		this.enterRule(_localctx, 90, BNGParser.RULE_function_def);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 908;
+			this.state = 974;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 124, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 134, this._ctx) ) {
 			case 1:
 				{
-				this.state = 906;
+				this.state = 972;
 				this.match(BNGParser.STRING);
-				this.state = 907;
+				this.state = 973;
 				this.match(BNGParser.COLON);
 				}
 				break;
 			}
-			this.state = 910;
+			this.state = 976;
 			this.match(BNGParser.STRING);
-			this.state = 916;
+			this.state = 982;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 126, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 136, this._ctx) ) {
 			case 1:
 				{
-				this.state = 911;
+				this.state = 977;
 				this.match(BNGParser.LPAREN);
-				this.state = 913;
+				this.state = 979;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				if (_la === BNGParser.STRING) {
 					{
-					this.state = 912;
+					this.state = 978;
 					this.param_list();
 					}
 				}
 
-				this.state = 915;
+				this.state = 981;
 				this.match(BNGParser.RPAREN);
 				}
 				break;
 			}
-			this.state = 919;
+			this.state = 985;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.BECOMES) {
 				{
-				this.state = 918;
+				this.state = 984;
 				this.match(BNGParser.BECOMES);
 				}
 			}
 
-			this.state = 921;
+			this.state = 987;
 			this.expression();
 			}
 		}
@@ -3791,26 +4135,26 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public param_list(): Param_listContext {
 		let _localctx: Param_listContext = new Param_listContext(this._ctx, this.state);
-		this.enterRule(_localctx, 88, BNGParser.RULE_param_list);
+		this.enterRule(_localctx, 92, BNGParser.RULE_param_list);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 923;
+			this.state = 989;
 			this.match(BNGParser.STRING);
-			this.state = 928;
+			this.state = 994;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.COMMA) {
 				{
 				{
-				this.state = 924;
+				this.state = 990;
 				this.match(BNGParser.COMMA);
-				this.state = 925;
+				this.state = 991;
 				this.match(BNGParser.STRING);
 				}
 				}
-				this.state = 930;
+				this.state = 996;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -3833,72 +4177,72 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public compartments_block(): Compartments_blockContext {
 		let _localctx: Compartments_blockContext = new Compartments_blockContext(this._ctx, this.state);
-		this.enterRule(_localctx, 90, BNGParser.RULE_compartments_block);
+		this.enterRule(_localctx, 94, BNGParser.RULE_compartments_block);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 931;
+			this.state = 997;
 			this.match(BNGParser.BEGIN);
-			this.state = 932;
+			this.state = 998;
 			this.match(BNGParser.COMPARTMENTS);
-			this.state = 934;
+			this.state = 1000;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			do {
 				{
 				{
-				this.state = 933;
+				this.state = 999;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 936;
+				this.state = 1002;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			} while (_la === BNGParser.LB);
-			this.state = 946;
+			this.state = 1012;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.STRING) {
 				{
 				{
-				this.state = 938;
+				this.state = 1004;
 				this.compartment_def();
-				this.state = 940;
+				this.state = 1006;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 939;
+					this.state = 1005;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 942;
+					this.state = 1008;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				} while (_la === BNGParser.LB);
 				}
 				}
-				this.state = 948;
+				this.state = 1014;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 949;
+			this.state = 1015;
 			this.match(BNGParser.END);
-			this.state = 950;
+			this.state = 1016;
 			this.match(BNGParser.COMPARTMENTS);
-			this.state = 954;
+			this.state = 1020;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 951;
+				this.state = 1017;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 956;
+				this.state = 1022;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -3921,35 +4265,35 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public compartment_def(): Compartment_defContext {
 		let _localctx: Compartment_defContext = new Compartment_defContext(this._ctx, this.state);
-		this.enterRule(_localctx, 92, BNGParser.RULE_compartment_def);
+		this.enterRule(_localctx, 96, BNGParser.RULE_compartment_def);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 959;
+			this.state = 1025;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 133, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 143, this._ctx) ) {
 			case 1:
 				{
-				this.state = 957;
+				this.state = 1023;
 				this.match(BNGParser.STRING);
-				this.state = 958;
+				this.state = 1024;
 				this.match(BNGParser.COLON);
 				}
 				break;
 			}
-			this.state = 961;
+			this.state = 1027;
 			this.match(BNGParser.STRING);
-			this.state = 962;
+			this.state = 1028;
 			this.match(BNGParser.INT);
-			this.state = 963;
+			this.state = 1029;
 			this.expression();
-			this.state = 965;
+			this.state = 1031;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.STRING) {
 				{
-				this.state = 964;
+				this.state = 1030;
 				this.match(BNGParser.STRING);
 				}
 			}
@@ -3973,76 +4317,76 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public energy_patterns_block(): Energy_patterns_blockContext {
 		let _localctx: Energy_patterns_blockContext = new Energy_patterns_blockContext(this._ctx, this.state);
-		this.enterRule(_localctx, 94, BNGParser.RULE_energy_patterns_block);
+		this.enterRule(_localctx, 98, BNGParser.RULE_energy_patterns_block);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 967;
+			this.state = 1033;
 			this.match(BNGParser.BEGIN);
-			this.state = 968;
+			this.state = 1034;
 			this.match(BNGParser.ENERGY);
-			this.state = 969;
+			this.state = 1035;
 			this.match(BNGParser.PATTERNS);
-			this.state = 971;
+			this.state = 1037;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			do {
 				{
 				{
-				this.state = 970;
+				this.state = 1036;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 973;
+				this.state = 1039;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			} while (_la === BNGParser.LB);
-			this.state = 983;
+			this.state = 1049;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.STRING || _la === BNGParser.AT) {
 				{
 				{
-				this.state = 975;
+				this.state = 1041;
 				this.energy_pattern_def();
-				this.state = 977;
+				this.state = 1043;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 976;
+					this.state = 1042;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 979;
+					this.state = 1045;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				} while (_la === BNGParser.LB);
 				}
 				}
-				this.state = 985;
+				this.state = 1051;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 986;
+			this.state = 1052;
 			this.match(BNGParser.END);
-			this.state = 987;
+			this.state = 1053;
 			this.match(BNGParser.ENERGY);
-			this.state = 988;
+			this.state = 1054;
 			this.match(BNGParser.PATTERNS);
-			this.state = 992;
+			this.state = 1058;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 989;
+				this.state = 1055;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 994;
+				this.state = 1060;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -4065,25 +4409,25 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public energy_pattern_def(): Energy_pattern_defContext {
 		let _localctx: Energy_pattern_defContext = new Energy_pattern_defContext(this._ctx, this.state);
-		this.enterRule(_localctx, 96, BNGParser.RULE_energy_pattern_def);
+		this.enterRule(_localctx, 100, BNGParser.RULE_energy_pattern_def);
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 997;
+			this.state = 1063;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 139, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 149, this._ctx) ) {
 			case 1:
 				{
-				this.state = 995;
+				this.state = 1061;
 				this.match(BNGParser.STRING);
-				this.state = 996;
+				this.state = 1062;
 				this.match(BNGParser.COLON);
 				}
 				break;
 			}
-			this.state = 999;
+			this.state = 1065;
 			this.species_def();
-			this.state = 1000;
+			this.state = 1066;
 			this.expression();
 			}
 		}
@@ -4104,76 +4448,76 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public population_maps_block(): Population_maps_blockContext {
 		let _localctx: Population_maps_blockContext = new Population_maps_blockContext(this._ctx, this.state);
-		this.enterRule(_localctx, 98, BNGParser.RULE_population_maps_block);
+		this.enterRule(_localctx, 102, BNGParser.RULE_population_maps_block);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1002;
+			this.state = 1068;
 			this.match(BNGParser.BEGIN);
-			this.state = 1003;
+			this.state = 1069;
 			this.match(BNGParser.POPULATION);
-			this.state = 1004;
+			this.state = 1070;
 			this.match(BNGParser.MAPS);
-			this.state = 1006;
+			this.state = 1072;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			do {
 				{
 				{
-				this.state = 1005;
+				this.state = 1071;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 1008;
+				this.state = 1074;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			} while (_la === BNGParser.LB);
-			this.state = 1018;
+			this.state = 1084;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.STRING || _la === BNGParser.AT) {
 				{
 				{
-				this.state = 1010;
+				this.state = 1076;
 				this.population_map_def();
-				this.state = 1012;
+				this.state = 1078;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 1011;
+					this.state = 1077;
 					this.match(BNGParser.LB);
 					}
 					}
-					this.state = 1014;
+					this.state = 1080;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				} while (_la === BNGParser.LB);
 				}
 				}
-				this.state = 1020;
+				this.state = 1086;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 1021;
+			this.state = 1087;
 			this.match(BNGParser.END);
-			this.state = 1022;
+			this.state = 1088;
 			this.match(BNGParser.POPULATION);
-			this.state = 1023;
+			this.state = 1089;
 			this.match(BNGParser.MAPS);
-			this.state = 1027;
+			this.state = 1093;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 1024;
+				this.state = 1090;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 1029;
+				this.state = 1095;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -4196,43 +4540,195 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public population_map_def(): Population_map_defContext {
 		let _localctx: Population_map_defContext = new Population_map_defContext(this._ctx, this.state);
-		this.enterRule(_localctx, 100, BNGParser.RULE_population_map_def);
+		this.enterRule(_localctx, 104, BNGParser.RULE_population_map_def);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1032;
+			this.state = 1098;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 144, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 154, this._ctx) ) {
 			case 1:
 				{
-				this.state = 1030;
+				this.state = 1096;
 				this.match(BNGParser.STRING);
-				this.state = 1031;
+				this.state = 1097;
 				this.match(BNGParser.COLON);
 				}
 				break;
 			}
-			this.state = 1034;
+			this.state = 1100;
 			this.species_def();
-			this.state = 1035;
+			this.state = 1101;
 			this.match(BNGParser.UNI_REACTION_SIGN);
-			this.state = 1036;
+			this.state = 1102;
 			this.match(BNGParser.STRING);
-			this.state = 1037;
+			this.state = 1103;
 			this.match(BNGParser.LPAREN);
-			this.state = 1039;
+			this.state = 1105;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.STRING) {
 				{
-				this.state = 1038;
+				this.state = 1104;
 				this.param_list();
 				}
 			}
 
-			this.state = 1041;
+			this.state = 1107;
 			this.match(BNGParser.RPAREN);
+			}
+		}
+		catch (re) {
+			if (re instanceof RecognitionException) {
+				_localctx.exception = re;
+				this._errHandler.reportError(this, re);
+				this._errHandler.recover(this, re);
+			} else {
+				throw re;
+			}
+		}
+		finally {
+			this.exitRule();
+		}
+		return _localctx;
+	}
+	// @RuleVersion(0)
+	public anchors_block(): Anchors_blockContext {
+		let _localctx: Anchors_blockContext = new Anchors_blockContext(this._ctx, this.state);
+		this.enterRule(_localctx, 106, BNGParser.RULE_anchors_block);
+		let _la: number;
+		try {
+			this.enterOuterAlt(_localctx, 1);
+			{
+			this.state = 1109;
+			this.match(BNGParser.BEGIN);
+			this.state = 1110;
+			this.match(BNGParser.ANCHORS);
+			this.state = 1112;
+			this._errHandler.sync(this);
+			_la = this._input.LA(1);
+			do {
+				{
+				{
+				this.state = 1111;
+				this.match(BNGParser.LB);
+				}
+				}
+				this.state = 1114;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+			} while (_la === BNGParser.LB);
+			this.state = 1124;
+			this._errHandler.sync(this);
+			_la = this._input.LA(1);
+			while (_la === BNGParser.STRING) {
+				{
+				{
+				this.state = 1116;
+				this.anchor_def();
+				this.state = 1118;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				do {
+					{
+					{
+					this.state = 1117;
+					this.match(BNGParser.LB);
+					}
+					}
+					this.state = 1120;
+					this._errHandler.sync(this);
+					_la = this._input.LA(1);
+				} while (_la === BNGParser.LB);
+				}
+				}
+				this.state = 1126;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+			}
+			this.state = 1127;
+			this.match(BNGParser.END);
+			this.state = 1128;
+			this.match(BNGParser.ANCHORS);
+			this.state = 1132;
+			this._errHandler.sync(this);
+			_la = this._input.LA(1);
+			while (_la === BNGParser.LB) {
+				{
+				{
+				this.state = 1129;
+				this.match(BNGParser.LB);
+				}
+				}
+				this.state = 1134;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+			}
+			}
+		}
+		catch (re) {
+			if (re instanceof RecognitionException) {
+				_localctx.exception = re;
+				this._errHandler.reportError(this, re);
+				this._errHandler.recover(this, re);
+			} else {
+				throw re;
+			}
+		}
+		finally {
+			this.exitRule();
+		}
+		return _localctx;
+	}
+	// @RuleVersion(0)
+	public anchor_def(): Anchor_defContext {
+		let _localctx: Anchor_defContext = new Anchor_defContext(this._ctx, this.state);
+		this.enterRule(_localctx, 108, BNGParser.RULE_anchor_def);
+		let _la: number;
+		try {
+			this.enterOuterAlt(_localctx, 1);
+			{
+			this.state = 1135;
+			this.molecule_pattern();
+			this.state = 1148;
+			this._errHandler.sync(this);
+			_la = this._input.LA(1);
+			if (_la === BNGParser.LPAREN) {
+				{
+				this.state = 1136;
+				this.match(BNGParser.LPAREN);
+				this.state = 1145;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				if (_la === BNGParser.STRING) {
+					{
+					this.state = 1137;
+					this.match(BNGParser.STRING);
+					this.state = 1142;
+					this._errHandler.sync(this);
+					_la = this._input.LA(1);
+					while (_la === BNGParser.COMMA) {
+						{
+						{
+						this.state = 1138;
+						this.match(BNGParser.COMMA);
+						this.state = 1139;
+						this.match(BNGParser.STRING);
+						}
+						}
+						this.state = 1144;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+					}
+					}
+				}
+
+				this.state = 1147;
+				this.match(BNGParser.RPAREN);
+				}
+			}
+
 			}
 		}
 		catch (re) {
@@ -4252,25 +4748,25 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public actions_block(): Actions_blockContext {
 		let _localctx: Actions_blockContext = new Actions_blockContext(this._ctx, this.state);
-		this.enterRule(_localctx, 102, BNGParser.RULE_actions_block);
+		this.enterRule(_localctx, 110, BNGParser.RULE_actions_block);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1044;
+			this.state = 1151;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			do {
 				{
 				{
-				this.state = 1043;
+				this.state = 1150;
 				this.action_command();
 				}
 				}
-				this.state = 1046;
+				this.state = 1153;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-			} while (((((_la - 41)) & ~0x1F) === 0 && ((1 << (_la - 41)) & ((1 << (BNGParser.GENERATENETWORK - 41)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 41)) | (1 << (BNGParser.SIMULATE - 41)))) !== 0) || ((((_la - 75)) & ~0x1F) === 0 && ((1 << (_la - 75)) & ((1 << (BNGParser.SIMULATE_ODE - 75)) | (1 << (BNGParser.SIMULATE_SSA - 75)) | (1 << (BNGParser.SIMULATE_PLA - 75)) | (1 << (BNGParser.SIMULATE_NF - 75)) | (1 << (BNGParser.SIMULATE_RM - 75)) | (1 << (BNGParser.PARAMETER_SCAN - 75)) | (1 << (BNGParser.BIFURCATE - 75)) | (1 << (BNGParser.READFILE - 75)))) !== 0) || ((((_la - 108)) & ~0x1F) === 0 && ((1 << (_la - 108)) & ((1 << (BNGParser.VISUALIZE - 108)) | (1 << (BNGParser.WRITEFILE - 108)) | (1 << (BNGParser.WRITEMODEL - 108)) | (1 << (BNGParser.WRITEXML - 108)) | (1 << (BNGParser.WRITENETWORK - 108)) | (1 << (BNGParser.WRITESBML - 108)) | (1 << (BNGParser.WRITELATEX - 108)) | (1 << (BNGParser.WRITEMFILE - 108)) | (1 << (BNGParser.WRITEMEXFILE - 108)) | (1 << (BNGParser.SETCONCENTRATION - 108)))) !== 0) || ((((_la - 140)) & ~0x1F) === 0 && ((1 << (_la - 140)) & ((1 << (BNGParser.ADDCONCENTRATION - 140)) | (1 << (BNGParser.SAVECONCENTRATIONS - 140)) | (1 << (BNGParser.RESETCONCENTRATIONS - 140)) | (1 << (BNGParser.SETPARAMETER - 140)) | (1 << (BNGParser.SAVEPARAMETERS - 140)) | (1 << (BNGParser.RESETPARAMETERS - 140)) | (1 << (BNGParser.QUIT - 140)))) !== 0));
+			} while (((((_la - 43)) & ~0x1F) === 0 && ((1 << (_la - 43)) & ((1 << (BNGParser.GENERATENETWORK - 43)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 43)) | (1 << (BNGParser.SIMULATE - 43)))) !== 0) || ((((_la - 77)) & ~0x1F) === 0 && ((1 << (_la - 77)) & ((1 << (BNGParser.SIMULATE_ODE - 77)) | (1 << (BNGParser.SIMULATE_SSA - 77)) | (1 << (BNGParser.SIMULATE_PLA - 77)) | (1 << (BNGParser.SIMULATE_NF - 77)) | (1 << (BNGParser.SIMULATE_RM - 77)) | (1 << (BNGParser.PARAMETER_SCAN - 77)) | (1 << (BNGParser.BIFURCATE - 77)) | (1 << (BNGParser.READFILE - 77)))) !== 0) || ((((_la - 110)) & ~0x1F) === 0 && ((1 << (_la - 110)) & ((1 << (BNGParser.VISUALIZE - 110)) | (1 << (BNGParser.WRITEFILE - 110)) | (1 << (BNGParser.WRITEMODEL - 110)) | (1 << (BNGParser.WRITEXML - 110)) | (1 << (BNGParser.WRITENETWORK - 110)) | (1 << (BNGParser.WRITESBML - 110)) | (1 << (BNGParser.WRITELATEX - 110)) | (1 << (BNGParser.WRITEMFILE - 110)) | (1 << (BNGParser.WRITEMEXFILE - 110)) | (1 << (BNGParser.SETCONCENTRATION - 110)))) !== 0) || ((((_la - 142)) & ~0x1F) === 0 && ((1 << (_la - 142)) & ((1 << (BNGParser.ADDCONCENTRATION - 142)) | (1 << (BNGParser.SAVECONCENTRATIONS - 142)) | (1 << (BNGParser.RESETCONCENTRATIONS - 142)) | (1 << (BNGParser.SETPARAMETER - 142)) | (1 << (BNGParser.SAVEPARAMETERS - 142)) | (1 << (BNGParser.RESETPARAMETERS - 142)) | (1 << (BNGParser.QUIT - 142)))) !== 0));
 			}
 		}
 		catch (re) {
@@ -4290,58 +4786,58 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public wrapped_actions_block(): Wrapped_actions_blockContext {
 		let _localctx: Wrapped_actions_blockContext = new Wrapped_actions_blockContext(this._ctx, this.state);
-		this.enterRule(_localctx, 104, BNGParser.RULE_wrapped_actions_block);
+		this.enterRule(_localctx, 112, BNGParser.RULE_wrapped_actions_block);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1048;
+			this.state = 1155;
 			this.match(BNGParser.BEGIN);
-			this.state = 1049;
+			this.state = 1156;
 			this.match(BNGParser.ACTIONS);
-			this.state = 1051;
+			this.state = 1158;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			do {
 				{
 				{
-				this.state = 1050;
+				this.state = 1157;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 1053;
+				this.state = 1160;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			} while (_la === BNGParser.LB);
-			this.state = 1058;
+			this.state = 1165;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (((((_la - 41)) & ~0x1F) === 0 && ((1 << (_la - 41)) & ((1 << (BNGParser.GENERATENETWORK - 41)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 41)) | (1 << (BNGParser.SIMULATE - 41)))) !== 0) || ((((_la - 75)) & ~0x1F) === 0 && ((1 << (_la - 75)) & ((1 << (BNGParser.SIMULATE_ODE - 75)) | (1 << (BNGParser.SIMULATE_SSA - 75)) | (1 << (BNGParser.SIMULATE_PLA - 75)) | (1 << (BNGParser.SIMULATE_NF - 75)) | (1 << (BNGParser.SIMULATE_RM - 75)) | (1 << (BNGParser.PARAMETER_SCAN - 75)) | (1 << (BNGParser.BIFURCATE - 75)) | (1 << (BNGParser.READFILE - 75)))) !== 0) || ((((_la - 108)) & ~0x1F) === 0 && ((1 << (_la - 108)) & ((1 << (BNGParser.VISUALIZE - 108)) | (1 << (BNGParser.WRITEFILE - 108)) | (1 << (BNGParser.WRITEMODEL - 108)) | (1 << (BNGParser.WRITEXML - 108)) | (1 << (BNGParser.WRITENETWORK - 108)) | (1 << (BNGParser.WRITESBML - 108)) | (1 << (BNGParser.WRITELATEX - 108)) | (1 << (BNGParser.WRITEMFILE - 108)) | (1 << (BNGParser.WRITEMEXFILE - 108)) | (1 << (BNGParser.SETCONCENTRATION - 108)))) !== 0) || ((((_la - 140)) & ~0x1F) === 0 && ((1 << (_la - 140)) & ((1 << (BNGParser.ADDCONCENTRATION - 140)) | (1 << (BNGParser.SAVECONCENTRATIONS - 140)) | (1 << (BNGParser.RESETCONCENTRATIONS - 140)) | (1 << (BNGParser.SETPARAMETER - 140)) | (1 << (BNGParser.SAVEPARAMETERS - 140)) | (1 << (BNGParser.RESETPARAMETERS - 140)) | (1 << (BNGParser.QUIT - 140)))) !== 0)) {
+			while (((((_la - 43)) & ~0x1F) === 0 && ((1 << (_la - 43)) & ((1 << (BNGParser.GENERATENETWORK - 43)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 43)) | (1 << (BNGParser.SIMULATE - 43)))) !== 0) || ((((_la - 77)) & ~0x1F) === 0 && ((1 << (_la - 77)) & ((1 << (BNGParser.SIMULATE_ODE - 77)) | (1 << (BNGParser.SIMULATE_SSA - 77)) | (1 << (BNGParser.SIMULATE_PLA - 77)) | (1 << (BNGParser.SIMULATE_NF - 77)) | (1 << (BNGParser.SIMULATE_RM - 77)) | (1 << (BNGParser.PARAMETER_SCAN - 77)) | (1 << (BNGParser.BIFURCATE - 77)) | (1 << (BNGParser.READFILE - 77)))) !== 0) || ((((_la - 110)) & ~0x1F) === 0 && ((1 << (_la - 110)) & ((1 << (BNGParser.VISUALIZE - 110)) | (1 << (BNGParser.WRITEFILE - 110)) | (1 << (BNGParser.WRITEMODEL - 110)) | (1 << (BNGParser.WRITEXML - 110)) | (1 << (BNGParser.WRITENETWORK - 110)) | (1 << (BNGParser.WRITESBML - 110)) | (1 << (BNGParser.WRITELATEX - 110)) | (1 << (BNGParser.WRITEMFILE - 110)) | (1 << (BNGParser.WRITEMEXFILE - 110)) | (1 << (BNGParser.SETCONCENTRATION - 110)))) !== 0) || ((((_la - 142)) & ~0x1F) === 0 && ((1 << (_la - 142)) & ((1 << (BNGParser.ADDCONCENTRATION - 142)) | (1 << (BNGParser.SAVECONCENTRATIONS - 142)) | (1 << (BNGParser.RESETCONCENTRATIONS - 142)) | (1 << (BNGParser.SETPARAMETER - 142)) | (1 << (BNGParser.SAVEPARAMETERS - 142)) | (1 << (BNGParser.RESETPARAMETERS - 142)) | (1 << (BNGParser.QUIT - 142)))) !== 0)) {
 				{
 				{
-				this.state = 1055;
+				this.state = 1162;
 				this.action_command();
 				}
 				}
-				this.state = 1060;
+				this.state = 1167;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 1061;
+			this.state = 1168;
 			this.match(BNGParser.END);
-			this.state = 1062;
+			this.state = 1169;
 			this.match(BNGParser.ACTIONS);
-			this.state = 1066;
+			this.state = 1173;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 1063;
+				this.state = 1170;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 1068;
+				this.state = 1175;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -4364,58 +4860,58 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public begin_actions_block(): Begin_actions_blockContext {
 		let _localctx: Begin_actions_blockContext = new Begin_actions_blockContext(this._ctx, this.state);
-		this.enterRule(_localctx, 106, BNGParser.RULE_begin_actions_block);
+		this.enterRule(_localctx, 114, BNGParser.RULE_begin_actions_block);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1069;
+			this.state = 1176;
 			this.match(BNGParser.BEGIN);
-			this.state = 1070;
+			this.state = 1177;
 			this.match(BNGParser.ACTIONS);
-			this.state = 1072;
+			this.state = 1179;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			do {
 				{
 				{
-				this.state = 1071;
+				this.state = 1178;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 1074;
+				this.state = 1181;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			} while (_la === BNGParser.LB);
-			this.state = 1079;
+			this.state = 1186;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (((((_la - 41)) & ~0x1F) === 0 && ((1 << (_la - 41)) & ((1 << (BNGParser.GENERATENETWORK - 41)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 41)) | (1 << (BNGParser.SIMULATE - 41)))) !== 0) || ((((_la - 75)) & ~0x1F) === 0 && ((1 << (_la - 75)) & ((1 << (BNGParser.SIMULATE_ODE - 75)) | (1 << (BNGParser.SIMULATE_SSA - 75)) | (1 << (BNGParser.SIMULATE_PLA - 75)) | (1 << (BNGParser.SIMULATE_NF - 75)) | (1 << (BNGParser.SIMULATE_RM - 75)) | (1 << (BNGParser.PARAMETER_SCAN - 75)) | (1 << (BNGParser.BIFURCATE - 75)) | (1 << (BNGParser.READFILE - 75)))) !== 0) || ((((_la - 108)) & ~0x1F) === 0 && ((1 << (_la - 108)) & ((1 << (BNGParser.VISUALIZE - 108)) | (1 << (BNGParser.WRITEFILE - 108)) | (1 << (BNGParser.WRITEMODEL - 108)) | (1 << (BNGParser.WRITEXML - 108)) | (1 << (BNGParser.WRITENETWORK - 108)) | (1 << (BNGParser.WRITESBML - 108)) | (1 << (BNGParser.WRITELATEX - 108)) | (1 << (BNGParser.WRITEMFILE - 108)) | (1 << (BNGParser.WRITEMEXFILE - 108)) | (1 << (BNGParser.SETCONCENTRATION - 108)))) !== 0) || ((((_la - 140)) & ~0x1F) === 0 && ((1 << (_la - 140)) & ((1 << (BNGParser.ADDCONCENTRATION - 140)) | (1 << (BNGParser.SAVECONCENTRATIONS - 140)) | (1 << (BNGParser.RESETCONCENTRATIONS - 140)) | (1 << (BNGParser.SETPARAMETER - 140)) | (1 << (BNGParser.SAVEPARAMETERS - 140)) | (1 << (BNGParser.RESETPARAMETERS - 140)) | (1 << (BNGParser.QUIT - 140)))) !== 0)) {
+			while (((((_la - 43)) & ~0x1F) === 0 && ((1 << (_la - 43)) & ((1 << (BNGParser.GENERATENETWORK - 43)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 43)) | (1 << (BNGParser.SIMULATE - 43)))) !== 0) || ((((_la - 77)) & ~0x1F) === 0 && ((1 << (_la - 77)) & ((1 << (BNGParser.SIMULATE_ODE - 77)) | (1 << (BNGParser.SIMULATE_SSA - 77)) | (1 << (BNGParser.SIMULATE_PLA - 77)) | (1 << (BNGParser.SIMULATE_NF - 77)) | (1 << (BNGParser.SIMULATE_RM - 77)) | (1 << (BNGParser.PARAMETER_SCAN - 77)) | (1 << (BNGParser.BIFURCATE - 77)) | (1 << (BNGParser.READFILE - 77)))) !== 0) || ((((_la - 110)) & ~0x1F) === 0 && ((1 << (_la - 110)) & ((1 << (BNGParser.VISUALIZE - 110)) | (1 << (BNGParser.WRITEFILE - 110)) | (1 << (BNGParser.WRITEMODEL - 110)) | (1 << (BNGParser.WRITEXML - 110)) | (1 << (BNGParser.WRITENETWORK - 110)) | (1 << (BNGParser.WRITESBML - 110)) | (1 << (BNGParser.WRITELATEX - 110)) | (1 << (BNGParser.WRITEMFILE - 110)) | (1 << (BNGParser.WRITEMEXFILE - 110)) | (1 << (BNGParser.SETCONCENTRATION - 110)))) !== 0) || ((((_la - 142)) & ~0x1F) === 0 && ((1 << (_la - 142)) & ((1 << (BNGParser.ADDCONCENTRATION - 142)) | (1 << (BNGParser.SAVECONCENTRATIONS - 142)) | (1 << (BNGParser.RESETCONCENTRATIONS - 142)) | (1 << (BNGParser.SETPARAMETER - 142)) | (1 << (BNGParser.SAVEPARAMETERS - 142)) | (1 << (BNGParser.RESETPARAMETERS - 142)) | (1 << (BNGParser.QUIT - 142)))) !== 0)) {
 				{
 				{
-				this.state = 1076;
+				this.state = 1183;
 				this.action_command();
 				}
 				}
-				this.state = 1081;
+				this.state = 1188;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 1082;
+			this.state = 1189;
 			this.match(BNGParser.END);
-			this.state = 1083;
+			this.state = 1190;
 			this.match(BNGParser.ACTIONS);
-			this.state = 1087;
+			this.state = 1194;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 1084;
+				this.state = 1191;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 1089;
+				this.state = 1196;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -4438,15 +4934,15 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public action_command(): Action_commandContext {
 		let _localctx: Action_commandContext = new Action_commandContext(this._ctx, this.state);
-		this.enterRule(_localctx, 108, BNGParser.RULE_action_command);
+		this.enterRule(_localctx, 116, BNGParser.RULE_action_command);
 		try {
-			this.state = 1095;
+			this.state = 1202;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case BNGParser.GENERATENETWORK:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 1090;
+				this.state = 1197;
 				this.generate_network_cmd();
 				}
 				break;
@@ -4458,7 +4954,7 @@ export class BNGParser extends Parser {
 			case BNGParser.SIMULATE_RM:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 1091;
+				this.state = 1198;
 				this.simulate_cmd();
 				}
 				break;
@@ -4472,7 +4968,7 @@ export class BNGParser extends Parser {
 			case BNGParser.WRITEMEXFILE:
 				this.enterOuterAlt(_localctx, 3);
 				{
-				this.state = 1092;
+				this.state = 1199;
 				this.write_cmd();
 				}
 				break;
@@ -4481,7 +4977,7 @@ export class BNGParser extends Parser {
 			case BNGParser.SETPARAMETER:
 				this.enterOuterAlt(_localctx, 4);
 				{
-				this.state = 1093;
+				this.state = 1200;
 				this.set_cmd();
 				}
 				break;
@@ -4497,7 +4993,7 @@ export class BNGParser extends Parser {
 			case BNGParser.QUIT:
 				this.enterOuterAlt(_localctx, 5);
 				{
-				this.state = 1094;
+				this.state = 1201;
 				this.other_action_cmd();
 				}
 				break;
@@ -4522,48 +5018,48 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public generate_network_cmd(): Generate_network_cmdContext {
 		let _localctx: Generate_network_cmdContext = new Generate_network_cmdContext(this._ctx, this.state);
-		this.enterRule(_localctx, 110, BNGParser.RULE_generate_network_cmd);
+		this.enterRule(_localctx, 118, BNGParser.RULE_generate_network_cmd);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1097;
+			this.state = 1204;
 			this.match(BNGParser.GENERATENETWORK);
-			this.state = 1098;
+			this.state = 1205;
 			this.match(BNGParser.LPAREN);
-			this.state = 1100;
+			this.state = 1207;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.LBRACKET || _la === BNGParser.DBQUOTES) {
 				{
-				this.state = 1099;
+				this.state = 1206;
 				this.action_args();
 				}
 			}
 
-			this.state = 1102;
+			this.state = 1209;
 			this.match(BNGParser.RPAREN);
-			this.state = 1104;
+			this.state = 1211;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.SEMI) {
 				{
-				this.state = 1103;
+				this.state = 1210;
 				this.match(BNGParser.SEMI);
 				}
 			}
 
-			this.state = 1109;
+			this.state = 1216;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 1106;
+				this.state = 1213;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 1111;
+				this.state = 1218;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -4586,14 +5082,14 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public simulate_cmd(): Simulate_cmdContext {
 		let _localctx: Simulate_cmdContext = new Simulate_cmdContext(this._ctx, this.state);
-		this.enterRule(_localctx, 112, BNGParser.RULE_simulate_cmd);
+		this.enterRule(_localctx, 120, BNGParser.RULE_simulate_cmd);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1112;
+			this.state = 1219;
 			_la = this._input.LA(1);
-			if (!(((((_la - 51)) & ~0x1F) === 0 && ((1 << (_la - 51)) & ((1 << (BNGParser.SIMULATE - 51)) | (1 << (BNGParser.SIMULATE_ODE - 51)) | (1 << (BNGParser.SIMULATE_SSA - 51)) | (1 << (BNGParser.SIMULATE_PLA - 51)))) !== 0) || _la === BNGParser.SIMULATE_NF || _la === BNGParser.SIMULATE_RM)) {
+			if (!(((((_la - 53)) & ~0x1F) === 0 && ((1 << (_la - 53)) & ((1 << (BNGParser.SIMULATE - 53)) | (1 << (BNGParser.SIMULATE_ODE - 53)) | (1 << (BNGParser.SIMULATE_SSA - 53)) | (1 << (BNGParser.SIMULATE_PLA - 53)))) !== 0) || _la === BNGParser.SIMULATE_NF || _la === BNGParser.SIMULATE_RM)) {
 			this._errHandler.recoverInline(this);
 			} else {
 				if (this._input.LA(1) === Token.EOF) {
@@ -4603,41 +5099,41 @@ export class BNGParser extends Parser {
 				this._errHandler.reportMatch(this);
 				this.consume();
 			}
-			this.state = 1113;
+			this.state = 1220;
 			this.match(BNGParser.LPAREN);
-			this.state = 1115;
+			this.state = 1222;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.LBRACKET || _la === BNGParser.DBQUOTES) {
 				{
-				this.state = 1114;
+				this.state = 1221;
 				this.action_args();
 				}
 			}
 
-			this.state = 1117;
+			this.state = 1224;
 			this.match(BNGParser.RPAREN);
-			this.state = 1119;
+			this.state = 1226;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.SEMI) {
 				{
-				this.state = 1118;
+				this.state = 1225;
 				this.match(BNGParser.SEMI);
 				}
 			}
 
-			this.state = 1124;
+			this.state = 1231;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 1121;
+				this.state = 1228;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 1126;
+				this.state = 1233;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -4660,14 +5156,14 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public write_cmd(): Write_cmdContext {
 		let _localctx: Write_cmdContext = new Write_cmdContext(this._ctx, this.state);
-		this.enterRule(_localctx, 114, BNGParser.RULE_write_cmd);
+		this.enterRule(_localctx, 122, BNGParser.RULE_write_cmd);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1127;
+			this.state = 1234;
 			_la = this._input.LA(1);
-			if (!(((((_la - 116)) & ~0x1F) === 0 && ((1 << (_la - 116)) & ((1 << (BNGParser.WRITEFILE - 116)) | (1 << (BNGParser.WRITEMODEL - 116)) | (1 << (BNGParser.WRITEXML - 116)) | (1 << (BNGParser.WRITENETWORK - 116)) | (1 << (BNGParser.WRITESBML - 116)) | (1 << (BNGParser.WRITELATEX - 116)) | (1 << (BNGParser.WRITEMFILE - 116)) | (1 << (BNGParser.WRITEMEXFILE - 116)))) !== 0))) {
+			if (!(((((_la - 118)) & ~0x1F) === 0 && ((1 << (_la - 118)) & ((1 << (BNGParser.WRITEFILE - 118)) | (1 << (BNGParser.WRITEMODEL - 118)) | (1 << (BNGParser.WRITEXML - 118)) | (1 << (BNGParser.WRITENETWORK - 118)) | (1 << (BNGParser.WRITESBML - 118)) | (1 << (BNGParser.WRITELATEX - 118)) | (1 << (BNGParser.WRITEMFILE - 118)) | (1 << (BNGParser.WRITEMEXFILE - 118)))) !== 0))) {
 			this._errHandler.recoverInline(this);
 			} else {
 				if (this._input.LA(1) === Token.EOF) {
@@ -4677,41 +5173,41 @@ export class BNGParser extends Parser {
 				this._errHandler.reportMatch(this);
 				this.consume();
 			}
-			this.state = 1128;
+			this.state = 1235;
 			this.match(BNGParser.LPAREN);
-			this.state = 1130;
+			this.state = 1237;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.LBRACKET || _la === BNGParser.DBQUOTES) {
 				{
-				this.state = 1129;
+				this.state = 1236;
 				this.action_args();
 				}
 			}
 
-			this.state = 1132;
+			this.state = 1239;
 			this.match(BNGParser.RPAREN);
-			this.state = 1134;
+			this.state = 1241;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.SEMI) {
 				{
-				this.state = 1133;
+				this.state = 1240;
 				this.match(BNGParser.SEMI);
 				}
 			}
 
-			this.state = 1139;
+			this.state = 1246;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 1136;
+				this.state = 1243;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 1141;
+				this.state = 1248;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -4734,14 +5230,14 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public set_cmd(): Set_cmdContext {
 		let _localctx: Set_cmdContext = new Set_cmdContext(this._ctx, this.state);
-		this.enterRule(_localctx, 116, BNGParser.RULE_set_cmd);
+		this.enterRule(_localctx, 124, BNGParser.RULE_set_cmd);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1142;
+			this.state = 1249;
 			_la = this._input.LA(1);
-			if (!(((((_la - 139)) & ~0x1F) === 0 && ((1 << (_la - 139)) & ((1 << (BNGParser.SETCONCENTRATION - 139)) | (1 << (BNGParser.ADDCONCENTRATION - 139)) | (1 << (BNGParser.SETPARAMETER - 139)))) !== 0))) {
+			if (!(((((_la - 141)) & ~0x1F) === 0 && ((1 << (_la - 141)) & ((1 << (BNGParser.SETCONCENTRATION - 141)) | (1 << (BNGParser.ADDCONCENTRATION - 141)) | (1 << (BNGParser.SETPARAMETER - 141)))) !== 0))) {
 			this._errHandler.recoverInline(this);
 			} else {
 				if (this._input.LA(1) === Token.EOF) {
@@ -4751,29 +5247,29 @@ export class BNGParser extends Parser {
 				this._errHandler.reportMatch(this);
 				this.consume();
 			}
-			this.state = 1143;
+			this.state = 1250;
 			this.match(BNGParser.LPAREN);
-			this.state = 1144;
+			this.state = 1251;
 			this.match(BNGParser.DBQUOTES);
-			this.state = 1151;
+			this.state = 1258;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 164, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 181, this._ctx) ) {
 			case 1:
 				{
-				this.state = 1145;
+				this.state = 1252;
 				this.species_def();
 				}
 				break;
 
 			case 2:
 				{
-				this.state = 1147;
+				this.state = 1254;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				do {
 					{
 					{
-					this.state = 1146;
+					this.state = 1253;
 					_la = this._input.LA(1);
 					if (_la <= 0 || (_la === BNGParser.DBQUOTES)) {
 					this._errHandler.recoverInline(this);
@@ -4787,18 +5283,18 @@ export class BNGParser extends Parser {
 					}
 					}
 					}
-					this.state = 1149;
+					this.state = 1256;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
-				} while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED) | (1 << BNGParser.INCLUDE_REACTANTS) | (1 << BNGParser.INCLUDE_PRODUCTS))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)) | (1 << (BNGParser.T_END - 32)) | (1 << (BNGParser.N_STEPS - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)) | (1 << (BNGParser.EQUIL - 64)) | (1 << (BNGParser.PARAMETER_SCAN - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 96)) | (1 << (BNGParser.TEXTREACTION - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)) | (1 << (BNGParser.EXP - 128)) | (1 << (BNGParser.LN - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)) | (1 << (BNGParser.RSBRACKET - 160)) | (1 << (BNGParser.LBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)) | (1 << (BNGParser.SQUOTE - 192)) | (1 << (BNGParser.AMPERSAND - 192)))) !== 0) || _la === BNGParser.VERSION_NUMBER || _la === BNGParser.ULB);
+				} while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.ANCHORS) | (1 << BNGParser.MOLECULAR) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.INCLUDE_REACTANTS - 32)) | (1 << (BNGParser.INCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.T_END - 64)) | (1 << (BNGParser.N_STEPS - 64)) | (1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.EQUIL - 96)) | (1 << (BNGParser.PARAMETER_SCAN - 96)) | (1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.EVALUATE_EXPRESSIONS - 128)) | (1 << (BNGParser.TEXTREACTION - 128)) | (1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.EXP - 160)) | (1 << (BNGParser.LN - 160)) | (1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RSBRACKET - 192)) | (1 << (BNGParser.LBRACKET - 192)) | (1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)))) !== 0) || ((((_la - 224)) & ~0x1F) === 0 && ((1 << (_la - 224)) & ((1 << (BNGParser.SQUOTE - 224)) | (1 << (BNGParser.AMPERSAND - 224)) | (1 << (BNGParser.VERSION_NUMBER - 224)) | (1 << (BNGParser.ULB - 224)))) !== 0));
 				}
 				break;
 			}
-			this.state = 1153;
+			this.state = 1260;
 			this.match(BNGParser.DBQUOTES);
-			this.state = 1154;
+			this.state = 1261;
 			this.match(BNGParser.COMMA);
-			this.state = 1164;
+			this.state = 1271;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case BNGParser.PREFIX:
@@ -4916,21 +5412,21 @@ export class BNGParser extends Parser {
 			case BNGParser.PLUS:
 			case BNGParser.EMARK:
 				{
-				this.state = 1155;
+				this.state = 1262;
 				this.expression();
 				}
 				break;
 			case BNGParser.DBQUOTES:
 				{
-				this.state = 1156;
+				this.state = 1263;
 				this.match(BNGParser.DBQUOTES);
-				this.state = 1160;
+				this.state = 1267;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED) | (1 << BNGParser.INCLUDE_REACTANTS) | (1 << BNGParser.INCLUDE_PRODUCTS))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)) | (1 << (BNGParser.T_END - 32)) | (1 << (BNGParser.N_STEPS - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)) | (1 << (BNGParser.EQUIL - 64)) | (1 << (BNGParser.PARAMETER_SCAN - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 96)) | (1 << (BNGParser.TEXTREACTION - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)) | (1 << (BNGParser.EXP - 128)) | (1 << (BNGParser.LN - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)) | (1 << (BNGParser.RSBRACKET - 160)) | (1 << (BNGParser.LBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)) | (1 << (BNGParser.SQUOTE - 192)) | (1 << (BNGParser.AMPERSAND - 192)))) !== 0) || _la === BNGParser.VERSION_NUMBER || _la === BNGParser.ULB) {
+				while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.ANCHORS) | (1 << BNGParser.MOLECULAR) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.INCLUDE_REACTANTS - 32)) | (1 << (BNGParser.INCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.T_END - 64)) | (1 << (BNGParser.N_STEPS - 64)) | (1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.EQUIL - 96)) | (1 << (BNGParser.PARAMETER_SCAN - 96)) | (1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.EVALUATE_EXPRESSIONS - 128)) | (1 << (BNGParser.TEXTREACTION - 128)) | (1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.EXP - 160)) | (1 << (BNGParser.LN - 160)) | (1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RSBRACKET - 192)) | (1 << (BNGParser.LBRACKET - 192)) | (1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)))) !== 0) || ((((_la - 224)) & ~0x1F) === 0 && ((1 << (_la - 224)) & ((1 << (BNGParser.SQUOTE - 224)) | (1 << (BNGParser.AMPERSAND - 224)) | (1 << (BNGParser.VERSION_NUMBER - 224)) | (1 << (BNGParser.ULB - 224)))) !== 0)) {
 					{
 					{
-					this.state = 1157;
+					this.state = 1264;
 					_la = this._input.LA(1);
 					if (_la <= 0 || (_la === BNGParser.DBQUOTES)) {
 					this._errHandler.recoverInline(this);
@@ -4944,40 +5440,40 @@ export class BNGParser extends Parser {
 					}
 					}
 					}
-					this.state = 1162;
+					this.state = 1269;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 1163;
+				this.state = 1270;
 				this.match(BNGParser.DBQUOTES);
 				}
 				break;
 			default:
 				throw new NoViableAltException(this);
 			}
-			this.state = 1166;
+			this.state = 1273;
 			this.match(BNGParser.RPAREN);
-			this.state = 1168;
+			this.state = 1275;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.SEMI) {
 				{
-				this.state = 1167;
+				this.state = 1274;
 				this.match(BNGParser.SEMI);
 				}
 			}
 
-			this.state = 1173;
+			this.state = 1280;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 1170;
+				this.state = 1277;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 1175;
+				this.state = 1282;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -5000,14 +5496,14 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public other_action_cmd(): Other_action_cmdContext {
 		let _localctx: Other_action_cmdContext = new Other_action_cmdContext(this._ctx, this.state);
-		this.enterRule(_localctx, 118, BNGParser.RULE_other_action_cmd);
+		this.enterRule(_localctx, 126, BNGParser.RULE_other_action_cmd);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1176;
+			this.state = 1283;
 			_la = this._input.LA(1);
-			if (!(_la === BNGParser.GENERATEHYBRIDMODEL || ((((_la - 95)) & ~0x1F) === 0 && ((1 << (_la - 95)) & ((1 << (BNGParser.PARAMETER_SCAN - 95)) | (1 << (BNGParser.BIFURCATE - 95)) | (1 << (BNGParser.READFILE - 95)) | (1 << (BNGParser.VISUALIZE - 95)))) !== 0) || ((((_la - 141)) & ~0x1F) === 0 && ((1 << (_la - 141)) & ((1 << (BNGParser.SAVECONCENTRATIONS - 141)) | (1 << (BNGParser.RESETCONCENTRATIONS - 141)) | (1 << (BNGParser.SAVEPARAMETERS - 141)) | (1 << (BNGParser.RESETPARAMETERS - 141)) | (1 << (BNGParser.QUIT - 141)))) !== 0))) {
+			if (!(_la === BNGParser.GENERATEHYBRIDMODEL || ((((_la - 97)) & ~0x1F) === 0 && ((1 << (_la - 97)) & ((1 << (BNGParser.PARAMETER_SCAN - 97)) | (1 << (BNGParser.BIFURCATE - 97)) | (1 << (BNGParser.READFILE - 97)) | (1 << (BNGParser.VISUALIZE - 97)))) !== 0) || ((((_la - 143)) & ~0x1F) === 0 && ((1 << (_la - 143)) & ((1 << (BNGParser.SAVECONCENTRATIONS - 143)) | (1 << (BNGParser.RESETCONCENTRATIONS - 143)) | (1 << (BNGParser.SAVEPARAMETERS - 143)) | (1 << (BNGParser.RESETPARAMETERS - 143)) | (1 << (BNGParser.QUIT - 143)))) !== 0))) {
 			this._errHandler.recoverInline(this);
 			} else {
 				if (this._input.LA(1) === Token.EOF) {
@@ -5017,41 +5513,41 @@ export class BNGParser extends Parser {
 				this._errHandler.reportMatch(this);
 				this.consume();
 			}
-			this.state = 1177;
+			this.state = 1284;
 			this.match(BNGParser.LPAREN);
-			this.state = 1179;
+			this.state = 1286;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.LBRACKET || _la === BNGParser.DBQUOTES) {
 				{
-				this.state = 1178;
+				this.state = 1285;
 				this.action_args();
 				}
 			}
 
-			this.state = 1181;
+			this.state = 1288;
 			this.match(BNGParser.RPAREN);
-			this.state = 1183;
+			this.state = 1290;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.SEMI) {
 				{
-				this.state = 1182;
+				this.state = 1289;
 				this.match(BNGParser.SEMI);
 				}
 			}
 
-			this.state = 1188;
+			this.state = 1295;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LB) {
 				{
 				{
-				this.state = 1185;
+				this.state = 1292;
 				this.match(BNGParser.LB);
 				}
 				}
-				this.state = 1190;
+				this.state = 1297;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -5074,43 +5570,43 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public action_args(): Action_argsContext {
 		let _localctx: Action_argsContext = new Action_argsContext(this._ctx, this.state);
-		this.enterRule(_localctx, 120, BNGParser.RULE_action_args);
+		this.enterRule(_localctx, 128, BNGParser.RULE_action_args);
 		let _la: number;
 		try {
-			this.state = 1204;
+			this.state = 1311;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case BNGParser.LBRACKET:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 1191;
+				this.state = 1298;
 				this.match(BNGParser.LBRACKET);
-				this.state = 1193;
+				this.state = 1300;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if (((((_la - 39)) & ~0x1F) === 0 && ((1 << (_la - 39)) & ((1 << (BNGParser.PREFIX - 39)) | (1 << (BNGParser.SUFFIX - 39)) | (1 << (BNGParser.OVERWRITE - 39)) | (1 << (BNGParser.MAX_AGG - 39)) | (1 << (BNGParser.MAX_ITER - 39)) | (1 << (BNGParser.MAX_STOICH - 39)) | (1 << (BNGParser.PRINT_ITER - 39)) | (1 << (BNGParser.CHECK_ISO - 39)) | (1 << (BNGParser.SAFE - 39)) | (1 << (BNGParser.EXECUTE - 39)) | (1 << (BNGParser.METHOD - 39)) | (1 << (BNGParser.VERBOSE - 39)) | (1 << (BNGParser.NETFILE - 39)) | (1 << (BNGParser.CONTINUE - 39)) | (1 << (BNGParser.T_START - 39)) | (1 << (BNGParser.T_END - 39)) | (1 << (BNGParser.N_STEPS - 39)) | (1 << (BNGParser.N_OUTPUT_STEPS - 39)) | (1 << (BNGParser.MAX_SIM_STEPS - 39)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 39)) | (1 << (BNGParser.SAMPLE_TIMES - 39)) | (1 << (BNGParser.SAVE_PROGRESS - 39)) | (1 << (BNGParser.PRINT_CDAT - 39)) | (1 << (BNGParser.PRINT_FUNCTIONS - 39)))) !== 0) || ((((_la - 71)) & ~0x1F) === 0 && ((1 << (_la - 71)) & ((1 << (BNGParser.PRINT_NET - 71)) | (1 << (BNGParser.PRINT_END - 71)) | (1 << (BNGParser.STOP_IF - 71)) | (1 << (BNGParser.PRINT_ON_STOP - 71)) | (1 << (BNGParser.ATOL - 71)) | (1 << (BNGParser.RTOL - 71)) | (1 << (BNGParser.STEADY_STATE - 71)) | (1 << (BNGParser.SPARSE - 71)) | (1 << (BNGParser.PLA_CONFIG - 71)) | (1 << (BNGParser.PLA_OUTPUT - 71)) | (1 << (BNGParser.PARAM - 71)) | (1 << (BNGParser.COMPLEX - 71)) | (1 << (BNGParser.GET_FINAL_STATE - 71)) | (1 << (BNGParser.GML - 71)) | (1 << (BNGParser.NOCSLF - 71)) | (1 << (BNGParser.NOTF - 71)) | (1 << (BNGParser.BINARY_OUTPUT - 71)) | (1 << (BNGParser.UTL - 71)) | (1 << (BNGParser.EQUIL - 71)) | (1 << (BNGParser.PARAMETER - 71)) | (1 << (BNGParser.PAR_MIN - 71)) | (1 << (BNGParser.PAR_MAX - 71)) | (1 << (BNGParser.N_SCAN_PTS - 71)) | (1 << (BNGParser.LOG_SCALE - 71)) | (1 << (BNGParser.RESET_CONC - 71)))) !== 0) || ((((_la - 104)) & ~0x1F) === 0 && ((1 << (_la - 104)) & ((1 << (BNGParser.FILE - 104)) | (1 << (BNGParser.ATOMIZE - 104)) | (1 << (BNGParser.BLOCKS - 104)) | (1 << (BNGParser.SKIPACTIONS - 104)) | (1 << (BNGParser.TYPE - 104)) | (1 << (BNGParser.BACKGROUND - 104)) | (1 << (BNGParser.COLLAPSE - 104)) | (1 << (BNGParser.OPTS - 104)) | (1 << (BNGParser.FORMAT - 104)) | (1 << (BNGParser.INCLUDE_MODEL - 104)) | (1 << (BNGParser.INCLUDE_NETWORK - 104)) | (1 << (BNGParser.PRETTY_FORMATTING - 104)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 104)) | (1 << (BNGParser.TEXTREACTION - 104)) | (1 << (BNGParser.TEXTSPECIES - 104)) | (1 << (BNGParser.BDF - 104)) | (1 << (BNGParser.MAX_STEP - 104)) | (1 << (BNGParser.MAXORDER - 104)) | (1 << (BNGParser.STATS - 104)) | (1 << (BNGParser.MAX_NUM_STEPS - 104)))) !== 0) || ((((_la - 136)) & ~0x1F) === 0 && ((1 << (_la - 136)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 136)) | (1 << (BNGParser.MAX_CONV_FAILS - 136)) | (1 << (BNGParser.STIFF - 136)))) !== 0) || _la === BNGParser.STRING) {
+				if (((((_la - 41)) & ~0x1F) === 0 && ((1 << (_la - 41)) & ((1 << (BNGParser.PREFIX - 41)) | (1 << (BNGParser.SUFFIX - 41)) | (1 << (BNGParser.OVERWRITE - 41)) | (1 << (BNGParser.MAX_AGG - 41)) | (1 << (BNGParser.MAX_ITER - 41)) | (1 << (BNGParser.MAX_STOICH - 41)) | (1 << (BNGParser.PRINT_ITER - 41)) | (1 << (BNGParser.CHECK_ISO - 41)) | (1 << (BNGParser.SAFE - 41)) | (1 << (BNGParser.EXECUTE - 41)) | (1 << (BNGParser.METHOD - 41)) | (1 << (BNGParser.VERBOSE - 41)) | (1 << (BNGParser.NETFILE - 41)) | (1 << (BNGParser.CONTINUE - 41)) | (1 << (BNGParser.T_START - 41)) | (1 << (BNGParser.T_END - 41)) | (1 << (BNGParser.N_STEPS - 41)) | (1 << (BNGParser.N_OUTPUT_STEPS - 41)) | (1 << (BNGParser.MAX_SIM_STEPS - 41)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 41)) | (1 << (BNGParser.SAMPLE_TIMES - 41)) | (1 << (BNGParser.SAVE_PROGRESS - 41)) | (1 << (BNGParser.PRINT_CDAT - 41)) | (1 << (BNGParser.PRINT_FUNCTIONS - 41)))) !== 0) || ((((_la - 73)) & ~0x1F) === 0 && ((1 << (_la - 73)) & ((1 << (BNGParser.PRINT_NET - 73)) | (1 << (BNGParser.PRINT_END - 73)) | (1 << (BNGParser.STOP_IF - 73)) | (1 << (BNGParser.PRINT_ON_STOP - 73)) | (1 << (BNGParser.ATOL - 73)) | (1 << (BNGParser.RTOL - 73)) | (1 << (BNGParser.STEADY_STATE - 73)) | (1 << (BNGParser.SPARSE - 73)) | (1 << (BNGParser.PLA_CONFIG - 73)) | (1 << (BNGParser.PLA_OUTPUT - 73)) | (1 << (BNGParser.PARAM - 73)) | (1 << (BNGParser.COMPLEX - 73)) | (1 << (BNGParser.GET_FINAL_STATE - 73)) | (1 << (BNGParser.GML - 73)) | (1 << (BNGParser.NOCSLF - 73)) | (1 << (BNGParser.NOTF - 73)) | (1 << (BNGParser.BINARY_OUTPUT - 73)) | (1 << (BNGParser.UTL - 73)) | (1 << (BNGParser.EQUIL - 73)) | (1 << (BNGParser.PARAMETER - 73)) | (1 << (BNGParser.PAR_MIN - 73)) | (1 << (BNGParser.PAR_MAX - 73)) | (1 << (BNGParser.N_SCAN_PTS - 73)) | (1 << (BNGParser.LOG_SCALE - 73)) | (1 << (BNGParser.RESET_CONC - 73)))) !== 0) || ((((_la - 106)) & ~0x1F) === 0 && ((1 << (_la - 106)) & ((1 << (BNGParser.FILE - 106)) | (1 << (BNGParser.ATOMIZE - 106)) | (1 << (BNGParser.BLOCKS - 106)) | (1 << (BNGParser.SKIPACTIONS - 106)) | (1 << (BNGParser.TYPE - 106)) | (1 << (BNGParser.BACKGROUND - 106)) | (1 << (BNGParser.COLLAPSE - 106)) | (1 << (BNGParser.OPTS - 106)) | (1 << (BNGParser.FORMAT - 106)) | (1 << (BNGParser.INCLUDE_MODEL - 106)) | (1 << (BNGParser.INCLUDE_NETWORK - 106)) | (1 << (BNGParser.PRETTY_FORMATTING - 106)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 106)) | (1 << (BNGParser.TEXTREACTION - 106)) | (1 << (BNGParser.TEXTSPECIES - 106)) | (1 << (BNGParser.BDF - 106)) | (1 << (BNGParser.MAX_STEP - 106)) | (1 << (BNGParser.MAXORDER - 106)) | (1 << (BNGParser.STATS - 106)) | (1 << (BNGParser.MAX_NUM_STEPS - 106)))) !== 0) || ((((_la - 138)) & ~0x1F) === 0 && ((1 << (_la - 138)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 138)) | (1 << (BNGParser.MAX_CONV_FAILS - 138)) | (1 << (BNGParser.STIFF - 138)))) !== 0) || _la === BNGParser.STRING) {
 					{
-					this.state = 1192;
+					this.state = 1299;
 					this.action_arg_list();
 					}
 				}
 
-				this.state = 1195;
+				this.state = 1302;
 				this.match(BNGParser.RBRACKET);
 				}
 				break;
 			case BNGParser.DBQUOTES:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 1196;
+				this.state = 1303;
 				this.match(BNGParser.DBQUOTES);
-				this.state = 1200;
+				this.state = 1307;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED) | (1 << BNGParser.INCLUDE_REACTANTS) | (1 << BNGParser.INCLUDE_PRODUCTS))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)) | (1 << (BNGParser.T_END - 32)) | (1 << (BNGParser.N_STEPS - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)) | (1 << (BNGParser.EQUIL - 64)) | (1 << (BNGParser.PARAMETER_SCAN - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 96)) | (1 << (BNGParser.TEXTREACTION - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)) | (1 << (BNGParser.EXP - 128)) | (1 << (BNGParser.LN - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)) | (1 << (BNGParser.RSBRACKET - 160)) | (1 << (BNGParser.LBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)) | (1 << (BNGParser.SQUOTE - 192)) | (1 << (BNGParser.AMPERSAND - 192)))) !== 0) || _la === BNGParser.VERSION_NUMBER || _la === BNGParser.ULB) {
+				while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.ANCHORS) | (1 << BNGParser.MOLECULAR) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.INCLUDE_REACTANTS - 32)) | (1 << (BNGParser.INCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.T_END - 64)) | (1 << (BNGParser.N_STEPS - 64)) | (1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.EQUIL - 96)) | (1 << (BNGParser.PARAMETER_SCAN - 96)) | (1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.EVALUATE_EXPRESSIONS - 128)) | (1 << (BNGParser.TEXTREACTION - 128)) | (1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.EXP - 160)) | (1 << (BNGParser.LN - 160)) | (1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RSBRACKET - 192)) | (1 << (BNGParser.LBRACKET - 192)) | (1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)))) !== 0) || ((((_la - 224)) & ~0x1F) === 0 && ((1 << (_la - 224)) & ((1 << (BNGParser.SQUOTE - 224)) | (1 << (BNGParser.AMPERSAND - 224)) | (1 << (BNGParser.VERSION_NUMBER - 224)) | (1 << (BNGParser.ULB - 224)))) !== 0)) {
 					{
 					{
-					this.state = 1197;
+					this.state = 1304;
 					_la = this._input.LA(1);
 					if (_la <= 0 || (_la === BNGParser.DBQUOTES)) {
 					this._errHandler.recoverInline(this);
@@ -5124,11 +5620,11 @@ export class BNGParser extends Parser {
 					}
 					}
 					}
-					this.state = 1202;
+					this.state = 1309;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 1203;
+				this.state = 1310;
 				this.match(BNGParser.DBQUOTES);
 				}
 				break;
@@ -5153,26 +5649,26 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public action_arg_list(): Action_arg_listContext {
 		let _localctx: Action_arg_listContext = new Action_arg_listContext(this._ctx, this.state);
-		this.enterRule(_localctx, 122, BNGParser.RULE_action_arg_list);
+		this.enterRule(_localctx, 130, BNGParser.RULE_action_arg_list);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1206;
+			this.state = 1313;
 			this.action_arg();
-			this.state = 1211;
+			this.state = 1318;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.COMMA) {
 				{
 				{
-				this.state = 1207;
+				this.state = 1314;
 				this.match(BNGParser.COMMA);
-				this.state = 1208;
+				this.state = 1315;
 				this.action_arg();
 				}
 				}
-				this.state = 1213;
+				this.state = 1320;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -5195,15 +5691,15 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public action_arg(): Action_argContext {
 		let _localctx: Action_argContext = new Action_argContext(this._ctx, this.state);
-		this.enterRule(_localctx, 124, BNGParser.RULE_action_arg);
+		this.enterRule(_localctx, 132, BNGParser.RULE_action_arg);
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1214;
+			this.state = 1321;
 			this.arg_name();
-			this.state = 1215;
+			this.state = 1322;
 			this.match(BNGParser.ASSIGNS);
-			this.state = 1216;
+			this.state = 1323;
 			this.action_arg_value();
 			}
 		}
@@ -5224,16 +5720,16 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public action_arg_value(): Action_arg_valueContext {
 		let _localctx: Action_arg_valueContext = new Action_arg_valueContext(this._ctx, this.state);
-		this.enterRule(_localctx, 126, BNGParser.RULE_action_arg_value);
+		this.enterRule(_localctx, 134, BNGParser.RULE_action_arg_value);
 		let _la: number;
 		try {
-			this.state = 1245;
+			this.state = 1352;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 179, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 196, this._ctx) ) {
 			case 1:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 1218;
+				this.state = 1325;
 				this.expression();
 				}
 				break;
@@ -5241,7 +5737,7 @@ export class BNGParser extends Parser {
 			case 2:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 1219;
+				this.state = 1326;
 				this.keyword_as_value();
 				}
 				break;
@@ -5249,15 +5745,15 @@ export class BNGParser extends Parser {
 			case 3:
 				this.enterOuterAlt(_localctx, 3);
 				{
-				this.state = 1220;
+				this.state = 1327;
 				this.match(BNGParser.DBQUOTES);
-				this.state = 1224;
+				this.state = 1331;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED) | (1 << BNGParser.INCLUDE_REACTANTS) | (1 << BNGParser.INCLUDE_PRODUCTS))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)) | (1 << (BNGParser.T_END - 32)) | (1 << (BNGParser.N_STEPS - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)) | (1 << (BNGParser.EQUIL - 64)) | (1 << (BNGParser.PARAMETER_SCAN - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 96)) | (1 << (BNGParser.TEXTREACTION - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)) | (1 << (BNGParser.EXP - 128)) | (1 << (BNGParser.LN - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)) | (1 << (BNGParser.RSBRACKET - 160)) | (1 << (BNGParser.LBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)) | (1 << (BNGParser.SQUOTE - 192)) | (1 << (BNGParser.AMPERSAND - 192)))) !== 0) || _la === BNGParser.VERSION_NUMBER || _la === BNGParser.ULB) {
+				while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.ANCHORS) | (1 << BNGParser.MOLECULAR) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.INCLUDE_REACTANTS - 32)) | (1 << (BNGParser.INCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.T_END - 64)) | (1 << (BNGParser.N_STEPS - 64)) | (1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.EQUIL - 96)) | (1 << (BNGParser.PARAMETER_SCAN - 96)) | (1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.EVALUATE_EXPRESSIONS - 128)) | (1 << (BNGParser.TEXTREACTION - 128)) | (1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.EXP - 160)) | (1 << (BNGParser.LN - 160)) | (1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RSBRACKET - 192)) | (1 << (BNGParser.LBRACKET - 192)) | (1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)))) !== 0) || ((((_la - 224)) & ~0x1F) === 0 && ((1 << (_la - 224)) & ((1 << (BNGParser.SQUOTE - 224)) | (1 << (BNGParser.AMPERSAND - 224)) | (1 << (BNGParser.VERSION_NUMBER - 224)) | (1 << (BNGParser.ULB - 224)))) !== 0)) {
 					{
 					{
-					this.state = 1221;
+					this.state = 1328;
 					_la = this._input.LA(1);
 					if (_la <= 0 || (_la === BNGParser.DBQUOTES)) {
 					this._errHandler.recoverInline(this);
@@ -5271,11 +5767,11 @@ export class BNGParser extends Parser {
 					}
 					}
 					}
-					this.state = 1226;
+					this.state = 1333;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 1227;
+				this.state = 1334;
 				this.match(BNGParser.DBQUOTES);
 				}
 				break;
@@ -5283,15 +5779,15 @@ export class BNGParser extends Parser {
 			case 4:
 				this.enterOuterAlt(_localctx, 4);
 				{
-				this.state = 1228;
+				this.state = 1335;
 				this.match(BNGParser.SQUOTE);
-				this.state = 1232;
+				this.state = 1339;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED) | (1 << BNGParser.INCLUDE_REACTANTS) | (1 << BNGParser.INCLUDE_PRODUCTS))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)) | (1 << (BNGParser.T_END - 32)) | (1 << (BNGParser.N_STEPS - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)) | (1 << (BNGParser.EQUIL - 64)) | (1 << (BNGParser.PARAMETER_SCAN - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 96)) | (1 << (BNGParser.TEXTREACTION - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)) | (1 << (BNGParser.EXP - 128)) | (1 << (BNGParser.LN - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)) | (1 << (BNGParser.RSBRACKET - 160)) | (1 << (BNGParser.LBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)) | (1 << (BNGParser.DBQUOTES - 192)) | (1 << (BNGParser.AMPERSAND - 192)))) !== 0) || _la === BNGParser.VERSION_NUMBER || _la === BNGParser.ULB) {
+				while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BNGParser.LINE_COMMENT) | (1 << BNGParser.LB) | (1 << BNGParser.WS) | (1 << BNGParser.BEGIN) | (1 << BNGParser.END) | (1 << BNGParser.MODEL) | (1 << BNGParser.PARAMETERS) | (1 << BNGParser.COMPARTMENTS) | (1 << BNGParser.MOLECULE) | (1 << BNGParser.MOLECULES) | (1 << BNGParser.TYPES) | (1 << BNGParser.SEED) | (1 << BNGParser.SPECIES) | (1 << BNGParser.OBSERVABLES) | (1 << BNGParser.FUNCTIONS) | (1 << BNGParser.REACTION) | (1 << BNGParser.REACTIONS) | (1 << BNGParser.RULES) | (1 << BNGParser.REACTION_RULES) | (1 << BNGParser.MOLECULE_TYPES) | (1 << BNGParser.GROUPS) | (1 << BNGParser.ACTIONS) | (1 << BNGParser.POPULATION) | (1 << BNGParser.MAPS) | (1 << BNGParser.ENERGY) | (1 << BNGParser.PATTERNS) | (1 << BNGParser.ANCHORS) | (1 << BNGParser.MOLECULAR) | (1 << BNGParser.MATCHONCE) | (1 << BNGParser.DELETEMOLECULES) | (1 << BNGParser.MOVECONNECTED))) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & ((1 << (BNGParser.INCLUDE_REACTANTS - 32)) | (1 << (BNGParser.INCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.EXCLUDE_REACTANTS - 32)) | (1 << (BNGParser.EXCLUDE_PRODUCTS - 32)) | (1 << (BNGParser.TOTALRATE - 32)) | (1 << (BNGParser.VERSION - 32)) | (1 << (BNGParser.SET_OPTION - 32)) | (1 << (BNGParser.SET_MODEL_NAME - 32)) | (1 << (BNGParser.SUBSTANCEUNITS - 32)) | (1 << (BNGParser.PREFIX - 32)) | (1 << (BNGParser.SUFFIX - 32)) | (1 << (BNGParser.GENERATENETWORK - 32)) | (1 << (BNGParser.OVERWRITE - 32)) | (1 << (BNGParser.MAX_AGG - 32)) | (1 << (BNGParser.MAX_ITER - 32)) | (1 << (BNGParser.MAX_STOICH - 32)) | (1 << (BNGParser.PRINT_ITER - 32)) | (1 << (BNGParser.CHECK_ISO - 32)) | (1 << (BNGParser.GENERATEHYBRIDMODEL - 32)) | (1 << (BNGParser.SAFE - 32)) | (1 << (BNGParser.EXECUTE - 32)) | (1 << (BNGParser.SIMULATE - 32)) | (1 << (BNGParser.METHOD - 32)) | (1 << (BNGParser.ODE - 32)) | (1 << (BNGParser.SSA - 32)) | (1 << (BNGParser.PLA - 32)) | (1 << (BNGParser.NF - 32)) | (1 << (BNGParser.VERBOSE - 32)) | (1 << (BNGParser.NETFILE - 32)) | (1 << (BNGParser.ARGFILE - 32)) | (1 << (BNGParser.CONTINUE - 32)) | (1 << (BNGParser.T_START - 32)))) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & ((1 << (BNGParser.T_END - 64)) | (1 << (BNGParser.N_STEPS - 64)) | (1 << (BNGParser.N_OUTPUT_STEPS - 64)) | (1 << (BNGParser.MAX_SIM_STEPS - 64)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 64)) | (1 << (BNGParser.SAMPLE_TIMES - 64)) | (1 << (BNGParser.SAVE_PROGRESS - 64)) | (1 << (BNGParser.PRINT_CDAT - 64)) | (1 << (BNGParser.PRINT_FUNCTIONS - 64)) | (1 << (BNGParser.PRINT_NET - 64)) | (1 << (BNGParser.PRINT_END - 64)) | (1 << (BNGParser.STOP_IF - 64)) | (1 << (BNGParser.PRINT_ON_STOP - 64)) | (1 << (BNGParser.SIMULATE_ODE - 64)) | (1 << (BNGParser.ATOL - 64)) | (1 << (BNGParser.RTOL - 64)) | (1 << (BNGParser.STEADY_STATE - 64)) | (1 << (BNGParser.SPARSE - 64)) | (1 << (BNGParser.SIMULATE_SSA - 64)) | (1 << (BNGParser.SIMULATE_PLA - 64)) | (1 << (BNGParser.PLA_CONFIG - 64)) | (1 << (BNGParser.PLA_OUTPUT - 64)) | (1 << (BNGParser.SIMULATE_NF - 64)) | (1 << (BNGParser.SIMULATE_RM - 64)) | (1 << (BNGParser.PARAM - 64)) | (1 << (BNGParser.COMPLEX - 64)) | (1 << (BNGParser.GET_FINAL_STATE - 64)) | (1 << (BNGParser.GML - 64)) | (1 << (BNGParser.NOCSLF - 64)) | (1 << (BNGParser.NOTF - 64)) | (1 << (BNGParser.BINARY_OUTPUT - 64)) | (1 << (BNGParser.UTL - 64)))) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & ((1 << (BNGParser.EQUIL - 96)) | (1 << (BNGParser.PARAMETER_SCAN - 96)) | (1 << (BNGParser.BIFURCATE - 96)) | (1 << (BNGParser.PARAMETER - 96)) | (1 << (BNGParser.PAR_MIN - 96)) | (1 << (BNGParser.PAR_MAX - 96)) | (1 << (BNGParser.N_SCAN_PTS - 96)) | (1 << (BNGParser.LOG_SCALE - 96)) | (1 << (BNGParser.RESET_CONC - 96)) | (1 << (BNGParser.READFILE - 96)) | (1 << (BNGParser.FILE - 96)) | (1 << (BNGParser.ATOMIZE - 96)) | (1 << (BNGParser.BLOCKS - 96)) | (1 << (BNGParser.SKIPACTIONS - 96)) | (1 << (BNGParser.VISUALIZE - 96)) | (1 << (BNGParser.TYPE - 96)) | (1 << (BNGParser.BACKGROUND - 96)) | (1 << (BNGParser.COLLAPSE - 96)) | (1 << (BNGParser.OPTS - 96)) | (1 << (BNGParser.WRITESSC - 96)) | (1 << (BNGParser.WRITESSCCFG - 96)) | (1 << (BNGParser.FORMAT - 96)) | (1 << (BNGParser.WRITEFILE - 96)) | (1 << (BNGParser.WRITEMODEL - 96)) | (1 << (BNGParser.WRITEXML - 96)) | (1 << (BNGParser.WRITENETWORK - 96)) | (1 << (BNGParser.WRITESBML - 96)) | (1 << (BNGParser.WRITEMDL - 96)) | (1 << (BNGParser.WRITELATEX - 96)) | (1 << (BNGParser.INCLUDE_MODEL - 96)) | (1 << (BNGParser.INCLUDE_NETWORK - 96)) | (1 << (BNGParser.PRETTY_FORMATTING - 96)))) !== 0) || ((((_la - 128)) & ~0x1F) === 0 && ((1 << (_la - 128)) & ((1 << (BNGParser.EVALUATE_EXPRESSIONS - 128)) | (1 << (BNGParser.TEXTREACTION - 128)) | (1 << (BNGParser.TEXTSPECIES - 128)) | (1 << (BNGParser.WRITEMFILE - 128)) | (1 << (BNGParser.WRITEMEXFILE - 128)) | (1 << (BNGParser.BDF - 128)) | (1 << (BNGParser.MAX_STEP - 128)) | (1 << (BNGParser.MAXORDER - 128)) | (1 << (BNGParser.STATS - 128)) | (1 << (BNGParser.MAX_NUM_STEPS - 128)) | (1 << (BNGParser.MAX_ERR_TEST_FAILS - 128)) | (1 << (BNGParser.MAX_CONV_FAILS - 128)) | (1 << (BNGParser.STIFF - 128)) | (1 << (BNGParser.SETCONCENTRATION - 128)) | (1 << (BNGParser.ADDCONCENTRATION - 128)) | (1 << (BNGParser.SAVECONCENTRATIONS - 128)) | (1 << (BNGParser.RESETCONCENTRATIONS - 128)) | (1 << (BNGParser.SETPARAMETER - 128)) | (1 << (BNGParser.SAVEPARAMETERS - 128)) | (1 << (BNGParser.RESETPARAMETERS - 128)) | (1 << (BNGParser.QUIT - 128)) | (1 << (BNGParser.TRUE - 128)) | (1 << (BNGParser.FALSE - 128)) | (1 << (BNGParser.SAT - 128)) | (1 << (BNGParser.MM - 128)) | (1 << (BNGParser.HILL - 128)) | (1 << (BNGParser.ARRHENIUS - 128)) | (1 << (BNGParser.MRATIO - 128)) | (1 << (BNGParser.TFUN - 128)) | (1 << (BNGParser.FUNCTIONPRODUCT - 128)) | (1 << (BNGParser.PRIORITY - 128)) | (1 << (BNGParser.IF - 128)))) !== 0) || ((((_la - 160)) & ~0x1F) === 0 && ((1 << (_la - 160)) & ((1 << (BNGParser.EXP - 160)) | (1 << (BNGParser.LN - 160)) | (1 << (BNGParser.LOG10 - 160)) | (1 << (BNGParser.LOG2 - 160)) | (1 << (BNGParser.SQRT - 160)) | (1 << (BNGParser.RINT - 160)) | (1 << (BNGParser.ABS - 160)) | (1 << (BNGParser.SIN - 160)) | (1 << (BNGParser.COS - 160)) | (1 << (BNGParser.TAN - 160)) | (1 << (BNGParser.ASIN - 160)) | (1 << (BNGParser.ACOS - 160)) | (1 << (BNGParser.ATAN - 160)) | (1 << (BNGParser.SINH - 160)) | (1 << (BNGParser.COSH - 160)) | (1 << (BNGParser.TANH - 160)) | (1 << (BNGParser.ASINH - 160)) | (1 << (BNGParser.ACOSH - 160)) | (1 << (BNGParser.ATANH - 160)) | (1 << (BNGParser.PI - 160)) | (1 << (BNGParser.EULERIAN - 160)) | (1 << (BNGParser.MIN - 160)) | (1 << (BNGParser.MAX - 160)) | (1 << (BNGParser.SUM - 160)) | (1 << (BNGParser.AVG - 160)) | (1 << (BNGParser.TIME - 160)) | (1 << (BNGParser.FLOAT - 160)) | (1 << (BNGParser.INT - 160)) | (1 << (BNGParser.STRING - 160)) | (1 << (BNGParser.SEMI - 160)) | (1 << (BNGParser.COLON - 160)) | (1 << (BNGParser.LSBRACKET - 160)))) !== 0) || ((((_la - 192)) & ~0x1F) === 0 && ((1 << (_la - 192)) & ((1 << (BNGParser.RSBRACKET - 192)) | (1 << (BNGParser.LBRACKET - 192)) | (1 << (BNGParser.RBRACKET - 192)) | (1 << (BNGParser.COMMA - 192)) | (1 << (BNGParser.DOT - 192)) | (1 << (BNGParser.LPAREN - 192)) | (1 << (BNGParser.RPAREN - 192)) | (1 << (BNGParser.UNI_REACTION_SIGN - 192)) | (1 << (BNGParser.BI_REACTION_SIGN - 192)) | (1 << (BNGParser.DOLLAR - 192)) | (1 << (BNGParser.TILDE - 192)) | (1 << (BNGParser.AT - 192)) | (1 << (BNGParser.GTE - 192)) | (1 << (BNGParser.GT - 192)) | (1 << (BNGParser.LTE - 192)) | (1 << (BNGParser.LT - 192)) | (1 << (BNGParser.ASSIGNS - 192)) | (1 << (BNGParser.EQUALS - 192)) | (1 << (BNGParser.NOT_EQUALS - 192)) | (1 << (BNGParser.BECOMES - 192)) | (1 << (BNGParser.LOGICAL_AND - 192)) | (1 << (BNGParser.LOGICAL_OR - 192)) | (1 << (BNGParser.DIV - 192)) | (1 << (BNGParser.TIMES - 192)) | (1 << (BNGParser.MINUS - 192)) | (1 << (BNGParser.PLUS - 192)) | (1 << (BNGParser.POWER - 192)) | (1 << (BNGParser.MOD - 192)) | (1 << (BNGParser.PIPE - 192)) | (1 << (BNGParser.QMARK - 192)) | (1 << (BNGParser.EMARK - 192)) | (1 << (BNGParser.DBQUOTES - 192)))) !== 0) || ((((_la - 225)) & ~0x1F) === 0 && ((1 << (_la - 225)) & ((1 << (BNGParser.AMPERSAND - 225)) | (1 << (BNGParser.VERSION_NUMBER - 225)) | (1 << (BNGParser.ULB - 225)))) !== 0)) {
 					{
 					{
-					this.state = 1229;
+					this.state = 1336;
 					_la = this._input.LA(1);
 					if (_la <= 0 || (_la === BNGParser.SQUOTE)) {
 					this._errHandler.recoverInline(this);
@@ -5305,11 +5801,11 @@ export class BNGParser extends Parser {
 					}
 					}
 					}
-					this.state = 1234;
+					this.state = 1341;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 1235;
+				this.state = 1342;
 				this.match(BNGParser.SQUOTE);
 				}
 				break;
@@ -5317,11 +5813,11 @@ export class BNGParser extends Parser {
 			case 5:
 				this.enterOuterAlt(_localctx, 5);
 				{
-				this.state = 1236;
+				this.state = 1343;
 				this.match(BNGParser.LSBRACKET);
-				this.state = 1237;
+				this.state = 1344;
 				this.expression_list();
-				this.state = 1238;
+				this.state = 1345;
 				this.match(BNGParser.RSBRACKET);
 				}
 				break;
@@ -5329,19 +5825,19 @@ export class BNGParser extends Parser {
 			case 6:
 				this.enterOuterAlt(_localctx, 6);
 				{
-				this.state = 1240;
+				this.state = 1347;
 				this.match(BNGParser.LBRACKET);
-				this.state = 1242;
+				this.state = 1349;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if (((((_la - 39)) & ~0x1F) === 0 && ((1 << (_la - 39)) & ((1 << (BNGParser.PREFIX - 39)) | (1 << (BNGParser.SUFFIX - 39)) | (1 << (BNGParser.OVERWRITE - 39)) | (1 << (BNGParser.MAX_AGG - 39)) | (1 << (BNGParser.MAX_ITER - 39)) | (1 << (BNGParser.MAX_STOICH - 39)) | (1 << (BNGParser.PRINT_ITER - 39)) | (1 << (BNGParser.CHECK_ISO - 39)) | (1 << (BNGParser.SAFE - 39)) | (1 << (BNGParser.EXECUTE - 39)) | (1 << (BNGParser.METHOD - 39)) | (1 << (BNGParser.VERBOSE - 39)) | (1 << (BNGParser.NETFILE - 39)) | (1 << (BNGParser.CONTINUE - 39)) | (1 << (BNGParser.T_START - 39)) | (1 << (BNGParser.T_END - 39)) | (1 << (BNGParser.N_STEPS - 39)) | (1 << (BNGParser.N_OUTPUT_STEPS - 39)) | (1 << (BNGParser.MAX_SIM_STEPS - 39)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 39)) | (1 << (BNGParser.SAMPLE_TIMES - 39)) | (1 << (BNGParser.SAVE_PROGRESS - 39)) | (1 << (BNGParser.PRINT_CDAT - 39)) | (1 << (BNGParser.PRINT_FUNCTIONS - 39)))) !== 0) || ((((_la - 71)) & ~0x1F) === 0 && ((1 << (_la - 71)) & ((1 << (BNGParser.PRINT_NET - 71)) | (1 << (BNGParser.PRINT_END - 71)) | (1 << (BNGParser.STOP_IF - 71)) | (1 << (BNGParser.PRINT_ON_STOP - 71)) | (1 << (BNGParser.ATOL - 71)) | (1 << (BNGParser.RTOL - 71)) | (1 << (BNGParser.STEADY_STATE - 71)) | (1 << (BNGParser.SPARSE - 71)) | (1 << (BNGParser.PLA_CONFIG - 71)) | (1 << (BNGParser.PLA_OUTPUT - 71)) | (1 << (BNGParser.PARAM - 71)) | (1 << (BNGParser.COMPLEX - 71)) | (1 << (BNGParser.GET_FINAL_STATE - 71)) | (1 << (BNGParser.GML - 71)) | (1 << (BNGParser.NOCSLF - 71)) | (1 << (BNGParser.NOTF - 71)) | (1 << (BNGParser.BINARY_OUTPUT - 71)) | (1 << (BNGParser.UTL - 71)) | (1 << (BNGParser.EQUIL - 71)) | (1 << (BNGParser.PARAMETER - 71)) | (1 << (BNGParser.PAR_MIN - 71)) | (1 << (BNGParser.PAR_MAX - 71)) | (1 << (BNGParser.N_SCAN_PTS - 71)) | (1 << (BNGParser.LOG_SCALE - 71)) | (1 << (BNGParser.RESET_CONC - 71)))) !== 0) || ((((_la - 104)) & ~0x1F) === 0 && ((1 << (_la - 104)) & ((1 << (BNGParser.FILE - 104)) | (1 << (BNGParser.ATOMIZE - 104)) | (1 << (BNGParser.BLOCKS - 104)) | (1 << (BNGParser.SKIPACTIONS - 104)) | (1 << (BNGParser.TYPE - 104)) | (1 << (BNGParser.BACKGROUND - 104)) | (1 << (BNGParser.COLLAPSE - 104)) | (1 << (BNGParser.OPTS - 104)) | (1 << (BNGParser.FORMAT - 104)) | (1 << (BNGParser.INCLUDE_MODEL - 104)) | (1 << (BNGParser.INCLUDE_NETWORK - 104)) | (1 << (BNGParser.PRETTY_FORMATTING - 104)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 104)) | (1 << (BNGParser.TEXTREACTION - 104)) | (1 << (BNGParser.TEXTSPECIES - 104)) | (1 << (BNGParser.BDF - 104)) | (1 << (BNGParser.MAX_STEP - 104)) | (1 << (BNGParser.MAXORDER - 104)) | (1 << (BNGParser.STATS - 104)) | (1 << (BNGParser.MAX_NUM_STEPS - 104)))) !== 0) || ((((_la - 136)) & ~0x1F) === 0 && ((1 << (_la - 136)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 136)) | (1 << (BNGParser.MAX_CONV_FAILS - 136)) | (1 << (BNGParser.STIFF - 136)))) !== 0) || _la === BNGParser.STRING) {
+				if (((((_la - 41)) & ~0x1F) === 0 && ((1 << (_la - 41)) & ((1 << (BNGParser.PREFIX - 41)) | (1 << (BNGParser.SUFFIX - 41)) | (1 << (BNGParser.OVERWRITE - 41)) | (1 << (BNGParser.MAX_AGG - 41)) | (1 << (BNGParser.MAX_ITER - 41)) | (1 << (BNGParser.MAX_STOICH - 41)) | (1 << (BNGParser.PRINT_ITER - 41)) | (1 << (BNGParser.CHECK_ISO - 41)) | (1 << (BNGParser.SAFE - 41)) | (1 << (BNGParser.EXECUTE - 41)) | (1 << (BNGParser.METHOD - 41)) | (1 << (BNGParser.VERBOSE - 41)) | (1 << (BNGParser.NETFILE - 41)) | (1 << (BNGParser.CONTINUE - 41)) | (1 << (BNGParser.T_START - 41)) | (1 << (BNGParser.T_END - 41)) | (1 << (BNGParser.N_STEPS - 41)) | (1 << (BNGParser.N_OUTPUT_STEPS - 41)) | (1 << (BNGParser.MAX_SIM_STEPS - 41)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 41)) | (1 << (BNGParser.SAMPLE_TIMES - 41)) | (1 << (BNGParser.SAVE_PROGRESS - 41)) | (1 << (BNGParser.PRINT_CDAT - 41)) | (1 << (BNGParser.PRINT_FUNCTIONS - 41)))) !== 0) || ((((_la - 73)) & ~0x1F) === 0 && ((1 << (_la - 73)) & ((1 << (BNGParser.PRINT_NET - 73)) | (1 << (BNGParser.PRINT_END - 73)) | (1 << (BNGParser.STOP_IF - 73)) | (1 << (BNGParser.PRINT_ON_STOP - 73)) | (1 << (BNGParser.ATOL - 73)) | (1 << (BNGParser.RTOL - 73)) | (1 << (BNGParser.STEADY_STATE - 73)) | (1 << (BNGParser.SPARSE - 73)) | (1 << (BNGParser.PLA_CONFIG - 73)) | (1 << (BNGParser.PLA_OUTPUT - 73)) | (1 << (BNGParser.PARAM - 73)) | (1 << (BNGParser.COMPLEX - 73)) | (1 << (BNGParser.GET_FINAL_STATE - 73)) | (1 << (BNGParser.GML - 73)) | (1 << (BNGParser.NOCSLF - 73)) | (1 << (BNGParser.NOTF - 73)) | (1 << (BNGParser.BINARY_OUTPUT - 73)) | (1 << (BNGParser.UTL - 73)) | (1 << (BNGParser.EQUIL - 73)) | (1 << (BNGParser.PARAMETER - 73)) | (1 << (BNGParser.PAR_MIN - 73)) | (1 << (BNGParser.PAR_MAX - 73)) | (1 << (BNGParser.N_SCAN_PTS - 73)) | (1 << (BNGParser.LOG_SCALE - 73)) | (1 << (BNGParser.RESET_CONC - 73)))) !== 0) || ((((_la - 106)) & ~0x1F) === 0 && ((1 << (_la - 106)) & ((1 << (BNGParser.FILE - 106)) | (1 << (BNGParser.ATOMIZE - 106)) | (1 << (BNGParser.BLOCKS - 106)) | (1 << (BNGParser.SKIPACTIONS - 106)) | (1 << (BNGParser.TYPE - 106)) | (1 << (BNGParser.BACKGROUND - 106)) | (1 << (BNGParser.COLLAPSE - 106)) | (1 << (BNGParser.OPTS - 106)) | (1 << (BNGParser.FORMAT - 106)) | (1 << (BNGParser.INCLUDE_MODEL - 106)) | (1 << (BNGParser.INCLUDE_NETWORK - 106)) | (1 << (BNGParser.PRETTY_FORMATTING - 106)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 106)) | (1 << (BNGParser.TEXTREACTION - 106)) | (1 << (BNGParser.TEXTSPECIES - 106)) | (1 << (BNGParser.BDF - 106)) | (1 << (BNGParser.MAX_STEP - 106)) | (1 << (BNGParser.MAXORDER - 106)) | (1 << (BNGParser.STATS - 106)) | (1 << (BNGParser.MAX_NUM_STEPS - 106)))) !== 0) || ((((_la - 138)) & ~0x1F) === 0 && ((1 << (_la - 138)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 138)) | (1 << (BNGParser.MAX_CONV_FAILS - 138)) | (1 << (BNGParser.STIFF - 138)))) !== 0) || _la === BNGParser.STRING) {
 					{
-					this.state = 1241;
+					this.state = 1348;
 					this.nested_hash_list();
 					}
 				}
 
-				this.state = 1244;
+				this.state = 1351;
 				this.match(BNGParser.RBRACKET);
 				}
 				break;
@@ -5364,14 +5860,14 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public keyword_as_value(): Keyword_as_valueContext {
 		let _localctx: Keyword_as_valueContext = new Keyword_as_valueContext(this._ctx, this.state);
-		this.enterRule(_localctx, 128, BNGParser.RULE_keyword_as_value);
+		this.enterRule(_localctx, 136, BNGParser.RULE_keyword_as_value);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1247;
+			this.state = 1354;
 			_la = this._input.LA(1);
-			if (!(((((_la - 42)) & ~0x1F) === 0 && ((1 << (_la - 42)) & ((1 << (BNGParser.OVERWRITE - 42)) | (1 << (BNGParser.SAFE - 42)) | (1 << (BNGParser.EXECUTE - 42)) | (1 << (BNGParser.METHOD - 42)) | (1 << (BNGParser.ODE - 42)) | (1 << (BNGParser.SSA - 42)) | (1 << (BNGParser.PLA - 42)) | (1 << (BNGParser.NF - 42)) | (1 << (BNGParser.VERBOSE - 42)) | (1 << (BNGParser.CONTINUE - 42)))) !== 0) || ((((_la - 78)) & ~0x1F) === 0 && ((1 << (_la - 78)) & ((1 << (BNGParser.STEADY_STATE - 78)) | (1 << (BNGParser.SPARSE - 78)) | (1 << (BNGParser.BINARY_OUTPUT - 78)))) !== 0) || ((((_la - 131)) & ~0x1F) === 0 && ((1 << (_la - 131)) & ((1 << (BNGParser.BDF - 131)) | (1 << (BNGParser.STIFF - 131)) | (1 << (BNGParser.TRUE - 131)) | (1 << (BNGParser.FALSE - 131)))) !== 0))) {
+			if (!(((((_la - 44)) & ~0x1F) === 0 && ((1 << (_la - 44)) & ((1 << (BNGParser.OVERWRITE - 44)) | (1 << (BNGParser.SAFE - 44)) | (1 << (BNGParser.EXECUTE - 44)) | (1 << (BNGParser.METHOD - 44)) | (1 << (BNGParser.ODE - 44)) | (1 << (BNGParser.SSA - 44)) | (1 << (BNGParser.PLA - 44)) | (1 << (BNGParser.NF - 44)) | (1 << (BNGParser.VERBOSE - 44)) | (1 << (BNGParser.CONTINUE - 44)))) !== 0) || ((((_la - 80)) & ~0x1F) === 0 && ((1 << (_la - 80)) & ((1 << (BNGParser.STEADY_STATE - 80)) | (1 << (BNGParser.SPARSE - 80)) | (1 << (BNGParser.BINARY_OUTPUT - 80)))) !== 0) || ((((_la - 133)) & ~0x1F) === 0 && ((1 << (_la - 133)) & ((1 << (BNGParser.BDF - 133)) | (1 << (BNGParser.STIFF - 133)) | (1 << (BNGParser.TRUE - 133)) | (1 << (BNGParser.FALSE - 133)))) !== 0))) {
 			this._errHandler.recoverInline(this);
 			} else {
 				if (this._input.LA(1) === Token.EOF) {
@@ -5400,26 +5896,26 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public nested_hash_list(): Nested_hash_listContext {
 		let _localctx: Nested_hash_listContext = new Nested_hash_listContext(this._ctx, this.state);
-		this.enterRule(_localctx, 130, BNGParser.RULE_nested_hash_list);
+		this.enterRule(_localctx, 138, BNGParser.RULE_nested_hash_list);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1249;
+			this.state = 1356;
 			this.nested_hash_item();
-			this.state = 1254;
+			this.state = 1361;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.COMMA) {
 				{
 				{
-				this.state = 1250;
+				this.state = 1357;
 				this.match(BNGParser.COMMA);
-				this.state = 1251;
+				this.state = 1358;
 				this.nested_hash_item();
 				}
 				}
-				this.state = 1256;
+				this.state = 1363;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -5442,30 +5938,30 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public nested_hash_item(): Nested_hash_itemContext {
 		let _localctx: Nested_hash_itemContext = new Nested_hash_itemContext(this._ctx, this.state);
-		this.enterRule(_localctx, 132, BNGParser.RULE_nested_hash_item);
+		this.enterRule(_localctx, 140, BNGParser.RULE_nested_hash_item);
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1259;
+			this.state = 1366;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 181, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 198, this._ctx) ) {
 			case 1:
 				{
-				this.state = 1257;
+				this.state = 1364;
 				this.match(BNGParser.STRING);
 				}
 				break;
 
 			case 2:
 				{
-				this.state = 1258;
+				this.state = 1365;
 				this.arg_name();
 				}
 				break;
 			}
-			this.state = 1261;
+			this.state = 1368;
 			this.match(BNGParser.ASSIGNS);
-			this.state = 1262;
+			this.state = 1369;
 			this.action_arg_value();
 			}
 		}
@@ -5486,14 +5982,14 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public arg_name(): Arg_nameContext {
 		let _localctx: Arg_nameContext = new Arg_nameContext(this._ctx, this.state);
-		this.enterRule(_localctx, 134, BNGParser.RULE_arg_name);
+		this.enterRule(_localctx, 142, BNGParser.RULE_arg_name);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1264;
+			this.state = 1371;
 			_la = this._input.LA(1);
-			if (!(((((_la - 39)) & ~0x1F) === 0 && ((1 << (_la - 39)) & ((1 << (BNGParser.PREFIX - 39)) | (1 << (BNGParser.SUFFIX - 39)) | (1 << (BNGParser.OVERWRITE - 39)) | (1 << (BNGParser.MAX_AGG - 39)) | (1 << (BNGParser.MAX_ITER - 39)) | (1 << (BNGParser.MAX_STOICH - 39)) | (1 << (BNGParser.PRINT_ITER - 39)) | (1 << (BNGParser.CHECK_ISO - 39)) | (1 << (BNGParser.SAFE - 39)) | (1 << (BNGParser.EXECUTE - 39)) | (1 << (BNGParser.METHOD - 39)) | (1 << (BNGParser.VERBOSE - 39)) | (1 << (BNGParser.NETFILE - 39)) | (1 << (BNGParser.CONTINUE - 39)) | (1 << (BNGParser.T_START - 39)) | (1 << (BNGParser.T_END - 39)) | (1 << (BNGParser.N_STEPS - 39)) | (1 << (BNGParser.N_OUTPUT_STEPS - 39)) | (1 << (BNGParser.MAX_SIM_STEPS - 39)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 39)) | (1 << (BNGParser.SAMPLE_TIMES - 39)) | (1 << (BNGParser.SAVE_PROGRESS - 39)) | (1 << (BNGParser.PRINT_CDAT - 39)) | (1 << (BNGParser.PRINT_FUNCTIONS - 39)))) !== 0) || ((((_la - 71)) & ~0x1F) === 0 && ((1 << (_la - 71)) & ((1 << (BNGParser.PRINT_NET - 71)) | (1 << (BNGParser.PRINT_END - 71)) | (1 << (BNGParser.STOP_IF - 71)) | (1 << (BNGParser.PRINT_ON_STOP - 71)) | (1 << (BNGParser.ATOL - 71)) | (1 << (BNGParser.RTOL - 71)) | (1 << (BNGParser.STEADY_STATE - 71)) | (1 << (BNGParser.SPARSE - 71)) | (1 << (BNGParser.PLA_CONFIG - 71)) | (1 << (BNGParser.PLA_OUTPUT - 71)) | (1 << (BNGParser.PARAM - 71)) | (1 << (BNGParser.COMPLEX - 71)) | (1 << (BNGParser.GET_FINAL_STATE - 71)) | (1 << (BNGParser.GML - 71)) | (1 << (BNGParser.NOCSLF - 71)) | (1 << (BNGParser.NOTF - 71)) | (1 << (BNGParser.BINARY_OUTPUT - 71)) | (1 << (BNGParser.UTL - 71)) | (1 << (BNGParser.EQUIL - 71)) | (1 << (BNGParser.PARAMETER - 71)) | (1 << (BNGParser.PAR_MIN - 71)) | (1 << (BNGParser.PAR_MAX - 71)) | (1 << (BNGParser.N_SCAN_PTS - 71)) | (1 << (BNGParser.LOG_SCALE - 71)) | (1 << (BNGParser.RESET_CONC - 71)))) !== 0) || ((((_la - 104)) & ~0x1F) === 0 && ((1 << (_la - 104)) & ((1 << (BNGParser.FILE - 104)) | (1 << (BNGParser.ATOMIZE - 104)) | (1 << (BNGParser.BLOCKS - 104)) | (1 << (BNGParser.SKIPACTIONS - 104)) | (1 << (BNGParser.TYPE - 104)) | (1 << (BNGParser.BACKGROUND - 104)) | (1 << (BNGParser.COLLAPSE - 104)) | (1 << (BNGParser.OPTS - 104)) | (1 << (BNGParser.FORMAT - 104)) | (1 << (BNGParser.INCLUDE_MODEL - 104)) | (1 << (BNGParser.INCLUDE_NETWORK - 104)) | (1 << (BNGParser.PRETTY_FORMATTING - 104)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 104)) | (1 << (BNGParser.TEXTREACTION - 104)) | (1 << (BNGParser.TEXTSPECIES - 104)) | (1 << (BNGParser.BDF - 104)) | (1 << (BNGParser.MAX_STEP - 104)) | (1 << (BNGParser.MAXORDER - 104)) | (1 << (BNGParser.STATS - 104)) | (1 << (BNGParser.MAX_NUM_STEPS - 104)))) !== 0) || ((((_la - 136)) & ~0x1F) === 0 && ((1 << (_la - 136)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 136)) | (1 << (BNGParser.MAX_CONV_FAILS - 136)) | (1 << (BNGParser.STIFF - 136)))) !== 0) || _la === BNGParser.STRING)) {
+			if (!(((((_la - 41)) & ~0x1F) === 0 && ((1 << (_la - 41)) & ((1 << (BNGParser.PREFIX - 41)) | (1 << (BNGParser.SUFFIX - 41)) | (1 << (BNGParser.OVERWRITE - 41)) | (1 << (BNGParser.MAX_AGG - 41)) | (1 << (BNGParser.MAX_ITER - 41)) | (1 << (BNGParser.MAX_STOICH - 41)) | (1 << (BNGParser.PRINT_ITER - 41)) | (1 << (BNGParser.CHECK_ISO - 41)) | (1 << (BNGParser.SAFE - 41)) | (1 << (BNGParser.EXECUTE - 41)) | (1 << (BNGParser.METHOD - 41)) | (1 << (BNGParser.VERBOSE - 41)) | (1 << (BNGParser.NETFILE - 41)) | (1 << (BNGParser.CONTINUE - 41)) | (1 << (BNGParser.T_START - 41)) | (1 << (BNGParser.T_END - 41)) | (1 << (BNGParser.N_STEPS - 41)) | (1 << (BNGParser.N_OUTPUT_STEPS - 41)) | (1 << (BNGParser.MAX_SIM_STEPS - 41)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 41)) | (1 << (BNGParser.SAMPLE_TIMES - 41)) | (1 << (BNGParser.SAVE_PROGRESS - 41)) | (1 << (BNGParser.PRINT_CDAT - 41)) | (1 << (BNGParser.PRINT_FUNCTIONS - 41)))) !== 0) || ((((_la - 73)) & ~0x1F) === 0 && ((1 << (_la - 73)) & ((1 << (BNGParser.PRINT_NET - 73)) | (1 << (BNGParser.PRINT_END - 73)) | (1 << (BNGParser.STOP_IF - 73)) | (1 << (BNGParser.PRINT_ON_STOP - 73)) | (1 << (BNGParser.ATOL - 73)) | (1 << (BNGParser.RTOL - 73)) | (1 << (BNGParser.STEADY_STATE - 73)) | (1 << (BNGParser.SPARSE - 73)) | (1 << (BNGParser.PLA_CONFIG - 73)) | (1 << (BNGParser.PLA_OUTPUT - 73)) | (1 << (BNGParser.PARAM - 73)) | (1 << (BNGParser.COMPLEX - 73)) | (1 << (BNGParser.GET_FINAL_STATE - 73)) | (1 << (BNGParser.GML - 73)) | (1 << (BNGParser.NOCSLF - 73)) | (1 << (BNGParser.NOTF - 73)) | (1 << (BNGParser.BINARY_OUTPUT - 73)) | (1 << (BNGParser.UTL - 73)) | (1 << (BNGParser.EQUIL - 73)) | (1 << (BNGParser.PARAMETER - 73)) | (1 << (BNGParser.PAR_MIN - 73)) | (1 << (BNGParser.PAR_MAX - 73)) | (1 << (BNGParser.N_SCAN_PTS - 73)) | (1 << (BNGParser.LOG_SCALE - 73)) | (1 << (BNGParser.RESET_CONC - 73)))) !== 0) || ((((_la - 106)) & ~0x1F) === 0 && ((1 << (_la - 106)) & ((1 << (BNGParser.FILE - 106)) | (1 << (BNGParser.ATOMIZE - 106)) | (1 << (BNGParser.BLOCKS - 106)) | (1 << (BNGParser.SKIPACTIONS - 106)) | (1 << (BNGParser.TYPE - 106)) | (1 << (BNGParser.BACKGROUND - 106)) | (1 << (BNGParser.COLLAPSE - 106)) | (1 << (BNGParser.OPTS - 106)) | (1 << (BNGParser.FORMAT - 106)) | (1 << (BNGParser.INCLUDE_MODEL - 106)) | (1 << (BNGParser.INCLUDE_NETWORK - 106)) | (1 << (BNGParser.PRETTY_FORMATTING - 106)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 106)) | (1 << (BNGParser.TEXTREACTION - 106)) | (1 << (BNGParser.TEXTSPECIES - 106)) | (1 << (BNGParser.BDF - 106)) | (1 << (BNGParser.MAX_STEP - 106)) | (1 << (BNGParser.MAXORDER - 106)) | (1 << (BNGParser.STATS - 106)) | (1 << (BNGParser.MAX_NUM_STEPS - 106)))) !== 0) || ((((_la - 138)) & ~0x1F) === 0 && ((1 << (_la - 138)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 138)) | (1 << (BNGParser.MAX_CONV_FAILS - 138)) | (1 << (BNGParser.STIFF - 138)))) !== 0) || _la === BNGParser.STRING)) {
 			this._errHandler.recoverInline(this);
 			} else {
 				if (this._input.LA(1) === Token.EOF) {
@@ -5522,26 +6018,26 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public expression_list(): Expression_listContext {
 		let _localctx: Expression_listContext = new Expression_listContext(this._ctx, this.state);
-		this.enterRule(_localctx, 136, BNGParser.RULE_expression_list);
+		this.enterRule(_localctx, 144, BNGParser.RULE_expression_list);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1266;
+			this.state = 1373;
 			this.expression();
-			this.state = 1271;
+			this.state = 1378;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.COMMA) {
 				{
 				{
-				this.state = 1267;
+				this.state = 1374;
 				this.match(BNGParser.COMMA);
-				this.state = 1268;
+				this.state = 1375;
 				this.expression();
 				}
 				}
-				this.state = 1273;
+				this.state = 1380;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -5564,11 +6060,11 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public expression(): ExpressionContext {
 		let _localctx: ExpressionContext = new ExpressionContext(this._ctx, this.state);
-		this.enterRule(_localctx, 138, BNGParser.RULE_expression);
+		this.enterRule(_localctx, 146, BNGParser.RULE_expression);
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1274;
+			this.state = 1381;
 			this.conditional_expr();
 			}
 		}
@@ -5589,25 +6085,25 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public conditional_expr(): Conditional_exprContext {
 		let _localctx: Conditional_exprContext = new Conditional_exprContext(this._ctx, this.state);
-		this.enterRule(_localctx, 140, BNGParser.RULE_conditional_expr);
+		this.enterRule(_localctx, 148, BNGParser.RULE_conditional_expr);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1276;
+			this.state = 1383;
 			this.or_expr();
-			this.state = 1282;
+			this.state = 1389;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === BNGParser.QMARK) {
 				{
-				this.state = 1277;
+				this.state = 1384;
 				this.match(BNGParser.QMARK);
-				this.state = 1278;
+				this.state = 1385;
 				this.expression();
-				this.state = 1279;
+				this.state = 1386;
 				this.match(BNGParser.COLON);
-				this.state = 1280;
+				this.state = 1387;
 				this.expression();
 				}
 			}
@@ -5631,44 +6127,44 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public or_expr(): Or_exprContext {
 		let _localctx: Or_exprContext = new Or_exprContext(this._ctx, this.state);
-		this.enterRule(_localctx, 142, BNGParser.RULE_or_expr);
+		this.enterRule(_localctx, 150, BNGParser.RULE_or_expr);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1284;
+			this.state = 1391;
 			this.and_expr();
-			this.state = 1293;
+			this.state = 1400;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LOGICAL_OR || _la === BNGParser.PIPE) {
 				{
 				{
-				this.state = 1288;
+				this.state = 1395;
 				this._errHandler.sync(this);
 				switch (this._input.LA(1)) {
 				case BNGParser.PIPE:
 					{
-					this.state = 1285;
+					this.state = 1392;
 					this.match(BNGParser.PIPE);
-					this.state = 1286;
+					this.state = 1393;
 					this.match(BNGParser.PIPE);
 					}
 					break;
 				case BNGParser.LOGICAL_OR:
 					{
-					this.state = 1287;
+					this.state = 1394;
 					this.match(BNGParser.LOGICAL_OR);
 					}
 					break;
 				default:
 					throw new NoViableAltException(this);
 				}
-				this.state = 1290;
+				this.state = 1397;
 				this.and_expr();
 				}
 				}
-				this.state = 1295;
+				this.state = 1402;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -5691,44 +6187,44 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public and_expr(): And_exprContext {
 		let _localctx: And_exprContext = new And_exprContext(this._ctx, this.state);
-		this.enterRule(_localctx, 144, BNGParser.RULE_and_expr);
+		this.enterRule(_localctx, 152, BNGParser.RULE_and_expr);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1296;
+			this.state = 1403;
 			this.equality_expr();
-			this.state = 1305;
+			this.state = 1412;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.LOGICAL_AND || _la === BNGParser.AMPERSAND) {
 				{
 				{
-				this.state = 1300;
+				this.state = 1407;
 				this._errHandler.sync(this);
 				switch (this._input.LA(1)) {
 				case BNGParser.AMPERSAND:
 					{
-					this.state = 1297;
+					this.state = 1404;
 					this.match(BNGParser.AMPERSAND);
-					this.state = 1298;
+					this.state = 1405;
 					this.match(BNGParser.AMPERSAND);
 					}
 					break;
 				case BNGParser.LOGICAL_AND:
 					{
-					this.state = 1299;
+					this.state = 1406;
 					this.match(BNGParser.LOGICAL_AND);
 					}
 					break;
 				default:
 					throw new NoViableAltException(this);
 				}
-				this.state = 1302;
+				this.state = 1409;
 				this.equality_expr();
 				}
 				}
-				this.state = 1307;
+				this.state = 1414;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -5751,22 +6247,22 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public equality_expr(): Equality_exprContext {
 		let _localctx: Equality_exprContext = new Equality_exprContext(this._ctx, this.state);
-		this.enterRule(_localctx, 146, BNGParser.RULE_equality_expr);
+		this.enterRule(_localctx, 154, BNGParser.RULE_equality_expr);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1308;
+			this.state = 1415;
 			this.relational_expr();
-			this.state = 1313;
+			this.state = 1420;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (((((_la - 202)) & ~0x1F) === 0 && ((1 << (_la - 202)) & ((1 << (BNGParser.GTE - 202)) | (1 << (BNGParser.GT - 202)) | (1 << (BNGParser.LTE - 202)) | (1 << (BNGParser.LT - 202)) | (1 << (BNGParser.EQUALS - 202)) | (1 << (BNGParser.NOT_EQUALS - 202)))) !== 0)) {
+			while (((((_la - 204)) & ~0x1F) === 0 && ((1 << (_la - 204)) & ((1 << (BNGParser.GTE - 204)) | (1 << (BNGParser.GT - 204)) | (1 << (BNGParser.LTE - 204)) | (1 << (BNGParser.LT - 204)) | (1 << (BNGParser.EQUALS - 204)) | (1 << (BNGParser.NOT_EQUALS - 204)))) !== 0)) {
 				{
 				{
-				this.state = 1309;
+				this.state = 1416;
 				_la = this._input.LA(1);
-				if (!(((((_la - 202)) & ~0x1F) === 0 && ((1 << (_la - 202)) & ((1 << (BNGParser.GTE - 202)) | (1 << (BNGParser.GT - 202)) | (1 << (BNGParser.LTE - 202)) | (1 << (BNGParser.LT - 202)) | (1 << (BNGParser.EQUALS - 202)) | (1 << (BNGParser.NOT_EQUALS - 202)))) !== 0))) {
+				if (!(((((_la - 204)) & ~0x1F) === 0 && ((1 << (_la - 204)) & ((1 << (BNGParser.GTE - 204)) | (1 << (BNGParser.GT - 204)) | (1 << (BNGParser.LTE - 204)) | (1 << (BNGParser.LT - 204)) | (1 << (BNGParser.EQUALS - 204)) | (1 << (BNGParser.NOT_EQUALS - 204)))) !== 0))) {
 				this._errHandler.recoverInline(this);
 				} else {
 					if (this._input.LA(1) === Token.EOF) {
@@ -5776,11 +6272,11 @@ export class BNGParser extends Parser {
 					this._errHandler.reportMatch(this);
 					this.consume();
 				}
-				this.state = 1310;
+				this.state = 1417;
 				this.relational_expr();
 				}
 				}
-				this.state = 1315;
+				this.state = 1422;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -5803,11 +6299,11 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public relational_expr(): Relational_exprContext {
 		let _localctx: Relational_exprContext = new Relational_exprContext(this._ctx, this.state);
-		this.enterRule(_localctx, 148, BNGParser.RULE_relational_expr);
+		this.enterRule(_localctx, 156, BNGParser.RULE_relational_expr);
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1316;
+			this.state = 1423;
 			this.additive_expr();
 			}
 		}
@@ -5828,20 +6324,20 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public additive_expr(): Additive_exprContext {
 		let _localctx: Additive_exprContext = new Additive_exprContext(this._ctx, this.state);
-		this.enterRule(_localctx, 150, BNGParser.RULE_additive_expr);
+		this.enterRule(_localctx, 158, BNGParser.RULE_additive_expr);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1318;
+			this.state = 1425;
 			this.multiplicative_expr();
-			this.state = 1323;
+			this.state = 1430;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.MINUS || _la === BNGParser.PLUS) {
 				{
 				{
-				this.state = 1319;
+				this.state = 1426;
 				_la = this._input.LA(1);
 				if (!(_la === BNGParser.MINUS || _la === BNGParser.PLUS)) {
 				this._errHandler.recoverInline(this);
@@ -5853,11 +6349,11 @@ export class BNGParser extends Parser {
 					this._errHandler.reportMatch(this);
 					this.consume();
 				}
-				this.state = 1320;
+				this.state = 1427;
 				this.multiplicative_expr();
 				}
 				}
-				this.state = 1325;
+				this.state = 1432;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -5880,22 +6376,22 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public multiplicative_expr(): Multiplicative_exprContext {
 		let _localctx: Multiplicative_exprContext = new Multiplicative_exprContext(this._ctx, this.state);
-		this.enterRule(_localctx, 152, BNGParser.RULE_multiplicative_expr);
+		this.enterRule(_localctx, 160, BNGParser.RULE_multiplicative_expr);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1326;
+			this.state = 1433;
 			this.power_expr();
-			this.state = 1331;
+			this.state = 1438;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (((((_la - 212)) & ~0x1F) === 0 && ((1 << (_la - 212)) & ((1 << (BNGParser.DIV - 212)) | (1 << (BNGParser.TIMES - 212)) | (1 << (BNGParser.MOD - 212)))) !== 0)) {
+			while (((((_la - 214)) & ~0x1F) === 0 && ((1 << (_la - 214)) & ((1 << (BNGParser.DIV - 214)) | (1 << (BNGParser.TIMES - 214)) | (1 << (BNGParser.MOD - 214)))) !== 0)) {
 				{
 				{
-				this.state = 1327;
+				this.state = 1434;
 				_la = this._input.LA(1);
-				if (!(((((_la - 212)) & ~0x1F) === 0 && ((1 << (_la - 212)) & ((1 << (BNGParser.DIV - 212)) | (1 << (BNGParser.TIMES - 212)) | (1 << (BNGParser.MOD - 212)))) !== 0))) {
+				if (!(((((_la - 214)) & ~0x1F) === 0 && ((1 << (_la - 214)) & ((1 << (BNGParser.DIV - 214)) | (1 << (BNGParser.TIMES - 214)) | (1 << (BNGParser.MOD - 214)))) !== 0))) {
 				this._errHandler.recoverInline(this);
 				} else {
 					if (this._input.LA(1) === Token.EOF) {
@@ -5905,11 +6401,11 @@ export class BNGParser extends Parser {
 					this._errHandler.reportMatch(this);
 					this.consume();
 				}
-				this.state = 1328;
+				this.state = 1435;
 				this.power_expr();
 				}
 				}
-				this.state = 1333;
+				this.state = 1440;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -5932,26 +6428,26 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public power_expr(): Power_exprContext {
 		let _localctx: Power_exprContext = new Power_exprContext(this._ctx, this.state);
-		this.enterRule(_localctx, 154, BNGParser.RULE_power_expr);
+		this.enterRule(_localctx, 162, BNGParser.RULE_power_expr);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1334;
+			this.state = 1441;
 			this.unary_expr();
-			this.state = 1339;
+			this.state = 1446;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BNGParser.POWER) {
 				{
 				{
-				this.state = 1335;
+				this.state = 1442;
 				this.match(BNGParser.POWER);
-				this.state = 1336;
+				this.state = 1443;
 				this.unary_expr();
 				}
 				}
-				this.state = 1341;
+				this.state = 1448;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -5974,19 +6470,19 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public unary_expr(): Unary_exprContext {
 		let _localctx: Unary_exprContext = new Unary_exprContext(this._ctx, this.state);
-		this.enterRule(_localctx, 156, BNGParser.RULE_unary_expr);
+		this.enterRule(_localctx, 164, BNGParser.RULE_unary_expr);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1343;
+			this.state = 1450;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (((((_la - 200)) & ~0x1F) === 0 && ((1 << (_la - 200)) & ((1 << (BNGParser.TILDE - 200)) | (1 << (BNGParser.MINUS - 200)) | (1 << (BNGParser.PLUS - 200)) | (1 << (BNGParser.EMARK - 200)))) !== 0)) {
+			if (((((_la - 202)) & ~0x1F) === 0 && ((1 << (_la - 202)) & ((1 << (BNGParser.TILDE - 202)) | (1 << (BNGParser.MINUS - 202)) | (1 << (BNGParser.PLUS - 202)) | (1 << (BNGParser.EMARK - 202)))) !== 0)) {
 				{
-				this.state = 1342;
+				this.state = 1449;
 				_la = this._input.LA(1);
-				if (!(((((_la - 200)) & ~0x1F) === 0 && ((1 << (_la - 200)) & ((1 << (BNGParser.TILDE - 200)) | (1 << (BNGParser.MINUS - 200)) | (1 << (BNGParser.PLUS - 200)) | (1 << (BNGParser.EMARK - 200)))) !== 0))) {
+				if (!(((((_la - 202)) & ~0x1F) === 0 && ((1 << (_la - 202)) & ((1 << (BNGParser.TILDE - 202)) | (1 << (BNGParser.MINUS - 202)) | (1 << (BNGParser.PLUS - 202)) | (1 << (BNGParser.EMARK - 202)))) !== 0))) {
 				this._errHandler.recoverInline(this);
 				} else {
 					if (this._input.LA(1) === Token.EOF) {
@@ -5999,7 +6495,7 @@ export class BNGParser extends Parser {
 				}
 			}
 
-			this.state = 1345;
+			this.state = 1452;
 			this.primary_expr();
 			}
 		}
@@ -6020,19 +6516,19 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public primary_expr(): Primary_exprContext {
 		let _localctx: Primary_exprContext = new Primary_exprContext(this._ctx, this.state);
-		this.enterRule(_localctx, 158, BNGParser.RULE_primary_expr);
+		this.enterRule(_localctx, 166, BNGParser.RULE_primary_expr);
 		try {
-			this.state = 1355;
+			this.state = 1462;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 193, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 210, this._ctx) ) {
 			case 1:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 1347;
+				this.state = 1454;
 				this.match(BNGParser.LPAREN);
-				this.state = 1348;
+				this.state = 1455;
 				this.expression();
-				this.state = 1349;
+				this.state = 1456;
 				this.match(BNGParser.RPAREN);
 				}
 				break;
@@ -6040,7 +6536,7 @@ export class BNGParser extends Parser {
 			case 2:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 1351;
+				this.state = 1458;
 				this.function_call();
 				}
 				break;
@@ -6048,7 +6544,7 @@ export class BNGParser extends Parser {
 			case 3:
 				this.enterOuterAlt(_localctx, 3);
 				{
-				this.state = 1352;
+				this.state = 1459;
 				this.observable_ref();
 				}
 				break;
@@ -6056,7 +6552,7 @@ export class BNGParser extends Parser {
 			case 4:
 				this.enterOuterAlt(_localctx, 4);
 				{
-				this.state = 1353;
+				this.state = 1460;
 				this.literal();
 				}
 				break;
@@ -6064,7 +6560,7 @@ export class BNGParser extends Parser {
 			case 5:
 				this.enterOuterAlt(_localctx, 5);
 				{
-				this.state = 1354;
+				this.state = 1461;
 				this.arg_name();
 				}
 				break;
@@ -6087,14 +6583,14 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public function_call(): Function_callContext {
 		let _localctx: Function_callContext = new Function_callContext(this._ctx, this.state);
-		this.enterRule(_localctx, 160, BNGParser.RULE_function_call);
+		this.enterRule(_localctx, 168, BNGParser.RULE_function_call);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1357;
+			this.state = 1464;
 			_la = this._input.LA(1);
-			if (!(((((_la - 149)) & ~0x1F) === 0 && ((1 << (_la - 149)) & ((1 << (BNGParser.SAT - 149)) | (1 << (BNGParser.MM - 149)) | (1 << (BNGParser.HILL - 149)) | (1 << (BNGParser.ARRHENIUS - 149)) | (1 << (BNGParser.MRATIO - 149)) | (1 << (BNGParser.TFUN - 149)) | (1 << (BNGParser.FUNCTIONPRODUCT - 149)) | (1 << (BNGParser.IF - 149)) | (1 << (BNGParser.EXP - 149)) | (1 << (BNGParser.LN - 149)) | (1 << (BNGParser.LOG10 - 149)) | (1 << (BNGParser.LOG2 - 149)) | (1 << (BNGParser.SQRT - 149)) | (1 << (BNGParser.RINT - 149)) | (1 << (BNGParser.ABS - 149)) | (1 << (BNGParser.SIN - 149)) | (1 << (BNGParser.COS - 149)) | (1 << (BNGParser.TAN - 149)) | (1 << (BNGParser.ASIN - 149)) | (1 << (BNGParser.ACOS - 149)) | (1 << (BNGParser.ATAN - 149)) | (1 << (BNGParser.SINH - 149)) | (1 << (BNGParser.COSH - 149)) | (1 << (BNGParser.TANH - 149)) | (1 << (BNGParser.ASINH - 149)) | (1 << (BNGParser.ACOSH - 149)) | (1 << (BNGParser.ATANH - 149)) | (1 << (BNGParser.MIN - 149)) | (1 << (BNGParser.MAX - 149)))) !== 0) || ((((_la - 181)) & ~0x1F) === 0 && ((1 << (_la - 181)) & ((1 << (BNGParser.SUM - 181)) | (1 << (BNGParser.AVG - 181)) | (1 << (BNGParser.TIME - 181)))) !== 0))) {
+			if (!(((((_la - 151)) & ~0x1F) === 0 && ((1 << (_la - 151)) & ((1 << (BNGParser.SAT - 151)) | (1 << (BNGParser.MM - 151)) | (1 << (BNGParser.HILL - 151)) | (1 << (BNGParser.ARRHENIUS - 151)) | (1 << (BNGParser.MRATIO - 151)) | (1 << (BNGParser.TFUN - 151)) | (1 << (BNGParser.FUNCTIONPRODUCT - 151)) | (1 << (BNGParser.IF - 151)) | (1 << (BNGParser.EXP - 151)) | (1 << (BNGParser.LN - 151)) | (1 << (BNGParser.LOG10 - 151)) | (1 << (BNGParser.LOG2 - 151)) | (1 << (BNGParser.SQRT - 151)) | (1 << (BNGParser.RINT - 151)) | (1 << (BNGParser.ABS - 151)) | (1 << (BNGParser.SIN - 151)) | (1 << (BNGParser.COS - 151)) | (1 << (BNGParser.TAN - 151)) | (1 << (BNGParser.ASIN - 151)) | (1 << (BNGParser.ACOS - 151)) | (1 << (BNGParser.ATAN - 151)) | (1 << (BNGParser.SINH - 151)) | (1 << (BNGParser.COSH - 151)) | (1 << (BNGParser.TANH - 151)) | (1 << (BNGParser.ASINH - 151)) | (1 << (BNGParser.ACOSH - 151)) | (1 << (BNGParser.ATANH - 151)) | (1 << (BNGParser.MIN - 151)) | (1 << (BNGParser.MAX - 151)))) !== 0) || ((((_la - 183)) & ~0x1F) === 0 && ((1 << (_la - 183)) & ((1 << (BNGParser.SUM - 183)) | (1 << (BNGParser.AVG - 183)) | (1 << (BNGParser.TIME - 183)))) !== 0))) {
 			this._errHandler.recoverInline(this);
 			} else {
 				if (this._input.LA(1) === Token.EOF) {
@@ -6104,19 +6600,19 @@ export class BNGParser extends Parser {
 				this._errHandler.reportMatch(this);
 				this.consume();
 			}
-			this.state = 1358;
+			this.state = 1465;
 			this.match(BNGParser.LPAREN);
-			this.state = 1360;
+			this.state = 1467;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (((((_la - 39)) & ~0x1F) === 0 && ((1 << (_la - 39)) & ((1 << (BNGParser.PREFIX - 39)) | (1 << (BNGParser.SUFFIX - 39)) | (1 << (BNGParser.OVERWRITE - 39)) | (1 << (BNGParser.MAX_AGG - 39)) | (1 << (BNGParser.MAX_ITER - 39)) | (1 << (BNGParser.MAX_STOICH - 39)) | (1 << (BNGParser.PRINT_ITER - 39)) | (1 << (BNGParser.CHECK_ISO - 39)) | (1 << (BNGParser.SAFE - 39)) | (1 << (BNGParser.EXECUTE - 39)) | (1 << (BNGParser.METHOD - 39)) | (1 << (BNGParser.VERBOSE - 39)) | (1 << (BNGParser.NETFILE - 39)) | (1 << (BNGParser.CONTINUE - 39)) | (1 << (BNGParser.T_START - 39)) | (1 << (BNGParser.T_END - 39)) | (1 << (BNGParser.N_STEPS - 39)) | (1 << (BNGParser.N_OUTPUT_STEPS - 39)) | (1 << (BNGParser.MAX_SIM_STEPS - 39)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 39)) | (1 << (BNGParser.SAMPLE_TIMES - 39)) | (1 << (BNGParser.SAVE_PROGRESS - 39)) | (1 << (BNGParser.PRINT_CDAT - 39)) | (1 << (BNGParser.PRINT_FUNCTIONS - 39)))) !== 0) || ((((_la - 71)) & ~0x1F) === 0 && ((1 << (_la - 71)) & ((1 << (BNGParser.PRINT_NET - 71)) | (1 << (BNGParser.PRINT_END - 71)) | (1 << (BNGParser.STOP_IF - 71)) | (1 << (BNGParser.PRINT_ON_STOP - 71)) | (1 << (BNGParser.ATOL - 71)) | (1 << (BNGParser.RTOL - 71)) | (1 << (BNGParser.STEADY_STATE - 71)) | (1 << (BNGParser.SPARSE - 71)) | (1 << (BNGParser.PLA_CONFIG - 71)) | (1 << (BNGParser.PLA_OUTPUT - 71)) | (1 << (BNGParser.PARAM - 71)) | (1 << (BNGParser.COMPLEX - 71)) | (1 << (BNGParser.GET_FINAL_STATE - 71)) | (1 << (BNGParser.GML - 71)) | (1 << (BNGParser.NOCSLF - 71)) | (1 << (BNGParser.NOTF - 71)) | (1 << (BNGParser.BINARY_OUTPUT - 71)) | (1 << (BNGParser.UTL - 71)) | (1 << (BNGParser.EQUIL - 71)) | (1 << (BNGParser.PARAMETER - 71)) | (1 << (BNGParser.PAR_MIN - 71)) | (1 << (BNGParser.PAR_MAX - 71)) | (1 << (BNGParser.N_SCAN_PTS - 71)) | (1 << (BNGParser.LOG_SCALE - 71)) | (1 << (BNGParser.RESET_CONC - 71)))) !== 0) || ((((_la - 104)) & ~0x1F) === 0 && ((1 << (_la - 104)) & ((1 << (BNGParser.FILE - 104)) | (1 << (BNGParser.ATOMIZE - 104)) | (1 << (BNGParser.BLOCKS - 104)) | (1 << (BNGParser.SKIPACTIONS - 104)) | (1 << (BNGParser.TYPE - 104)) | (1 << (BNGParser.BACKGROUND - 104)) | (1 << (BNGParser.COLLAPSE - 104)) | (1 << (BNGParser.OPTS - 104)) | (1 << (BNGParser.FORMAT - 104)) | (1 << (BNGParser.INCLUDE_MODEL - 104)) | (1 << (BNGParser.INCLUDE_NETWORK - 104)) | (1 << (BNGParser.PRETTY_FORMATTING - 104)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 104)) | (1 << (BNGParser.TEXTREACTION - 104)) | (1 << (BNGParser.TEXTSPECIES - 104)) | (1 << (BNGParser.BDF - 104)) | (1 << (BNGParser.MAX_STEP - 104)) | (1 << (BNGParser.MAXORDER - 104)) | (1 << (BNGParser.STATS - 104)) | (1 << (BNGParser.MAX_NUM_STEPS - 104)))) !== 0) || ((((_la - 136)) & ~0x1F) === 0 && ((1 << (_la - 136)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 136)) | (1 << (BNGParser.MAX_CONV_FAILS - 136)) | (1 << (BNGParser.STIFF - 136)) | (1 << (BNGParser.SAT - 136)) | (1 << (BNGParser.MM - 136)) | (1 << (BNGParser.HILL - 136)) | (1 << (BNGParser.ARRHENIUS - 136)) | (1 << (BNGParser.MRATIO - 136)) | (1 << (BNGParser.TFUN - 136)) | (1 << (BNGParser.FUNCTIONPRODUCT - 136)) | (1 << (BNGParser.IF - 136)) | (1 << (BNGParser.EXP - 136)) | (1 << (BNGParser.LN - 136)) | (1 << (BNGParser.LOG10 - 136)) | (1 << (BNGParser.LOG2 - 136)) | (1 << (BNGParser.SQRT - 136)) | (1 << (BNGParser.RINT - 136)) | (1 << (BNGParser.ABS - 136)) | (1 << (BNGParser.SIN - 136)) | (1 << (BNGParser.COS - 136)) | (1 << (BNGParser.TAN - 136)))) !== 0) || ((((_la - 168)) & ~0x1F) === 0 && ((1 << (_la - 168)) & ((1 << (BNGParser.ASIN - 168)) | (1 << (BNGParser.ACOS - 168)) | (1 << (BNGParser.ATAN - 168)) | (1 << (BNGParser.SINH - 168)) | (1 << (BNGParser.COSH - 168)) | (1 << (BNGParser.TANH - 168)) | (1 << (BNGParser.ASINH - 168)) | (1 << (BNGParser.ACOSH - 168)) | (1 << (BNGParser.ATANH - 168)) | (1 << (BNGParser.PI - 168)) | (1 << (BNGParser.EULERIAN - 168)) | (1 << (BNGParser.MIN - 168)) | (1 << (BNGParser.MAX - 168)) | (1 << (BNGParser.SUM - 168)) | (1 << (BNGParser.AVG - 168)) | (1 << (BNGParser.TIME - 168)) | (1 << (BNGParser.FLOAT - 168)) | (1 << (BNGParser.INT - 168)) | (1 << (BNGParser.STRING - 168)) | (1 << (BNGParser.LPAREN - 168)))) !== 0) || ((((_la - 200)) & ~0x1F) === 0 && ((1 << (_la - 200)) & ((1 << (BNGParser.TILDE - 200)) | (1 << (BNGParser.MINUS - 200)) | (1 << (BNGParser.PLUS - 200)) | (1 << (BNGParser.EMARK - 200)))) !== 0)) {
+			if (((((_la - 41)) & ~0x1F) === 0 && ((1 << (_la - 41)) & ((1 << (BNGParser.PREFIX - 41)) | (1 << (BNGParser.SUFFIX - 41)) | (1 << (BNGParser.OVERWRITE - 41)) | (1 << (BNGParser.MAX_AGG - 41)) | (1 << (BNGParser.MAX_ITER - 41)) | (1 << (BNGParser.MAX_STOICH - 41)) | (1 << (BNGParser.PRINT_ITER - 41)) | (1 << (BNGParser.CHECK_ISO - 41)) | (1 << (BNGParser.SAFE - 41)) | (1 << (BNGParser.EXECUTE - 41)) | (1 << (BNGParser.METHOD - 41)) | (1 << (BNGParser.VERBOSE - 41)) | (1 << (BNGParser.NETFILE - 41)) | (1 << (BNGParser.CONTINUE - 41)) | (1 << (BNGParser.T_START - 41)) | (1 << (BNGParser.T_END - 41)) | (1 << (BNGParser.N_STEPS - 41)) | (1 << (BNGParser.N_OUTPUT_STEPS - 41)) | (1 << (BNGParser.MAX_SIM_STEPS - 41)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 41)) | (1 << (BNGParser.SAMPLE_TIMES - 41)) | (1 << (BNGParser.SAVE_PROGRESS - 41)) | (1 << (BNGParser.PRINT_CDAT - 41)) | (1 << (BNGParser.PRINT_FUNCTIONS - 41)))) !== 0) || ((((_la - 73)) & ~0x1F) === 0 && ((1 << (_la - 73)) & ((1 << (BNGParser.PRINT_NET - 73)) | (1 << (BNGParser.PRINT_END - 73)) | (1 << (BNGParser.STOP_IF - 73)) | (1 << (BNGParser.PRINT_ON_STOP - 73)) | (1 << (BNGParser.ATOL - 73)) | (1 << (BNGParser.RTOL - 73)) | (1 << (BNGParser.STEADY_STATE - 73)) | (1 << (BNGParser.SPARSE - 73)) | (1 << (BNGParser.PLA_CONFIG - 73)) | (1 << (BNGParser.PLA_OUTPUT - 73)) | (1 << (BNGParser.PARAM - 73)) | (1 << (BNGParser.COMPLEX - 73)) | (1 << (BNGParser.GET_FINAL_STATE - 73)) | (1 << (BNGParser.GML - 73)) | (1 << (BNGParser.NOCSLF - 73)) | (1 << (BNGParser.NOTF - 73)) | (1 << (BNGParser.BINARY_OUTPUT - 73)) | (1 << (BNGParser.UTL - 73)) | (1 << (BNGParser.EQUIL - 73)) | (1 << (BNGParser.PARAMETER - 73)) | (1 << (BNGParser.PAR_MIN - 73)) | (1 << (BNGParser.PAR_MAX - 73)) | (1 << (BNGParser.N_SCAN_PTS - 73)) | (1 << (BNGParser.LOG_SCALE - 73)) | (1 << (BNGParser.RESET_CONC - 73)))) !== 0) || ((((_la - 106)) & ~0x1F) === 0 && ((1 << (_la - 106)) & ((1 << (BNGParser.FILE - 106)) | (1 << (BNGParser.ATOMIZE - 106)) | (1 << (BNGParser.BLOCKS - 106)) | (1 << (BNGParser.SKIPACTIONS - 106)) | (1 << (BNGParser.TYPE - 106)) | (1 << (BNGParser.BACKGROUND - 106)) | (1 << (BNGParser.COLLAPSE - 106)) | (1 << (BNGParser.OPTS - 106)) | (1 << (BNGParser.FORMAT - 106)) | (1 << (BNGParser.INCLUDE_MODEL - 106)) | (1 << (BNGParser.INCLUDE_NETWORK - 106)) | (1 << (BNGParser.PRETTY_FORMATTING - 106)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 106)) | (1 << (BNGParser.TEXTREACTION - 106)) | (1 << (BNGParser.TEXTSPECIES - 106)) | (1 << (BNGParser.BDF - 106)) | (1 << (BNGParser.MAX_STEP - 106)) | (1 << (BNGParser.MAXORDER - 106)) | (1 << (BNGParser.STATS - 106)) | (1 << (BNGParser.MAX_NUM_STEPS - 106)))) !== 0) || ((((_la - 138)) & ~0x1F) === 0 && ((1 << (_la - 138)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 138)) | (1 << (BNGParser.MAX_CONV_FAILS - 138)) | (1 << (BNGParser.STIFF - 138)) | (1 << (BNGParser.SAT - 138)) | (1 << (BNGParser.MM - 138)) | (1 << (BNGParser.HILL - 138)) | (1 << (BNGParser.ARRHENIUS - 138)) | (1 << (BNGParser.MRATIO - 138)) | (1 << (BNGParser.TFUN - 138)) | (1 << (BNGParser.FUNCTIONPRODUCT - 138)) | (1 << (BNGParser.IF - 138)) | (1 << (BNGParser.EXP - 138)) | (1 << (BNGParser.LN - 138)) | (1 << (BNGParser.LOG10 - 138)) | (1 << (BNGParser.LOG2 - 138)) | (1 << (BNGParser.SQRT - 138)) | (1 << (BNGParser.RINT - 138)) | (1 << (BNGParser.ABS - 138)) | (1 << (BNGParser.SIN - 138)) | (1 << (BNGParser.COS - 138)) | (1 << (BNGParser.TAN - 138)))) !== 0) || ((((_la - 170)) & ~0x1F) === 0 && ((1 << (_la - 170)) & ((1 << (BNGParser.ASIN - 170)) | (1 << (BNGParser.ACOS - 170)) | (1 << (BNGParser.ATAN - 170)) | (1 << (BNGParser.SINH - 170)) | (1 << (BNGParser.COSH - 170)) | (1 << (BNGParser.TANH - 170)) | (1 << (BNGParser.ASINH - 170)) | (1 << (BNGParser.ACOSH - 170)) | (1 << (BNGParser.ATANH - 170)) | (1 << (BNGParser.PI - 170)) | (1 << (BNGParser.EULERIAN - 170)) | (1 << (BNGParser.MIN - 170)) | (1 << (BNGParser.MAX - 170)) | (1 << (BNGParser.SUM - 170)) | (1 << (BNGParser.AVG - 170)) | (1 << (BNGParser.TIME - 170)) | (1 << (BNGParser.FLOAT - 170)) | (1 << (BNGParser.INT - 170)) | (1 << (BNGParser.STRING - 170)) | (1 << (BNGParser.LPAREN - 170)))) !== 0) || ((((_la - 202)) & ~0x1F) === 0 && ((1 << (_la - 202)) & ((1 << (BNGParser.TILDE - 202)) | (1 << (BNGParser.MINUS - 202)) | (1 << (BNGParser.PLUS - 202)) | (1 << (BNGParser.EMARK - 202)))) !== 0)) {
 				{
-				this.state = 1359;
+				this.state = 1466;
 				this.expression_list();
 				}
 			}
 
-			this.state = 1362;
+			this.state = 1469;
 			this.match(BNGParser.RPAREN);
 			}
 		}
@@ -6137,26 +6633,26 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public observable_ref(): Observable_refContext {
 		let _localctx: Observable_refContext = new Observable_refContext(this._ctx, this.state);
-		this.enterRule(_localctx, 162, BNGParser.RULE_observable_ref);
+		this.enterRule(_localctx, 170, BNGParser.RULE_observable_ref);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1364;
+			this.state = 1471;
 			this.match(BNGParser.STRING);
-			this.state = 1365;
+			this.state = 1472;
 			this.match(BNGParser.LPAREN);
-			this.state = 1367;
+			this.state = 1474;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (((((_la - 39)) & ~0x1F) === 0 && ((1 << (_la - 39)) & ((1 << (BNGParser.PREFIX - 39)) | (1 << (BNGParser.SUFFIX - 39)) | (1 << (BNGParser.OVERWRITE - 39)) | (1 << (BNGParser.MAX_AGG - 39)) | (1 << (BNGParser.MAX_ITER - 39)) | (1 << (BNGParser.MAX_STOICH - 39)) | (1 << (BNGParser.PRINT_ITER - 39)) | (1 << (BNGParser.CHECK_ISO - 39)) | (1 << (BNGParser.SAFE - 39)) | (1 << (BNGParser.EXECUTE - 39)) | (1 << (BNGParser.METHOD - 39)) | (1 << (BNGParser.VERBOSE - 39)) | (1 << (BNGParser.NETFILE - 39)) | (1 << (BNGParser.CONTINUE - 39)) | (1 << (BNGParser.T_START - 39)) | (1 << (BNGParser.T_END - 39)) | (1 << (BNGParser.N_STEPS - 39)) | (1 << (BNGParser.N_OUTPUT_STEPS - 39)) | (1 << (BNGParser.MAX_SIM_STEPS - 39)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 39)) | (1 << (BNGParser.SAMPLE_TIMES - 39)) | (1 << (BNGParser.SAVE_PROGRESS - 39)) | (1 << (BNGParser.PRINT_CDAT - 39)) | (1 << (BNGParser.PRINT_FUNCTIONS - 39)))) !== 0) || ((((_la - 71)) & ~0x1F) === 0 && ((1 << (_la - 71)) & ((1 << (BNGParser.PRINT_NET - 71)) | (1 << (BNGParser.PRINT_END - 71)) | (1 << (BNGParser.STOP_IF - 71)) | (1 << (BNGParser.PRINT_ON_STOP - 71)) | (1 << (BNGParser.ATOL - 71)) | (1 << (BNGParser.RTOL - 71)) | (1 << (BNGParser.STEADY_STATE - 71)) | (1 << (BNGParser.SPARSE - 71)) | (1 << (BNGParser.PLA_CONFIG - 71)) | (1 << (BNGParser.PLA_OUTPUT - 71)) | (1 << (BNGParser.PARAM - 71)) | (1 << (BNGParser.COMPLEX - 71)) | (1 << (BNGParser.GET_FINAL_STATE - 71)) | (1 << (BNGParser.GML - 71)) | (1 << (BNGParser.NOCSLF - 71)) | (1 << (BNGParser.NOTF - 71)) | (1 << (BNGParser.BINARY_OUTPUT - 71)) | (1 << (BNGParser.UTL - 71)) | (1 << (BNGParser.EQUIL - 71)) | (1 << (BNGParser.PARAMETER - 71)) | (1 << (BNGParser.PAR_MIN - 71)) | (1 << (BNGParser.PAR_MAX - 71)) | (1 << (BNGParser.N_SCAN_PTS - 71)) | (1 << (BNGParser.LOG_SCALE - 71)) | (1 << (BNGParser.RESET_CONC - 71)))) !== 0) || ((((_la - 104)) & ~0x1F) === 0 && ((1 << (_la - 104)) & ((1 << (BNGParser.FILE - 104)) | (1 << (BNGParser.ATOMIZE - 104)) | (1 << (BNGParser.BLOCKS - 104)) | (1 << (BNGParser.SKIPACTIONS - 104)) | (1 << (BNGParser.TYPE - 104)) | (1 << (BNGParser.BACKGROUND - 104)) | (1 << (BNGParser.COLLAPSE - 104)) | (1 << (BNGParser.OPTS - 104)) | (1 << (BNGParser.FORMAT - 104)) | (1 << (BNGParser.INCLUDE_MODEL - 104)) | (1 << (BNGParser.INCLUDE_NETWORK - 104)) | (1 << (BNGParser.PRETTY_FORMATTING - 104)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 104)) | (1 << (BNGParser.TEXTREACTION - 104)) | (1 << (BNGParser.TEXTSPECIES - 104)) | (1 << (BNGParser.BDF - 104)) | (1 << (BNGParser.MAX_STEP - 104)) | (1 << (BNGParser.MAXORDER - 104)) | (1 << (BNGParser.STATS - 104)) | (1 << (BNGParser.MAX_NUM_STEPS - 104)))) !== 0) || ((((_la - 136)) & ~0x1F) === 0 && ((1 << (_la - 136)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 136)) | (1 << (BNGParser.MAX_CONV_FAILS - 136)) | (1 << (BNGParser.STIFF - 136)) | (1 << (BNGParser.SAT - 136)) | (1 << (BNGParser.MM - 136)) | (1 << (BNGParser.HILL - 136)) | (1 << (BNGParser.ARRHENIUS - 136)) | (1 << (BNGParser.MRATIO - 136)) | (1 << (BNGParser.TFUN - 136)) | (1 << (BNGParser.FUNCTIONPRODUCT - 136)) | (1 << (BNGParser.IF - 136)) | (1 << (BNGParser.EXP - 136)) | (1 << (BNGParser.LN - 136)) | (1 << (BNGParser.LOG10 - 136)) | (1 << (BNGParser.LOG2 - 136)) | (1 << (BNGParser.SQRT - 136)) | (1 << (BNGParser.RINT - 136)) | (1 << (BNGParser.ABS - 136)) | (1 << (BNGParser.SIN - 136)) | (1 << (BNGParser.COS - 136)) | (1 << (BNGParser.TAN - 136)))) !== 0) || ((((_la - 168)) & ~0x1F) === 0 && ((1 << (_la - 168)) & ((1 << (BNGParser.ASIN - 168)) | (1 << (BNGParser.ACOS - 168)) | (1 << (BNGParser.ATAN - 168)) | (1 << (BNGParser.SINH - 168)) | (1 << (BNGParser.COSH - 168)) | (1 << (BNGParser.TANH - 168)) | (1 << (BNGParser.ASINH - 168)) | (1 << (BNGParser.ACOSH - 168)) | (1 << (BNGParser.ATANH - 168)) | (1 << (BNGParser.PI - 168)) | (1 << (BNGParser.EULERIAN - 168)) | (1 << (BNGParser.MIN - 168)) | (1 << (BNGParser.MAX - 168)) | (1 << (BNGParser.SUM - 168)) | (1 << (BNGParser.AVG - 168)) | (1 << (BNGParser.TIME - 168)) | (1 << (BNGParser.FLOAT - 168)) | (1 << (BNGParser.INT - 168)) | (1 << (BNGParser.STRING - 168)) | (1 << (BNGParser.LPAREN - 168)))) !== 0) || ((((_la - 200)) & ~0x1F) === 0 && ((1 << (_la - 200)) & ((1 << (BNGParser.TILDE - 200)) | (1 << (BNGParser.MINUS - 200)) | (1 << (BNGParser.PLUS - 200)) | (1 << (BNGParser.EMARK - 200)))) !== 0)) {
+			if (((((_la - 41)) & ~0x1F) === 0 && ((1 << (_la - 41)) & ((1 << (BNGParser.PREFIX - 41)) | (1 << (BNGParser.SUFFIX - 41)) | (1 << (BNGParser.OVERWRITE - 41)) | (1 << (BNGParser.MAX_AGG - 41)) | (1 << (BNGParser.MAX_ITER - 41)) | (1 << (BNGParser.MAX_STOICH - 41)) | (1 << (BNGParser.PRINT_ITER - 41)) | (1 << (BNGParser.CHECK_ISO - 41)) | (1 << (BNGParser.SAFE - 41)) | (1 << (BNGParser.EXECUTE - 41)) | (1 << (BNGParser.METHOD - 41)) | (1 << (BNGParser.VERBOSE - 41)) | (1 << (BNGParser.NETFILE - 41)) | (1 << (BNGParser.CONTINUE - 41)) | (1 << (BNGParser.T_START - 41)) | (1 << (BNGParser.T_END - 41)) | (1 << (BNGParser.N_STEPS - 41)) | (1 << (BNGParser.N_OUTPUT_STEPS - 41)) | (1 << (BNGParser.MAX_SIM_STEPS - 41)) | (1 << (BNGParser.OUTPUT_STEP_INTERVAL - 41)) | (1 << (BNGParser.SAMPLE_TIMES - 41)) | (1 << (BNGParser.SAVE_PROGRESS - 41)) | (1 << (BNGParser.PRINT_CDAT - 41)) | (1 << (BNGParser.PRINT_FUNCTIONS - 41)))) !== 0) || ((((_la - 73)) & ~0x1F) === 0 && ((1 << (_la - 73)) & ((1 << (BNGParser.PRINT_NET - 73)) | (1 << (BNGParser.PRINT_END - 73)) | (1 << (BNGParser.STOP_IF - 73)) | (1 << (BNGParser.PRINT_ON_STOP - 73)) | (1 << (BNGParser.ATOL - 73)) | (1 << (BNGParser.RTOL - 73)) | (1 << (BNGParser.STEADY_STATE - 73)) | (1 << (BNGParser.SPARSE - 73)) | (1 << (BNGParser.PLA_CONFIG - 73)) | (1 << (BNGParser.PLA_OUTPUT - 73)) | (1 << (BNGParser.PARAM - 73)) | (1 << (BNGParser.COMPLEX - 73)) | (1 << (BNGParser.GET_FINAL_STATE - 73)) | (1 << (BNGParser.GML - 73)) | (1 << (BNGParser.NOCSLF - 73)) | (1 << (BNGParser.NOTF - 73)) | (1 << (BNGParser.BINARY_OUTPUT - 73)) | (1 << (BNGParser.UTL - 73)) | (1 << (BNGParser.EQUIL - 73)) | (1 << (BNGParser.PARAMETER - 73)) | (1 << (BNGParser.PAR_MIN - 73)) | (1 << (BNGParser.PAR_MAX - 73)) | (1 << (BNGParser.N_SCAN_PTS - 73)) | (1 << (BNGParser.LOG_SCALE - 73)) | (1 << (BNGParser.RESET_CONC - 73)))) !== 0) || ((((_la - 106)) & ~0x1F) === 0 && ((1 << (_la - 106)) & ((1 << (BNGParser.FILE - 106)) | (1 << (BNGParser.ATOMIZE - 106)) | (1 << (BNGParser.BLOCKS - 106)) | (1 << (BNGParser.SKIPACTIONS - 106)) | (1 << (BNGParser.TYPE - 106)) | (1 << (BNGParser.BACKGROUND - 106)) | (1 << (BNGParser.COLLAPSE - 106)) | (1 << (BNGParser.OPTS - 106)) | (1 << (BNGParser.FORMAT - 106)) | (1 << (BNGParser.INCLUDE_MODEL - 106)) | (1 << (BNGParser.INCLUDE_NETWORK - 106)) | (1 << (BNGParser.PRETTY_FORMATTING - 106)) | (1 << (BNGParser.EVALUATE_EXPRESSIONS - 106)) | (1 << (BNGParser.TEXTREACTION - 106)) | (1 << (BNGParser.TEXTSPECIES - 106)) | (1 << (BNGParser.BDF - 106)) | (1 << (BNGParser.MAX_STEP - 106)) | (1 << (BNGParser.MAXORDER - 106)) | (1 << (BNGParser.STATS - 106)) | (1 << (BNGParser.MAX_NUM_STEPS - 106)))) !== 0) || ((((_la - 138)) & ~0x1F) === 0 && ((1 << (_la - 138)) & ((1 << (BNGParser.MAX_ERR_TEST_FAILS - 138)) | (1 << (BNGParser.MAX_CONV_FAILS - 138)) | (1 << (BNGParser.STIFF - 138)) | (1 << (BNGParser.SAT - 138)) | (1 << (BNGParser.MM - 138)) | (1 << (BNGParser.HILL - 138)) | (1 << (BNGParser.ARRHENIUS - 138)) | (1 << (BNGParser.MRATIO - 138)) | (1 << (BNGParser.TFUN - 138)) | (1 << (BNGParser.FUNCTIONPRODUCT - 138)) | (1 << (BNGParser.IF - 138)) | (1 << (BNGParser.EXP - 138)) | (1 << (BNGParser.LN - 138)) | (1 << (BNGParser.LOG10 - 138)) | (1 << (BNGParser.LOG2 - 138)) | (1 << (BNGParser.SQRT - 138)) | (1 << (BNGParser.RINT - 138)) | (1 << (BNGParser.ABS - 138)) | (1 << (BNGParser.SIN - 138)) | (1 << (BNGParser.COS - 138)) | (1 << (BNGParser.TAN - 138)))) !== 0) || ((((_la - 170)) & ~0x1F) === 0 && ((1 << (_la - 170)) & ((1 << (BNGParser.ASIN - 170)) | (1 << (BNGParser.ACOS - 170)) | (1 << (BNGParser.ATAN - 170)) | (1 << (BNGParser.SINH - 170)) | (1 << (BNGParser.COSH - 170)) | (1 << (BNGParser.TANH - 170)) | (1 << (BNGParser.ASINH - 170)) | (1 << (BNGParser.ACOSH - 170)) | (1 << (BNGParser.ATANH - 170)) | (1 << (BNGParser.PI - 170)) | (1 << (BNGParser.EULERIAN - 170)) | (1 << (BNGParser.MIN - 170)) | (1 << (BNGParser.MAX - 170)) | (1 << (BNGParser.SUM - 170)) | (1 << (BNGParser.AVG - 170)) | (1 << (BNGParser.TIME - 170)) | (1 << (BNGParser.FLOAT - 170)) | (1 << (BNGParser.INT - 170)) | (1 << (BNGParser.STRING - 170)) | (1 << (BNGParser.LPAREN - 170)))) !== 0) || ((((_la - 202)) & ~0x1F) === 0 && ((1 << (_la - 202)) & ((1 << (BNGParser.TILDE - 202)) | (1 << (BNGParser.MINUS - 202)) | (1 << (BNGParser.PLUS - 202)) | (1 << (BNGParser.EMARK - 202)))) !== 0)) {
 				{
-				this.state = 1366;
-				this.expression();
+				this.state = 1473;
+				this.expression_list();
 				}
 			}
 
-			this.state = 1369;
+			this.state = 1476;
 			this.match(BNGParser.RPAREN);
 			}
 		}
@@ -6177,14 +6673,14 @@ export class BNGParser extends Parser {
 	// @RuleVersion(0)
 	public literal(): LiteralContext {
 		let _localctx: LiteralContext = new LiteralContext(this._ctx, this.state);
-		this.enterRule(_localctx, 164, BNGParser.RULE_literal);
+		this.enterRule(_localctx, 172, BNGParser.RULE_literal);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 1371;
+			this.state = 1478;
 			_la = this._input.LA(1);
-			if (!(((((_la - 177)) & ~0x1F) === 0 && ((1 << (_la - 177)) & ((1 << (BNGParser.PI - 177)) | (1 << (BNGParser.EULERIAN - 177)) | (1 << (BNGParser.FLOAT - 177)) | (1 << (BNGParser.INT - 177)))) !== 0))) {
+			if (!(((((_la - 179)) & ~0x1F) === 0 && ((1 << (_la - 179)) & ((1 << (BNGParser.PI - 179)) | (1 << (BNGParser.EULERIAN - 179)) | (1 << (BNGParser.FLOAT - 179)) | (1 << (BNGParser.INT - 179)))) !== 0))) {
 			this._errHandler.recoverInline(this);
 			} else {
 				if (this._input.LA(1) === Token.EOF) {
@@ -6213,7 +6709,7 @@ export class BNGParser extends Parser {
 
 	private static readonly _serializedATNSegments: number = 3;
 	private static readonly _serializedATNSegment0: string =
-		"\x03\uC91D\uCABA\u058D\uAFBA\u4F53\u0607\uEA8B\uC241\x03\xE3\u0560\x04" +
+		"\x03\uC91D\uCABA\u058D\uAFBA\u4F53\u0607\uEA8B\uC241\x03\xE5\u05CB\x04" +
 		"\x02\t\x02\x04\x03\t\x03\x04\x04\t\x04\x04\x05\t\x05\x04\x06\t\x06\x04" +
 		"\x07\t\x07\x04\b\t\b\x04\t\t\t\x04\n\t\n\x04\v\t\v\x04\f\t\f\x04\r\t\r" +
 		"\x04\x0E\t\x0E\x04\x0F\t\x0F\x04\x10\t\x10\x04\x11\t\x11\x04\x12\t\x12" +
@@ -6225,124 +6721,133 @@ export class BNGParser extends Parser {
 		"4\t4\x045\t5\x046\t6\x047\t7\x048\t8\x049\t9\x04:\t:\x04;\t;\x04<\t<\x04" +
 		"=\t=\x04>\t>\x04?\t?\x04@\t@\x04A\tA\x04B\tB\x04C\tC\x04D\tD\x04E\tE\x04" +
 		"F\tF\x04G\tG\x04H\tH\x04I\tI\x04J\tJ\x04K\tK\x04L\tL\x04M\tM\x04N\tN\x04" +
-		"O\tO\x04P\tP\x04Q\tQ\x04R\tR\x04S\tS\x04T\tT\x03\x02\x07\x02\xAA\n\x02" +
-		"\f\x02\x0E\x02\xAD\v\x02\x03\x02\x07\x02\xB0\n\x02\f\x02\x0E\x02\xB3\v" +
-		"\x02\x03\x02\x03\x02\x03\x02\x06\x02\xB8\n\x02\r\x02\x0E\x02\xB9\x03\x02" +
-		"\x07\x02\xBD\n\x02\f\x02\x0E\x02\xC0\v\x02\x03\x02\x03\x02\x03\x02\x07" +
-		"\x02\xC5\n\x02\f\x02\x0E\x02\xC8\v\x02\x03\x02\x07\x02\xCB\n\x02\f\x02" +
-		"\x0E\x02\xCE\v\x02\x05\x02\xD0\n\x02\x03\x02\x03\x02\x05\x02\xD4\n\x02" +
-		"\x03\x02\x03\x02\x03\x03\x03\x03\x03\x03\x03\x03\x05\x03\xDC\n\x03\x03" +
-		"\x04\x03\x04\x03\x04\x03\x04\x03\x04\x05\x04\xE3\n\x04\x03\x04\x03\x04" +
-		"\x03\x04\x05\x04\xE8\n\x04\x03\x04\x06\x04\xEB\n\x04\r\x04\x0E\x04\xEC" +
-		"\x03\x05\x03\x05\x03\x05\x03\x05\x03\x05\x03\x05\x03\x05\x05\x05\xF6\n" +
-		"\x05\x03\x05\x06\x05\xF9\n\x05\r\x05\x0E\x05\xFA\x03\x06\x03\x06\x03\x06" +
-		"\x03\x06\x07\x06\u0101\n\x06\f\x06\x0E\x06\u0104\v\x06\x03\x06\x03\x06" +
-		"\x03\x06\x03\x06\x07\x06\u010A\n\x06\f\x06\x0E\x06\u010D\v\x06\x03\x06" +
-		"\x03\x06\x03\x06\x03\x06\x07\x06\u0113\n\x06\f\x06\x0E\x06\u0116\v\x06" +
-		"\x03\x06\x03\x06\x03\x06\x03\x06\x07\x06\u011C\n\x06\f\x06\x0E\x06\u011F" +
-		"\v\x06\x03\x06\x07\x06\u0122\n\x06\f\x06\x0E\x06\u0125\v\x06\x03\x06\x03" +
-		"\x06\x05\x06\u0129\n\x06\x03\x06\x06\x06\u012C\n\x06\r\x06\x0E\x06\u012D" +
-		"\x03\x07\x03\x07\x03\x07\x03\x07\x03\x07\x03\x07\x03\x07\x05\x07\u0137" +
-		"\n\x07\x03\x07\x06\x07\u013A\n\x07\r\x07\x0E\x07\u013B\x03\b\x03\b\x03" +
-		"\b\x03\b\x03\b\x03\b\x03\b\x03\b\x03\b\x03\b\x03\b\x05\b\u0149\n\b\x03" +
-		"\t\x03\t\x03\t\x06\t\u014E\n\t\r\t\x0E\t\u014F\x03\t\x03\t\x06\t\u0154" +
-		"\n\t\r\t\x0E\t\u0155\x07\t\u0158\n\t\f\t\x0E\t\u015B\v\t\x03\t\x03\t\x03" +
-		"\t\x07\t\u0160\n\t\f\t\x0E\t\u0163\v\t\x03\n\x05\n\u0166\n\n\x03\n\x03" +
-		"\n\x03\n\x05\n\u016B\n\n\x03\n\x03\n\x05\n\u016F\n\n\x03\n\x05\n\u0172" +
-		"\n\n\x03\v\x03\v\x05\v\u0176\n\v\x03\f\x03\f\x03\f\x03\f\x06\f\u017C\n" +
-		"\f\r\f\x0E\f\u017D\x03\f\x03\f\x06\f\u0182\n\f\r\f\x0E\f\u0183\x07\f\u0186" +
-		"\n\f\f\f\x0E\f\u0189\v\f\x03\f\x03\f\x03\f\x03\f\x07\f\u018F\n\f\f\f\x0E" +
-		"\f\u0192\v\f\x03\f\x03\f\x03\f\x06\f\u0197\n\f\r\f\x0E\f\u0198\x03\f\x03" +
-		"\f\x06\f\u019D\n\f\r\f\x0E\f\u019E\x07\f\u01A1\n\f\f\f\x0E\f\u01A4\v\f" +
-		"\x03\f\x03\f\x03\f\x07\f\u01A9\n\f\f\f\x0E\f\u01AC\v\f\x03\f\x03\f\x03" +
-		"\f\x06\f\u01B1\n\f\r\f\x0E\f\u01B2\x03\f\x03\f\x06\f\u01B7\n\f\r\f\x0E" +
-		"\f\u01B8\x07\f\u01BB\n\f\f\f\x0E\f\u01BE\v\f\x03\f\x03\f\x03\f\x07\f\u01C3" +
-		"\n\f\f\f\x0E\f\u01C6\v\f\x05\f\u01C8\n\f\x03\r\x03\r\x05\r\u01CC\n\r\x03" +
-		"\r\x03\r\x05\r\u01D0\n\r\x03\x0E\x03\x0E\x03\x0E\x05\x0E\u01D5\n\x0E\x03" +
-		"\x0E\x05\x0E\u01D8\n\x0E\x03\x0F\x05\x0F\u01DB\n\x0F\x03\x0F\x03\x0F\x05" +
-		"\x0F\u01DF\n\x0F\x07\x0F\u01E1\n\x0F\f\x0F\x0E\x0F\u01E4\v\x0F\x03\x10" +
-		"\x03\x10\x03\x10\x05\x10\u01E9\n\x10\x03\x11\x03\x11\x03\x11\x07\x11\u01EE" +
-		"\n\x11\f\x11\x0E\x11\u01F1\v\x11\x03\x12\x03\x12\x03\x12\x05\x12\u01F6" +
-		"\n\x12\x05\x12\u01F8\n\x12\x03\x13\x03\x13\x03\x13\x03\x13\x05\x13\u01FE" +
-		"\n\x13\x03\x13\x06\x13\u0201\n\x13\r\x13\x0E\x13\u0202\x03\x13\x03\x13" +
-		"\x06\x13\u0207\n\x13\r\x13\x0E\x13\u0208\x07\x13\u020B\n\x13\f\x13\x0E" +
-		"\x13\u020E\v\x13\x03\x13\x03\x13\x03\x13\x03\x13\x05\x13\u0214\n\x13\x03" +
-		"\x13\x07\x13\u0217\n\x13\f\x13\x0E\x13\u021A\v\x13\x03\x14\x05\x14\u021D" +
-		"\n\x14\x03\x14\x03\x14\x05\x14\u0221\n\x14\x03\x14\x05\x14\u0224\n\x14" +
-		"\x03\x14\x03\x14\x03\x14\x05\x14\u0229\n\x14\x03\x14\x03\x14\x05\x14\u022D" +
-		"\n\x14\x03\x15\x03\x15\x03\x15\x05\x15\u0232\n\x15\x03\x15\x03\x15\x05" +
-		"\x15\u0236\n\x15\x03\x15\x03\x15\x03\x15\x05\x15\u023B\n\x15\x07\x15\u023D" +
-		"\n\x15\f\x15\x0E\x15\u0240\v\x15\x03\x15\x03\x15\x05\x15\u0244\n\x15\x03" +
-		"\x16\x03\x16\x03\x16\x03\x17\x03\x17\x03\x17\x05\x17\u024C\n\x17\x03\x17" +
-		"\x05\x17\u024F\n\x17\x03\x17\x05\x17\u0252\n\x17\x03\x18\x03\x18\x03\x18" +
-		"\x03\x19\x05\x19\u0258\n\x19\x03\x19\x03\x19\x05\x19\u025C\n\x19\x07\x19" +
-		"\u025E\n\x19\f\x19\x0E\x19\u0261\v\x19\x03\x1A\x03\x1A\x03\x1A\x03\x1A" +
-		"\x07\x1A\u0267\n\x1A\f\x1A\x0E\x1A\u026A\v\x1A\x03\x1B\x03\x1B\x03\x1B" +
-		"\x05\x1B\u026F\n\x1B\x03\x1B\x05\x1B\u0272\n\x1B\x03\x1C\x03\x1C\x03\x1C" +
-		"\x03\x1C\x03\x1C\x03\x1C\x03\x1C\x03\x1C\x05\x1C\u027C\n\x1C\x03\x1D\x03" +
-		"\x1D\x03\x1E\x03\x1E\x03\x1E\x06\x1E\u0283\n\x1E\r\x1E\x0E\x1E\u0284\x03" +
-		"\x1E\x03\x1E\x06\x1E\u0289\n\x1E\r\x1E\x0E\x1E\u028A\x07\x1E\u028D\n\x1E" +
-		"\f\x1E\x0E\x1E\u0290\v\x1E\x03\x1E\x03\x1E\x03\x1E\x07\x1E\u0295\n\x1E" +
-		"\f\x1E\x0E\x1E\u0298\v\x1E\x03\x1F\x03\x1F\x05\x1F\u029C\n\x1F\x03\x1F" +
-		"\x05\x1F\u029F\n\x1F\x03\x1F\x03\x1F\x03\x1F\x03 \x03 \x03!\x03!\x05!" +
-		"\u02A8\n!\x03!\x07!\u02AB\n!\f!\x0E!\u02AE\v!\x03\"\x03\"\x03\"\x03\"" +
-		"\x05\"\u02B4\n\"\x03#\x03#\x03#\x03#\x06#\u02BA\n#\r#\x0E#\u02BB\x03#" +
-		"\x03#\x06#\u02C0\n#\r#\x0E#\u02C1\x07#\u02C4\n#\f#\x0E#\u02C7\v#\x03#" +
-		"\x03#\x03#\x03#\x07#\u02CD\n#\f#\x0E#\u02D0\v#\x03#\x03#\x03#\x06#\u02D5" +
-		"\n#\r#\x0E#\u02D6\x03#\x03#\x06#\u02DB\n#\r#\x0E#\u02DC\x07#\u02DF\n#" +
-		"\f#\x0E#\u02E2\v#\x03#\x03#\x03#\x07#\u02E7\n#\f#\x0E#\u02EA\v#\x03#\x03" +
-		"#\x03#\x06#\u02EF\n#\r#\x0E#\u02F0\x03#\x03#\x06#\u02F5\n#\r#\x0E#\u02F6" +
-		"\x07#\u02F9\n#\f#\x0E#\u02FC\v#\x03#\x03#\x03#\x07#\u0301\n#\f#\x0E#\u0304" +
-		"\v#\x05#\u0306\n#\x03$\x05$\u0309\n$\x03$\x03$\x03$\x03$\x05$\u030F\n" +
-		"$\x03$\x03$\x03$\x03$\x03$\x05$\u0316\n$\x03%\x03%\x03%\x03%\x03%\x05" +
-		"%\u031D\n%\x03%\x07%\u0320\n%\f%\x0E%\u0323\v%\x03%\x03%\x05%\u0327\n" +
-		"%\x03&\x03&\x03&\x07&\u032C\n&\f&\x0E&\u032F\v&\x03&\x05&\u0332\n&\x03" +
-		"\'\x03\'\x03\'\x07\'\u0337\n\'\f\'\x0E\'\u033A\v\'\x03\'\x05\'\u033D\n" +
-		"\'\x03(\x03(\x03)\x03)\x03)\x05)\u0344\n)\x03*\x03*\x03*\x03*\x03*\x03" +
-		"*\x03*\x03*\x03*\x03*\x03*\x03*\x03*\x03*\x03*\x03*\x03*\x03*\x03*\x03" +
-		"*\x03*\x03*\x03*\x03*\x03*\x03*\x03*\x03*\x03*\x03*\x03*\x03*\x03*\x03" +
-		"*\x03*\x05*\u0369\n*\x03+\x03+\x03+\x07+\u036E\n+\f+\x0E+\u0371\v+\x03" +
-		",\x03,\x03,\x06,\u0376\n,\r,\x0E,\u0377\x03,\x03,\x06,\u037C\n,\r,\x0E" +
-		",\u037D\x07,\u0380\n,\f,\x0E,\u0383\v,\x03,\x03,\x03,\x07,\u0388\n,\f" +
-		",\x0E,\u038B\v,\x03-\x03-\x05-\u038F\n-\x03-\x03-\x03-\x05-\u0394\n-\x03" +
-		"-\x05-\u0397\n-\x03-\x05-\u039A\n-\x03-\x03-\x03.\x03.\x03.\x07.\u03A1" +
-		"\n.\f.\x0E.\u03A4\v.\x03/\x03/\x03/\x06/\u03A9\n/\r/\x0E/\u03AA\x03/\x03" +
-		"/\x06/\u03AF\n/\r/\x0E/\u03B0\x07/\u03B3\n/\f/\x0E/\u03B6\v/\x03/\x03" +
-		"/\x03/\x07/\u03BB\n/\f/\x0E/\u03BE\v/\x030\x030\x050\u03C2\n0\x030\x03" +
-		"0\x030\x030\x050\u03C8\n0\x031\x031\x031\x031\x061\u03CE\n1\r1\x0E1\u03CF" +
-		"\x031\x031\x061\u03D4\n1\r1\x0E1\u03D5\x071\u03D8\n1\f1\x0E1\u03DB\v1" +
-		"\x031\x031\x031\x031\x071\u03E1\n1\f1\x0E1\u03E4\v1\x032\x032\x052\u03E8" +
-		"\n2\x032\x032\x032\x033\x033\x033\x033\x063\u03F1\n3\r3\x0E3\u03F2\x03" +
-		"3\x033\x063\u03F7\n3\r3\x0E3\u03F8\x073\u03FB\n3\f3\x0E3\u03FE\v3\x03" +
-		"3\x033\x033\x033\x073\u0404\n3\f3\x0E3\u0407\v3\x034\x034\x054\u040B\n" +
-		"4\x034\x034\x034\x034\x034\x054\u0412\n4\x034\x034\x035\x065\u0417\n5" +
-		"\r5\x0E5\u0418\x036\x036\x036\x066\u041E\n6\r6\x0E6\u041F\x036\x076\u0423" +
-		"\n6\f6\x0E6\u0426\v6\x036\x036\x036\x076\u042B\n6\f6\x0E6\u042E\v6\x03" +
-		"7\x037\x037\x067\u0433\n7\r7\x0E7\u0434\x037\x077\u0438\n7\f7\x0E7\u043B" +
-		"\v7\x037\x037\x037\x077\u0440\n7\f7\x0E7\u0443\v7\x038\x038\x038\x038" +
-		"\x038\x058\u044A\n8\x039\x039\x039\x059\u044F\n9\x039\x039\x059\u0453" +
-		"\n9\x039\x079\u0456\n9\f9\x0E9\u0459\v9\x03:\x03:\x03:\x05:\u045E\n:\x03" +
-		":\x03:\x05:\u0462\n:\x03:\x07:\u0465\n:\f:\x0E:\u0468\v:\x03;\x03;\x03" +
-		";\x05;\u046D\n;\x03;\x03;\x05;\u0471\n;\x03;\x07;\u0474\n;\f;\x0E;\u0477" +
-		"\v;\x03<\x03<\x03<\x03<\x03<\x06<\u047E\n<\r<\x0E<\u047F\x05<\u0482\n" +
-		"<\x03<\x03<\x03<\x03<\x03<\x07<\u0489\n<\f<\x0E<\u048C\v<\x03<\x05<\u048F" +
-		"\n<\x03<\x03<\x05<\u0493\n<\x03<\x07<\u0496\n<\f<\x0E<\u0499\v<\x03=\x03" +
-		"=\x03=\x05=\u049E\n=\x03=\x03=\x05=\u04A2\n=\x03=\x07=\u04A5\n=\f=\x0E" +
-		"=\u04A8\v=\x03>\x03>\x05>\u04AC\n>\x03>\x03>\x03>\x07>\u04B1\n>\f>\x0E" +
-		">\u04B4\v>\x03>\x05>\u04B7\n>\x03?\x03?\x03?\x07?\u04BC\n?\f?\x0E?\u04BF" +
-		"\v?\x03@\x03@\x03@\x03@\x03A\x03A\x03A\x03A\x07A\u04C9\nA\fA\x0EA\u04CC" +
-		"\vA\x03A\x03A\x03A\x07A\u04D1\nA\fA\x0EA\u04D4\vA\x03A\x03A\x03A\x03A" +
-		"\x03A\x03A\x03A\x05A\u04DD\nA\x03A\x05A\u04E0\nA\x03B\x03B\x03C\x03C\x03" +
-		"C\x07C\u04E7\nC\fC\x0EC\u04EA\vC\x03D\x03D\x05D\u04EE\nD\x03D\x03D\x03" +
-		"D\x03E\x03E\x03F\x03F\x03F\x07F\u04F8\nF\fF\x0EF\u04FB\vF\x03G\x03G\x03" +
-		"H\x03H\x03H\x03H\x03H\x03H\x05H\u0505\nH\x03I\x03I\x03I\x03I\x05I\u050B" +
-		"\nI\x03I\x07I\u050E\nI\fI\x0EI\u0511\vI\x03J\x03J\x03J\x03J\x05J\u0517" +
-		"\nJ\x03J\x07J\u051A\nJ\fJ\x0EJ\u051D\vJ\x03K\x03K\x03K\x07K\u0522\nK\f" +
-		"K\x0EK\u0525\vK\x03L\x03L\x03M\x03M\x03M\x07M\u052C\nM\fM\x0EM\u052F\v" +
-		"M\x03N\x03N\x03N\x07N\u0534\nN\fN\x0EN\u0537\vN\x03O\x03O\x03O\x07O\u053C" +
-		"\nO\fO\x0EO\u053F\vO\x03P\x05P\u0542\nP\x03P\x03P\x03Q\x03Q\x03Q\x03Q" +
-		"\x03Q\x03Q\x03Q\x03Q\x05Q\u054E\nQ\x03R\x03R\x03R\x05R\u0553\nR\x03R\x03" +
-		"R\x03S\x03S\x03S\x05S\u055A\nS\x03S\x03S\x03T\x03T\x03T\x02\x02\x02U\x02" +
+		"O\tO\x04P\tP\x04Q\tQ\x04R\tR\x04S\tS\x04T\tT\x04U\tU\x04V\tV\x04W\tW\x04" +
+		"X\tX\x03\x02\x07\x02\xB2\n\x02\f\x02\x0E\x02\xB5\v\x02\x03\x02\x07\x02" +
+		"\xB8\n\x02\f\x02\x0E\x02\xBB\v\x02\x03\x02\x03\x02\x03\x02\x06\x02\xC0" +
+		"\n\x02\r\x02\x0E\x02\xC1\x03\x02\x07\x02\xC5\n\x02\f\x02\x0E\x02\xC8\v" +
+		"\x02\x03\x02\x03\x02\x03\x02\x07\x02\xCD\n\x02\f\x02\x0E\x02\xD0\v\x02" +
+		"\x03\x02\x07\x02\xD3\n\x02\f\x02\x0E\x02\xD6\v\x02\x05\x02\xD8\n\x02\x03" +
+		"\x02\x03\x02\x05\x02\xDC\n\x02\x03\x02\x03\x02\x03\x03\x03\x03\x03\x03" +
+		"\x03\x03\x05\x03\xE4\n\x03\x03\x04\x03\x04\x03\x04\x03\x04\x03\x04\x05" +
+		"\x04\xEB\n\x04\x03\x04\x03\x04\x03\x04\x05\x04\xF0\n\x04\x03\x04\x06\x04" +
+		"\xF3\n\x04\r\x04\x0E\x04\xF4\x03\x05\x03\x05\x03\x05\x03\x05\x03\x05\x03" +
+		"\x05\x03\x05\x05\x05\xFE\n\x05\x03\x05\x06\x05\u0101\n\x05\r\x05\x0E\x05" +
+		"\u0102\x03\x06\x03\x06\x03\x06\x03\x06\x07\x06\u0109\n\x06\f\x06\x0E\x06" +
+		"\u010C\v\x06\x03\x06\x03\x06\x03\x06\x03\x06\x07\x06\u0112\n\x06\f\x06" +
+		"\x0E\x06\u0115\v\x06\x03\x06\x03\x06\x03\x06\x03\x06\x07\x06\u011B\n\x06" +
+		"\f\x06\x0E\x06\u011E\v\x06\x03\x06\x03\x06\x03\x06\x03\x06\x07\x06\u0124" +
+		"\n\x06\f\x06\x0E\x06\u0127\v\x06\x03\x06\x07\x06\u012A\n\x06\f\x06\x0E" +
+		"\x06\u012D\v\x06\x03\x06\x03\x06\x05\x06\u0131\n\x06\x03\x06\x06\x06\u0134" +
+		"\n\x06\r\x06\x0E\x06\u0135\x03\x07\x03\x07\x03\x07\x03\x07\x03\x07\x03" +
+		"\x07\x03\x07\x05\x07\u013F\n\x07\x03\x07\x06\x07\u0142\n\x07\r\x07\x0E" +
+		"\x07\u0143\x03\b\x03\b\x03\b\x03\b\x03\b\x03\b\x03\b\x03\b\x03\b\x03\b" +
+		"\x03\b\x03\b\x05\b\u0152\n\b\x03\t\x03\t\x03\t\x06\t\u0157\n\t\r\t\x0E" +
+		"\t\u0158\x03\t\x03\t\x06\t\u015D\n\t\r\t\x0E\t\u015E\x07\t\u0161\n\t\f" +
+		"\t\x0E\t\u0164\v\t\x03\t\x03\t\x03\t\x07\t\u0169\n\t\f\t\x0E\t\u016C\v" +
+		"\t\x03\n\x05\n\u016F\n\n\x03\n\x03\n\x03\n\x05\n\u0174\n\n\x03\n\x03\n" +
+		"\x05\n\u0178\n\n\x03\n\x05\n\u017B\n\n\x03\v\x03\v\x05\v\u017F\n\v\x03" +
+		"\f\x03\f\x03\f\x03\f\x06\f\u0185\n\f\r\f\x0E\f\u0186\x03\f\x03\f\x06\f" +
+		"\u018B\n\f\r\f\x0E\f\u018C\x07\f\u018F\n\f\f\f\x0E\f\u0192\v\f\x03\f\x03" +
+		"\f\x03\f\x03\f\x07\f\u0198\n\f\f\f\x0E\f\u019B\v\f\x03\f\x03\f\x03\f\x06" +
+		"\f\u01A0\n\f\r\f\x0E\f\u01A1\x03\f\x03\f\x06\f\u01A6\n\f\r\f\x0E\f\u01A7" +
+		"\x07\f\u01AA\n\f\f\f\x0E\f\u01AD\v\f\x03\f\x03\f\x03\f\x07\f\u01B2\n\f" +
+		"\f\f\x0E\f\u01B5\v\f\x03\f\x03\f\x03\f\x06\f\u01BA\n\f\r\f\x0E\f\u01BB" +
+		"\x03\f\x03\f\x06\f\u01C0\n\f\r\f\x0E\f\u01C1\x07\f\u01C4\n\f\f\f\x0E\f" +
+		"\u01C7\v\f\x03\f\x03\f\x03\f\x07\f\u01CC\n\f\f\f\x0E\f\u01CF\v\f\x03\f" +
+		"\x03\f\x03\f\x03\f\x06\f\u01D5\n\f\r\f\x0E\f\u01D6\x03\f\x03\f\x06\f\u01DB" +
+		"\n\f\r\f\x0E\f\u01DC\x07\f\u01DF\n\f\f\f\x0E\f\u01E2\v\f\x03\f\x03\f\x03" +
+		"\f\x03\f\x07\f\u01E8\n\f\f\f\x0E\f\u01EB\v\f\x05\f\u01ED\n\f\x03\r\x03" +
+		"\r\x05\r\u01F1\n\r\x03\r\x03\r\x05\r\u01F5\n\r\x03\x0E\x03\x0E\x03\x0E" +
+		"\x05\x0E\u01FA\n\x0E\x03\x0E\x05\x0E\u01FD\n\x0E\x03\x0F\x05\x0F\u0200" +
+		"\n\x0F\x03\x0F\x03\x0F\x05\x0F\u0204\n\x0F\x07\x0F\u0206\n\x0F\f\x0F\x0E" +
+		"\x0F\u0209\v\x0F\x03\x10\x03\x10\x03\x10\x05\x10\u020E\n\x10\x03\x10\x03" +
+		"\x10\x05\x10\u0212\n\x10\x03\x11\x03\x11\x03\x12\x03\x12\x03\x12\x07\x12" +
+		"\u0219\n\x12\f\x12\x0E\x12\u021C\v\x12\x03\x13\x03\x13\x03\x13\x05\x13" +
+		"\u0221\n\x13\x05\x13\u0223\n\x13\x03\x14\x03\x14\x03\x14\x03\x14\x05\x14" +
+		"\u0229\n\x14\x03\x14\x06\x14\u022C\n\x14\r\x14\x0E\x14\u022D\x03\x14\x03" +
+		"\x14\x06\x14\u0232\n\x14\r\x14\x0E\x14\u0233\x07\x14\u0236\n\x14\f\x14" +
+		"\x0E\x14\u0239\v\x14\x03\x14\x03\x14\x03\x14\x03\x14\x05\x14\u023F\n\x14" +
+		"\x03\x14\x07\x14\u0242\n\x14\f\x14\x0E\x14\u0245\v\x14\x03\x15\x05\x15" +
+		"\u0248\n\x15\x03\x15\x03\x15\x05\x15\u024C\n\x15\x03\x15\x05\x15\u024F" +
+		"\n\x15\x03\x15\x03\x15\x03\x15\x05\x15\u0254\n\x15\x03\x15\x03\x15\x05" +
+		"\x15\u0258\n\x15\x03\x16\x03\x16\x03\x16\x05\x16\u025D\n\x16\x03\x16\x03" +
+		"\x16\x05\x16\u0261\n\x16\x03\x16\x03\x16\x03\x16\x05\x16\u0266\n\x16\x07" +
+		"\x16\u0268\n\x16\f\x16\x0E\x16\u026B\v\x16\x03\x16\x03\x16\x05\x16\u026F" +
+		"\n\x16\x03\x17\x03\x17\x03\x17\x03\x18\x03\x18\x03\x18\x05\x18\u0277\n" +
+		"\x18\x03\x18\x05\x18\u027A\n\x18\x03\x18\x05\x18\u027D\n\x18\x03\x18\x05" +
+		"\x18\u0280\n\x18\x03\x19\x03\x19\x03\x19\x03\x19\x03\x19\x03\x19\x05\x19" +
+		"\u0288\n\x19\x03\x1A\x03\x1A\x03\x1A\x03\x1B\x05\x1B\u028E\n\x1B\x03\x1B" +
+		"\x03\x1B\x05\x1B\u0292\n\x1B\x07\x1B\u0294\n\x1B\f\x1B\x0E\x1B\u0297\v" +
+		"\x1B\x03\x1C\x03\x1C\x03\x1C\x05\x1C\u029C\n\x1C\x03\x1C\x03\x1C\x03\x1C" +
+		"\x03\x1C\x07\x1C\u02A2\n\x1C\f\x1C\x0E\x1C\u02A5\v\x1C\x03\x1D\x03\x1D" +
+		"\x03\x1D\x05\x1D\u02AA\n\x1D\x03\x1D\x05\x1D\u02AD\n\x1D\x03\x1E\x03\x1E" +
+		"\x03\x1E\x03\x1E\x03\x1E\x03\x1E\x03\x1E\x03\x1E\x03\x1E\x05\x1E\u02B8" +
+		"\n\x1E\x03\x1F\x03\x1F\x03 \x03 \x03 \x06 \u02BF\n \r \x0E \u02C0\x03" +
+		" \x03 \x06 \u02C5\n \r \x0E \u02C6\x07 \u02C9\n \f \x0E \u02CC\v \x03" +
+		" \x03 \x03 \x07 \u02D1\n \f \x0E \u02D4\v \x03!\x03!\x05!\u02D8\n!\x03" +
+		"!\x05!\u02DB\n!\x03!\x03!\x03!\x03\"\x03\"\x03#\x03#\x05#\u02E4\n#\x03" +
+		"#\x07#\u02E7\n#\f#\x0E#\u02EA\v#\x03$\x03$\x03$\x03$\x05$\u02F0\n$\x03" +
+		"%\x03%\x03%\x03%\x06%\u02F6\n%\r%\x0E%\u02F7\x03%\x03%\x06%\u02FC\n%\r" +
+		"%\x0E%\u02FD\x07%\u0300\n%\f%\x0E%\u0303\v%\x03%\x03%\x03%\x03%\x07%\u0309" +
+		"\n%\f%\x0E%\u030C\v%\x03%\x03%\x03%\x06%\u0311\n%\r%\x0E%\u0312\x03%\x03" +
+		"%\x06%\u0317\n%\r%\x0E%\u0318\x07%\u031B\n%\f%\x0E%\u031E\v%\x03%\x03" +
+		"%\x03%\x07%\u0323\n%\f%\x0E%\u0326\v%\x03%\x03%\x03%\x06%\u032B\n%\r%" +
+		"\x0E%\u032C\x03%\x03%\x06%\u0331\n%\r%\x0E%\u0332\x07%\u0335\n%\f%\x0E" +
+		"%\u0338\v%\x03%\x03%\x03%\x07%\u033D\n%\f%\x0E%\u0340\v%\x05%\u0342\n" +
+		"%\x03&\x05&\u0345\n&\x03&\x03&\x03&\x03&\x05&\u034B\n&\x03&\x03&\x03&" +
+		"\x03&\x03&\x05&\u0352\n&\x03\'\x03\'\x03\'\x03\'\x03\'\x05\'\u0359\n\'" +
+		"\x03\'\x07\'\u035C\n\'\f\'\x0E\'\u035F\v\'\x03\'\x03\'\x05\'\u0363\n\'" +
+		"\x03(\x03(\x05(\u0367\n(\x03(\x03(\x03(\x05(\u036C\n(\x07(\u036E\n(\f" +
+		"(\x0E(\u0371\v(\x03)\x03)\x05)\u0375\n)\x03)\x03)\x03)\x05)\u037A\n)\x07" +
+		")\u037C\n)\f)\x0E)\u037F\v)\x03*\x03*\x03+\x03+\x03+\x05+\u0386\n+\x03" +
+		",\x03,\x03,\x03,\x03,\x03,\x03,\x03,\x03,\x03,\x03,\x03,\x03,\x03,\x03" +
+		",\x03,\x03,\x03,\x03,\x03,\x03,\x03,\x03,\x03,\x03,\x03,\x03,\x03,\x03" +
+		",\x03,\x03,\x03,\x03,\x03,\x03,\x05,\u03AB\n,\x03-\x03-\x03-\x07-\u03B0" +
+		"\n-\f-\x0E-\u03B3\v-\x03.\x03.\x03.\x06.\u03B8\n.\r.\x0E.\u03B9\x03.\x03" +
+		".\x06.\u03BE\n.\r.\x0E.\u03BF\x07.\u03C2\n.\f.\x0E.\u03C5\v.\x03.\x03" +
+		".\x03.\x07.\u03CA\n.\f.\x0E.\u03CD\v.\x03/\x03/\x05/\u03D1\n/\x03/\x03" +
+		"/\x03/\x05/\u03D6\n/\x03/\x05/\u03D9\n/\x03/\x05/\u03DC\n/\x03/\x03/\x03" +
+		"0\x030\x030\x070\u03E3\n0\f0\x0E0\u03E6\v0\x031\x031\x031\x061\u03EB\n" +
+		"1\r1\x0E1\u03EC\x031\x031\x061\u03F1\n1\r1\x0E1\u03F2\x071\u03F5\n1\f" +
+		"1\x0E1\u03F8\v1\x031\x031\x031\x071\u03FD\n1\f1\x0E1\u0400\v1\x032\x03" +
+		"2\x052\u0404\n2\x032\x032\x032\x032\x052\u040A\n2\x033\x033\x033\x033" +
+		"\x063\u0410\n3\r3\x0E3\u0411\x033\x033\x063\u0416\n3\r3\x0E3\u0417\x07" +
+		"3\u041A\n3\f3\x0E3\u041D\v3\x033\x033\x033\x033\x073\u0423\n3\f3\x0E3" +
+		"\u0426\v3\x034\x034\x054\u042A\n4\x034\x034\x034\x035\x035\x035\x035\x06" +
+		"5\u0433\n5\r5\x0E5\u0434\x035\x035\x065\u0439\n5\r5\x0E5\u043A\x075\u043D" +
+		"\n5\f5\x0E5\u0440\v5\x035\x035\x035\x035\x075\u0446\n5\f5\x0E5\u0449\v" +
+		"5\x036\x036\x056\u044D\n6\x036\x036\x036\x036\x036\x056\u0454\n6\x036" +
+		"\x036\x037\x037\x037\x067\u045B\n7\r7\x0E7\u045C\x037\x037\x067\u0461" +
+		"\n7\r7\x0E7\u0462\x077\u0465\n7\f7\x0E7\u0468\v7\x037\x037\x037\x077\u046D" +
+		"\n7\f7\x0E7\u0470\v7\x038\x038\x038\x038\x038\x078\u0477\n8\f8\x0E8\u047A" +
+		"\v8\x058\u047C\n8\x038\x058\u047F\n8\x039\x069\u0482\n9\r9\x0E9\u0483" +
+		"\x03:\x03:\x03:\x06:\u0489\n:\r:\x0E:\u048A\x03:\x07:\u048E\n:\f:\x0E" +
+		":\u0491\v:\x03:\x03:\x03:\x07:\u0496\n:\f:\x0E:\u0499\v:\x03;\x03;\x03" +
+		";\x06;\u049E\n;\r;\x0E;\u049F\x03;\x07;\u04A3\n;\f;\x0E;\u04A6\v;\x03" +
+		";\x03;\x03;\x07;\u04AB\n;\f;\x0E;\u04AE\v;\x03<\x03<\x03<\x03<\x03<\x05" +
+		"<\u04B5\n<\x03=\x03=\x03=\x05=\u04BA\n=\x03=\x03=\x05=\u04BE\n=\x03=\x07" +
+		"=\u04C1\n=\f=\x0E=\u04C4\v=\x03>\x03>\x03>\x05>\u04C9\n>\x03>\x03>\x05" +
+		">\u04CD\n>\x03>\x07>\u04D0\n>\f>\x0E>\u04D3\v>\x03?\x03?\x03?\x05?\u04D8" +
+		"\n?\x03?\x03?\x05?\u04DC\n?\x03?\x07?\u04DF\n?\f?\x0E?\u04E2\v?\x03@\x03" +
+		"@\x03@\x03@\x03@\x06@\u04E9\n@\r@\x0E@\u04EA\x05@\u04ED\n@\x03@\x03@\x03" +
+		"@\x03@\x03@\x07@\u04F4\n@\f@\x0E@\u04F7\v@\x03@\x05@\u04FA\n@\x03@\x03" +
+		"@\x05@\u04FE\n@\x03@\x07@\u0501\n@\f@\x0E@\u0504\v@\x03A\x03A\x03A\x05" +
+		"A\u0509\nA\x03A\x03A\x05A\u050D\nA\x03A\x07A\u0510\nA\fA\x0EA\u0513\v" +
+		"A\x03B\x03B\x05B\u0517\nB\x03B\x03B\x03B\x07B\u051C\nB\fB\x0EB\u051F\v" +
+		"B\x03B\x05B\u0522\nB\x03C\x03C\x03C\x07C\u0527\nC\fC\x0EC\u052A\vC\x03" +
+		"D\x03D\x03D\x03D\x03E\x03E\x03E\x03E\x07E\u0534\nE\fE\x0EE\u0537\vE\x03" +
+		"E\x03E\x03E\x07E\u053C\nE\fE\x0EE\u053F\vE\x03E\x03E\x03E\x03E\x03E\x03" +
+		"E\x03E\x05E\u0548\nE\x03E\x05E\u054B\nE\x03F\x03F\x03G\x03G\x03G\x07G" +
+		"\u0552\nG\fG\x0EG\u0555\vG\x03H\x03H\x05H\u0559\nH\x03H\x03H\x03H\x03" +
+		"I\x03I\x03J\x03J\x03J\x07J\u0563\nJ\fJ\x0EJ\u0566\vJ\x03K\x03K\x03L\x03" +
+		"L\x03L\x03L\x03L\x03L\x05L\u0570\nL\x03M\x03M\x03M\x03M\x05M\u0576\nM" +
+		"\x03M\x07M\u0579\nM\fM\x0EM\u057C\vM\x03N\x03N\x03N\x03N\x05N\u0582\n" +
+		"N\x03N\x07N\u0585\nN\fN\x0EN\u0588\vN\x03O\x03O\x03O\x07O\u058D\nO\fO" +
+		"\x0EO\u0590\vO\x03P\x03P\x03Q\x03Q\x03Q\x07Q\u0597\nQ\fQ\x0EQ\u059A\v" +
+		"Q\x03R\x03R\x03R\x07R\u059F\nR\fR\x0ER\u05A2\vR\x03S\x03S\x03S\x07S\u05A7" +
+		"\nS\fS\x0ES\u05AA\vS\x03T\x05T\u05AD\nT\x03T\x03T\x03U\x03U\x03U\x03U" +
+		"\x03U\x03U\x03U\x03U\x05U\u05B9\nU\x03V\x03V\x03V\x05V\u05BE\nV\x03V\x03" +
+		"V\x03W\x03W\x03W\x05W\u05C5\nW\x03W\x03W\x03X\x03X\x03X\x02\x02\x02Y\x02" +
 		"\x02\x04\x02\x06\x02\b\x02\n\x02\f\x02\x0E\x02\x10\x02\x12\x02\x14\x02" +
 		"\x16\x02\x18\x02\x1A\x02\x1C\x02\x1E\x02 \x02\"\x02$\x02&\x02(\x02*\x02" +
 		",\x02.\x020\x022\x024\x026\x028\x02:\x02<\x02>\x02@\x02B\x02D\x02F\x02" +
@@ -6350,606 +6855,659 @@ export class BNGParser extends Parser {
 		"d\x02f\x02h\x02j\x02l\x02n\x02p\x02r\x02t\x02v\x02x\x02z\x02|\x02~\x02" +
 		"\x80\x02\x82\x02\x84\x02\x86\x02\x88\x02\x8A\x02\x8C\x02\x8E\x02\x90\x02" +
 		"\x92\x02\x94\x02\x96\x02\x98\x02\x9A\x02\x9C\x02\x9E\x02\xA0\x02\xA2\x02" +
-		"\xA4\x02\xA6\x02\x02\x14\x03\x02\xDF\xDF\x03\x02\xBB\xBC\x05\x02\f\f\x0F" +
-		"\x0F\xBC\xBC\x04\x02\xCC\xCF\xD1\xD1\x03\x02\xC7\xC8\x06\x0255MMRSVW\x05" +
-		"\x02vz||\x83\x84\x04\x02\x8D\x8E\x91\x91\b\x0222abiinn\x8F\x90\x92\x94" +
-		"\x03\x02\xE0\xE0\v\x02,,346;>>PQ^^\x85\x85\x8C\x8C\x95\x96\x12\x02)*," +
-		"13466;<>LNQTUX`chjmoruu}\x82\x85\x8C\xBC\xBC\x04\x02\xCC\xCF\xD1\xD2\x03" +
-		"\x02\xD8\xD9\x04\x02\xD6\xD7\xDB\xDB\x05\x02\xCA\xCA\xD8\xD9\xDE\xDE\x05" +
-		"\x02\x97\x9D\x9F\xB2\xB5\xB9\x04\x02\xB3\xB4\xBA\xBB\x02\u05F3\x02\xAB" +
-		"\x03\x02\x02\x02\x04\xDB\x03\x02\x02\x02\x06\xDD\x03\x02\x02\x02\b\xEE" +
-		"\x03\x02\x02\x02\n\xFC\x03\x02\x02\x02\f\u012F\x03\x02\x02\x02\x0E\u0148" +
-		"\x03\x02\x02\x02\x10\u014A\x03\x02\x02\x02\x12\u0165\x03\x02\x02\x02\x14" +
-		"\u0175\x03\x02\x02\x02\x16\u01C7\x03\x02\x02\x02\x18\u01CB\x03\x02\x02" +
-		"\x02\x1A\u01D1\x03\x02\x02\x02\x1C\u01DA\x03\x02\x02\x02\x1E\u01E5\x03" +
-		"\x02\x02\x02 \u01EA\x03\x02\x02\x02\"\u01F7\x03\x02\x02\x02$\u01F9\x03" +
-		"\x02\x02\x02&\u021C\x03\x02\x02\x02(\u0231\x03\x02\x02\x02*\u0245\x03" +
-		"\x02\x02\x02,\u0248\x03\x02\x02\x02.\u0253\x03\x02\x02\x020\u0257\x03" +
-		"\x02\x02\x022\u0262\x03\x02\x02\x024\u0271\x03\x02\x02\x026\u027B\x03" +
-		"\x02\x02\x028\u027D\x03\x02\x02\x02:\u027F\x03\x02\x02\x02<\u029B\x03" +
-		"\x02\x02\x02>\u02A3\x03\x02\x02\x02@\u02A5\x03\x02\x02\x02B\u02B3\x03" +
-		"\x02\x02\x02D\u0305\x03\x02\x02\x02F\u0308\x03\x02\x02\x02H\u0326\x03" +
-		"\x02\x02\x02J\u0331\x03\x02\x02\x02L\u033C\x03\x02\x02\x02N\u033E\x03" +
-		"\x02\x02\x02P\u0340\x03\x02\x02\x02R\u0368\x03\x02\x02\x02T\u036A\x03" +
-		"\x02\x02\x02V\u0372\x03\x02\x02\x02X\u038E\x03\x02\x02\x02Z\u039D\x03" +
-		"\x02\x02\x02\\\u03A5\x03\x02\x02\x02^\u03C1\x03\x02\x02\x02`\u03C9\x03" +
-		"\x02\x02\x02b\u03E7\x03\x02\x02\x02d\u03EC\x03\x02\x02\x02f\u040A\x03" +
-		"\x02\x02\x02h\u0416\x03\x02\x02\x02j\u041A\x03\x02\x02\x02l\u042F\x03" +
-		"\x02\x02\x02n\u0449\x03\x02\x02\x02p\u044B\x03\x02\x02\x02r\u045A\x03" +
-		"\x02\x02\x02t\u0469\x03\x02\x02\x02v\u0478\x03\x02\x02\x02x\u049A\x03" +
-		"\x02\x02\x02z\u04B6\x03\x02\x02\x02|\u04B8\x03\x02\x02\x02~\u04C0\x03" +
-		"\x02\x02\x02\x80\u04DF\x03\x02\x02\x02\x82\u04E1\x03\x02\x02\x02\x84\u04E3" +
-		"\x03\x02\x02\x02\x86\u04ED\x03\x02\x02\x02\x88\u04F2\x03\x02\x02\x02\x8A" +
-		"\u04F4\x03\x02\x02\x02\x8C\u04FC\x03\x02\x02\x02\x8E\u04FE\x03\x02\x02" +
-		"\x02\x90\u0506\x03\x02\x02\x02\x92\u0512\x03\x02\x02\x02\x94\u051E\x03" +
-		"\x02\x02\x02\x96\u0526\x03\x02\x02\x02\x98\u0528\x03\x02\x02\x02\x9A\u0530" +
-		"\x03\x02\x02\x02\x9C\u0538\x03\x02\x02\x02\x9E\u0541\x03\x02\x02\x02\xA0" +
-		"\u054D\x03\x02\x02\x02\xA2\u054F\x03\x02\x02\x02\xA4\u0556\x03\x02\x02" +
-		"\x02\xA6\u055D\x03\x02\x02\x02\xA8\xAA\x07\x04\x02\x02\xA9\xA8\x03\x02" +
-		"\x02\x02\xAA\xAD\x03\x02\x02\x02\xAB\xA9\x03\x02\x02\x02\xAB\xAC\x03\x02" +
-		"\x02\x02\xAC\xB1\x03\x02\x02\x02\xAD\xAB\x03\x02\x02\x02\xAE\xB0\x05\x04" +
-		"\x03\x02\xAF\xAE\x03\x02\x02\x02\xB0\xB3\x03\x02\x02\x02\xB1\xAF\x03\x02" +
-		"\x02\x02\xB1\xB2\x03\x02\x02\x02\xB2\xCF\x03\x02\x02\x02\xB3\xB1\x03\x02" +
-		"\x02\x02\xB4\xB5\x07\x06\x02\x02\xB5\xB7\x07\b\x02\x02\xB6\xB8\x07\x04" +
-		"\x02\x02\xB7\xB6\x03\x02\x02\x02\xB8\xB9\x03\x02\x02\x02\xB9\xB7\x03\x02" +
-		"\x02\x02\xB9\xBA\x03\x02\x02\x02\xBA\xBE\x03\x02\x02\x02\xBB\xBD\x05\x0E" +
-		"\b\x02\xBC\xBB\x03\x02\x02\x02\xBD\xC0\x03\x02\x02\x02\xBE\xBC\x03\x02" +
-		"\x02\x02\xBE\xBF\x03\x02\x02\x02\xBF\xC1\x03\x02\x02\x02\xC0\xBE\x03\x02" +
-		"\x02\x02\xC1\xC2\x07\x07\x02\x02\xC2\xC6\x07\b\x02\x02\xC3\xC5\x07\x04" +
-		"\x02\x02\xC4\xC3\x03\x02\x02\x02\xC5\xC8\x03\x02\x02\x02\xC6\xC4\x03\x02" +
-		"\x02\x02\xC6\xC7\x03\x02\x02\x02\xC7\xD0\x03\x02\x02\x02\xC8\xC6\x03\x02" +
-		"\x02\x02\xC9\xCB\x05\x0E\b\x02\xCA\xC9\x03\x02\x02\x02\xCB\xCE\x03\x02" +
-		"\x02\x02\xCC\xCA\x03\x02\x02\x02\xCC\xCD\x03\x02\x02\x02\xCD\xD0\x03\x02" +
-		"\x02\x02\xCE\xCC\x03\x02\x02\x02\xCF\xB4\x03\x02\x02\x02\xCF\xCC\x03\x02" +
-		"\x02\x02\xD0\xD3\x03\x02\x02\x02\xD1\xD4\x05j6\x02\xD2\xD4\x05h5\x02\xD3" +
-		"\xD1\x03\x02\x02\x02\xD3\xD2\x03\x02\x02\x02\xD3\xD4\x03\x02\x02\x02\xD4" +
-		"\xD5\x03\x02\x02\x02\xD5\xD6\x07\x02\x02\x03\xD6\x03\x03\x02\x02\x02\xD7" +
-		"\xDC\x05\x06\x04\x02\xD8\xDC\x05\b\x05\x02\xD9\xDC\x05\n\x06\x02\xDA\xDC" +
-		"\x05\f\x07\x02\xDB\xD7\x03\x02\x02\x02\xDB\xD8\x03\x02\x02\x02\xDB\xD9" +
-		"\x03\x02\x02\x02\xDB\xDA\x03\x02\x02\x02\xDC\x05\x03\x02\x02\x02\xDD\xDE" +
-		"\x07%\x02\x02\xDE\xDF\x07\xC5\x02\x02\xDF\xE0\x07\xDF\x02\x02\xE0\xE2" +
-		"\x07\xE2\x02\x02\xE1\xE3\x07\xBC\x02\x02\xE2\xE1\x03\x02\x02\x02\xE2\xE3" +
-		"\x03\x02\x02\x02\xE3\xE4\x03\x02\x02\x02\xE4\xE5\x07\xDF\x02\x02\xE5\xE7" +
-		"\x07\xC6\x02\x02\xE6\xE8\x07\xBD\x02\x02\xE7\xE6\x03\x02\x02\x02\xE7\xE8" +
-		"\x03\x02\x02\x02\xE8\xEA\x03\x02\x02\x02\xE9\xEB\x07\x04\x02\x02\xEA\xE9" +
-		"\x03\x02\x02\x02\xEB\xEC\x03\x02\x02\x02\xEC\xEA\x03\x02\x02\x02\xEC\xED" +
-		"\x03\x02\x02\x02\xED\x07\x03\x02\x02\x02\xEE\xEF\x07(\x02\x02\xEF\xF0" +
-		"\x07\xC5\x02\x02\xF0\xF1\x07\xDF\x02\x02\xF1\xF2\x07\xBC\x02\x02\xF2\xF3" +
-		"\x07\xDF\x02\x02\xF3\xF5\x07\xC6\x02\x02\xF4\xF6\x07\xBD\x02\x02\xF5\xF4" +
-		"\x03\x02\x02\x02\xF5\xF6\x03\x02\x02\x02\xF6\xF8\x03\x02\x02\x02\xF7\xF9" +
-		"\x07\x04\x02\x02\xF8\xF7\x03\x02\x02\x02\xF9\xFA\x03\x02\x02\x02\xFA\xF8" +
-		"\x03\x02\x02\x02\xFA\xFB\x03\x02\x02\x02\xFB\t\x03\x02\x02\x02\xFC\xFD" +
-		"\x07&\x02\x02\xFD\xFE\x07\xC5\x02\x02\xFE\u0102\x07\xDF\x02\x02\xFF\u0101" +
-		"\n\x02\x02\x02\u0100\xFF\x03\x02\x02\x02\u0101\u0104\x03\x02\x02\x02\u0102" +
-		"\u0100\x03\x02\x02\x02\u0102\u0103\x03\x02\x02\x02\u0103\u0105\x03\x02" +
-		"\x02\x02\u0104\u0102\x03\x02\x02\x02\u0105\u0106\x07\xDF\x02\x02\u0106" +
-		"\u0107\x07\xC3\x02\x02\u0107\u010B\x07\xDF\x02\x02\u0108\u010A\n\x02\x02" +
-		"\x02\u0109\u0108\x03\x02\x02\x02\u010A\u010D\x03\x02\x02\x02\u010B\u0109" +
-		"\x03\x02\x02\x02\u010B\u010C\x03\x02\x02\x02\u010C\u010E\x03\x02\x02\x02" +
-		"\u010D\u010B\x03\x02\x02\x02\u010E\u0123\x07\xDF\x02\x02\u010F\u0110\x07" +
-		"\xC3\x02\x02\u0110\u0114\x07\xDF\x02\x02\u0111\u0113\n\x02\x02\x02\u0112" +
-		"\u0111\x03\x02\x02\x02\u0113\u0116\x03\x02\x02\x02\u0114\u0112\x03\x02" +
-		"\x02\x02\u0114\u0115\x03\x02\x02\x02\u0115\u0117\x03\x02\x02\x02\u0116" +
-		"\u0114\x03\x02\x02\x02\u0117\u0118\x07\xDF\x02\x02\u0118\u0119\x07\xC3" +
-		"\x02\x02\u0119\u011D\x07\xDF\x02\x02\u011A\u011C\n\x02\x02\x02\u011B\u011A" +
-		"\x03\x02\x02\x02\u011C\u011F\x03\x02\x02\x02\u011D\u011B\x03\x02\x02\x02" +
-		"\u011D\u011E\x03\x02\x02\x02\u011E\u0120\x03\x02\x02\x02\u011F\u011D\x03" +
-		"\x02\x02\x02\u0120\u0122\x07\xDF\x02\x02\u0121\u010F\x03\x02\x02\x02\u0122" +
-		"\u0125\x03\x02\x02\x02\u0123\u0121\x03\x02\x02\x02\u0123\u0124\x03\x02" +
-		"\x02\x02\u0124\u0126\x03\x02\x02\x02\u0125\u0123\x03\x02\x02\x02\u0126" +
-		"\u0128\x07\xC6\x02\x02\u0127\u0129\x07\xBD\x02\x02\u0128\u0127\x03\x02" +
-		"\x02\x02\u0128\u0129\x03\x02\x02\x02\u0129\u012B\x03\x02\x02\x02\u012A" +
-		"\u012C\x07\x04\x02\x02\u012B\u012A\x03\x02\x02\x02\u012C\u012D\x03\x02" +
-		"\x02\x02\u012D\u012B\x03\x02\x02\x02\u012D\u012E\x03\x02\x02\x02\u012E" +
-		"\v\x03\x02\x02\x02\u012F\u0130\x07\'\x02\x02\u0130\u0131\x07\xC5\x02\x02" +
-		"\u0131\u0132\x07\xDF\x02\x02\u0132\u0133\x07\xBC\x02\x02\u0133\u0134\x07" +
-		"\xDF\x02\x02\u0134\u0136\x07\xC6\x02\x02\u0135\u0137\x07\xBD\x02\x02\u0136" +
-		"\u0135\x03\x02\x02\x02\u0136\u0137\x03\x02\x02\x02\u0137\u0139\x03\x02" +
-		"\x02\x02\u0138\u013A\x07\x04\x02\x02\u0139\u0138\x03\x02\x02\x02\u013A" +
-		"\u013B\x03\x02\x02\x02\u013B\u0139\x03\x02\x02\x02\u013B\u013C\x03\x02" +
-		"\x02\x02\u013C\r\x03\x02\x02\x02\u013D\u0149\x05\x10\t\x02\u013E\u0149" +
-		"\x05\x16\f\x02\u013F\u0149\x05$\x13\x02\u0140\u0149\x05:\x1E\x02\u0141" +
-		"\u0149\x05D#\x02\u0142\u0149\x05V,\x02\u0143\u0149\x05\\/\x02\u0144\u0149" +
-		"\x05`1\x02\u0145\u0149\x05d3\x02\u0146\u0149\x05j6\x02";
+		"\xA4\x02\xA6\x02\xA8\x02\xAA\x02\xAC\x02\xAE\x02\x02\x15\x03\x02\xE1\xE1" +
+		"\x06\x02\x99\x9F\xA1\xA6\xA8\xB4\xB7\xBB\x03\x02\xBD\xBE\x05\x02\f\f\x0F" +
+		"\x0F\xBE\xBE\x04\x02\xCE\xD1\xD3\xD3\x03\x02\xC9\xCA\x06\x0277OOTUXY\x05" +
+		"\x02x|~~\x85\x86\x04\x02\x8F\x90\x93\x93\b\x0244cdkkpp\x91\x92\x94\x96" +
+		"\x03\x02\xE2\xE2\v\x02..568=@@RS``\x87\x87\x8E\x8E\x97\x98\x12\x02+,." +
+		"35688=>@NPSVWZbejloqtww\x7F\x84\x87\x8E\xBE\xBE\x04\x02\xCE\xD1\xD3\xD4" +
+		"\x03\x02\xDA\xDB\x04\x02\xD8\xD9\xDD\xDD\x05\x02\xCC\xCC\xDA\xDB\xE0\xE0" +
+		"\x05\x02\x99\x9F\xA1\xB4\xB7\xBB\x04\x02\xB5\xB6\xBC\xBD\x02\u0672\x02" +
+		"\xB3\x03\x02\x02\x02\x04\xE3\x03\x02\x02\x02\x06\xE5\x03\x02\x02\x02\b" +
+		"\xF6\x03\x02\x02\x02\n\u0104\x03\x02\x02\x02\f\u0137\x03\x02\x02\x02\x0E" +
+		"\u0151\x03\x02\x02\x02\x10\u0153\x03\x02\x02\x02\x12\u016E\x03\x02\x02" +
+		"\x02\x14\u017E\x03\x02\x02\x02\x16\u01EC\x03\x02\x02\x02\x18\u01F0\x03" +
+		"\x02\x02\x02\x1A\u01F6\x03\x02\x02\x02\x1C\u01FF\x03\x02\x02\x02\x1E\u020D" +
+		"\x03\x02\x02\x02 \u0213\x03\x02\x02\x02\"\u0215\x03\x02\x02\x02$\u0222" +
+		"\x03\x02\x02\x02&\u0224\x03\x02\x02\x02(\u0247\x03\x02\x02\x02*\u025C" +
+		"\x03\x02\x02\x02,\u0270\x03\x02\x02\x02.\u0273\x03\x02\x02\x020\u0287" +
+		"\x03\x02\x02\x022\u0289\x03\x02\x02\x024\u028D\x03\x02\x02\x026\u029B" +
+		"\x03\x02\x02\x028\u02AC\x03\x02\x02\x02:\u02B7\x03\x02\x02\x02<\u02B9" +
+		"\x03\x02\x02\x02>\u02BB\x03\x02\x02\x02@\u02D7\x03\x02\x02\x02B\u02DF" +
+		"\x03\x02\x02\x02D\u02E1\x03\x02\x02\x02F\u02EF\x03\x02\x02\x02H\u0341" +
+		"\x03\x02\x02\x02J\u0344\x03\x02\x02\x02L\u0362\x03\x02\x02\x02N\u0366" +
+		"\x03\x02\x02\x02P\u0374\x03\x02\x02\x02R\u0380\x03\x02\x02\x02T\u0382" +
+		"\x03\x02\x02\x02V\u03AA\x03\x02\x02\x02X\u03AC\x03\x02\x02\x02Z\u03B4" +
+		"\x03\x02\x02\x02\\\u03D0\x03\x02\x02\x02^\u03DF\x03\x02\x02\x02`\u03E7" +
+		"\x03\x02\x02\x02b\u0403\x03\x02\x02\x02d\u040B\x03\x02\x02\x02f\u0429" +
+		"\x03\x02\x02\x02h\u042E\x03\x02\x02\x02j\u044C\x03\x02\x02\x02l\u0457" +
+		"\x03\x02\x02\x02n\u0471\x03\x02\x02\x02p\u0481\x03\x02\x02\x02r\u0485" +
+		"\x03\x02\x02\x02t\u049A\x03\x02\x02\x02v\u04B4\x03\x02\x02\x02x\u04B6" +
+		"\x03\x02\x02\x02z\u04C5\x03\x02\x02\x02|\u04D4\x03\x02\x02\x02~\u04E3" +
+		"\x03\x02\x02\x02\x80\u0505\x03\x02\x02\x02\x82\u0521\x03\x02\x02\x02\x84" +
+		"\u0523\x03\x02\x02\x02\x86\u052B\x03\x02\x02\x02\x88\u054A\x03\x02\x02" +
+		"\x02\x8A\u054C\x03\x02\x02\x02\x8C\u054E\x03\x02\x02\x02\x8E\u0558\x03" +
+		"\x02\x02\x02\x90\u055D\x03\x02\x02\x02\x92\u055F\x03\x02\x02\x02\x94\u0567" +
+		"\x03\x02\x02\x02\x96\u0569\x03\x02\x02\x02\x98\u0571\x03\x02\x02\x02\x9A" +
+		"\u057D\x03\x02\x02\x02\x9C\u0589\x03\x02\x02\x02\x9E\u0591\x03\x02\x02" +
+		"\x02\xA0\u0593\x03\x02\x02\x02\xA2\u059B\x03\x02\x02\x02\xA4\u05A3\x03" +
+		"\x02\x02\x02\xA6\u05AC\x03\x02\x02\x02\xA8\u05B8\x03\x02\x02\x02\xAA\u05BA" +
+		"\x03\x02\x02\x02\xAC\u05C1\x03\x02\x02\x02\xAE\u05C8\x03\x02\x02\x02\xB0" +
+		"\xB2\x07\x04\x02\x02\xB1\xB0\x03\x02\x02\x02\xB2\xB5\x03\x02\x02\x02\xB3" +
+		"\xB1\x03\x02\x02\x02\xB3\xB4\x03\x02\x02\x02\xB4\xB9\x03\x02\x02\x02\xB5" +
+		"\xB3\x03\x02\x02\x02\xB6\xB8\x05\x04\x03\x02\xB7\xB6\x03\x02\x02\x02\xB8" +
+		"\xBB\x03\x02\x02\x02\xB9\xB7\x03\x02\x02\x02\xB9\xBA\x03\x02\x02\x02\xBA" +
+		"\xD7\x03\x02\x02\x02\xBB\xB9\x03\x02\x02\x02\xBC\xBD\x07\x06\x02\x02\xBD" +
+		"\xBF\x07\b\x02\x02\xBE\xC0\x07\x04\x02\x02\xBF\xBE\x03\x02\x02\x02\xC0" +
+		"\xC1\x03\x02\x02\x02\xC1\xBF\x03\x02\x02\x02\xC1\xC2\x03\x02\x02\x02\xC2" +
+		"\xC6\x03\x02\x02\x02\xC3\xC5\x05\x0E\b\x02\xC4\xC3\x03\x02\x02\x02\xC5" +
+		"\xC8\x03\x02\x02\x02\xC6\xC4\x03\x02\x02\x02\xC6\xC7\x03\x02\x02\x02\xC7" +
+		"\xC9\x03\x02\x02\x02\xC8\xC6\x03\x02\x02\x02\xC9\xCA\x07\x07\x02\x02\xCA" +
+		"\xCE\x07\b\x02\x02\xCB\xCD\x07\x04\x02\x02\xCC\xCB\x03\x02\x02\x02\xCD" +
+		"\xD0\x03\x02\x02\x02\xCE\xCC\x03\x02\x02\x02\xCE\xCF\x03\x02\x02\x02\xCF" +
+		"\xD8\x03\x02\x02\x02\xD0\xCE\x03\x02\x02\x02\xD1\xD3\x05\x0E\b\x02\xD2" +
+		"\xD1\x03\x02\x02\x02\xD3\xD6\x03\x02\x02\x02\xD4\xD2\x03\x02\x02\x02\xD4" +
+		"\xD5\x03\x02\x02\x02\xD5\xD8\x03\x02\x02\x02\xD6\xD4\x03\x02\x02\x02\xD7" +
+		"\xBC\x03\x02\x02\x02\xD7\xD4\x03\x02\x02\x02\xD8\xDB\x03\x02\x02\x02\xD9" +
+		"\xDC\x05r:\x02\xDA\xDC\x05p9\x02\xDB\xD9\x03\x02\x02\x02\xDB\xDA\x03\x02" +
+		"\x02\x02\xDB\xDC\x03\x02\x02\x02\xDC\xDD\x03\x02\x02\x02\xDD\xDE\x07\x02" +
+		"\x02\x03\xDE\x03\x03\x02\x02\x02\xDF\xE4\x05\x06\x04\x02\xE0\xE4\x05\b" +
+		"\x05\x02\xE1\xE4\x05\n\x06\x02\xE2\xE4\x05\f\x07\x02\xE3\xDF\x03\x02\x02" +
+		"\x02\xE3\xE0\x03\x02\x02\x02\xE3\xE1\x03\x02\x02\x02\xE3\xE2\x03\x02\x02" +
+		"\x02\xE4\x05\x03\x02\x02\x02\xE5\xE6\x07\'\x02\x02\xE6\xE7\x07\xC7\x02" +
+		"\x02\xE7\xE8\x07\xE1\x02\x02\xE8\xEA\x07\xE4\x02\x02\xE9\xEB\x07\xBE\x02" +
+		"\x02\xEA\xE9\x03\x02\x02\x02\xEA\xEB\x03\x02\x02\x02\xEB\xEC\x03\x02\x02" +
+		"\x02\xEC\xED\x07\xE1\x02\x02\xED\xEF\x07\xC8\x02\x02\xEE\xF0\x07\xBF\x02" +
+		"\x02\xEF\xEE\x03\x02\x02\x02\xEF\xF0\x03\x02\x02\x02\xF0\xF2\x03\x02\x02" +
+		"\x02\xF1\xF3\x07\x04\x02\x02\xF2\xF1\x03\x02\x02\x02\xF3\xF4\x03\x02\x02" +
+		"\x02\xF4\xF2\x03\x02\x02\x02\xF4\xF5\x03\x02\x02\x02\xF5\x07\x03\x02\x02" +
+		"\x02\xF6\xF7\x07*\x02\x02\xF7\xF8\x07\xC7\x02\x02\xF8\xF9\x07\xE1\x02" +
+		"\x02\xF9\xFA\x07\xBE\x02\x02\xFA\xFB\x07\xE1\x02\x02\xFB\xFD\x07\xC8\x02" +
+		"\x02\xFC\xFE\x07\xBF\x02\x02\xFD\xFC\x03\x02\x02\x02\xFD\xFE\x03\x02\x02" +
+		"\x02\xFE\u0100\x03\x02\x02\x02\xFF\u0101\x07\x04\x02\x02\u0100\xFF\x03" +
+		"\x02\x02\x02\u0101\u0102\x03\x02\x02\x02\u0102\u0100\x03\x02\x02\x02\u0102" +
+		"\u0103\x03\x02\x02\x02\u0103\t\x03\x02\x02\x02\u0104\u0105\x07(\x02\x02" +
+		"\u0105\u0106\x07\xC7\x02\x02\u0106\u010A\x07\xE1\x02\x02\u0107\u0109\n" +
+		"\x02\x02\x02\u0108\u0107\x03\x02\x02\x02\u0109\u010C\x03\x02\x02\x02\u010A" +
+		"\u0108\x03\x02\x02\x02\u010A\u010B\x03\x02\x02\x02\u010B\u010D\x03\x02" +
+		"\x02\x02\u010C\u010A\x03\x02\x02\x02\u010D\u010E\x07\xE1\x02\x02\u010E" +
+		"\u010F\x07\xC5\x02\x02\u010F\u0113\x07\xE1\x02\x02\u0110\u0112\n\x02\x02" +
+		"\x02\u0111\u0110\x03\x02\x02\x02\u0112\u0115\x03\x02\x02\x02\u0113\u0111" +
+		"\x03\x02\x02\x02\u0113\u0114\x03\x02\x02\x02\u0114\u0116\x03\x02\x02\x02" +
+		"\u0115\u0113\x03\x02\x02\x02\u0116\u012B\x07\xE1\x02\x02\u0117\u0118\x07" +
+		"\xC5\x02\x02\u0118\u011C\x07\xE1\x02\x02\u0119\u011B\n\x02\x02\x02\u011A" +
+		"\u0119\x03\x02\x02\x02\u011B\u011E\x03\x02\x02\x02\u011C\u011A\x03\x02" +
+		"\x02\x02\u011C\u011D\x03\x02\x02\x02\u011D\u011F\x03\x02\x02\x02\u011E" +
+		"\u011C\x03\x02\x02\x02\u011F\u0120\x07\xE1\x02\x02\u0120\u0121\x07\xC5" +
+		"\x02\x02\u0121\u0125\x07\xE1\x02\x02\u0122\u0124\n\x02\x02\x02\u0123\u0122" +
+		"\x03\x02\x02\x02\u0124\u0127\x03\x02\x02\x02\u0125\u0123\x03\x02\x02\x02";
 	private static readonly _serializedATNSegment1: string =
-		"\u0147\u0149\x05l7\x02\u0148\u013D\x03\x02\x02\x02\u0148\u013E\x03\x02" +
-		"\x02\x02\u0148\u013F\x03\x02\x02\x02\u0148\u0140\x03\x02\x02\x02\u0148" +
-		"\u0141\x03\x02\x02\x02\u0148\u0142\x03\x02\x02\x02\u0148\u0143\x03\x02" +
-		"\x02\x02\u0148\u0144\x03\x02\x02\x02\u0148\u0145\x03\x02\x02\x02\u0148" +
-		"\u0146\x03\x02\x02\x02\u0148\u0147\x03\x02\x02\x02\u0149\x0F\x03\x02\x02" +
-		"\x02\u014A\u014B\x07\x06\x02\x02\u014B\u014D\x07\t\x02\x02\u014C\u014E" +
-		"\x07\x04\x02\x02\u014D\u014C\x03\x02\x02\x02\u014E\u014F\x03\x02\x02\x02" +
-		"\u014F\u014D\x03\x02\x02\x02\u014F\u0150\x03\x02\x02\x02\u0150\u0159\x03" +
-		"\x02\x02\x02\u0151\u0153\x05\x12\n\x02\u0152\u0154\x07\x04\x02\x02\u0153" +
-		"\u0152\x03\x02\x02\x02\u0154\u0155\x03\x02\x02\x02\u0155\u0153\x03\x02" +
-		"\x02\x02\u0155\u0156\x03\x02\x02\x02\u0156\u0158\x03\x02\x02\x02\u0157" +
-		"\u0151\x03\x02\x02\x02\u0158\u015B\x03\x02\x02\x02\u0159\u0157\x03\x02" +
-		"\x02\x02\u0159\u015A\x03\x02\x02\x02\u015A\u015C\x03\x02\x02\x02\u015B" +
-		"\u0159\x03\x02\x02\x02\u015C\u015D\x07\x07\x02\x02\u015D\u0161\x07\t\x02" +
-		"\x02\u015E\u0160\x07\x04\x02\x02\u015F\u015E\x03\x02\x02\x02\u0160\u0163" +
-		"\x03\x02\x02\x02\u0161\u015F\x03\x02\x02\x02\u0161\u0162\x03\x02\x02\x02" +
-		"\u0162\x11\x03\x02\x02\x02\u0163\u0161\x03\x02\x02\x02\u0164\u0166\x07" +
-		"\xBB\x02\x02\u0165\u0164\x03\x02\x02\x02\u0165\u0166\x03\x02\x02\x02\u0166" +
-		"\u016A\x03\x02\x02\x02\u0167\u0168\x05\x14\v\x02\u0168\u0169\x07\xBE\x02" +
-		"\x02\u0169\u016B\x03\x02\x02\x02\u016A\u0167\x03\x02\x02\x02\u016A\u016B" +
-		"\x03\x02\x02\x02\u016B\u016C\x03\x02\x02\x02\u016C\u016E\x05\x14\v\x02" +
-		"\u016D\u016F\x07\xD3\x02\x02\u016E\u016D\x03\x02\x02\x02\u016E\u016F\x03" +
-		"\x02\x02\x02\u016F\u0171\x03\x02\x02\x02\u0170\u0172\x05\x8CG\x02\u0171" +
-		"\u0170\x03\x02\x02\x02\u0171\u0172\x03\x02\x02\x02\u0172\x13\x03\x02\x02" +
-		"\x02\u0173\u0176\x07\xBC\x02\x02\u0174\u0176\x05\x88E\x02\u0175\u0173" +
-		"\x03\x02\x02\x02\u0175\u0174\x03\x02\x02\x02\u0176\x15\x03\x02\x02\x02" +
-		"\u0177\u0178\x07\x06\x02\x02\u0178\u0179\x07\v\x02\x02\u0179\u017B\x07" +
-		"\r\x02\x02\u017A\u017C\x07\x04\x02\x02\u017B\u017A\x03\x02\x02\x02\u017C" +
-		"\u017D\x03\x02\x02\x02\u017D\u017B\x03\x02\x02\x02\u017D\u017E\x03\x02" +
-		"\x02\x02\u017E\u0187\x03\x02\x02\x02\u017F\u0181\x05\x18\r\x02\u0180\u0182" +
-		"\x07\x04\x02\x02\u0181\u0180\x03\x02\x02\x02\u0182\u0183\x03\x02\x02\x02" +
-		"\u0183\u0181\x03\x02\x02\x02\u0183\u0184\x03\x02\x02\x02\u0184\u0186\x03" +
-		"\x02\x02\x02\u0185\u017F\x03\x02\x02\x02\u0186\u0189\x03\x02\x02\x02\u0187" +
-		"\u0185\x03\x02\x02\x02\u0187\u0188\x03\x02\x02\x02\u0188\u018A\x03\x02" +
-		"\x02\x02\u0189\u0187\x03\x02\x02\x02\u018A\u018B\x07\x07\x02\x02\u018B" +
-		"\u018C\x07\v\x02\x02\u018C\u0190\x07\r\x02\x02\u018D\u018F\x07\x04\x02" +
-		"\x02\u018E\u018D\x03\x02\x02\x02\u018F\u0192\x03\x02\x02\x02\u0190\u018E" +
-		"\x03\x02\x02\x02\u0190\u0191\x03\x02\x02\x02\u0191\u01C8\x03\x02\x02\x02" +
-		"\u0192\u0190\x03\x02\x02\x02\u0193\u0194\x07\x06\x02\x02\u0194\u0196\x07" +
-		"\f\x02\x02\u0195\u0197\x07\x04\x02\x02\u0196\u0195\x03\x02\x02\x02\u0197" +
-		"\u0198\x03\x02\x02\x02\u0198\u0196\x03\x02\x02\x02\u0198\u0199\x03\x02" +
-		"\x02\x02\u0199\u01A2\x03\x02\x02\x02\u019A\u019C\x05\x18\r\x02\u019B\u019D" +
-		"\x07\x04\x02\x02\u019C\u019B\x03\x02\x02\x02\u019D\u019E\x03\x02\x02\x02" +
-		"\u019E\u019C\x03\x02\x02\x02\u019E\u019F\x03\x02\x02\x02\u019F\u01A1\x03" +
-		"\x02\x02\x02\u01A0\u019A\x03\x02\x02\x02\u01A1\u01A4\x03\x02\x02\x02\u01A2" +
-		"\u01A0\x03\x02\x02\x02\u01A2\u01A3\x03\x02\x02\x02\u01A3\u01A5\x03\x02" +
-		"\x02\x02\u01A4\u01A2\x03\x02\x02\x02\u01A5\u01A6\x07\x07\x02\x02\u01A6" +
-		"\u01AA\x07\f\x02\x02\u01A7\u01A9\x07\x04\x02\x02\u01A8\u01A7\x03\x02\x02" +
-		"\x02\u01A9\u01AC\x03\x02\x02\x02\u01AA\u01A8\x03\x02\x02\x02\u01AA\u01AB" +
-		"\x03\x02\x02\x02\u01AB\u01C8\x03\x02\x02\x02\u01AC\u01AA\x03\x02\x02\x02" +
-		"\u01AD\u01AE\x07\x06\x02\x02\u01AE\u01B0\x07\x16\x02\x02\u01AF\u01B1\x07" +
-		"\x04\x02\x02\u01B0\u01AF\x03\x02\x02\x02\u01B1\u01B2\x03\x02\x02\x02\u01B2" +
-		"\u01B0\x03\x02\x02\x02\u01B2\u01B3\x03\x02\x02\x02\u01B3\u01BC\x03\x02" +
-		"\x02\x02\u01B4\u01B6\x05\x18\r\x02\u01B5\u01B7\x07\x04\x02\x02\u01B6\u01B5" +
-		"\x03\x02\x02\x02\u01B7\u01B8\x03\x02\x02\x02\u01B8\u01B6\x03\x02\x02\x02" +
-		"\u01B8\u01B9\x03\x02\x02\x02\u01B9\u01BB\x03\x02\x02\x02\u01BA\u01B4\x03" +
-		"\x02\x02\x02\u01BB\u01BE\x03\x02\x02\x02\u01BC\u01BA\x03\x02\x02\x02\u01BC" +
-		"\u01BD\x03\x02\x02\x02\u01BD\u01BF\x03\x02\x02\x02\u01BE\u01BC\x03\x02" +
-		"\x02\x02\u01BF\u01C0\x07\x07\x02\x02\u01C0\u01C4\x07\x16\x02\x02\u01C1" +
-		"\u01C3\x07\x04\x02\x02\u01C2\u01C1\x03\x02\x02\x02\u01C3\u01C6\x03\x02" +
-		"\x02\x02\u01C4\u01C2\x03\x02\x02\x02\u01C4\u01C5\x03\x02\x02\x02\u01C5" +
-		"\u01C8\x03\x02\x02\x02\u01C6\u01C4\x03\x02\x02\x02\u01C7\u0177\x03\x02" +
-		"\x02\x02\u01C7\u0193\x03\x02\x02\x02\u01C7\u01AD\x03\x02\x02\x02\u01C8" +
-		"\x17\x03\x02\x02\x02\u01C9\u01CA\x07\xBC\x02\x02\u01CA\u01CC\x07\xBE\x02" +
-		"\x02\u01CB\u01C9\x03\x02\x02\x02\u01CB\u01CC\x03\x02\x02\x02\u01CC\u01CD" +
-		"\x03\x02\x02\x02\u01CD\u01CF\x05\x1A\x0E\x02\u01CE\u01D0\x07\x19\x02\x02" +
-		"\u01CF\u01CE\x03\x02\x02\x02\u01CF\u01D0\x03\x02\x02\x02\u01D0\x19\x03" +
-		"\x02\x02\x02\u01D1\u01D7\x07\xBC\x02\x02\u01D2\u01D4\x07\xC5\x02\x02\u01D3" +
-		"\u01D5\x05\x1C\x0F\x02\u01D4\u01D3\x03\x02\x02\x02\u01D4\u01D5\x03\x02" +
-		"\x02\x02\u01D5\u01D6\x03\x02\x02\x02\u01D6\u01D8\x07\xC6\x02\x02\u01D7" +
-		"\u01D2\x03\x02\x02\x02\u01D7\u01D8\x03\x02\x02\x02\u01D8\x1B\x03\x02\x02" +
-		"\x02\u01D9\u01DB\x05\x1E\x10\x02\u01DA\u01D9\x03\x02\x02\x02\u01DA\u01DB" +
-		"\x03\x02\x02\x02\u01DB\u01E2\x03\x02\x02\x02\u01DC\u01DE\x07\xC3\x02\x02" +
-		"\u01DD\u01DF\x05\x1E\x10\x02\u01DE\u01DD\x03\x02\x02\x02\u01DE\u01DF\x03" +
-		"\x02\x02\x02\u01DF\u01E1\x03\x02\x02\x02\u01E0\u01DC\x03\x02\x02\x02\u01E1" +
-		"\u01E4\x03\x02\x02\x02\u01E2\u01E0\x03\x02\x02\x02\u01E2\u01E3\x03\x02" +
-		"\x02\x02\u01E3\x1D\x03\x02\x02\x02\u01E4\u01E2\x03\x02\x02\x02\u01E5\u01E8" +
-		"\x07\xBC\x02\x02\u01E6\u01E7\x07\xCA\x02\x02\u01E7\u01E9\x05 \x11\x02" +
-		"\u01E8\u01E6\x03\x02\x02\x02\u01E8\u01E9\x03\x02\x02\x02\u01E9\x1F\x03" +
-		"\x02\x02\x02\u01EA\u01EF\x05\"\x12\x02\u01EB\u01EC\x07\xCA\x02\x02\u01EC" +
-		"\u01EE\x05\"\x12\x02\u01ED\u01EB\x03\x02\x02\x02\u01EE\u01F1\x03\x02\x02" +
-		"\x02\u01EF\u01ED\x03\x02\x02\x02\u01EF\u01F0\x03\x02\x02\x02\u01F0!\x03" +
-		"\x02\x02\x02\u01F1\u01EF\x03\x02\x02\x02\u01F2\u01F8\x07\xBC\x02\x02\u01F3" +
-		"\u01F5\x07\xBB\x02\x02\u01F4\u01F6\x07\xBC\x02\x02\u01F5\u01F4\x03\x02" +
-		"\x02\x02\u01F5\u01F6\x03\x02\x02\x02\u01F6\u01F8\x03\x02\x02\x02\u01F7" +
-		"\u01F2\x03\x02\x02\x02\u01F7\u01F3\x03\x02\x02\x02\u01F8#\x03\x02\x02" +
-		"\x02\u01F9\u01FD\x07\x06\x02\x02\u01FA\u01FB\x07\x0E\x02\x02\u01FB\u01FE" +
-		"\x07\x0F\x02\x02\u01FC\u01FE\x07\x0F\x02\x02\u01FD\u01FA\x03\x02\x02\x02" +
-		"\u01FD\u01FC\x03\x02\x02\x02\u01FE\u0200\x03\x02\x02\x02\u01FF\u0201\x07" +
-		"\x04\x02\x02\u0200\u01FF\x03\x02\x02\x02\u0201\u0202\x03\x02\x02\x02\u0202" +
-		"\u0200\x03\x02\x02\x02\u0202\u0203\x03\x02\x02\x02\u0203\u020C\x03\x02" +
-		"\x02\x02\u0204\u0206\x05&\x14\x02\u0205\u0207\x07\x04\x02\x02\u0206\u0205" +
-		"\x03\x02\x02\x02\u0207\u0208\x03\x02\x02\x02\u0208\u0206\x03\x02\x02\x02" +
-		"\u0208\u0209\x03\x02\x02\x02\u0209\u020B\x03\x02\x02\x02\u020A\u0204\x03" +
-		"\x02\x02\x02\u020B\u020E\x03\x02\x02\x02\u020C\u020A\x03\x02\x02\x02\u020C" +
-		"\u020D\x03\x02\x02\x02\u020D\u020F\x03\x02\x02\x02\u020E\u020C\x03\x02" +
-		"\x02\x02\u020F\u0213\x07\x07\x02\x02\u0210\u0211\x07\x0E\x02\x02\u0211" +
-		"\u0214\x07\x0F\x02\x02\u0212\u0214\x07\x0F\x02\x02\u0213\u0210\x03\x02" +
-		"\x02\x02\u0213\u0212\x03\x02\x02\x02\u0214\u0218\x03\x02\x02\x02\u0215" +
-		"\u0217\x07\x04\x02\x02\u0216\u0215\x03\x02\x02\x02\u0217\u021A\x03\x02" +
-		"\x02\x02\u0218\u0216\x03\x02\x02\x02\u0218\u0219\x03\x02\x02\x02\u0219" +
-		"%\x03\x02\x02\x02\u021A\u0218\x03\x02\x02\x02\u021B\u021D\x07\xBB\x02" +
-		"\x02\u021C\u021B\x03\x02\x02\x02\u021C\u021D\x03\x02\x02\x02\u021D\u0220" +
-		"\x03\x02\x02\x02\u021E\u021F\x07\xBC\x02\x02\u021F\u0221\x07\xBE\x02\x02" +
-		"\u0220\u021E\x03\x02\x02\x02\u0220\u0221\x03\x02\x02\x02\u0221\u0223\x03" +
-		"\x02\x02\x02\u0222\u0224\x07\xC9\x02\x02\u0223\u0222\x03\x02\x02\x02\u0223" +
-		"\u0224\x03\x02\x02\x02\u0224\u0228\x03\x02\x02\x02\u0225\u0226\x07\xCB" +
-		"\x02\x02\u0226\u0227\x07\xBC\x02\x02\u0227\u0229\x07\xBE\x02\x02\u0228" +
-		"\u0225\x03\x02\x02\x02\u0228\u0229\x03\x02\x02\x02\u0229\u022A\x03\x02" +
-		"\x02\x02\u022A\u022C\x05(\x15\x02\u022B\u022D\x05\x8CG\x02\u022C\u022B" +
-		"\x03\x02\x02\x02\u022C\u022D\x03\x02\x02\x02\u022D\'\x03\x02\x02\x02\u022E" +
-		"\u022F\x07\xCB\x02\x02\u022F\u0230\x07\xBC\x02\x02\u0230\u0232\x07\xBE" +
-		"\x02\x02\u0231\u022E\x03\x02\x02\x02\u0231\u0232\x03\x02\x02\x02\u0232" +
-		"\u0233\x03\x02\x02\x02\u0233\u0235\x05,\x17\x02\u0234\u0236\x05*\x16\x02" +
-		"\u0235\u0234\x03\x02\x02\x02\u0235\u0236\x03\x02\x02\x02\u0236\u023E\x03" +
-		"\x02\x02\x02\u0237\u0238\x07\xC4\x02\x02\u0238\u023A\x05,\x17\x02\u0239" +
-		"\u023B\x05*\x16\x02\u023A\u0239\x03\x02\x02\x02\u023A\u023B\x03\x02\x02" +
-		"\x02\u023B\u023D\x03\x02\x02\x02\u023C\u0237\x03\x02\x02\x02\u023D\u0240" +
-		"\x03\x02\x02\x02\u023E\u023C\x03\x02\x02\x02\u023E\u023F\x03\x02\x02\x02" +
-		"\u023F\u0243\x03\x02\x02\x02\u0240\u023E\x03\x02\x02\x02\u0241\u0242\x07" +
-		"\xCB\x02\x02\u0242\u0244\x07\xBC\x02\x02\u0243\u0241\x03\x02\x02\x02\u0243" +
-		"\u0244\x03\x02\x02\x02\u0244)\x03\x02\x02\x02\u0245\u0246\x07\xCB\x02" +
-		"\x02\u0246\u0247\x07\xBC\x02\x02\u0247+\x03\x02\x02\x02\u0248\u024E\x07" +
-		"\xBC\x02\x02\u0249\u024B\x07\xC5\x02\x02\u024A\u024C\x050\x19\x02\u024B" +
-		"\u024A\x03\x02\x02\x02\u024B\u024C\x03\x02\x02\x02\u024C\u024D\x03\x02" +
-		"\x02\x02\u024D\u024F\x07\xC6\x02\x02\u024E\u0249\x03\x02\x02\x02\u024E" +
-		"\u024F\x03\x02\x02\x02\u024F\u0251\x03\x02\x02\x02\u0250\u0252\x05.\x18" +
-		"\x02\u0251\u0250\x03\x02\x02\x02\u0251\u0252\x03\x02\x02\x02\u0252-\x03" +
-		"\x02\x02\x02\u0253\u0254\x07\xDB\x02\x02\u0254\u0255\x07\xBB\x02\x02\u0255" +
-		"/\x03\x02\x02\x02\u0256\u0258\x052\x1A\x02\u0257\u0256\x03\x02\x02\x02" +
-		"\u0257\u0258\x03\x02\x02\x02\u0258\u025F\x03\x02\x02\x02\u0259\u025B\x07" +
-		"\xC3\x02\x02\u025A\u025C\x052\x1A\x02\u025B\u025A\x03\x02\x02\x02\u025B" +
-		"\u025C\x03\x02\x02\x02\u025C\u025E\x03\x02\x02\x02\u025D\u0259\x03\x02" +
-		"\x02\x02\u025E\u0261\x03\x02\x02\x02\u025F\u025D\x03\x02\x02\x02\u025F" +
-		"\u0260\x03\x02\x02\x02\u02601\x03\x02\x02\x02\u0261\u025F\x03\x02\x02" +
-		"\x02\u0262\u0268\x07\xBC\x02\x02\u0263\u0264\x07\xCA\x02\x02\u0264\u0267" +
-		"\x054\x1B\x02\u0265\u0267\x056\x1C\x02\u0266\u0263\x03\x02\x02\x02\u0266" +
-		"\u0265\x03\x02\x02\x02\u0267\u026A\x03\x02\x02\x02\u0268\u0266\x03\x02" +
-		"\x02\x02\u0268\u0269\x03\x02\x02\x02\u02693\x03\x02\x02\x02\u026A\u0268" +
-		"\x03\x02\x02\x02\u026B\u0272\x07\xBC\x02\x02\u026C\u026E\x07\xBB\x02\x02" +
-		"\u026D\u026F\x07\xBC\x02\x02\u026E\u026D\x03\x02\x02\x02\u026E\u026F\x03" +
-		"\x02\x02\x02\u026F\u0272\x03\x02\x02\x02\u0270\u0272\x07\xDD\x02\x02\u0271" +
-		"\u026B\x03\x02\x02\x02\u0271\u026C\x03\x02\x02\x02\u0271\u0270\x03\x02" +
-		"\x02\x02\u02725\x03\x02\x02\x02\u0273\u0274\x07\xDE\x02\x02\u0274\u027C" +
-		"\x058\x1D\x02\u0275\u0276\x07\xDE\x02\x02\u0276\u027C\x07\xD9\x02\x02" +
-		"\u0277\u0278\x07\xDE\x02\x02\u0278\u027C\x07\xDD\x02\x02\u0279\u027A\x07" +
-		"\xDE\x02\x02\u027A\u027C\x07\xD8\x02\x02\u027B\u0273\x03\x02\x02\x02\u027B" +
-		"\u0275\x03\x02\x02\x02\u027B\u0277\x03\x02\x02\x02\u027B\u0279\x03\x02" +
-		"\x02\x02\u027C7\x03\x02\x02\x02\u027D\u027E\t\x03\x02\x02\u027E9\x03\x02" +
-		"\x02\x02\u027F\u0280\x07\x06\x02\x02\u0280\u0282\x07\x10\x02\x02\u0281" +
-		"\u0283\x07\x04\x02\x02\u0282\u0281\x03\x02\x02\x02\u0283\u0284\x03\x02" +
-		"\x02\x02\u0284\u0282\x03\x02\x02\x02\u0284\u0285\x03\x02\x02\x02\u0285" +
-		"\u028E\x03\x02\x02\x02\u0286\u0288\x05<\x1F\x02\u0287\u0289\x07\x04\x02" +
-		"\x02\u0288\u0287\x03\x02\x02\x02\u0289\u028A\x03\x02\x02\x02\u028A\u0288" +
-		"\x03\x02\x02\x02\u028A\u028B\x03\x02\x02\x02\u028B\u028D\x03\x02\x02\x02" +
-		"\u028C\u0286\x03\x02\x02\x02\u028D\u0290\x03\x02\x02\x02\u028E\u028C\x03" +
-		"\x02\x02\x02\u028E\u028F\x03\x02\x02\x02\u028F\u0291\x03\x02\x02\x02\u0290" +
-		"\u028E\x03\x02\x02\x02\u0291\u0292\x07\x07\x02\x02\u0292\u0296\x07\x10" +
-		"\x02\x02\u0293\u0295\x07\x04\x02\x02\u0294\u0293\x03\x02\x02\x02\u0295" +
-		"\u0298\x03\x02\x02\x02\u0296\u0294\x03\x02\x02\x02\u0296\u0297\x03\x02" +
-		"\x02\x02\u0297;\x03\x02\x02\x02\u0298\u0296\x03\x02\x02\x02\u0299\u029A" +
-		"\x07\xBC\x02\x02\u029A\u029C\x07\xBE\x02\x02\u029B\u0299\x03\x02\x02\x02" +
-		"\u029B\u029C\x03\x02\x02\x02\u029C\u029E\x03\x02\x02\x02\u029D\u029F\x05" +
-		"> \x02\u029E\u029D\x03\x02\x02\x02\u029E\u029F\x03\x02\x02\x02\u029F\u02A0" +
-		"\x03\x02\x02\x02\u02A0\u02A1\x07\xBC\x02\x02\u02A1\u02A2\x05@!\x02\u02A2" +
-		"=\x03\x02\x02\x02\u02A3\u02A4\t\x04\x02\x02\u02A4?\x03\x02\x02\x02\u02A5" +
-		"\u02AC\x05B\"\x02\u02A6\u02A8\x07\xC3\x02\x02\u02A7\u02A6\x03\x02\x02" +
-		"\x02\u02A7\u02A8\x03\x02\x02\x02\u02A8\u02A9\x03\x02\x02\x02\u02A9\u02AB" +
-		"\x05B\"\x02\u02AA\u02A7\x03\x02\x02\x02\u02AB\u02AE\x03\x02\x02\x02\u02AC" +
-		"\u02AA\x03\x02\x02\x02\u02AC\u02AD\x03\x02\x02\x02\u02ADA\x03\x02\x02" +
-		"\x02\u02AE\u02AC\x03\x02\x02\x02\u02AF\u02B4\x05(\x15\x02\u02B0\u02B1" +
-		"\x07\xBC\x02\x02\u02B1\u02B2\t\x05\x02\x02\u02B2\u02B4\x07\xBB\x02\x02" +
-		"\u02B3\u02AF\x03\x02\x02\x02\u02B3\u02B0\x03\x02\x02\x02\u02B4C\x03\x02" +
-		"\x02\x02\u02B5\u02B6\x07\x06\x02\x02\u02B6\u02B7\x07\x12\x02\x02\u02B7" +
-		"\u02B9\x07\x14\x02\x02\u02B8\u02BA\x07\x04\x02\x02\u02B9\u02B8\x03\x02" +
-		"\x02\x02\u02BA\u02BB\x03\x02\x02\x02\u02BB\u02B9\x03\x02\x02\x02\u02BB" +
-		"\u02BC\x03\x02\x02\x02\u02BC\u02C5\x03\x02\x02\x02\u02BD\u02BF\x05F$\x02" +
-		"\u02BE\u02C0\x07\x04\x02\x02\u02BF\u02BE\x03\x02\x02\x02\u02C0\u02C1\x03" +
-		"\x02\x02\x02\u02C1\u02BF\x03\x02\x02\x02\u02C1\u02C2\x03\x02\x02\x02\u02C2" +
-		"\u02C4\x03\x02\x02\x02\u02C3\u02BD\x03\x02\x02\x02\u02C4\u02C7\x03\x02" +
-		"\x02\x02\u02C5\u02C3\x03\x02\x02\x02\u02C5\u02C6\x03\x02\x02\x02\u02C6" +
-		"\u02C8\x03\x02\x02\x02\u02C7\u02C5\x03\x02\x02\x02\u02C8\u02C9\x07\x07" +
-		"\x02\x02\u02C9\u02CA\x07\x12\x02\x02\u02CA\u02CE\x07\x14\x02\x02\u02CB" +
-		"\u02CD\x07\x04\x02\x02\u02CC\u02CB\x03\x02\x02\x02\u02CD\u02D0\x03\x02" +
-		"\x02\x02\u02CE\u02CC\x03\x02\x02\x02\u02CE\u02CF\x03\x02\x02\x02\u02CF" +
-		"\u0306\x03\x02\x02\x02\u02D0\u02CE\x03\x02\x02\x02\u02D1\u02D2\x07\x06" +
-		"\x02\x02\u02D2\u02D4\x07\x15\x02\x02\u02D3\u02D5\x07\x04\x02\x02\u02D4" +
-		"\u02D3\x03\x02\x02\x02\u02D5\u02D6\x03\x02\x02\x02\u02D6\u02D4\x03\x02" +
-		"\x02\x02\u02D6\u02D7\x03\x02\x02\x02\u02D7\u02E0\x03\x02\x02\x02\u02D8" +
-		"\u02DA\x05F$\x02\u02D9\u02DB\x07\x04\x02\x02\u02DA\u02D9\x03\x02\x02\x02" +
-		"\u02DB\u02DC\x03\x02\x02\x02\u02DC\u02DA\x03\x02\x02\x02\u02DC\u02DD\x03" +
-		"\x02\x02\x02\u02DD\u02DF\x03\x02\x02\x02\u02DE\u02D8\x03\x02\x02\x02\u02DF" +
-		"\u02E2\x03\x02\x02\x02\u02E0\u02DE\x03\x02\x02\x02\u02E0\u02E1\x03\x02" +
-		"\x02\x02\u02E1\u02E3\x03\x02\x02\x02\u02E2\u02E0\x03\x02\x02\x02\u02E3" +
-		"\u02E4\x07\x07\x02\x02\u02E4\u02E8\x07\x15\x02\x02\u02E5\u02E7\x07\x04" +
-		"\x02\x02\u02E6\u02E5\x03\x02\x02\x02\u02E7\u02EA\x03\x02\x02\x02\u02E8" +
-		"\u02E6\x03\x02\x02\x02\u02E8\u02E9\x03\x02\x02\x02\u02E9\u0306\x03\x02" +
-		"\x02\x02\u02EA\u02E8\x03\x02\x02\x02\u02EB\u02EC\x07\x06\x02\x02\u02EC" +
-		"\u02EE\x07\x13\x02\x02\u02ED\u02EF\x07\x04\x02\x02\u02EE\u02ED\x03\x02" +
-		"\x02\x02\u02EF\u02F0\x03\x02\x02\x02\u02F0\u02EE\x03\x02\x02\x02\u02F0" +
-		"\u02F1\x03\x02\x02\x02\u02F1\u02FA\x03\x02\x02\x02\u02F2\u02F4\x05F$\x02" +
-		"\u02F3\u02F5\x07\x04\x02\x02\u02F4\u02F3\x03\x02\x02\x02\u02F5\u02F6\x03" +
-		"\x02\x02\x02\u02F6\u02F4\x03\x02\x02\x02\u02F6\u02F7\x03\x02\x02\x02\u02F7" +
-		"\u02F9\x03\x02\x02\x02\u02F8\u02F2\x03\x02\x02\x02\u02F9\u02FC\x03\x02" +
-		"\x02\x02\u02FA\u02F8\x03\x02\x02\x02\u02FA\u02FB\x03\x02\x02\x02\u02FB" +
-		"\u02FD\x03\x02\x02\x02\u02FC\u02FA\x03\x02\x02\x02\u02FD\u02FE\x07\x07" +
-		"\x02\x02\u02FE\u0302\x07\x13\x02\x02\u02FF\u0301\x07\x04\x02\x02\u0300" +
-		"\u02FF\x03\x02\x02\x02\u0301\u0304\x03\x02\x02\x02\u0302\u0300\x03\x02" +
-		"\x02\x02\u0302\u0303\x03\x02\x02\x02\u0303\u0306\x03\x02\x02\x02\u0304" +
-		"\u0302\x03\x02\x02\x02\u0305\u02B5\x03\x02\x02\x02\u0305\u02D1\x03\x02" +
-		"\x02\x02\u0305\u02EB\x03\x02\x02\x02\u0306E\x03\x02\x02\x02\u0307\u0309" +
-		"\x05H%\x02\u0308\u0307\x03\x02\x02\x02\u0308\u0309\x03\x02\x02\x02\u0309" +
-		"\u030E\x03\x02\x02\x02\u030A\u030B\x07\xC1\x02\x02\u030B\u030C\x05R*\x02" +
-		"\u030C\u030D\x07\xC2\x02\x02\u030D\u030F\x03\x02\x02\x02\u030E\u030A\x03" +
-		"\x02\x02\x02\u030E\u030F\x03\x02\x02\x02\u030F\u0310\x03\x02\x02\x02\u0310" +
-		"\u0311\x05J&\x02\u0311\u0312\x05N(\x02\u0312\u0313\x05L\'\x02\u0313\u0315" +
-		"\x05P)\x02\u0314\u0316\x05R*\x02\u0315\u0314\x03\x02\x02\x02\u0315\u0316" +
-		"\x03\x02\x02\x02\u0316G\x03\x02\x02\x02\u0317\u0321\t\x03\x02\x02\u0318" +
-		"\u0320\x07\xBC\x02\x02\u0319\u0320\x07\xBB\x02\x02\u031A\u031C\x07\xC5" +
-		"\x02\x02\u031B\u031D\x07\xBC\x02\x02\u031C\u031B\x03\x02\x02\x02\u031C" +
-		"\u031D\x03\x02\x02\x02\u031D\u031E\x03\x02\x02\x02\u031E\u0320\x07\xC6" +
-		"\x02\x02\u031F\u0318\x03\x02\x02\x02\u031F\u0319\x03\x02\x02\x02\u031F" +
-		"\u031A\x03\x02\x02\x02\u0320\u0323\x03\x02\x02\x02\u0321\u031F\x03\x02" +
-		"\x02\x02\u0321\u0322\x03\x02\x02\x02\u0322\u0324\x03\x02\x02\x02\u0323" +
-		"\u0321\x03\x02\x02\x02\u0324\u0327\x07\xBE\x02\x02\u0325\u0327\x07\xBB" +
-		"\x02\x02\u0326\u0317\x03\x02\x02\x02\u0326\u0325\x03\x02\x02\x02\u0327" +
-		"I\x03\x02\x02\x02\u0328\u032D\x05(\x15\x02\u0329\u032A\x07\xD9\x02\x02" +
-		"\u032A\u032C\x05(\x15\x02\u032B\u0329\x03\x02\x02\x02\u032C\u032F\x03" +
-		"\x02\x02\x02\u032D\u032B\x03\x02\x02\x02\u032D\u032E\x03\x02\x02\x02\u032E" +
-		"\u0332\x03\x02\x02\x02\u032F\u032D\x03\x02\x02\x02\u0330\u0332\x07\xBB" +
-		"\x02\x02\u0331\u0328\x03\x02\x02\x02\u0331\u0330\x03\x02\x02\x02\u0332" +
-		"K\x03\x02\x02\x02\u0333\u0338\x05(\x15\x02\u0334\u0335\x07\xD9\x02\x02" +
-		"\u0335\u0337\x05(\x15\x02\u0336\u0334\x03\x02\x02\x02\u0337\u033A\x03" +
-		"\x02\x02\x02\u0338\u0336\x03\x02\x02\x02\u0338\u0339\x03\x02\x02\x02\u0339" +
-		"\u033D\x03\x02\x02\x02\u033A\u0338\x03\x02\x02\x02\u033B\u033D\x07\xBB" +
-		"\x02\x02\u033C\u0333\x03\x02\x02\x02\u033C\u033B\x03\x02\x02\x02\u033D" +
-		"M\x03\x02\x02\x02\u033E\u033F\t\x06\x02\x02\u033FO\x03\x02\x02\x02\u0340" +
-		"\u0343\x05\x8CG\x02\u0341\u0342\x07\xC3\x02\x02\u0342\u0344\x05\x8CG\x02" +
-		"\u0343\u0341\x03\x02\x02\x02\u0343\u0344\x03\x02\x02\x02\u0344Q\x03\x02" +
-		"\x02\x02\u0345\u0369\x07\x1E\x02\x02\u0346\u0369\x07\x1F\x02\x02\u0347" +
-		"\u0369\x07\x1D\x02\x02\u0348\u0369\x07$\x02\x02\u0349\u034A\x07\x9E\x02" +
-		"\x02\u034A\u034B\x07\xD3\x02\x02\u034B\u0369\x05\x8CG\x02\u034C\u034D" +
-		"\x07 \x02\x02\u034D\u034E\x07\xC5\x02\x02\u034E\u034F\x07\xBB\x02\x02" +
-		"\u034F\u0350\x07\xC3\x02\x02\u0350\u0351\x05T+\x02\u0351\u0352\x07\xC6" +
-		"\x02\x02\u0352\u0369\x03\x02\x02\x02\u0353\u0354\x07\"\x02\x02\u0354\u0355" +
-		"\x07\xC5\x02\x02\u0355\u0356\x07\xBB\x02\x02\u0356\u0357\x07\xC3\x02\x02" +
-		"\u0357\u0358\x05T+\x02\u0358\u0359\x07\xC6\x02\x02\u0359\u0369\x03\x02" +
-		"\x02\x02\u035A\u035B\x07!\x02\x02\u035B\u035C\x07\xC5\x02\x02\u035C\u035D" +
-		"\x07\xBB\x02\x02\u035D\u035E\x07\xC3\x02\x02\u035E\u035F\x05T+\x02\u035F" +
-		"\u0360\x07\xC6\x02\x02\u0360\u0369\x03\x02\x02\x02\u0361\u0362\x07#\x02" +
-		"\x02\u0362\u0363\x07\xC5\x02\x02\u0363\u0364\x07\xBB\x02\x02\u0364\u0365" +
-		"\x07\xC3\x02\x02\u0365\u0366\x05T+\x02\u0366\u0367\x07\xC6\x02\x02\u0367" +
-		"\u0369\x03\x02\x02\x02\u0368\u0345\x03\x02\x02\x02\u0368\u0346\x03\x02" +
-		"\x02\x02\u0368\u0347\x03\x02\x02\x02\u0368\u0348\x03\x02\x02\x02\u0368" +
-		"\u0349\x03\x02\x02\x02\u0368\u034C\x03\x02\x02\x02\u0368\u0353\x03\x02" +
-		"\x02\x02\u0368\u035A\x03\x02\x02\x02\u0368\u0361\x03\x02\x02\x02\u0369" +
-		"S\x03\x02\x02\x02\u036A\u036F\x05(\x15\x02\u036B\u036C\x07\xC3\x02\x02" +
-		"\u036C\u036E\x05(\x15\x02\u036D\u036B\x03\x02\x02\x02\u036E\u0371\x03" +
-		"\x02\x02\x02\u036F\u036D\x03\x02\x02\x02\u036F\u0370\x03\x02\x02\x02\u0370" +
-		"U\x03\x02\x02\x02\u0371\u036F\x03\x02\x02\x02\u0372\u0373\x07\x06\x02" +
-		"\x02\u0373\u0375\x07\x11\x02\x02\u0374\u0376\x07\x04\x02\x02\u0375\u0374" +
-		"\x03\x02\x02\x02\u0376\u0377\x03\x02\x02\x02\u0377\u0375\x03\x02\x02\x02" +
-		"\u0377\u0378\x03\x02\x02\x02\u0378\u0381\x03\x02\x02\x02\u0379\u037B\x05" +
-		"X-\x02\u037A\u037C\x07\x04\x02\x02\u037B\u037A\x03\x02\x02\x02\u037C\u037D" +
-		"\x03\x02\x02\x02\u037D\u037B\x03\x02\x02\x02\u037D\u037E\x03\x02\x02\x02" +
-		"\u037E\u0380\x03\x02\x02\x02\u037F\u0379\x03\x02\x02\x02\u0380\u0383\x03" +
-		"\x02\x02\x02\u0381\u037F\x03\x02\x02\x02\u0381\u0382\x03\x02\x02\x02\u0382" +
-		"\u0384\x03\x02\x02\x02\u0383\u0381\x03\x02\x02\x02\u0384\u0385\x07\x07" +
-		"\x02\x02\u0385\u0389\x07\x11\x02\x02\u0386\u0388\x07\x04\x02\x02\u0387" +
-		"\u0386\x03\x02\x02\x02\u0388\u038B\x03\x02\x02\x02\u0389\u0387\x03\x02" +
-		"\x02\x02\u0389\u038A\x03\x02\x02\x02\u038AW\x03\x02\x02\x02\u038B\u0389" +
-		"\x03\x02\x02\x02\u038C\u038D\x07\xBC\x02\x02\u038D\u038F\x07\xBE\x02\x02" +
-		"\u038E\u038C\x03\x02\x02\x02\u038E\u038F\x03\x02\x02\x02\u038F\u0390\x03" +
-		"\x02\x02\x02\u0390\u0396\x07\xBC\x02\x02\u0391\u0393\x07\xC5\x02\x02\u0392" +
-		"\u0394\x05Z.\x02\u0393\u0392\x03\x02\x02\x02\u0393\u0394\x03\x02\x02\x02" +
-		"\u0394\u0395\x03\x02\x02\x02\u0395\u0397\x07\xC6\x02\x02\u0396\u0391\x03" +
-		"\x02\x02\x02\u0396\u0397\x03\x02\x02\x02\u0397\u0399\x03\x02\x02\x02\u0398" +
-		"\u039A\x07\xD3\x02\x02\u0399\u0398\x03\x02\x02\x02\u0399\u039A\x03\x02" +
-		"\x02\x02\u039A\u039B\x03\x02\x02\x02\u039B\u039C\x05\x8CG\x02\u039CY\x03" +
-		"\x02\x02\x02\u039D\u03A2\x07\xBC\x02\x02\u039E\u039F\x07\xC3\x02\x02\u039F" +
-		"\u03A1\x07\xBC\x02\x02\u03A0\u039E\x03\x02\x02\x02\u03A1\u03A4\x03\x02" +
-		"\x02\x02\u03A2\u03A0\x03\x02\x02\x02\u03A2\u03A3\x03\x02\x02\x02\u03A3" +
-		"[\x03\x02\x02\x02\u03A4\u03A2\x03\x02\x02\x02\u03A5\u03A6\x07\x06\x02" +
-		"\x02\u03A6\u03A8\x07\n\x02\x02\u03A7\u03A9\x07\x04\x02\x02\u03A8\u03A7" +
-		"\x03\x02\x02\x02\u03A9\u03AA\x03\x02\x02\x02\u03AA\u03A8\x03\x02\x02\x02" +
-		"\u03AA\u03AB\x03\x02\x02\x02\u03AB\u03B4\x03\x02\x02\x02\u03AC\u03AE\x05" +
-		"^0\x02\u03AD\u03AF\x07\x04\x02\x02\u03AE\u03AD\x03\x02\x02\x02\u03AF\u03B0" +
-		"\x03\x02\x02\x02\u03B0\u03AE\x03\x02\x02\x02\u03B0\u03B1\x03\x02\x02\x02" +
-		"\u03B1\u03B3\x03\x02\x02\x02\u03B2\u03AC\x03\x02\x02\x02\u03B3\u03B6\x03" +
-		"\x02\x02\x02\u03B4\u03B2\x03\x02\x02\x02\u03B4\u03B5\x03\x02\x02\x02\u03B5" +
-		"\u03B7\x03\x02\x02\x02\u03B6\u03B4\x03\x02\x02\x02\u03B7\u03B8\x07\x07" +
-		"\x02\x02\u03B8\u03BC\x07\n\x02\x02\u03B9\u03BB\x07\x04\x02\x02\u03BA\u03B9" +
-		"\x03\x02\x02\x02\u03BB\u03BE\x03\x02\x02\x02\u03BC\u03BA\x03\x02\x02\x02" +
-		"\u03BC\u03BD\x03\x02\x02\x02\u03BD]\x03\x02\x02\x02\u03BE\u03BC\x03\x02" +
-		"\x02\x02\u03BF\u03C0\x07\xBC\x02\x02\u03C0\u03C2\x07\xBE\x02\x02\u03C1" +
-		"\u03BF\x03\x02\x02\x02\u03C1\u03C2\x03\x02\x02\x02\u03C2\u03C3\x03\x02" +
-		"\x02\x02\u03C3\u03C4\x07\xBC\x02\x02\u03C4\u03C5\x07\xBB\x02\x02\u03C5" +
-		"\u03C7\x05\x8CG\x02\u03C6\u03C8\x07\xBC\x02\x02\u03C7\u03C6\x03\x02\x02" +
-		"\x02\u03C7\u03C8\x03\x02\x02\x02\u03C8_\x03\x02\x02\x02\u03C9\u03CA\x07" +
-		"\x06\x02\x02\u03CA\u03CB\x07\x1B\x02\x02\u03CB\u03CD\x07\x1C\x02\x02\u03CC" +
-		"\u03CE\x07\x04\x02\x02\u03CD\u03CC\x03\x02\x02\x02\u03CE\u03CF\x03\x02" +
-		"\x02\x02\u03CF\u03CD\x03\x02\x02\x02\u03CF\u03D0\x03\x02\x02\x02\u03D0" +
-		"\u03D9\x03\x02\x02\x02\u03D1\u03D3\x05b2\x02\u03D2\u03D4\x07\x04\x02\x02" +
-		"\u03D3\u03D2\x03\x02\x02\x02\u03D4\u03D5\x03\x02\x02\x02\u03D5\u03D3\x03" +
-		"\x02\x02\x02\u03D5\u03D6\x03\x02\x02\x02\u03D6\u03D8\x03\x02\x02\x02\u03D7" +
-		"\u03D1\x03\x02\x02\x02\u03D8\u03DB\x03\x02\x02\x02\u03D9\u03D7\x03\x02" +
-		"\x02\x02\u03D9\u03DA\x03\x02\x02\x02\u03DA\u03DC\x03\x02\x02\x02\u03DB" +
-		"\u03D9\x03\x02\x02\x02\u03DC\u03DD\x07\x07\x02\x02\u03DD\u03DE\x07\x1B" +
-		"\x02\x02\u03DE\u03E2\x07\x1C\x02\x02\u03DF\u03E1\x07\x04\x02\x02\u03E0" +
-		"\u03DF\x03\x02\x02\x02\u03E1\u03E4\x03\x02\x02\x02\u03E2\u03E0\x03\x02" +
-		"\x02\x02\u03E2\u03E3\x03\x02\x02\x02\u03E3a\x03\x02\x02\x02\u03E4\u03E2" +
-		"\x03\x02\x02\x02\u03E5\u03E6\x07\xBC\x02\x02\u03E6\u03E8\x07\xBE\x02\x02" +
-		"\u03E7\u03E5\x03\x02\x02\x02\u03E7\u03E8\x03\x02\x02\x02\u03E8\u03E9\x03" +
-		"\x02\x02\x02\u03E9\u03EA\x05(\x15\x02\u03EA\u03EB\x05\x8CG\x02\u03EBc" +
-		"\x03\x02\x02\x02\u03EC\u03ED\x07\x06\x02\x02\u03ED\u03EE\x07\x19\x02\x02" +
-		"\u03EE\u03F0\x07\x1A\x02\x02\u03EF\u03F1\x07\x04\x02\x02\u03F0\u03EF\x03" +
-		"\x02\x02\x02\u03F1\u03F2\x03\x02\x02\x02\u03F2\u03F0\x03\x02\x02\x02\u03F2" +
-		"\u03F3\x03\x02\x02\x02\u03F3\u03FC\x03\x02\x02\x02\u03F4\u03F6\x05f4\x02" +
-		"\u03F5\u03F7\x07\x04\x02\x02\u03F6\u03F5\x03\x02\x02\x02\u03F7\u03F8\x03" +
-		"\x02\x02\x02\u03F8\u03F6\x03\x02\x02\x02\u03F8\u03F9\x03\x02\x02\x02\u03F9" +
-		"\u03FB\x03\x02\x02\x02\u03FA\u03F4\x03\x02\x02\x02\u03FB\u03FE";
+		"\u0125\u0126\x03\x02\x02\x02\u0126\u0128\x03\x02\x02\x02\u0127\u0125\x03" +
+		"\x02\x02\x02\u0128\u012A\x07\xE1\x02\x02\u0129\u0117\x03\x02\x02\x02\u012A" +
+		"\u012D\x03\x02\x02\x02\u012B\u0129\x03\x02\x02\x02\u012B\u012C\x03\x02" +
+		"\x02\x02\u012C\u012E\x03\x02\x02\x02\u012D\u012B\x03\x02\x02\x02\u012E" +
+		"\u0130\x07\xC8\x02\x02\u012F\u0131\x07\xBF\x02\x02\u0130\u012F\x03\x02" +
+		"\x02\x02\u0130\u0131\x03\x02\x02\x02\u0131\u0133\x03\x02\x02\x02\u0132" +
+		"\u0134\x07\x04\x02\x02\u0133\u0132\x03\x02\x02\x02\u0134\u0135\x03\x02" +
+		"\x02\x02\u0135\u0133\x03\x02\x02\x02\u0135\u0136\x03\x02\x02\x02\u0136" +
+		"\v\x03\x02\x02\x02\u0137\u0138\x07)\x02\x02\u0138\u0139\x07\xC7\x02\x02" +
+		"\u0139\u013A\x07\xE1\x02\x02\u013A\u013B\x07\xBE\x02\x02\u013B\u013C\x07" +
+		"\xE1\x02\x02\u013C\u013E\x07\xC8\x02\x02\u013D\u013F\x07\xBF\x02\x02\u013E" +
+		"\u013D\x03\x02\x02\x02\u013E\u013F\x03\x02\x02\x02\u013F\u0141\x03\x02" +
+		"\x02\x02\u0140\u0142\x07\x04\x02\x02\u0141\u0140\x03\x02\x02\x02\u0142" +
+		"\u0143\x03\x02\x02\x02\u0143\u0141\x03\x02\x02\x02\u0143\u0144\x03\x02" +
+		"\x02\x02\u0144\r\x03\x02\x02\x02\u0145\u0152\x05\x10\t\x02\u0146\u0152" +
+		"\x05\x16\f\x02\u0147\u0152\x05&\x14\x02\u0148\u0152\x05> \x02\u0149\u0152" +
+		"\x05H%\x02\u014A\u0152\x05Z.\x02\u014B\u0152\x05`1\x02\u014C\u0152\x05" +
+		"d3\x02\u014D\u0152\x05h5\x02\u014E\u0152\x05l7\x02\u014F\u0152\x05r:\x02" +
+		"\u0150\u0152\x05t;\x02\u0151\u0145\x03\x02\x02\x02\u0151\u0146\x03\x02" +
+		"\x02\x02\u0151\u0147\x03\x02\x02\x02\u0151\u0148\x03\x02\x02\x02\u0151" +
+		"\u0149\x03\x02\x02\x02\u0151\u014A\x03\x02\x02\x02\u0151\u014B\x03\x02" +
+		"\x02\x02\u0151\u014C\x03\x02\x02\x02\u0151\u014D\x03\x02\x02\x02\u0151" +
+		"\u014E\x03\x02\x02\x02\u0151\u014F\x03\x02\x02\x02\u0151\u0150\x03\x02" +
+		"\x02\x02\u0152\x0F\x03\x02\x02\x02\u0153\u0154\x07\x06\x02\x02\u0154\u0156" +
+		"\x07\t\x02\x02\u0155\u0157\x07\x04\x02\x02\u0156\u0155\x03\x02\x02\x02" +
+		"\u0157\u0158\x03\x02\x02\x02\u0158\u0156\x03\x02\x02\x02\u0158\u0159\x03" +
+		"\x02\x02\x02\u0159\u0162\x03\x02\x02\x02\u015A\u015C\x05\x12\n\x02\u015B" +
+		"\u015D\x07\x04\x02\x02\u015C\u015B\x03\x02\x02\x02\u015D\u015E\x03\x02" +
+		"\x02\x02\u015E\u015C\x03\x02\x02\x02\u015E\u015F\x03\x02\x02\x02\u015F" +
+		"\u0161\x03\x02\x02\x02\u0160\u015A\x03\x02\x02\x02\u0161\u0164\x03\x02" +
+		"\x02\x02\u0162\u0160\x03\x02\x02\x02\u0162\u0163\x03\x02\x02\x02\u0163" +
+		"\u0165\x03\x02\x02\x02\u0164\u0162\x03\x02\x02\x02\u0165\u0166\x07\x07" +
+		"\x02\x02\u0166\u016A\x07\t\x02\x02\u0167\u0169\x07\x04\x02\x02\u0168\u0167" +
+		"\x03\x02\x02\x02\u0169\u016C\x03\x02\x02\x02\u016A\u0168\x03\x02\x02\x02" +
+		"\u016A\u016B\x03\x02\x02\x02\u016B\x11\x03\x02\x02\x02\u016C\u016A\x03" +
+		"\x02\x02\x02\u016D\u016F\x07\xBD\x02\x02\u016E\u016D\x03\x02\x02\x02\u016E" +
+		"\u016F\x03\x02\x02\x02\u016F\u0173\x03\x02\x02\x02\u0170\u0171\x05\x14" +
+		"\v\x02\u0171\u0172\x07\xC0\x02\x02\u0172\u0174\x03\x02\x02\x02\u0173\u0170" +
+		"\x03\x02\x02\x02\u0173\u0174\x03\x02\x02\x02\u0174\u0175\x03\x02\x02\x02" +
+		"\u0175\u0177\x05\x14\v\x02\u0176\u0178\x07\xD5\x02\x02\u0177\u0176\x03" +
+		"\x02\x02\x02\u0177\u0178\x03\x02\x02\x02\u0178\u017A\x03\x02\x02\x02\u0179" +
+		"\u017B\x05\x94K\x02\u017A\u0179\x03\x02\x02\x02\u017A\u017B\x03\x02\x02" +
+		"\x02\u017B\x13\x03\x02\x02\x02\u017C\u017F\x07\xBE\x02\x02\u017D\u017F" +
+		"\x05\x90I\x02\u017E\u017C\x03\x02\x02\x02\u017E\u017D\x03\x02\x02\x02" +
+		"\u017F\x15\x03\x02\x02\x02\u0180\u0181\x07\x06\x02\x02\u0181\u0182\x07" +
+		"\v\x02\x02\u0182\u0184\x07\r\x02\x02\u0183\u0185\x07\x04\x02\x02\u0184" +
+		"\u0183\x03\x02\x02\x02\u0185\u0186\x03\x02\x02\x02\u0186\u0184\x03\x02" +
+		"\x02\x02\u0186\u0187\x03\x02\x02\x02\u0187\u0190\x03\x02\x02\x02\u0188" +
+		"\u018A\x05\x18\r\x02\u0189\u018B\x07\x04\x02\x02\u018A\u0189\x03\x02\x02" +
+		"\x02\u018B\u018C\x03\x02\x02\x02\u018C\u018A\x03\x02\x02\x02\u018C\u018D" +
+		"\x03\x02\x02\x02\u018D\u018F\x03\x02\x02\x02\u018E\u0188\x03\x02\x02\x02" +
+		"\u018F\u0192\x03\x02\x02\x02\u0190\u018E\x03\x02\x02\x02\u0190\u0191\x03" +
+		"\x02\x02\x02\u0191\u0193\x03\x02\x02\x02\u0192\u0190\x03\x02\x02\x02\u0193" +
+		"\u0194\x07\x07\x02\x02\u0194\u0195\x07\v\x02\x02\u0195\u0199\x07\r\x02" +
+		"\x02\u0196\u0198\x07\x04\x02\x02\u0197\u0196\x03\x02\x02\x02\u0198\u019B" +
+		"\x03\x02\x02\x02\u0199\u0197\x03\x02\x02\x02\u0199\u019A\x03\x02\x02\x02" +
+		"\u019A\u01ED\x03\x02\x02\x02\u019B\u0199\x03\x02\x02\x02\u019C\u019D\x07" +
+		"\x06\x02\x02\u019D\u019F\x07\f\x02\x02\u019E\u01A0\x07\x04\x02\x02\u019F" +
+		"\u019E\x03\x02\x02\x02\u01A0\u01A1\x03\x02\x02\x02\u01A1\u019F\x03\x02" +
+		"\x02\x02\u01A1\u01A2\x03\x02\x02\x02\u01A2\u01AB\x03\x02\x02\x02\u01A3" +
+		"\u01A5\x05\x18\r\x02\u01A4\u01A6\x07\x04\x02\x02\u01A5\u01A4\x03\x02\x02" +
+		"\x02\u01A6\u01A7\x03\x02\x02\x02\u01A7\u01A5\x03\x02\x02\x02\u01A7\u01A8" +
+		"\x03\x02\x02\x02\u01A8\u01AA\x03\x02\x02\x02\u01A9\u01A3\x03\x02\x02\x02" +
+		"\u01AA\u01AD\x03\x02\x02\x02\u01AB\u01A9\x03\x02\x02\x02\u01AB\u01AC\x03" +
+		"\x02\x02\x02\u01AC\u01AE\x03\x02\x02\x02\u01AD\u01AB\x03\x02\x02\x02\u01AE" +
+		"\u01AF\x07\x07\x02\x02\u01AF\u01B3\x07\f\x02\x02\u01B0\u01B2\x07\x04\x02" +
+		"\x02\u01B1\u01B0\x03\x02\x02\x02\u01B2\u01B5\x03\x02\x02\x02\u01B3\u01B1" +
+		"\x03\x02\x02\x02\u01B3\u01B4\x03\x02\x02\x02\u01B4\u01ED\x03\x02\x02\x02" +
+		"\u01B5\u01B3\x03\x02\x02\x02\u01B6\u01B7\x07\x06\x02\x02\u01B7\u01B9\x07" +
+		"\x16\x02\x02\u01B8\u01BA\x07\x04\x02\x02\u01B9\u01B8\x03\x02\x02\x02\u01BA" +
+		"\u01BB\x03\x02\x02\x02\u01BB\u01B9\x03\x02\x02\x02\u01BB\u01BC\x03\x02" +
+		"\x02\x02\u01BC\u01C5\x03\x02\x02\x02\u01BD\u01BF\x05\x18\r\x02\u01BE\u01C0" +
+		"\x07\x04\x02\x02\u01BF\u01BE\x03\x02\x02\x02\u01C0\u01C1\x03\x02\x02\x02" +
+		"\u01C1\u01BF\x03\x02\x02\x02\u01C1\u01C2\x03\x02\x02\x02\u01C2\u01C4\x03" +
+		"\x02\x02\x02\u01C3\u01BD\x03\x02\x02\x02\u01C4\u01C7\x03\x02\x02\x02\u01C5" +
+		"\u01C3\x03\x02\x02\x02\u01C5\u01C6\x03\x02\x02\x02\u01C6\u01C8\x03\x02" +
+		"\x02\x02\u01C7\u01C5\x03\x02\x02\x02\u01C8\u01C9\x07\x07\x02\x02\u01C9" +
+		"\u01CD\x07\x16\x02\x02\u01CA\u01CC\x07\x04\x02\x02\u01CB\u01CA\x03\x02" +
+		"\x02\x02\u01CC\u01CF\x03\x02\x02\x02\u01CD\u01CB\x03\x02\x02\x02\u01CD" +
+		"\u01CE\x03\x02\x02\x02\u01CE\u01ED\x03\x02\x02\x02\u01CF\u01CD\x03\x02" +
+		"\x02\x02\u01D0\u01D1\x07\x06\x02\x02\u01D1\u01D2\x07\x1E\x02\x02\u01D2" +
+		"\u01D4\x07\r\x02\x02\u01D3\u01D5\x07\x04\x02\x02\u01D4\u01D3\x03\x02\x02" +
+		"\x02\u01D5\u01D6\x03\x02\x02\x02\u01D6\u01D4\x03\x02\x02\x02\u01D6\u01D7" +
+		"\x03\x02\x02\x02\u01D7\u01E0\x03\x02\x02\x02\u01D8\u01DA\x05\x18\r\x02" +
+		"\u01D9\u01DB\x07\x04\x02\x02\u01DA\u01D9\x03\x02\x02\x02\u01DB\u01DC\x03" +
+		"\x02\x02\x02\u01DC\u01DA\x03\x02\x02\x02\u01DC\u01DD\x03\x02\x02\x02\u01DD" +
+		"\u01DF\x03\x02\x02\x02\u01DE\u01D8\x03\x02\x02\x02\u01DF\u01E2\x03\x02" +
+		"\x02\x02\u01E0\u01DE\x03\x02\x02\x02\u01E0\u01E1\x03\x02\x02\x02\u01E1" +
+		"\u01E3\x03\x02\x02\x02\u01E2\u01E0\x03\x02\x02\x02\u01E3\u01E4\x07\x07" +
+		"\x02\x02\u01E4\u01E5\x07\x1E\x02\x02\u01E5\u01E9\x07\r\x02\x02\u01E6\u01E8" +
+		"\x07\x04\x02\x02\u01E7\u01E6\x03\x02\x02\x02\u01E8\u01EB\x03\x02\x02\x02" +
+		"\u01E9\u01E7\x03\x02\x02\x02\u01E9\u01EA\x03\x02\x02\x02\u01EA\u01ED\x03" +
+		"\x02\x02\x02\u01EB\u01E9\x03\x02\x02\x02\u01EC\u0180\x03\x02\x02\x02\u01EC" +
+		"\u019C\x03\x02\x02\x02\u01EC\u01B6\x03\x02\x02\x02\u01EC\u01D0\x03\x02" +
+		"\x02\x02\u01ED\x17\x03\x02\x02\x02\u01EE\u01EF\x07\xBE\x02\x02\u01EF\u01F1" +
+		"\x07\xC0\x02\x02\u01F0\u01EE\x03\x02\x02\x02\u01F0\u01F1\x03\x02\x02\x02" +
+		"\u01F1\u01F2\x03\x02\x02\x02\u01F2\u01F4\x05\x1A\x0E\x02\u01F3\u01F5\x07" +
+		"\x19\x02\x02\u01F4\u01F3\x03\x02\x02\x02\u01F4\u01F5\x03\x02\x02\x02\u01F5" +
+		"\x19\x03\x02\x02\x02\u01F6\u01FC\x07\xBE\x02\x02\u01F7\u01F9\x07\xC7\x02" +
+		"\x02\u01F8\u01FA\x05\x1C\x0F\x02\u01F9\u01F8\x03\x02\x02\x02\u01F9\u01FA" +
+		"\x03\x02\x02\x02\u01FA\u01FB\x03\x02\x02\x02\u01FB\u01FD\x07\xC8\x02\x02" +
+		"\u01FC\u01F7\x03\x02\x02\x02\u01FC\u01FD\x03\x02\x02\x02\u01FD\x1B\x03" +
+		"\x02\x02\x02\u01FE\u0200\x05\x1E\x10\x02\u01FF\u01FE\x03\x02\x02\x02\u01FF" +
+		"\u0200\x03\x02\x02\x02\u0200\u0207\x03\x02\x02\x02\u0201\u0203\x07\xC5" +
+		"\x02\x02\u0202\u0204\x05\x1E\x10\x02\u0203\u0202\x03\x02\x02\x02\u0203" +
+		"\u0204\x03\x02\x02\x02\u0204\u0206\x03\x02\x02\x02\u0205\u0201\x03\x02" +
+		"\x02\x02\u0206\u0209\x03\x02\x02\x02\u0207\u0205\x03\x02\x02\x02\u0207" +
+		"\u0208\x03\x02\x02\x02\u0208\x1D\x03\x02\x02\x02\u0209\u0207\x03\x02\x02" +
+		"\x02\u020A\u020E\x07\xBE\x02\x02\u020B\u020E\x07\xBD\x02\x02\u020C\u020E" +
+		"\x05 \x11\x02\u020D\u020A\x03\x02\x02\x02\u020D\u020B\x03\x02\x02\x02" +
+		"\u020D\u020C\x03\x02\x02\x02\u020E\u0211\x03\x02\x02\x02\u020F\u0210\x07" +
+		"\xCC\x02\x02\u0210\u0212\x05\"\x12\x02\u0211\u020F\x03\x02\x02\x02\u0211" +
+		"\u0212\x03\x02\x02\x02\u0212\x1F\x03\x02\x02\x02\u0213\u0214\t\x03\x02" +
+		"\x02\u0214!\x03\x02\x02\x02\u0215\u021A\x05$\x13\x02\u0216\u0217\x07\xCC" +
+		"\x02\x02\u0217\u0219\x05$\x13\x02\u0218\u0216\x03\x02\x02\x02\u0219\u021C" +
+		"\x03\x02\x02\x02\u021A\u0218\x03\x02\x02\x02\u021A\u021B\x03\x02\x02\x02" +
+		"\u021B#\x03\x02\x02\x02\u021C\u021A\x03\x02\x02\x02\u021D\u0223\x07\xBE" +
+		"\x02\x02\u021E\u0220\x07\xBD\x02\x02\u021F\u0221\x07\xBE\x02\x02\u0220" +
+		"\u021F\x03\x02\x02\x02\u0220\u0221\x03\x02\x02\x02\u0221\u0223\x03\x02" +
+		"\x02\x02\u0222\u021D\x03\x02\x02\x02\u0222\u021E\x03\x02\x02\x02\u0223" +
+		"%\x03\x02\x02\x02\u0224\u0228\x07\x06\x02\x02\u0225\u0226\x07\x0E\x02" +
+		"\x02\u0226\u0229\x07\x0F\x02\x02\u0227\u0229\x07\x0F\x02\x02\u0228\u0225" +
+		"\x03\x02\x02\x02\u0228\u0227\x03\x02\x02\x02\u0229\u022B\x03\x02\x02\x02" +
+		"\u022A\u022C\x07\x04\x02\x02\u022B\u022A\x03\x02\x02\x02\u022C\u022D\x03" +
+		"\x02\x02\x02\u022D\u022B\x03\x02\x02\x02\u022D\u022E\x03\x02\x02\x02\u022E" +
+		"\u0237\x03\x02\x02\x02\u022F\u0231\x05(\x15\x02\u0230\u0232\x07\x04\x02" +
+		"\x02\u0231\u0230\x03\x02\x02\x02\u0232\u0233\x03\x02\x02\x02\u0233\u0231" +
+		"\x03\x02\x02\x02\u0233\u0234\x03\x02\x02\x02\u0234\u0236\x03\x02\x02\x02" +
+		"\u0235\u022F\x03\x02\x02\x02\u0236\u0239\x03\x02\x02\x02\u0237\u0235\x03" +
+		"\x02\x02\x02\u0237\u0238\x03\x02\x02\x02\u0238\u023A\x03\x02\x02\x02\u0239" +
+		"\u0237\x03\x02\x02\x02\u023A\u023E\x07\x07\x02\x02\u023B\u023C\x07\x0E" +
+		"\x02\x02\u023C\u023F\x07\x0F\x02\x02\u023D\u023F\x07\x0F\x02\x02\u023E" +
+		"\u023B\x03\x02\x02\x02\u023E\u023D\x03\x02\x02\x02\u023F\u0243\x03\x02" +
+		"\x02\x02\u0240\u0242\x07\x04\x02\x02\u0241\u0240\x03\x02\x02\x02\u0242" +
+		"\u0245\x03\x02\x02\x02\u0243\u0241\x03\x02\x02\x02\u0243\u0244\x03\x02" +
+		"\x02\x02\u0244\'\x03\x02\x02\x02\u0245\u0243\x03\x02\x02\x02\u0246\u0248" +
+		"\x07\xBD\x02\x02\u0247\u0246\x03\x02\x02\x02\u0247\u0248\x03\x02\x02\x02" +
+		"\u0248\u024B\x03\x02\x02\x02\u0249\u024A\x07\xBE\x02\x02\u024A\u024C\x07" +
+		"\xC0\x02\x02\u024B\u0249\x03\x02\x02\x02\u024B\u024C\x03\x02\x02\x02\u024C" +
+		"\u024E\x03\x02\x02\x02\u024D\u024F\x07\xCB\x02\x02\u024E\u024D\x03\x02" +
+		"\x02\x02\u024E\u024F\x03\x02\x02\x02\u024F\u0253\x03\x02\x02\x02\u0250" +
+		"\u0251\x07\xCD\x02\x02\u0251\u0252\x07\xBE\x02\x02\u0252\u0254\x07\xC0" +
+		"\x02\x02\u0253\u0250\x03\x02\x02\x02\u0253\u0254\x03\x02\x02\x02\u0254" +
+		"\u0255\x03\x02\x02\x02\u0255\u0257\x05*\x16\x02\u0256\u0258\x05\x94K\x02" +
+		"\u0257\u0256\x03\x02\x02\x02\u0257\u0258\x03\x02\x02\x02\u0258)\x03\x02" +
+		"\x02\x02\u0259\u025A\x07\xCD\x02\x02\u025A\u025B\x07\xBE\x02\x02\u025B" +
+		"\u025D\x07\xC0\x02\x02\u025C\u0259\x03\x02\x02\x02\u025C\u025D\x03\x02" +
+		"\x02\x02\u025D\u025E\x03\x02\x02\x02\u025E\u0260\x05.\x18\x02\u025F\u0261" +
+		"\x05,\x17\x02\u0260\u025F\x03\x02\x02\x02\u0260\u0261\x03\x02\x02\x02" +
+		"\u0261\u0269\x03\x02\x02\x02\u0262\u0263\x07\xC6\x02\x02\u0263\u0265\x05" +
+		".\x18\x02\u0264\u0266\x05,\x17\x02\u0265\u0264\x03\x02\x02\x02\u0265\u0266" +
+		"\x03\x02\x02\x02\u0266\u0268\x03\x02\x02\x02\u0267\u0262\x03\x02\x02\x02" +
+		"\u0268\u026B\x03\x02\x02\x02\u0269\u0267\x03\x02\x02\x02\u0269\u026A\x03" +
+		"\x02\x02\x02\u026A\u026E\x03\x02\x02\x02\u026B\u0269\x03\x02\x02\x02\u026C" +
+		"\u026D\x07\xCD\x02\x02\u026D\u026F\x07\xBE\x02\x02\u026E\u026C\x03\x02" +
+		"\x02\x02\u026E\u026F\x03\x02\x02\x02\u026F+\x03\x02\x02\x02\u0270\u0271" +
+		"\x07\xCD\x02\x02\u0271\u0272\x07\xBE\x02\x02\u0272-\x03\x02\x02\x02\u0273" +
+		"\u0279\x07\xBE\x02\x02\u0274\u0276\x07\xC7\x02\x02\u0275\u0277\x054\x1B" +
+		"\x02\u0276\u0275\x03\x02\x02\x02\u0276\u0277\x03\x02\x02\x02\u0277\u0278" +
+		"\x03\x02\x02\x02\u0278\u027A\x07\xC8\x02\x02\u0279\u0274\x03\x02\x02\x02" +
+		"\u0279\u027A\x03\x02\x02\x02\u027A\u027C\x03\x02\x02\x02\u027B\u027D\x05" +
+		"0\x19\x02\u027C\u027B\x03\x02\x02\x02\u027C\u027D\x03\x02\x02\x02\u027D" +
+		"\u027F\x03\x02\x02\x02\u027E\u0280\x052\x1A\x02\u027F\u027E\x03\x02\x02" +
+		"\x02\u027F\u0280\x03\x02\x02\x02\u0280/\x03\x02\x02\x02\u0281\u0282\x07" +
+		"\xE0\x02\x02\u0282\u0288\x07\xDB\x02\x02\u0283\u0284\x07\xE0\x02\x02\u0284" +
+		"\u0288\x07\xDF\x02\x02\u0285\u0286\x07\xE0\x02\x02\u0286\u0288\x07\xDA" +
+		"\x02\x02\u0287\u0281\x03\x02\x02\x02\u0287\u0283\x03\x02\x02\x02\u0287" +
+		"\u0285\x03\x02\x02\x02\u02881\x03\x02\x02\x02\u0289\u028A\x07\xDD\x02" +
+		"\x02\u028A\u028B\x07\xBD\x02\x02\u028B3\x03\x02\x02\x02\u028C\u028E\x05" +
+		"6\x1C\x02\u028D\u028C\x03\x02\x02\x02\u028D\u028E\x03\x02\x02\x02\u028E" +
+		"\u0295\x03\x02\x02\x02\u028F\u0291\x07\xC5\x02\x02\u0290\u0292\x056\x1C" +
+		"\x02\u0291\u0290\x03\x02\x02\x02\u0291\u0292\x03\x02\x02\x02\u0292\u0294" +
+		"\x03\x02\x02\x02\u0293\u028F\x03\x02\x02\x02\u0294\u0297\x03\x02\x02\x02" +
+		"\u0295\u0293\x03\x02\x02\x02\u0295\u0296\x03\x02\x02\x02\u02965\x03\x02" +
+		"\x02\x02\u0297\u0295\x03\x02\x02\x02\u0298\u029C\x07\xBE\x02\x02\u0299" +
+		"\u029C\x07\xBD\x02\x02\u029A\u029C\x05 \x11\x02\u029B\u0298\x03\x02\x02" +
+		"\x02\u029B\u0299\x03\x02\x02\x02\u029B\u029A\x03\x02\x02\x02\u029C\u02A3" +
+		"\x03\x02\x02\x02\u029D\u029E\x07\xCC\x02\x02\u029E\u02A2\x058\x1D\x02" +
+		"\u029F\u02A2\x05:\x1E\x02\u02A0\u02A2\x07\xC6\x02\x02\u02A1\u029D\x03" +
+		"\x02\x02\x02\u02A1\u029F\x03\x02\x02\x02\u02A1\u02A0\x03\x02\x02\x02\u02A2" +
+		"\u02A5\x03\x02\x02\x02\u02A3\u02A1\x03\x02\x02\x02\u02A3\u02A4\x03\x02" +
+		"\x02\x02\u02A47\x03\x02\x02\x02\u02A5\u02A3\x03\x02\x02\x02\u02A6\u02AD" +
+		"\x07\xBE\x02\x02\u02A7\u02A9\x07\xBD\x02\x02\u02A8\u02AA\x07\xBE\x02\x02" +
+		"\u02A9\u02A8\x03\x02\x02\x02\u02A9\u02AA\x03\x02\x02\x02\u02AA\u02AD\x03" +
+		"\x02\x02\x02\u02AB\u02AD\x07\xDF\x02\x02\u02AC\u02A6\x03\x02\x02\x02\u02AC" +
+		"\u02A7\x03\x02\x02\x02\u02AC\u02AB\x03\x02\x02\x02\u02AD9\x03\x02\x02" +
+		"\x02\u02AE\u02B8\x07\xC6\x02\x02\u02AF\u02B0\x07\xE0\x02\x02\u02B0\u02B8" +
+		"\x05<\x1F\x02\u02B1\u02B2\x07\xE0\x02\x02\u02B2\u02B8\x07\xDB\x02\x02" +
+		"\u02B3\u02B4\x07\xE0\x02\x02\u02B4\u02B8\x07\xDF\x02\x02\u02B5\u02B6\x07" +
+		"\xE0\x02\x02\u02B6\u02B8\x07\xDA\x02\x02\u02B7\u02AE\x03\x02\x02\x02\u02B7" +
+		"\u02AF\x03\x02\x02\x02\u02B7\u02B1\x03\x02\x02\x02\u02B7\u02B3\x03\x02" +
+		"\x02\x02\u02B7\u02B5\x03\x02\x02\x02\u02B8;\x03\x02\x02\x02\u02B9\u02BA" +
+		"\t\x04\x02\x02\u02BA=\x03\x02\x02\x02\u02BB\u02BC\x07\x06\x02\x02\u02BC" +
+		"\u02BE\x07\x10\x02\x02\u02BD\u02BF\x07\x04\x02\x02\u02BE\u02BD\x03\x02" +
+		"\x02\x02\u02BF\u02C0\x03\x02\x02\x02\u02C0\u02BE\x03\x02\x02\x02\u02C0" +
+		"\u02C1\x03\x02\x02\x02\u02C1\u02CA\x03\x02\x02\x02\u02C2\u02C4\x05@!\x02" +
+		"\u02C3\u02C5\x07\x04\x02\x02\u02C4\u02C3\x03\x02\x02\x02\u02C5\u02C6\x03" +
+		"\x02\x02\x02\u02C6\u02C4\x03\x02\x02\x02\u02C6\u02C7\x03\x02\x02\x02\u02C7" +
+		"\u02C9\x03\x02\x02\x02\u02C8\u02C2\x03\x02\x02\x02\u02C9\u02CC\x03\x02" +
+		"\x02\x02\u02CA\u02C8\x03\x02\x02\x02\u02CA\u02CB\x03\x02\x02\x02\u02CB" +
+		"\u02CD\x03\x02\x02\x02\u02CC\u02CA\x03\x02\x02\x02\u02CD\u02CE\x07\x07" +
+		"\x02\x02\u02CE\u02D2\x07\x10\x02\x02\u02CF\u02D1\x07\x04\x02\x02\u02D0" +
+		"\u02CF\x03\x02\x02\x02\u02D1\u02D4\x03\x02\x02\x02\u02D2\u02D0\x03\x02" +
+		"\x02\x02\u02D2\u02D3\x03\x02\x02\x02\u02D3?\x03\x02\x02\x02\u02D4\u02D2" +
+		"\x03\x02\x02\x02\u02D5\u02D6\x07\xBE\x02\x02\u02D6\u02D8\x07\xC0\x02\x02" +
+		"\u02D7\u02D5\x03\x02\x02\x02\u02D7\u02D8\x03\x02\x02\x02\u02D8\u02DA\x03" +
+		"\x02\x02\x02\u02D9\u02DB\x05B\"\x02\u02DA\u02D9\x03\x02\x02\x02\u02DA" +
+		"\u02DB\x03\x02\x02\x02\u02DB\u02DC\x03\x02\x02\x02\u02DC\u02DD\x07\xBE" +
+		"\x02\x02\u02DD\u02DE\x05D#\x02\u02DEA\x03\x02\x02\x02\u02DF\u02E0\t\x05" +
+		"\x02\x02\u02E0C\x03\x02\x02\x02\u02E1\u02E8\x05F$\x02\u02E2\u02E4\x07" +
+		"\xC5\x02\x02\u02E3\u02E2\x03\x02\x02\x02\u02E3\u02E4\x03\x02\x02\x02\u02E4" +
+		"\u02E5\x03\x02\x02\x02\u02E5\u02E7\x05F$\x02\u02E6\u02E3\x03\x02\x02\x02" +
+		"\u02E7\u02EA\x03\x02\x02\x02\u02E8\u02E6\x03\x02\x02\x02\u02E8\u02E9\x03" +
+		"\x02\x02\x02\u02E9E\x03\x02\x02\x02\u02EA\u02E8\x03\x02\x02\x02\u02EB" +
+		"\u02F0\x05*\x16\x02\u02EC\u02ED\x07\xBE\x02\x02\u02ED\u02EE\t\x06\x02" +
+		"\x02\u02EE\u02F0\x07\xBD\x02\x02\u02EF\u02EB\x03\x02\x02\x02\u02EF\u02EC" +
+		"\x03\x02\x02\x02\u02F0G\x03\x02\x02\x02\u02F1\u02F2\x07\x06\x02\x02\u02F2" +
+		"\u02F3\x07\x12\x02\x02\u02F3\u02F5\x07\x14\x02\x02\u02F4\u02F6\x07\x04" +
+		"\x02\x02\u02F5\u02F4\x03\x02\x02\x02\u02F6\u02F7\x03\x02\x02\x02\u02F7" +
+		"\u02F5\x03\x02\x02\x02\u02F7\u02F8\x03\x02\x02\x02\u02F8\u0301\x03\x02" +
+		"\x02\x02\u02F9\u02FB\x05J&\x02\u02FA\u02FC\x07\x04\x02\x02\u02FB\u02FA" +
+		"\x03\x02\x02\x02\u02FC\u02FD\x03\x02\x02\x02\u02FD\u02FB\x03\x02\x02\x02" +
+		"\u02FD\u02FE\x03\x02\x02\x02\u02FE\u0300\x03\x02\x02\x02\u02FF\u02F9\x03" +
+		"\x02\x02\x02\u0300\u0303\x03\x02\x02\x02\u0301\u02FF\x03\x02\x02\x02\u0301" +
+		"\u0302\x03\x02\x02\x02\u0302\u0304\x03\x02\x02\x02\u0303\u0301\x03\x02" +
+		"\x02\x02\u0304\u0305\x07\x07\x02\x02\u0305\u0306\x07\x12\x02\x02\u0306" +
+		"\u030A\x07\x14\x02\x02\u0307\u0309\x07\x04\x02\x02\u0308\u0307\x03\x02" +
+		"\x02\x02\u0309\u030C\x03\x02\x02\x02\u030A\u0308\x03\x02\x02\x02\u030A" +
+		"\u030B\x03\x02\x02\x02\u030B\u0342\x03\x02\x02\x02\u030C\u030A\x03\x02" +
+		"\x02\x02\u030D\u030E\x07\x06\x02\x02\u030E\u0310\x07\x15\x02\x02\u030F" +
+		"\u0311\x07\x04\x02\x02\u0310\u030F\x03\x02\x02\x02\u0311\u0312\x03\x02" +
+		"\x02\x02\u0312\u0310\x03\x02\x02\x02\u0312\u0313\x03\x02\x02\x02\u0313" +
+		"\u031C\x03\x02\x02\x02\u0314\u0316\x05J&\x02\u0315\u0317\x07\x04\x02\x02" +
+		"\u0316\u0315\x03\x02\x02\x02\u0317\u0318\x03\x02\x02\x02\u0318\u0316\x03" +
+		"\x02\x02\x02\u0318\u0319\x03\x02\x02\x02\u0319\u031B\x03\x02\x02\x02\u031A" +
+		"\u0314\x03\x02\x02\x02\u031B\u031E\x03\x02\x02\x02\u031C\u031A\x03\x02" +
+		"\x02\x02\u031C\u031D\x03\x02\x02\x02\u031D\u031F\x03\x02\x02\x02\u031E" +
+		"\u031C\x03\x02\x02\x02\u031F\u0320\x07\x07\x02\x02\u0320\u0324\x07\x15" +
+		"\x02\x02\u0321\u0323\x07\x04\x02\x02\u0322\u0321\x03\x02\x02\x02\u0323" +
+		"\u0326\x03\x02\x02\x02\u0324\u0322\x03\x02\x02\x02\u0324\u0325\x03\x02" +
+		"\x02\x02\u0325\u0342\x03\x02\x02\x02\u0326\u0324\x03\x02\x02\x02\u0327" +
+		"\u0328\x07\x06\x02\x02\u0328\u032A\x07\x13\x02\x02\u0329\u032B\x07\x04" +
+		"\x02\x02\u032A\u0329\x03\x02\x02\x02\u032B\u032C\x03\x02\x02\x02\u032C" +
+		"\u032A\x03\x02\x02\x02\u032C\u032D\x03\x02\x02\x02\u032D\u0336\x03\x02" +
+		"\x02\x02\u032E\u0330\x05J&\x02\u032F\u0331\x07\x04\x02\x02\u0330\u032F" +
+		"\x03\x02\x02\x02\u0331\u0332\x03\x02\x02\x02\u0332\u0330\x03\x02\x02\x02" +
+		"\u0332\u0333\x03\x02\x02\x02\u0333\u0335\x03\x02\x02\x02\u0334\u032E\x03" +
+		"\x02\x02\x02\u0335\u0338\x03\x02\x02\x02\u0336\u0334\x03\x02\x02\x02\u0336" +
+		"\u0337\x03\x02\x02\x02\u0337\u0339\x03\x02\x02\x02\u0338\u0336\x03\x02" +
+		"\x02\x02\u0339\u033A\x07\x07\x02\x02\u033A\u033E\x07\x13\x02\x02\u033B" +
+		"\u033D\x07\x04\x02\x02\u033C\u033B\x03\x02\x02\x02\u033D\u0340\x03\x02" +
+		"\x02\x02\u033E\u033C\x03\x02\x02\x02\u033E\u033F\x03\x02\x02\x02\u033F" +
+		"\u0342\x03\x02\x02\x02\u0340\u033E\x03\x02\x02\x02\u0341\u02F1\x03\x02" +
+		"\x02\x02\u0341\u030D\x03\x02\x02\x02\u0341\u0327\x03\x02\x02\x02\u0342" +
+		"I\x03\x02\x02\x02\u0343\u0345\x05L\'\x02\u0344\u0343\x03\x02\x02\x02\u0344" +
+		"\u0345\x03\x02\x02\x02\u0345\u034A\x03\x02\x02\x02\u0346\u0347\x07\xC3" +
+		"\x02\x02\u0347\u0348\x05V,\x02\u0348\u0349\x07\xC4\x02\x02\u0349\u034B" +
+		"\x03\x02\x02\x02\u034A\u0346\x03\x02\x02\x02\u034A\u034B\x03\x02\x02\x02" +
+		"\u034B\u034C\x03\x02\x02\x02\u034C\u034D\x05N(\x02\u034D\u034E\x05R*\x02" +
+		"\u034E\u034F\x05P)\x02\u034F\u0351\x05T+\x02\u0350\u0352\x05V,\x02\u0351" +
+		"\u0350\x03\x02\x02\x02\u0351\u0352\x03\x02\x02\x02\u0352K\x03\x02\x02" +
+		"\x02\u0353\u035D\t\x04\x02\x02\u0354\u035C\x07\xBE\x02\x02\u0355\u035C" +
+		"\x07\xBD\x02\x02\u0356\u0358\x07\xC7\x02\x02\u0357\u0359\x07\xBE\x02\x02" +
+		"\u0358\u0357\x03\x02\x02\x02\u0358\u0359\x03\x02\x02\x02\u0359\u035A\x03" +
+		"\x02\x02\x02\u035A\u035C\x07\xC8\x02\x02\u035B\u0354\x03\x02\x02\x02\u035B" +
+		"\u0355\x03\x02\x02\x02\u035B\u0356\x03\x02\x02\x02\u035C\u035F\x03\x02" +
+		"\x02\x02\u035D\u035B\x03\x02\x02\x02\u035D\u035E\x03\x02\x02\x02\u035E" +
+		"\u0360\x03\x02\x02\x02\u035F\u035D\x03\x02\x02\x02\u0360\u0363\x07\xC0" +
+		"\x02\x02\u0361\u0363\x07\xBD\x02\x02\u0362\u0353\x03\x02\x02\x02\u0362" +
+		"\u0361\x03\x02\x02\x02\u0363M\x03\x02\x02\x02\u0364\u0367\x05*\x16\x02" +
+		"\u0365\u0367\x07\xBD\x02\x02\u0366\u0364\x03\x02\x02\x02\u0366\u0365\x03" +
+		"\x02\x02\x02\u0367\u036F\x03\x02\x02\x02\u0368\u036B\x07\xDB\x02\x02\u0369" +
+		"\u036C\x05*\x16\x02\u036A\u036C\x07\xBD\x02\x02\u036B\u0369\x03\x02\x02" +
+		"\x02\u036B\u036A\x03\x02\x02\x02\u036C\u036E\x03\x02\x02\x02\u036D\u0368" +
+		"\x03\x02\x02\x02\u036E\u0371\x03\x02\x02\x02\u036F\u036D\x03\x02\x02\x02" +
+		"\u036F\u0370\x03\x02\x02\x02\u0370O\x03\x02\x02\x02\u0371\u036F\x03\x02" +
+		"\x02\x02\u0372\u0375\x05*\x16\x02\u0373\u0375\x07\xBD\x02\x02\u0374\u0372" +
+		"\x03\x02\x02\x02\u0374\u0373\x03\x02\x02\x02\u0375\u037D\x03\x02\x02\x02" +
+		"\u0376\u0379\x07\xDB\x02\x02\u0377\u037A\x05*\x16\x02\u0378\u037A\x07" +
+		"\xBD\x02\x02\u0379\u0377\x03\x02\x02\x02\u0379\u0378\x03\x02\x02\x02\u037A" +
+		"\u037C\x03\x02\x02\x02\u037B\u0376\x03\x02\x02\x02\u037C\u037F\x03\x02" +
+		"\x02\x02\u037D\u037B\x03\x02\x02\x02\u037D\u037E\x03\x02\x02\x02\u037E" +
+		"Q\x03\x02\x02\x02\u037F\u037D\x03\x02\x02\x02\u0380\u0381\t\x07\x02\x02" +
+		"\u0381S\x03\x02\x02\x02\u0382\u0385\x05\x94K\x02\u0383\u0384\x07\xC5\x02" +
+		"\x02\u0384\u0386\x05\x94K\x02\u0385\u0383\x03\x02\x02\x02\u0385\u0386" +
+		"\x03\x02\x02\x02\u0386U\x03\x02\x02\x02\u0387\u03AB\x07 \x02\x02\u0388" +
+		"\u03AB\x07!\x02\x02\u0389\u03AB\x07\x1F\x02\x02\u038A\u03AB\x07&\x02\x02" +
+		"\u038B\u038C\x07\xA0\x02\x02\u038C\u038D\x07\xD5\x02\x02\u038D\u03AB\x05" +
+		"\x94K\x02\u038E\u038F\x07\"\x02\x02\u038F\u0390\x07\xC7\x02\x02\u0390" +
+		"\u0391\x07\xBD\x02\x02\u0391\u0392\x07\xC5\x02\x02\u0392\u0393\x05X-\x02" +
+		"\u0393\u0394\x07\xC8\x02\x02\u0394\u03AB\x03\x02\x02\x02\u0395\u0396\x07" +
+		"$\x02\x02\u0396\u0397\x07\xC7\x02\x02\u0397\u0398\x07\xBD\x02\x02\u0398" +
+		"\u0399\x07\xC5\x02\x02\u0399\u039A\x05X-\x02\u039A\u039B\x07\xC8\x02\x02" +
+		"\u039B\u03AB\x03\x02\x02\x02\u039C\u039D\x07#\x02\x02\u039D\u039E\x07" +
+		"\xC7\x02\x02\u039E\u039F\x07\xBD\x02\x02\u039F\u03A0\x07\xC5\x02\x02\u03A0" +
+		"\u03A1\x05X-\x02\u03A1\u03A2\x07\xC8\x02\x02\u03A2\u03AB\x03\x02\x02\x02" +
+		"\u03A3\u03A4\x07%\x02\x02\u03A4\u03A5\x07\xC7\x02\x02\u03A5\u03A6\x07" +
+		"\xBD\x02\x02\u03A6\u03A7\x07\xC5\x02\x02\u03A7\u03A8\x05X-\x02\u03A8\u03A9" +
+		"\x07\xC8\x02\x02\u03A9\u03AB\x03\x02\x02\x02\u03AA\u0387\x03\x02\x02\x02" +
+		"\u03AA\u0388\x03\x02\x02\x02\u03AA\u0389\x03\x02\x02\x02\u03AA\u038A\x03" +
+		"\x02\x02\x02\u03AA\u038B\x03\x02\x02\x02\u03AA\u038E\x03\x02\x02\x02\u03AA" +
+		"\u0395\x03\x02\x02\x02\u03AA\u039C\x03\x02\x02\x02\u03AA\u03A3\x03\x02" +
+		"\x02\x02\u03ABW\x03\x02\x02\x02\u03AC\u03B1\x05*\x16\x02\u03AD\u03AE\x07" +
+		"\xC5\x02\x02\u03AE\u03B0\x05*\x16\x02\u03AF\u03AD\x03\x02\x02\x02\u03B0" +
+		"\u03B3\x03\x02\x02\x02\u03B1\u03AF\x03\x02\x02\x02\u03B1\u03B2\x03\x02" +
+		"\x02\x02\u03B2Y\x03\x02\x02\x02\u03B3\u03B1\x03\x02\x02\x02\u03B4\u03B5" +
+		"\x07\x06\x02\x02\u03B5\u03B7\x07\x11\x02\x02\u03B6\u03B8\x07\x04\x02\x02" +
+		"\u03B7\u03B6\x03\x02\x02\x02\u03B8\u03B9\x03\x02\x02\x02\u03B9\u03B7\x03" +
+		"\x02\x02\x02\u03B9\u03BA\x03\x02\x02\x02\u03BA\u03C3\x03\x02\x02\x02\u03BB" +
+		"\u03BD\x05\\/\x02\u03BC\u03BE\x07\x04\x02\x02\u03BD\u03BC\x03\x02\x02" +
+		"\x02\u03BE\u03BF\x03\x02\x02\x02\u03BF\u03BD\x03\x02\x02\x02\u03BF\u03C0" +
+		"\x03\x02\x02\x02\u03C0\u03C2\x03\x02\x02\x02\u03C1\u03BB\x03\x02\x02\x02" +
+		"\u03C2\u03C5\x03\x02\x02\x02\u03C3\u03C1\x03\x02\x02\x02\u03C3\u03C4\x03" +
+		"\x02\x02\x02\u03C4\u03C6\x03\x02\x02\x02\u03C5\u03C3\x03\x02\x02\x02\u03C6" +
+		"\u03C7\x07\x07\x02\x02\u03C7\u03CB\x07\x11\x02\x02\u03C8\u03CA\x07\x04" +
+		"\x02\x02\u03C9\u03C8\x03\x02\x02\x02\u03CA\u03CD\x03\x02\x02\x02\u03CB" +
+		"\u03C9\x03\x02\x02\x02\u03CB\u03CC\x03\x02\x02\x02\u03CC[\x03\x02\x02" +
+		"\x02\u03CD\u03CB\x03\x02\x02\x02\u03CE\u03CF\x07\xBE\x02\x02\u03CF\u03D1" +
+		"\x07\xC0\x02\x02\u03D0\u03CE\x03\x02\x02\x02\u03D0\u03D1\x03\x02\x02\x02" +
+		"\u03D1\u03D2\x03\x02\x02\x02\u03D2\u03D8\x07\xBE\x02\x02\u03D3\u03D5\x07" +
+		"\xC7\x02\x02\u03D4\u03D6";
 	private static readonly _serializedATNSegment2: string =
-		"\x03\x02\x02\x02\u03FC\u03FA\x03\x02\x02\x02\u03FC\u03FD\x03\x02\x02\x02" +
-		"\u03FD\u03FF\x03\x02\x02\x02\u03FE\u03FC\x03\x02\x02\x02\u03FF\u0400\x07" +
-		"\x07\x02\x02\u0400\u0401\x07\x19\x02\x02\u0401\u0405\x07\x1A\x02\x02\u0402" +
-		"\u0404\x07\x04\x02\x02\u0403\u0402\x03\x02\x02\x02\u0404\u0407\x03\x02" +
-		"\x02\x02\u0405\u0403\x03\x02\x02\x02\u0405\u0406\x03\x02\x02\x02\u0406" +
-		"e\x03\x02\x02\x02\u0407\u0405\x03\x02\x02\x02\u0408\u0409\x07\xBC\x02" +
-		"\x02\u0409\u040B\x07\xBE\x02\x02\u040A\u0408\x03\x02\x02\x02\u040A\u040B" +
-		"\x03\x02\x02\x02\u040B\u040C\x03\x02\x02\x02\u040C\u040D\x05(\x15\x02" +
-		"\u040D\u040E\x07\xC7\x02\x02\u040E\u040F\x07\xBC\x02\x02\u040F\u0411\x07" +
-		"\xC5\x02\x02\u0410\u0412\x05Z.\x02\u0411\u0410\x03\x02\x02\x02\u0411\u0412" +
-		"\x03\x02\x02\x02\u0412\u0413\x03\x02\x02\x02\u0413\u0414\x07\xC6\x02\x02" +
-		"\u0414g\x03\x02\x02\x02\u0415\u0417\x05n8\x02\u0416\u0415\x03\x02\x02" +
-		"\x02\u0417\u0418\x03\x02\x02\x02\u0418\u0416\x03\x02\x02\x02\u0418\u0419" +
-		"\x03\x02\x02\x02\u0419i\x03\x02\x02\x02\u041A\u041B\x07\x06\x02\x02\u041B" +
-		"\u041D\x07\x18\x02\x02\u041C\u041E\x07\x04\x02\x02\u041D\u041C\x03\x02" +
-		"\x02\x02\u041E\u041F\x03\x02\x02\x02\u041F\u041D\x03\x02\x02\x02\u041F" +
-		"\u0420\x03\x02\x02\x02\u0420\u0424\x03\x02\x02\x02\u0421\u0423\x05n8\x02" +
-		"\u0422\u0421\x03\x02\x02\x02\u0423\u0426\x03\x02\x02\x02\u0424\u0422\x03" +
-		"\x02\x02\x02\u0424\u0425\x03\x02\x02\x02\u0425\u0427\x03\x02\x02\x02\u0426" +
-		"\u0424\x03\x02\x02\x02\u0427\u0428\x07\x07\x02\x02\u0428\u042C\x07\x18" +
-		"\x02\x02\u0429\u042B\x07\x04\x02\x02\u042A\u0429\x03\x02\x02\x02\u042B" +
-		"\u042E\x03\x02\x02\x02\u042C\u042A\x03\x02\x02\x02\u042C\u042D\x03\x02" +
-		"\x02\x02\u042Dk\x03\x02\x02\x02\u042E\u042C\x03\x02\x02\x02\u042F\u0430" +
-		"\x07\x06\x02\x02\u0430\u0432\x07\x18\x02\x02\u0431\u0433\x07\x04\x02\x02" +
-		"\u0432\u0431\x03\x02\x02\x02\u0433\u0434\x03\x02\x02\x02\u0434\u0432\x03" +
-		"\x02\x02\x02\u0434\u0435\x03\x02\x02\x02\u0435\u0439\x03\x02\x02\x02\u0436" +
-		"\u0438\x05n8\x02\u0437\u0436\x03\x02\x02\x02\u0438\u043B\x03\x02\x02\x02" +
-		"\u0439\u0437\x03\x02\x02\x02\u0439\u043A\x03\x02\x02\x02\u043A\u043C\x03" +
-		"\x02\x02\x02\u043B\u0439\x03\x02\x02\x02\u043C\u043D\x07\x07\x02\x02\u043D" +
-		"\u0441\x07\x18\x02\x02\u043E\u0440\x07\x04\x02\x02\u043F\u043E\x03\x02" +
-		"\x02\x02\u0440\u0443\x03\x02\x02\x02\u0441\u043F\x03\x02\x02\x02\u0441" +
-		"\u0442\x03\x02\x02\x02\u0442m\x03\x02\x02\x02\u0443\u0441\x03\x02\x02" +
-		"\x02\u0444\u044A\x05p9\x02\u0445\u044A\x05r:\x02\u0446\u044A\x05t;\x02" +
-		"\u0447\u044A\x05v<\x02\u0448\u044A\x05x=\x02\u0449\u0444\x03\x02\x02\x02" +
-		"\u0449\u0445\x03\x02\x02\x02\u0449\u0446\x03\x02\x02\x02\u0449\u0447\x03" +
-		"\x02\x02\x02\u0449\u0448\x03\x02\x02\x02\u044Ao\x03\x02\x02\x02\u044B" +
-		"\u044C\x07+\x02\x02\u044C\u044E\x07\xC5\x02\x02\u044D\u044F\x05z>\x02" +
-		"\u044E\u044D\x03\x02\x02\x02\u044E\u044F\x03\x02\x02\x02\u044F\u0450\x03" +
-		"\x02\x02\x02\u0450\u0452\x07\xC6\x02\x02\u0451\u0453\x07\xBD\x02\x02\u0452" +
-		"\u0451\x03\x02\x02\x02\u0452\u0453\x03\x02\x02\x02\u0453\u0457\x03\x02" +
-		"\x02\x02\u0454\u0456\x07\x04\x02\x02\u0455\u0454\x03\x02\x02\x02\u0456" +
-		"\u0459\x03\x02\x02\x02\u0457\u0455\x03\x02\x02\x02\u0457\u0458\x03\x02" +
-		"\x02\x02\u0458q\x03\x02\x02\x02\u0459\u0457\x03\x02\x02\x02\u045A\u045B" +
-		"\t\x07\x02\x02\u045B\u045D\x07\xC5\x02\x02\u045C\u045E\x05z>\x02\u045D" +
-		"\u045C\x03\x02\x02\x02\u045D\u045E\x03\x02\x02\x02\u045E\u045F\x03\x02" +
-		"\x02\x02\u045F\u0461\x07\xC6\x02\x02\u0460\u0462\x07\xBD\x02\x02\u0461" +
-		"\u0460\x03\x02\x02\x02\u0461\u0462\x03\x02\x02\x02\u0462\u0466\x03\x02" +
-		"\x02\x02\u0463\u0465\x07\x04\x02\x02\u0464\u0463\x03\x02\x02\x02\u0465" +
-		"\u0468\x03\x02\x02\x02\u0466\u0464\x03\x02\x02\x02\u0466\u0467\x03\x02" +
-		"\x02\x02\u0467s\x03\x02\x02\x02\u0468\u0466\x03\x02\x02\x02\u0469\u046A" +
-		"\t\b\x02\x02\u046A\u046C\x07\xC5\x02\x02\u046B\u046D\x05z>\x02\u046C\u046B" +
-		"\x03\x02\x02\x02\u046C\u046D\x03\x02\x02\x02\u046D\u046E\x03\x02\x02\x02" +
-		"\u046E\u0470\x07\xC6\x02\x02\u046F\u0471\x07\xBD\x02\x02\u0470\u046F\x03" +
-		"\x02\x02\x02\u0470\u0471\x03\x02\x02\x02\u0471\u0475\x03\x02\x02\x02\u0472" +
-		"\u0474\x07\x04\x02\x02\u0473\u0472\x03\x02\x02\x02\u0474\u0477\x03\x02" +
-		"\x02\x02\u0475\u0473\x03\x02\x02\x02\u0475\u0476\x03\x02\x02\x02\u0476" +
-		"u\x03\x02\x02\x02\u0477\u0475\x03\x02\x02\x02\u0478\u0479\t\t\x02\x02" +
-		"\u0479\u047A\x07\xC5\x02\x02\u047A\u0481\x07\xDF\x02\x02\u047B\u0482\x05" +
-		"(\x15\x02\u047C\u047E\n\x02\x02\x02\u047D\u047C\x03\x02\x02\x02\u047E" +
-		"\u047F\x03\x02\x02\x02\u047F\u047D\x03\x02\x02\x02\u047F\u0480\x03\x02" +
-		"\x02\x02\u0480\u0482\x03\x02\x02\x02\u0481\u047B\x03\x02\x02\x02\u0481" +
-		"\u047D\x03\x02\x02\x02\u0482\u0483\x03\x02\x02\x02\u0483\u0484\x07\xDF" +
-		"\x02\x02\u0484\u048E\x07\xC3\x02\x02\u0485\u048F\x05\x8CG\x02\u0486\u048A" +
-		"\x07\xDF\x02\x02\u0487\u0489\n\x02\x02\x02\u0488\u0487\x03\x02\x02\x02" +
-		"\u0489\u048C\x03\x02\x02\x02\u048A\u0488\x03\x02\x02\x02\u048A\u048B\x03" +
-		"\x02\x02\x02\u048B\u048D\x03\x02\x02\x02\u048C\u048A\x03\x02\x02\x02\u048D" +
-		"\u048F\x07\xDF\x02\x02\u048E\u0485\x03\x02\x02\x02\u048E\u0486\x03\x02" +
-		"\x02\x02\u048F\u0490\x03\x02\x02\x02\u0490\u0492\x07\xC6\x02\x02\u0491" +
-		"\u0493\x07\xBD\x02\x02\u0492\u0491\x03\x02\x02\x02\u0492\u0493\x03\x02" +
-		"\x02\x02\u0493\u0497\x03\x02\x02\x02\u0494\u0496\x07\x04\x02\x02\u0495" +
-		"\u0494\x03\x02\x02\x02\u0496\u0499\x03\x02\x02\x02\u0497\u0495\x03\x02" +
-		"\x02\x02\u0497\u0498\x03\x02\x02\x02\u0498w\x03\x02\x02\x02\u0499\u0497" +
-		"\x03\x02\x02\x02\u049A\u049B\t\n\x02\x02\u049B\u049D\x07\xC5\x02\x02\u049C" +
-		"\u049E\x05z>\x02\u049D\u049C\x03\x02\x02\x02\u049D\u049E\x03\x02\x02\x02" +
-		"\u049E\u049F\x03\x02\x02\x02\u049F\u04A1\x07\xC6\x02\x02\u04A0\u04A2\x07" +
-		"\xBD\x02\x02\u04A1\u04A0\x03\x02\x02\x02\u04A1\u04A2\x03\x02\x02\x02\u04A2" +
-		"\u04A6\x03\x02\x02\x02\u04A3\u04A5\x07\x04\x02\x02\u04A4\u04A3\x03\x02" +
-		"\x02\x02\u04A5\u04A8\x03\x02\x02\x02\u04A6\u04A4\x03\x02\x02\x02\u04A6" +
-		"\u04A7\x03\x02\x02\x02\u04A7y\x03\x02\x02\x02\u04A8\u04A6\x03\x02\x02" +
-		"\x02\u04A9\u04AB\x07\xC1\x02\x02\u04AA\u04AC\x05|?\x02\u04AB\u04AA\x03" +
-		"\x02\x02\x02\u04AB\u04AC\x03\x02\x02\x02\u04AC\u04AD\x03\x02\x02\x02\u04AD" +
-		"\u04B7\x07\xC2\x02\x02\u04AE\u04B2\x07\xDF\x02\x02\u04AF\u04B1\n\x02\x02" +
-		"\x02\u04B0\u04AF\x03\x02\x02\x02\u04B1\u04B4\x03\x02\x02\x02\u04B2\u04B0" +
-		"\x03\x02\x02\x02\u04B2\u04B3\x03\x02\x02\x02\u04B3\u04B5\x03\x02\x02\x02" +
-		"\u04B4\u04B2\x03\x02\x02\x02\u04B5\u04B7\x07\xDF\x02\x02\u04B6\u04A9\x03" +
-		"\x02\x02\x02\u04B6\u04AE\x03\x02\x02\x02\u04B7{\x03\x02\x02\x02\u04B8" +
-		"\u04BD\x05~@\x02\u04B9\u04BA\x07\xC3\x02\x02\u04BA\u04BC\x05~@\x02\u04BB" +
-		"\u04B9\x03\x02\x02\x02\u04BC\u04BF\x03\x02\x02\x02\u04BD\u04BB\x03\x02" +
-		"\x02\x02\u04BD\u04BE\x03\x02\x02\x02\u04BE}\x03\x02\x02\x02\u04BF\u04BD" +
-		"\x03\x02\x02\x02\u04C0\u04C1\x05\x88E\x02\u04C1\u04C2\x07\xD0\x02\x02" +
-		"\u04C2\u04C3\x05\x80A\x02\u04C3\x7F\x03\x02\x02\x02\u04C4\u04E0\x05\x8C" +
-		"G\x02\u04C5\u04E0\x05\x82B\x02\u04C6\u04CA\x07\xDF\x02\x02\u04C7\u04C9" +
-		"\n\x02\x02\x02\u04C8\u04C7\x03\x02\x02\x02\u04C9\u04CC\x03\x02\x02\x02" +
-		"\u04CA\u04C8\x03\x02\x02\x02\u04CA\u04CB\x03\x02\x02\x02\u04CB\u04CD\x03" +
-		"\x02\x02\x02\u04CC\u04CA\x03\x02\x02\x02\u04CD\u04E0\x07\xDF\x02\x02\u04CE" +
-		"\u04D2\x07\xE0\x02\x02\u04CF\u04D1\n\v\x02\x02\u04D0\u04CF\x03\x02\x02" +
-		"\x02\u04D1\u04D4\x03\x02\x02\x02\u04D2\u04D0\x03\x02\x02\x02\u04D2\u04D3" +
-		"\x03\x02\x02\x02\u04D3\u04D5\x03\x02\x02\x02\u04D4\u04D2\x03\x02\x02\x02" +
-		"\u04D5\u04E0\x07\xE0\x02\x02\u04D6\u04D7\x07\xBF\x02\x02\u04D7\u04D8\x05" +
-		"\x8AF\x02\u04D8\u04D9\x07\xC0\x02\x02\u04D9\u04E0\x03\x02\x02\x02\u04DA" +
-		"\u04DC\x07\xC1\x02\x02\u04DB\u04DD\x05\x84C\x02\u04DC\u04DB\x03\x02\x02" +
-		"\x02\u04DC\u04DD\x03\x02\x02\x02\u04DD\u04DE\x03\x02\x02\x02\u04DE\u04E0" +
-		"\x07\xC2\x02\x02\u04DF\u04C4\x03\x02\x02\x02\u04DF\u04C5\x03\x02\x02\x02" +
-		"\u04DF\u04C6\x03\x02\x02\x02\u04DF\u04CE\x03\x02\x02\x02\u04DF\u04D6\x03" +
-		"\x02\x02\x02\u04DF\u04DA\x03\x02\x02\x02\u04E0\x81\x03\x02\x02\x02\u04E1" +
-		"\u04E2\t\f\x02\x02\u04E2\x83\x03\x02\x02\x02\u04E3\u04E8\x05\x86D\x02" +
-		"\u04E4\u04E5\x07\xC3\x02\x02\u04E5\u04E7\x05\x86D\x02\u04E6\u04E4\x03" +
-		"\x02\x02\x02\u04E7\u04EA\x03\x02\x02\x02\u04E8\u04E6\x03\x02\x02\x02\u04E8" +
-		"\u04E9\x03\x02\x02\x02\u04E9\x85\x03\x02\x02\x02\u04EA\u04E8\x03\x02\x02" +
-		"\x02\u04EB\u04EE\x07\xBC\x02\x02\u04EC\u04EE\x05\x88E\x02\u04ED\u04EB" +
-		"\x03\x02\x02\x02\u04ED\u04EC\x03\x02\x02\x02\u04EE\u04EF\x03\x02\x02\x02" +
-		"\u04EF\u04F0\x07\xD0\x02\x02\u04F0\u04F1\x05\x80A\x02\u04F1\x87\x03\x02" +
-		"\x02\x02\u04F2\u04F3\t\r\x02\x02\u04F3\x89\x03\x02\x02\x02\u04F4\u04F9" +
-		"\x05\x8CG\x02\u04F5\u04F6\x07\xC3\x02\x02\u04F6\u04F8\x05\x8CG\x02\u04F7" +
-		"\u04F5\x03\x02\x02\x02\u04F8\u04FB\x03\x02\x02\x02\u04F9\u04F7\x03\x02" +
-		"\x02\x02\u04F9\u04FA\x03\x02\x02\x02\u04FA\x8B\x03\x02\x02\x02\u04FB\u04F9" +
-		"\x03\x02\x02\x02\u04FC\u04FD\x05\x8EH\x02\u04FD\x8D\x03\x02\x02\x02\u04FE" +
-		"\u0504\x05\x90I\x02\u04FF\u0500\x07\xDD\x02\x02\u0500\u0501\x05\x8CG\x02" +
-		"\u0501\u0502\x07\xBE\x02\x02\u0502\u0503\x05\x8CG\x02\u0503\u0505\x03" +
-		"\x02\x02\x02\u0504\u04FF\x03\x02\x02\x02\u0504\u0505\x03\x02\x02\x02\u0505" +
-		"\x8F\x03\x02\x02\x02\u0506\u050F\x05\x92J\x02\u0507\u0508\x07\xDC\x02" +
-		"\x02\u0508\u050B\x07\xDC\x02\x02\u0509\u050B\x07\xD5\x02\x02\u050A\u0507" +
-		"\x03\x02\x02\x02\u050A\u0509\x03\x02\x02\x02\u050B\u050C\x03\x02\x02\x02" +
-		"\u050C\u050E\x05\x92J\x02\u050D\u050A\x03\x02\x02\x02\u050E\u0511\x03" +
-		"\x02\x02\x02\u050F\u050D\x03\x02\x02\x02\u050F\u0510\x03\x02\x02\x02\u0510" +
-		"\x91\x03\x02\x02\x02\u0511\u050F\x03\x02\x02\x02\u0512\u051B\x05\x94K" +
-		"\x02\u0513\u0514\x07\xE1\x02\x02\u0514\u0517\x07\xE1\x02\x02\u0515\u0517" +
-		"\x07\xD4\x02\x02\u0516\u0513\x03\x02\x02\x02\u0516\u0515\x03\x02\x02\x02" +
-		"\u0517\u0518\x03\x02\x02\x02\u0518\u051A\x05\x94K\x02\u0519\u0516\x03" +
-		"\x02\x02\x02\u051A\u051D\x03\x02\x02\x02\u051B\u0519\x03\x02\x02\x02\u051B" +
-		"\u051C\x03\x02\x02\x02\u051C\x93\x03\x02\x02\x02\u051D\u051B\x03\x02\x02" +
-		"\x02\u051E\u0523\x05\x96L\x02\u051F\u0520\t\x0E\x02\x02\u0520\u0522\x05" +
-		"\x96L\x02\u0521\u051F\x03\x02\x02\x02\u0522\u0525\x03\x02\x02\x02\u0523" +
-		"\u0521\x03\x02\x02\x02\u0523\u0524\x03\x02\x02\x02\u0524\x95\x03\x02\x02" +
-		"\x02\u0525\u0523\x03\x02\x02\x02\u0526\u0527\x05\x98M\x02\u0527\x97\x03" +
-		"\x02\x02\x02\u0528\u052D\x05\x9AN\x02\u0529\u052A\t\x0F\x02\x02\u052A" +
-		"\u052C\x05\x9AN\x02\u052B\u0529\x03\x02\x02\x02\u052C\u052F\x03\x02\x02" +
-		"\x02\u052D\u052B\x03\x02\x02\x02\u052D\u052E\x03\x02\x02\x02\u052E\x99" +
-		"\x03\x02\x02\x02\u052F\u052D\x03\x02\x02\x02\u0530\u0535\x05\x9CO\x02" +
-		"\u0531\u0532\t\x10\x02\x02\u0532\u0534\x05\x9CO\x02\u0533\u0531\x03\x02" +
-		"\x02\x02\u0534\u0537\x03\x02\x02\x02\u0535\u0533\x03\x02\x02\x02\u0535" +
-		"\u0536\x03\x02\x02\x02\u0536\x9B\x03\x02\x02\x02\u0537\u0535\x03\x02\x02" +
-		"\x02\u0538\u053D\x05\x9EP\x02\u0539\u053A\x07\xDA\x02\x02\u053A\u053C" +
-		"\x05\x9EP\x02\u053B\u0539\x03\x02\x02\x02\u053C\u053F\x03\x02\x02\x02" +
-		"\u053D\u053B\x03\x02\x02\x02\u053D\u053E\x03\x02\x02\x02\u053E\x9D\x03" +
-		"\x02\x02\x02\u053F\u053D\x03\x02\x02\x02\u0540\u0542\t\x11\x02\x02\u0541" +
-		"\u0540\x03\x02\x02\x02\u0541\u0542\x03\x02\x02\x02\u0542\u0543\x03\x02" +
-		"\x02\x02\u0543\u0544\x05\xA0Q\x02\u0544\x9F\x03\x02\x02\x02\u0545\u0546" +
-		"\x07\xC5\x02\x02\u0546\u0547\x05\x8CG\x02\u0547\u0548\x07\xC6\x02\x02" +
-		"\u0548\u054E\x03\x02\x02\x02\u0549\u054E\x05\xA2R\x02\u054A\u054E\x05" +
-		"\xA4S\x02\u054B\u054E\x05\xA6T\x02\u054C\u054E\x05\x88E\x02\u054D\u0545" +
-		"\x03\x02\x02\x02\u054D\u0549\x03\x02\x02\x02\u054D\u054A\x03\x02\x02\x02" +
-		"\u054D\u054B\x03\x02\x02\x02\u054D\u054C\x03\x02\x02\x02\u054E\xA1\x03" +
-		"\x02\x02\x02\u054F\u0550\t\x12\x02\x02\u0550\u0552\x07\xC5\x02\x02\u0551" +
-		"\u0553\x05\x8AF\x02\u0552\u0551\x03\x02\x02\x02\u0552\u0553\x03\x02\x02" +
-		"\x02\u0553\u0554\x03\x02\x02\x02\u0554\u0555\x07\xC6\x02\x02\u0555\xA3" +
-		"\x03\x02\x02\x02\u0556\u0557\x07\xBC\x02\x02\u0557\u0559\x07\xC5\x02\x02" +
-		"\u0558\u055A\x05\x8CG\x02\u0559\u0558\x03\x02\x02\x02\u0559\u055A\x03" +
-		"\x02\x02\x02\u055A\u055B\x03\x02\x02\x02\u055B\u055C\x07\xC6\x02\x02\u055C" +
-		"\xA5\x03\x02\x02\x02\u055D\u055E\t\x13\x02\x02\u055E\xA7\x03\x02\x02\x02" +
-		"\xC6\xAB\xB1\xB9\xBE\xC6\xCC\xCF\xD3\xDB\xE2\xE7\xEC\xF5\xFA\u0102\u010B" +
-		"\u0114\u011D\u0123\u0128\u012D\u0136\u013B\u0148\u014F\u0155\u0159\u0161" +
-		"\u0165\u016A\u016E\u0171\u0175\u017D\u0183\u0187\u0190\u0198\u019E\u01A2" +
-		"\u01AA\u01B2\u01B8\u01BC\u01C4\u01C7\u01CB\u01CF\u01D4\u01D7\u01DA\u01DE" +
-		"\u01E2\u01E8\u01EF\u01F5\u01F7\u01FD\u0202\u0208\u020C\u0213\u0218\u021C" +
-		"\u0220\u0223\u0228\u022C\u0231\u0235\u023A\u023E\u0243\u024B\u024E\u0251" +
-		"\u0257\u025B\u025F\u0266\u0268\u026E\u0271\u027B\u0284\u028A\u028E\u0296" +
-		"\u029B\u029E\u02A7\u02AC\u02B3\u02BB\u02C1\u02C5\u02CE\u02D6\u02DC\u02E0" +
-		"\u02E8\u02F0\u02F6\u02FA\u0302\u0305\u0308\u030E\u0315\u031C\u031F\u0321" +
-		"\u0326\u032D\u0331\u0338\u033C\u0343\u0368\u036F\u0377\u037D\u0381\u0389" +
-		"\u038E\u0393\u0396\u0399\u03A2\u03AA\u03B0\u03B4\u03BC\u03C1\u03C7\u03CF" +
-		"\u03D5\u03D9\u03E2\u03E7\u03F2\u03F8\u03FC\u0405\u040A\u0411\u0418\u041F" +
-		"\u0424\u042C\u0434\u0439\u0441\u0449\u044E\u0452\u0457\u045D\u0461\u0466" +
-		"\u046C\u0470\u0475\u047F\u0481\u048A\u048E\u0492\u0497\u049D\u04A1\u04A6" +
-		"\u04AB\u04B2\u04B6\u04BD\u04CA\u04D2\u04DC\u04DF\u04E8\u04ED\u04F9\u0504" +
-		"\u050A\u050F\u0516\u051B\u0523\u052D\u0535\u053D\u0541\u054D\u0552\u0559";
+		"\x05^0\x02\u03D5\u03D4\x03\x02\x02\x02\u03D5\u03D6\x03\x02\x02\x02\u03D6" +
+		"\u03D7\x03\x02\x02\x02\u03D7\u03D9\x07\xC8\x02\x02\u03D8\u03D3\x03\x02" +
+		"\x02\x02\u03D8\u03D9\x03\x02\x02\x02\u03D9\u03DB\x03\x02\x02\x02\u03DA" +
+		"\u03DC\x07\xD5\x02\x02\u03DB\u03DA\x03\x02\x02\x02\u03DB\u03DC\x03\x02" +
+		"\x02\x02\u03DC\u03DD\x03\x02\x02\x02\u03DD\u03DE\x05\x94K\x02\u03DE]\x03" +
+		"\x02\x02\x02\u03DF\u03E4\x07\xBE\x02\x02\u03E0\u03E1\x07\xC5\x02\x02\u03E1" +
+		"\u03E3\x07\xBE\x02\x02\u03E2\u03E0\x03\x02\x02\x02\u03E3\u03E6\x03\x02" +
+		"\x02\x02\u03E4\u03E2\x03\x02\x02\x02\u03E4\u03E5\x03\x02\x02\x02\u03E5" +
+		"_\x03\x02\x02\x02\u03E6\u03E4\x03\x02\x02\x02\u03E7\u03E8\x07\x06\x02" +
+		"\x02\u03E8\u03EA\x07\n\x02\x02\u03E9\u03EB\x07\x04\x02\x02\u03EA\u03E9" +
+		"\x03\x02\x02\x02\u03EB\u03EC\x03\x02\x02\x02\u03EC\u03EA\x03\x02\x02\x02" +
+		"\u03EC\u03ED\x03\x02\x02\x02\u03ED\u03F6\x03\x02\x02\x02\u03EE\u03F0\x05" +
+		"b2\x02\u03EF\u03F1\x07\x04\x02\x02\u03F0\u03EF\x03\x02\x02\x02\u03F1\u03F2" +
+		"\x03\x02\x02\x02\u03F2\u03F0\x03\x02\x02\x02\u03F2\u03F3\x03\x02\x02\x02" +
+		"\u03F3\u03F5\x03\x02\x02\x02\u03F4\u03EE\x03\x02\x02\x02\u03F5\u03F8\x03" +
+		"\x02\x02\x02\u03F6\u03F4\x03\x02\x02\x02\u03F6\u03F7\x03\x02\x02\x02\u03F7" +
+		"\u03F9\x03\x02\x02\x02\u03F8\u03F6\x03\x02\x02\x02\u03F9\u03FA\x07\x07" +
+		"\x02\x02\u03FA\u03FE\x07\n\x02\x02\u03FB\u03FD\x07\x04\x02\x02\u03FC\u03FB" +
+		"\x03\x02\x02\x02\u03FD\u0400\x03\x02\x02\x02\u03FE\u03FC\x03\x02\x02\x02" +
+		"\u03FE\u03FF\x03\x02\x02\x02\u03FFa\x03\x02\x02\x02\u0400\u03FE\x03\x02" +
+		"\x02\x02\u0401\u0402\x07\xBE\x02\x02\u0402\u0404\x07\xC0\x02\x02\u0403" +
+		"\u0401\x03\x02\x02\x02\u0403\u0404\x03\x02\x02\x02\u0404\u0405\x03\x02" +
+		"\x02\x02\u0405\u0406\x07\xBE\x02\x02\u0406\u0407\x07\xBD\x02\x02\u0407" +
+		"\u0409\x05\x94K\x02\u0408\u040A\x07\xBE\x02\x02\u0409\u0408\x03\x02\x02" +
+		"\x02\u0409\u040A\x03\x02\x02\x02\u040Ac\x03\x02\x02\x02\u040B\u040C\x07" +
+		"\x06\x02\x02\u040C\u040D\x07\x1B\x02\x02\u040D\u040F\x07\x1C\x02\x02\u040E" +
+		"\u0410\x07\x04\x02\x02\u040F\u040E\x03\x02\x02\x02\u0410\u0411\x03\x02" +
+		"\x02\x02\u0411\u040F\x03\x02\x02\x02\u0411\u0412\x03\x02\x02\x02\u0412" +
+		"\u041B\x03\x02\x02\x02\u0413\u0415\x05f4\x02\u0414\u0416\x07\x04\x02\x02" +
+		"\u0415\u0414\x03\x02\x02\x02\u0416\u0417\x03\x02\x02\x02\u0417\u0415\x03" +
+		"\x02\x02\x02\u0417\u0418\x03\x02\x02\x02\u0418\u041A\x03\x02\x02\x02\u0419" +
+		"\u0413\x03\x02\x02\x02\u041A\u041D\x03\x02\x02\x02\u041B\u0419\x03\x02" +
+		"\x02\x02\u041B\u041C\x03\x02\x02\x02\u041C\u041E\x03\x02\x02\x02\u041D" +
+		"\u041B\x03\x02\x02\x02\u041E\u041F\x07\x07\x02\x02\u041F\u0420\x07\x1B" +
+		"\x02\x02\u0420\u0424\x07\x1C\x02\x02\u0421\u0423\x07\x04\x02\x02\u0422" +
+		"\u0421\x03\x02\x02\x02\u0423\u0426\x03\x02\x02\x02\u0424\u0422\x03\x02" +
+		"\x02\x02\u0424\u0425\x03\x02\x02\x02\u0425e\x03\x02\x02\x02\u0426\u0424" +
+		"\x03\x02\x02\x02\u0427\u0428\x07\xBE\x02\x02\u0428\u042A\x07\xC0\x02\x02" +
+		"\u0429\u0427\x03\x02\x02\x02\u0429\u042A\x03\x02\x02\x02\u042A\u042B\x03" +
+		"\x02\x02\x02\u042B\u042C\x05*\x16\x02\u042C\u042D\x05\x94K\x02\u042Dg" +
+		"\x03\x02\x02\x02\u042E\u042F\x07\x06\x02\x02\u042F\u0430\x07\x19\x02\x02" +
+		"\u0430\u0432\x07\x1A\x02\x02\u0431\u0433\x07\x04\x02\x02\u0432\u0431\x03" +
+		"\x02\x02\x02\u0433\u0434\x03\x02\x02\x02\u0434\u0432\x03\x02\x02\x02\u0434" +
+		"\u0435\x03\x02\x02\x02\u0435\u043E\x03\x02\x02\x02\u0436\u0438\x05j6\x02" +
+		"\u0437\u0439\x07\x04\x02\x02\u0438\u0437\x03\x02\x02\x02\u0439\u043A\x03" +
+		"\x02\x02\x02\u043A\u0438\x03\x02\x02\x02\u043A\u043B\x03\x02\x02\x02\u043B" +
+		"\u043D\x03\x02\x02\x02\u043C\u0436\x03\x02\x02\x02\u043D\u0440\x03\x02" +
+		"\x02\x02\u043E\u043C\x03\x02\x02\x02\u043E\u043F\x03\x02\x02\x02\u043F" +
+		"\u0441\x03\x02\x02\x02\u0440\u043E\x03\x02\x02\x02\u0441\u0442\x07\x07" +
+		"\x02\x02\u0442\u0443\x07\x19\x02\x02\u0443\u0447\x07\x1A\x02\x02\u0444" +
+		"\u0446\x07\x04\x02\x02\u0445\u0444\x03\x02\x02\x02\u0446\u0449\x03\x02" +
+		"\x02\x02\u0447\u0445\x03\x02\x02\x02\u0447\u0448\x03\x02\x02\x02\u0448" +
+		"i\x03\x02\x02\x02\u0449\u0447\x03\x02\x02\x02\u044A\u044B\x07\xBE\x02" +
+		"\x02\u044B\u044D\x07\xC0\x02\x02\u044C\u044A\x03\x02\x02\x02\u044C\u044D" +
+		"\x03\x02\x02\x02\u044D\u044E\x03\x02\x02\x02\u044E\u044F\x05*\x16\x02" +
+		"\u044F\u0450\x07\xC9\x02\x02\u0450\u0451\x07\xBE\x02\x02\u0451\u0453\x07" +
+		"\xC7\x02\x02\u0452\u0454\x05^0\x02\u0453\u0452\x03\x02\x02\x02\u0453\u0454" +
+		"\x03\x02\x02\x02\u0454\u0455\x03\x02\x02\x02\u0455\u0456\x07\xC8\x02\x02" +
+		"\u0456k\x03\x02\x02\x02\u0457\u0458\x07\x06\x02\x02\u0458\u045A\x07\x1D" +
+		"\x02\x02\u0459\u045B\x07\x04\x02\x02\u045A\u0459\x03\x02\x02\x02\u045B" +
+		"\u045C\x03\x02\x02\x02\u045C\u045A\x03\x02\x02\x02\u045C\u045D\x03\x02" +
+		"\x02\x02\u045D\u0466\x03\x02\x02\x02\u045E\u0460\x05n8\x02\u045F\u0461" +
+		"\x07\x04\x02\x02\u0460\u045F\x03\x02\x02\x02\u0461\u0462\x03\x02\x02\x02" +
+		"\u0462\u0460\x03\x02\x02\x02\u0462\u0463\x03\x02\x02\x02\u0463\u0465\x03" +
+		"\x02\x02\x02\u0464\u045E\x03\x02\x02\x02\u0465\u0468\x03\x02\x02\x02\u0466" +
+		"\u0464\x03\x02\x02\x02\u0466\u0467\x03\x02\x02\x02\u0467\u0469\x03\x02" +
+		"\x02\x02\u0468\u0466\x03\x02\x02\x02\u0469\u046A\x07\x07\x02\x02\u046A" +
+		"\u046E\x07\x1D\x02\x02\u046B\u046D\x07\x04\x02\x02\u046C\u046B\x03\x02" +
+		"\x02\x02\u046D\u0470\x03\x02\x02\x02\u046E\u046C\x03\x02\x02\x02\u046E" +
+		"\u046F\x03\x02\x02\x02\u046Fm\x03\x02\x02\x02\u0470\u046E\x03\x02\x02" +
+		"\x02\u0471\u047E\x05.\x18\x02\u0472\u047B\x07\xC7\x02\x02\u0473\u0478" +
+		"\x07\xBE\x02\x02\u0474\u0475\x07\xC5\x02\x02\u0475\u0477\x07\xBE\x02\x02" +
+		"\u0476\u0474\x03\x02\x02\x02\u0477\u047A\x03\x02\x02\x02\u0478\u0476\x03" +
+		"\x02\x02\x02\u0478\u0479\x03\x02\x02\x02\u0479\u047C\x03\x02\x02\x02\u047A" +
+		"\u0478\x03\x02\x02\x02\u047B\u0473\x03\x02\x02\x02\u047B\u047C\x03\x02" +
+		"\x02\x02\u047C\u047D\x03\x02\x02\x02\u047D\u047F\x07\xC8\x02\x02\u047E" +
+		"\u0472\x03\x02\x02\x02\u047E\u047F\x03\x02\x02\x02\u047Fo\x03\x02\x02" +
+		"\x02\u0480\u0482\x05v<\x02\u0481\u0480\x03\x02\x02\x02\u0482\u0483\x03" +
+		"\x02\x02\x02\u0483\u0481\x03\x02\x02\x02\u0483\u0484\x03\x02\x02\x02\u0484" +
+		"q\x03\x02\x02\x02\u0485\u0486\x07\x06\x02\x02\u0486\u0488\x07\x18\x02" +
+		"\x02\u0487\u0489\x07\x04\x02\x02\u0488\u0487\x03\x02\x02\x02\u0489\u048A" +
+		"\x03\x02\x02\x02\u048A\u0488\x03\x02\x02\x02\u048A\u048B\x03\x02\x02\x02" +
+		"\u048B\u048F\x03\x02\x02\x02\u048C\u048E\x05v<\x02\u048D\u048C\x03\x02" +
+		"\x02\x02\u048E\u0491\x03\x02\x02\x02\u048F\u048D\x03\x02\x02\x02\u048F" +
+		"\u0490\x03\x02\x02\x02\u0490\u0492\x03\x02\x02\x02\u0491\u048F\x03\x02" +
+		"\x02\x02\u0492\u0493\x07\x07\x02\x02\u0493\u0497\x07\x18\x02\x02\u0494" +
+		"\u0496\x07\x04\x02\x02\u0495\u0494\x03\x02\x02\x02\u0496\u0499\x03\x02" +
+		"\x02\x02\u0497\u0495\x03\x02\x02\x02\u0497\u0498\x03\x02\x02\x02\u0498" +
+		"s\x03\x02\x02\x02\u0499\u0497\x03\x02\x02\x02\u049A\u049B\x07\x06\x02" +
+		"\x02\u049B\u049D\x07\x18\x02\x02\u049C\u049E\x07\x04\x02\x02\u049D\u049C" +
+		"\x03\x02\x02\x02\u049E\u049F\x03\x02\x02\x02\u049F\u049D\x03\x02\x02\x02" +
+		"\u049F\u04A0\x03\x02\x02\x02\u04A0\u04A4\x03\x02\x02\x02\u04A1\u04A3\x05" +
+		"v<\x02\u04A2\u04A1\x03\x02\x02\x02\u04A3\u04A6\x03\x02\x02\x02\u04A4\u04A2" +
+		"\x03\x02\x02\x02\u04A4\u04A5\x03\x02\x02\x02\u04A5\u04A7\x03\x02\x02\x02" +
+		"\u04A6\u04A4\x03\x02\x02\x02\u04A7\u04A8\x07\x07\x02\x02\u04A8\u04AC\x07" +
+		"\x18\x02\x02\u04A9\u04AB\x07\x04\x02\x02\u04AA\u04A9\x03\x02\x02\x02\u04AB" +
+		"\u04AE\x03\x02\x02\x02\u04AC\u04AA\x03\x02\x02\x02\u04AC\u04AD\x03\x02" +
+		"\x02\x02\u04ADu\x03\x02\x02\x02\u04AE\u04AC\x03\x02\x02\x02\u04AF\u04B5" +
+		"\x05x=\x02\u04B0\u04B5\x05z>\x02\u04B1\u04B5\x05|?\x02\u04B2\u04B5\x05" +
+		"~@\x02\u04B3\u04B5\x05\x80A\x02\u04B4\u04AF\x03\x02\x02\x02\u04B4\u04B0" +
+		"\x03\x02\x02\x02\u04B4\u04B1\x03\x02\x02\x02\u04B4\u04B2\x03\x02\x02\x02" +
+		"\u04B4\u04B3\x03\x02\x02\x02\u04B5w\x03\x02\x02\x02\u04B6\u04B7\x07-\x02" +
+		"\x02\u04B7\u04B9\x07\xC7\x02\x02\u04B8\u04BA\x05\x82B\x02\u04B9\u04B8" +
+		"\x03\x02\x02\x02\u04B9\u04BA\x03\x02\x02\x02\u04BA\u04BB\x03\x02\x02\x02" +
+		"\u04BB\u04BD\x07\xC8\x02\x02\u04BC\u04BE\x07\xBF\x02\x02\u04BD\u04BC\x03" +
+		"\x02\x02\x02\u04BD\u04BE\x03\x02\x02\x02\u04BE\u04C2\x03\x02\x02\x02\u04BF" +
+		"\u04C1\x07\x04\x02\x02\u04C0\u04BF\x03\x02\x02\x02\u04C1\u04C4\x03\x02" +
+		"\x02\x02\u04C2\u04C0\x03\x02\x02\x02\u04C2\u04C3\x03\x02\x02\x02\u04C3" +
+		"y\x03\x02\x02\x02\u04C4\u04C2\x03\x02\x02\x02\u04C5\u04C6\t\b\x02\x02" +
+		"\u04C6\u04C8\x07\xC7\x02\x02\u04C7\u04C9\x05\x82B\x02\u04C8\u04C7\x03" +
+		"\x02\x02\x02\u04C8\u04C9\x03\x02\x02\x02\u04C9\u04CA\x03\x02\x02\x02\u04CA" +
+		"\u04CC\x07\xC8\x02\x02\u04CB\u04CD\x07\xBF\x02\x02\u04CC\u04CB\x03\x02" +
+		"\x02\x02\u04CC\u04CD\x03\x02\x02\x02\u04CD\u04D1\x03\x02\x02\x02\u04CE" +
+		"\u04D0\x07\x04\x02\x02\u04CF\u04CE\x03\x02\x02\x02\u04D0\u04D3\x03\x02" +
+		"\x02\x02\u04D1\u04CF\x03\x02\x02\x02\u04D1\u04D2\x03\x02\x02\x02\u04D2" +
+		"{\x03\x02\x02\x02\u04D3\u04D1\x03\x02\x02\x02\u04D4\u04D5\t\t\x02\x02" +
+		"\u04D5\u04D7\x07\xC7\x02\x02\u04D6\u04D8\x05\x82B\x02\u04D7\u04D6\x03" +
+		"\x02\x02\x02\u04D7\u04D8\x03\x02\x02\x02\u04D8\u04D9\x03\x02\x02\x02\u04D9" +
+		"\u04DB\x07\xC8\x02\x02\u04DA\u04DC\x07\xBF\x02\x02\u04DB\u04DA\x03\x02" +
+		"\x02\x02\u04DB\u04DC\x03\x02\x02\x02\u04DC\u04E0\x03\x02\x02\x02\u04DD" +
+		"\u04DF\x07\x04\x02\x02\u04DE\u04DD\x03\x02\x02\x02\u04DF\u04E2\x03\x02" +
+		"\x02\x02\u04E0\u04DE\x03\x02\x02\x02\u04E0\u04E1\x03\x02\x02\x02\u04E1" +
+		"}\x03\x02\x02\x02\u04E2\u04E0\x03\x02\x02\x02\u04E3\u04E4\t\n\x02\x02" +
+		"\u04E4\u04E5\x07\xC7\x02\x02\u04E5\u04EC\x07\xE1\x02\x02\u04E6\u04ED\x05" +
+		"*\x16\x02\u04E7\u04E9\n\x02\x02\x02\u04E8\u04E7\x03\x02\x02\x02\u04E9" +
+		"\u04EA\x03\x02\x02\x02\u04EA\u04E8\x03\x02\x02\x02\u04EA\u04EB\x03\x02" +
+		"\x02\x02\u04EB\u04ED\x03\x02\x02\x02\u04EC\u04E6\x03\x02\x02\x02\u04EC" +
+		"\u04E8\x03\x02\x02\x02\u04ED\u04EE\x03\x02\x02\x02\u04EE\u04EF\x07\xE1" +
+		"\x02\x02\u04EF\u04F9\x07\xC5\x02\x02\u04F0\u04FA\x05\x94K\x02\u04F1\u04F5" +
+		"\x07\xE1\x02\x02\u04F2\u04F4\n\x02\x02\x02\u04F3\u04F2\x03\x02\x02\x02" +
+		"\u04F4\u04F7\x03\x02\x02\x02\u04F5\u04F3\x03\x02\x02\x02\u04F5\u04F6\x03" +
+		"\x02\x02\x02\u04F6\u04F8\x03\x02\x02\x02\u04F7\u04F5\x03\x02\x02\x02\u04F8" +
+		"\u04FA\x07\xE1\x02\x02\u04F9\u04F0\x03\x02\x02\x02\u04F9\u04F1\x03\x02" +
+		"\x02\x02\u04FA\u04FB\x03\x02\x02\x02\u04FB\u04FD\x07\xC8\x02\x02\u04FC" +
+		"\u04FE\x07\xBF\x02\x02\u04FD\u04FC\x03\x02\x02\x02\u04FD\u04FE\x03\x02" +
+		"\x02\x02\u04FE\u0502\x03\x02\x02\x02\u04FF\u0501\x07\x04\x02\x02\u0500" +
+		"\u04FF\x03\x02\x02\x02\u0501\u0504\x03\x02\x02\x02\u0502\u0500\x03\x02" +
+		"\x02\x02\u0502\u0503\x03\x02\x02\x02\u0503\x7F\x03\x02\x02\x02\u0504\u0502" +
+		"\x03\x02\x02\x02\u0505\u0506\t\v\x02\x02\u0506\u0508\x07\xC7\x02\x02\u0507" +
+		"\u0509\x05\x82B\x02\u0508\u0507\x03\x02\x02\x02\u0508\u0509\x03\x02\x02" +
+		"\x02\u0509\u050A\x03\x02\x02\x02\u050A\u050C\x07\xC8\x02\x02\u050B\u050D" +
+		"\x07\xBF\x02\x02\u050C\u050B\x03\x02\x02\x02\u050C\u050D\x03\x02\x02\x02" +
+		"\u050D\u0511\x03\x02\x02\x02\u050E\u0510\x07\x04\x02\x02\u050F\u050E\x03" +
+		"\x02\x02\x02\u0510\u0513\x03\x02\x02\x02\u0511\u050F\x03\x02\x02\x02\u0511" +
+		"\u0512\x03\x02\x02\x02\u0512\x81\x03\x02\x02\x02\u0513\u0511\x03\x02\x02" +
+		"\x02\u0514\u0516\x07\xC3\x02\x02\u0515\u0517\x05\x84C\x02\u0516\u0515" +
+		"\x03\x02\x02\x02\u0516\u0517\x03\x02\x02\x02\u0517\u0518\x03\x02\x02\x02" +
+		"\u0518\u0522\x07\xC4\x02\x02\u0519\u051D\x07\xE1\x02\x02\u051A\u051C\n" +
+		"\x02\x02\x02\u051B\u051A\x03\x02\x02\x02\u051C\u051F\x03\x02\x02\x02\u051D" +
+		"\u051B\x03\x02\x02\x02\u051D\u051E\x03\x02\x02\x02\u051E\u0520\x03\x02" +
+		"\x02\x02\u051F\u051D\x03\x02\x02\x02\u0520\u0522\x07\xE1\x02\x02\u0521" +
+		"\u0514\x03\x02\x02\x02\u0521\u0519\x03\x02\x02\x02\u0522\x83\x03\x02\x02" +
+		"\x02\u0523\u0528\x05\x86D\x02\u0524\u0525\x07\xC5\x02\x02\u0525\u0527" +
+		"\x05\x86D\x02\u0526\u0524\x03\x02\x02\x02\u0527\u052A\x03\x02\x02\x02" +
+		"\u0528\u0526\x03\x02\x02\x02\u0528\u0529\x03\x02\x02\x02\u0529\x85\x03" +
+		"\x02\x02\x02\u052A\u0528\x03\x02\x02\x02\u052B\u052C\x05\x90I\x02\u052C" +
+		"\u052D\x07\xD2\x02\x02\u052D\u052E\x05\x88E\x02\u052E\x87\x03\x02\x02" +
+		"\x02\u052F\u054B\x05\x94K\x02\u0530\u054B\x05\x8AF\x02\u0531\u0535\x07" +
+		"\xE1\x02\x02\u0532\u0534\n\x02\x02\x02\u0533\u0532\x03\x02\x02\x02\u0534" +
+		"\u0537\x03\x02\x02\x02\u0535\u0533\x03\x02\x02\x02\u0535\u0536\x03\x02" +
+		"\x02\x02\u0536\u0538\x03\x02\x02\x02\u0537\u0535\x03\x02\x02\x02\u0538" +
+		"\u054B\x07\xE1\x02\x02\u0539\u053D\x07\xE2\x02\x02\u053A\u053C\n\f\x02" +
+		"\x02\u053B\u053A\x03\x02\x02\x02\u053C\u053F\x03\x02\x02\x02\u053D\u053B" +
+		"\x03\x02\x02\x02\u053D\u053E\x03\x02\x02\x02\u053E\u0540\x03\x02\x02\x02" +
+		"\u053F\u053D\x03\x02\x02\x02\u0540\u054B\x07\xE2\x02\x02\u0541\u0542\x07" +
+		"\xC1\x02\x02\u0542\u0543\x05\x92J\x02\u0543\u0544\x07\xC2\x02\x02\u0544" +
+		"\u054B\x03\x02\x02\x02\u0545\u0547\x07\xC3\x02\x02\u0546\u0548\x05\x8C" +
+		"G\x02\u0547\u0546\x03\x02\x02\x02\u0547\u0548\x03\x02\x02\x02\u0548\u0549" +
+		"\x03\x02\x02\x02\u0549\u054B\x07\xC4\x02\x02\u054A\u052F\x03\x02\x02\x02" +
+		"\u054A\u0530\x03\x02\x02\x02\u054A\u0531\x03\x02\x02\x02\u054A\u0539\x03" +
+		"\x02\x02\x02\u054A\u0541\x03\x02\x02\x02\u054A\u0545\x03\x02\x02\x02\u054B" +
+		"\x89\x03\x02\x02\x02\u054C\u054D\t\r\x02\x02\u054D\x8B\x03\x02\x02\x02" +
+		"\u054E\u0553\x05\x8EH\x02\u054F\u0550\x07\xC5\x02\x02\u0550\u0552\x05" +
+		"\x8EH\x02\u0551\u054F\x03\x02\x02\x02\u0552\u0555\x03\x02\x02\x02\u0553" +
+		"\u0551\x03\x02\x02\x02\u0553\u0554\x03\x02\x02\x02\u0554\x8D\x03\x02\x02" +
+		"\x02\u0555\u0553\x03\x02\x02\x02\u0556\u0559\x07\xBE\x02\x02\u0557\u0559" +
+		"\x05\x90I\x02\u0558\u0556\x03\x02\x02\x02\u0558\u0557\x03\x02\x02\x02" +
+		"\u0559\u055A\x03\x02\x02\x02\u055A\u055B\x07\xD2\x02\x02\u055B\u055C\x05" +
+		"\x88E\x02\u055C\x8F\x03\x02\x02\x02\u055D\u055E\t\x0E\x02\x02\u055E\x91" +
+		"\x03\x02\x02\x02\u055F\u0564\x05\x94K\x02\u0560\u0561\x07\xC5\x02\x02" +
+		"\u0561\u0563\x05\x94K\x02\u0562\u0560\x03\x02\x02\x02\u0563\u0566\x03" +
+		"\x02\x02\x02\u0564\u0562\x03\x02\x02\x02\u0564\u0565\x03\x02\x02\x02\u0565" +
+		"\x93\x03\x02\x02\x02\u0566\u0564\x03\x02\x02\x02\u0567\u0568\x05\x96L" +
+		"\x02\u0568\x95\x03\x02\x02\x02\u0569\u056F\x05\x98M\x02\u056A\u056B\x07" +
+		"\xDF\x02\x02\u056B\u056C\x05\x94K\x02\u056C\u056D\x07\xC0\x02\x02\u056D" +
+		"\u056E\x05\x94K\x02\u056E\u0570\x03\x02\x02\x02\u056F\u056A\x03\x02\x02" +
+		"\x02\u056F\u0570\x03\x02\x02\x02\u0570\x97\x03\x02\x02\x02\u0571\u057A" +
+		"\x05\x9AN\x02\u0572\u0573\x07\xDE\x02\x02\u0573\u0576\x07\xDE\x02\x02" +
+		"\u0574\u0576\x07\xD7\x02\x02\u0575\u0572\x03\x02\x02\x02\u0575\u0574\x03" +
+		"\x02\x02\x02\u0576\u0577\x03\x02\x02\x02\u0577\u0579\x05\x9AN\x02\u0578" +
+		"\u0575\x03\x02\x02\x02\u0579\u057C\x03\x02\x02\x02\u057A\u0578\x03\x02" +
+		"\x02\x02\u057A\u057B\x03\x02\x02\x02\u057B\x99\x03\x02\x02\x02\u057C\u057A" +
+		"\x03\x02\x02\x02\u057D\u0586\x05\x9CO\x02\u057E\u057F\x07\xE3\x02\x02" +
+		"\u057F\u0582\x07\xE3\x02\x02\u0580\u0582\x07\xD6\x02\x02\u0581\u057E\x03" +
+		"\x02\x02\x02\u0581\u0580\x03\x02\x02\x02\u0582\u0583\x03\x02\x02\x02\u0583" +
+		"\u0585\x05\x9CO\x02\u0584\u0581\x03\x02\x02\x02\u0585\u0588\x03\x02\x02" +
+		"\x02\u0586\u0584\x03\x02\x02\x02\u0586\u0587\x03\x02\x02\x02\u0587\x9B" +
+		"\x03\x02\x02\x02\u0588\u0586\x03\x02\x02\x02\u0589\u058E\x05\x9EP\x02" +
+		"\u058A\u058B\t\x0F\x02\x02\u058B\u058D\x05\x9EP\x02\u058C\u058A\x03\x02" +
+		"\x02\x02\u058D\u0590\x03\x02\x02\x02\u058E\u058C\x03\x02\x02\x02\u058E" +
+		"\u058F\x03\x02\x02\x02\u058F\x9D\x03\x02\x02\x02\u0590\u058E\x03\x02\x02" +
+		"\x02\u0591\u0592\x05\xA0Q\x02\u0592\x9F\x03\x02\x02\x02\u0593\u0598\x05" +
+		"\xA2R\x02\u0594\u0595\t\x10\x02\x02\u0595\u0597\x05\xA2R\x02\u0596\u0594" +
+		"\x03\x02\x02\x02\u0597\u059A\x03\x02\x02\x02\u0598\u0596\x03\x02\x02\x02" +
+		"\u0598\u0599\x03\x02\x02\x02\u0599\xA1\x03\x02\x02\x02\u059A\u0598\x03" +
+		"\x02\x02\x02\u059B\u05A0\x05\xA4S\x02\u059C\u059D\t\x11\x02\x02\u059D" +
+		"\u059F\x05\xA4S\x02\u059E\u059C\x03\x02\x02\x02\u059F\u05A2\x03\x02\x02" +
+		"\x02\u05A0\u059E\x03\x02\x02\x02\u05A0\u05A1\x03\x02\x02\x02\u05A1\xA3" +
+		"\x03\x02\x02\x02\u05A2\u05A0\x03\x02\x02\x02\u05A3\u05A8\x05\xA6T\x02" +
+		"\u05A4\u05A5\x07\xDC\x02\x02\u05A5\u05A7\x05\xA6T\x02\u05A6\u05A4\x03" +
+		"\x02\x02\x02\u05A7\u05AA\x03\x02\x02\x02\u05A8\u05A6\x03\x02\x02\x02\u05A8" +
+		"\u05A9\x03\x02\x02\x02\u05A9\xA5\x03\x02\x02\x02\u05AA\u05A8\x03\x02\x02" +
+		"\x02\u05AB\u05AD\t\x12\x02\x02\u05AC\u05AB\x03\x02\x02\x02\u05AC\u05AD" +
+		"\x03\x02\x02\x02\u05AD\u05AE\x03\x02\x02\x02\u05AE\u05AF\x05\xA8U\x02" +
+		"\u05AF\xA7\x03\x02\x02\x02\u05B0\u05B1\x07\xC7\x02\x02\u05B1\u05B2\x05" +
+		"\x94K\x02\u05B2\u05B3\x07\xC8\x02\x02\u05B3\u05B9\x03\x02\x02\x02\u05B4" +
+		"\u05B9\x05\xAAV\x02\u05B5\u05B9\x05\xACW\x02\u05B6\u05B9\x05\xAEX\x02" +
+		"\u05B7\u05B9\x05\x90I\x02\u05B8\u05B0\x03\x02\x02\x02\u05B8\u05B4\x03" +
+		"\x02\x02\x02\u05B8\u05B5\x03\x02\x02\x02\u05B8\u05B6\x03\x02\x02\x02\u05B8" +
+		"\u05B7\x03\x02\x02\x02\u05B9\xA9\x03\x02\x02\x02\u05BA\u05BB\t\x13\x02" +
+		"\x02\u05BB\u05BD\x07\xC7\x02\x02\u05BC\u05BE\x05\x92J\x02\u05BD\u05BC" +
+		"\x03\x02\x02\x02\u05BD\u05BE\x03\x02\x02\x02\u05BE\u05BF\x03\x02\x02\x02" +
+		"\u05BF\u05C0\x07\xC8\x02\x02\u05C0\xAB\x03\x02\x02\x02\u05C1\u05C2\x07" +
+		"\xBE\x02\x02\u05C2\u05C4\x07\xC7\x02\x02\u05C3\u05C5\x05\x92J\x02\u05C4" +
+		"\u05C3\x03\x02\x02\x02\u05C4\u05C5\x03\x02\x02\x02\u05C5\u05C6\x03\x02" +
+		"\x02\x02\u05C6\u05C7\x07\xC8\x02\x02\u05C7\xAD\x03\x02\x02\x02\u05C8\u05C9" +
+		"\t\x14\x02\x02\u05C9\xAF\x03\x02\x02\x02\xD7\xB3\xB9\xC1\xC6\xCE\xD4\xD7" +
+		"\xDB\xE3\xEA\xEF\xF4\xFD\u0102\u010A\u0113\u011C\u0125\u012B\u0130\u0135" +
+		"\u013E\u0143\u0151\u0158\u015E\u0162\u016A\u016E\u0173\u0177\u017A\u017E" +
+		"\u0186\u018C\u0190\u0199\u01A1\u01A7\u01AB\u01B3\u01BB\u01C1\u01C5\u01CD" +
+		"\u01D6\u01DC\u01E0\u01E9\u01EC\u01F0\u01F4\u01F9\u01FC\u01FF\u0203\u0207" +
+		"\u020D\u0211\u021A\u0220\u0222\u0228\u022D\u0233\u0237\u023E\u0243\u0247" +
+		"\u024B\u024E\u0253\u0257\u025C\u0260\u0265\u0269\u026E\u0276\u0279\u027C" +
+		"\u027F\u0287\u028D\u0291\u0295\u029B\u02A1\u02A3\u02A9\u02AC\u02B7\u02C0" +
+		"\u02C6\u02CA\u02D2\u02D7\u02DA\u02E3\u02E8\u02EF\u02F7\u02FD\u0301\u030A" +
+		"\u0312\u0318\u031C\u0324\u032C\u0332\u0336\u033E\u0341\u0344\u034A\u0351" +
+		"\u0358\u035B\u035D\u0362\u0366\u036B\u036F\u0374\u0379\u037D\u0385\u03AA" +
+		"\u03B1\u03B9\u03BF\u03C3\u03CB\u03D0\u03D5\u03D8\u03DB\u03E4\u03EC\u03F2" +
+		"\u03F6\u03FE\u0403\u0409\u0411\u0417\u041B\u0424\u0429\u0434\u043A\u043E" +
+		"\u0447\u044C\u0453\u045C\u0462\u0466\u046E\u0478\u047B\u047E\u0483\u048A" +
+		"\u048F\u0497\u049F\u04A4\u04AC\u04B4\u04B9\u04BD\u04C2\u04C8\u04CC\u04D1" +
+		"\u04D7\u04DB\u04E0\u04EA\u04EC\u04F5\u04F9\u04FD\u0502\u0508\u050C\u0511" +
+		"\u0516\u051D\u0521\u0528\u0535\u053D\u0547\u054A\u0553\u0558\u0564\u056F" +
+		"\u0575\u057A\u0581\u0586\u058E\u0598\u05A0\u05A8\u05AC\u05B8\u05BD\u05C4";
 	public static readonly _serializedATN: string = Utils.join(
 		[
 			BNGParser._serializedATNSegment0,
@@ -7021,6 +7579,18 @@ export class ProgContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_prog; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterProg) {
+			listener.enterProg(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitProg) {
+			listener.exitProg(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitProg) {
 			return visitor.visitProg(this);
@@ -7049,6 +7619,18 @@ export class Header_blockContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_header_block; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterHeader_block) {
+			listener.enterHeader_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitHeader_block) {
+			listener.exitHeader_block(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitHeader_block) {
@@ -7091,6 +7673,18 @@ export class Version_defContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_version_def; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterVersion_def) {
+			listener.enterVersion_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitVersion_def) {
+			listener.exitVersion_def(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitVersion_def) {
 			return visitor.visitVersion_def(this);
@@ -7130,6 +7724,18 @@ export class Substance_defContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_substance_def; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterSubstance_def) {
+			listener.enterSubstance_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitSubstance_def) {
+			listener.exitSubstance_def(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitSubstance_def) {
@@ -7179,6 +7785,18 @@ export class Set_optionContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_set_option; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterSet_option) {
+			listener.enterSet_option(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitSet_option) {
+			listener.exitSet_option(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitSet_option) {
 			return visitor.visitSet_option(this);
@@ -7219,6 +7837,18 @@ export class Set_model_nameContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_set_model_name; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterSet_model_name) {
+			listener.enterSet_model_name(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitSet_model_name) {
+			listener.exitSet_model_name(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitSet_model_name) {
 			return visitor.visitSet_model_name(this);
@@ -7257,6 +7887,9 @@ export class Program_blockContext extends ParserRuleContext {
 	public population_maps_block(): Population_maps_blockContext | undefined {
 		return this.tryGetRuleContext(0, Population_maps_blockContext);
 	}
+	public anchors_block(): Anchors_blockContext | undefined {
+		return this.tryGetRuleContext(0, Anchors_blockContext);
+	}
 	public wrapped_actions_block(): Wrapped_actions_blockContext | undefined {
 		return this.tryGetRuleContext(0, Wrapped_actions_blockContext);
 	}
@@ -7268,6 +7901,18 @@ export class Program_blockContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_program_block; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterProgram_block) {
+			listener.enterProgram_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitProgram_block) {
+			listener.exitProgram_block(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitProgram_block) {
@@ -7315,6 +7960,18 @@ export class Parameters_blockContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_parameters_block; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterParameters_block) {
+			listener.enterParameters_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitParameters_block) {
+			listener.exitParameters_block(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitParameters_block) {
 			return visitor.visitParameters_block(this);
@@ -7347,6 +8004,18 @@ export class Parameter_defContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_parameter_def; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterParameter_def) {
+			listener.enterParameter_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitParameter_def) {
+			listener.exitParameter_def(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitParameter_def) {
 			return visitor.visitParameter_def(this);
@@ -7367,6 +8036,18 @@ export class Param_nameContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_param_name; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterParam_name) {
+			listener.enterParam_name(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitParam_name) {
+			listener.exitParam_name(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitParam_name) {
@@ -7435,11 +8116,32 @@ export class Molecule_types_blockContext extends ParserRuleContext {
 			return this.getToken(BNGParser.MOLECULE_TYPES, i);
 		}
 	}
+	public MOLECULAR(): TerminalNode[];
+	public MOLECULAR(i: number): TerminalNode;
+	public MOLECULAR(i?: number): TerminalNode | TerminalNode[] {
+		if (i === undefined) {
+			return this.getTokens(BNGParser.MOLECULAR);
+		} else {
+			return this.getToken(BNGParser.MOLECULAR, i);
+		}
+	}
 	constructor(parent: ParserRuleContext | undefined, invokingState: number) {
 		super(parent, invokingState);
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_molecule_types_block; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterMolecule_types_block) {
+			listener.enterMolecule_types_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitMolecule_types_block) {
+			listener.exitMolecule_types_block(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitMolecule_types_block) {
@@ -7464,6 +8166,18 @@ export class Molecule_type_defContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_molecule_type_def; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterMolecule_type_def) {
+			listener.enterMolecule_type_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitMolecule_type_def) {
+			listener.exitMolecule_type_def(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitMolecule_type_def) {
 			return visitor.visitMolecule_type_def(this);
@@ -7486,6 +8200,18 @@ export class Molecule_defContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_molecule_def; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterMolecule_def) {
+			listener.enterMolecule_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitMolecule_def) {
+			listener.exitMolecule_def(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitMolecule_def) {
@@ -7522,6 +8248,18 @@ export class Component_def_listContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_component_def_list; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterComponent_def_list) {
+			listener.enterComponent_def_list(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitComponent_def_list) {
+			listener.exitComponent_def_list(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitComponent_def_list) {
 			return visitor.visitComponent_def_list(this);
@@ -7533,7 +8271,11 @@ export class Component_def_listContext extends ParserRuleContext {
 
 
 export class Component_defContext extends ParserRuleContext {
-	public STRING(): TerminalNode { return this.getToken(BNGParser.STRING, 0); }
+	public STRING(): TerminalNode | undefined { return this.tryGetToken(BNGParser.STRING, 0); }
+	public INT(): TerminalNode | undefined { return this.tryGetToken(BNGParser.INT, 0); }
+	public keyword_as_component_name(): Keyword_as_component_nameContext | undefined {
+		return this.tryGetRuleContext(0, Keyword_as_component_nameContext);
+	}
 	public TILDE(): TerminalNode | undefined { return this.tryGetToken(BNGParser.TILDE, 0); }
 	public state_list(): State_listContext | undefined {
 		return this.tryGetRuleContext(0, State_listContext);
@@ -7544,9 +8286,81 @@ export class Component_defContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_component_def; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterComponent_def) {
+			listener.enterComponent_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitComponent_def) {
+			listener.exitComponent_def(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitComponent_def) {
 			return visitor.visitComponent_def(this);
+		} else {
+			return visitor.visitChildren(this);
+		}
+	}
+}
+
+
+export class Keyword_as_component_nameContext extends ParserRuleContext {
+	public SIN(): TerminalNode | undefined { return this.tryGetToken(BNGParser.SIN, 0); }
+	public COS(): TerminalNode | undefined { return this.tryGetToken(BNGParser.COS, 0); }
+	public TAN(): TerminalNode | undefined { return this.tryGetToken(BNGParser.TAN, 0); }
+	public ASIN(): TerminalNode | undefined { return this.tryGetToken(BNGParser.ASIN, 0); }
+	public ACOS(): TerminalNode | undefined { return this.tryGetToken(BNGParser.ACOS, 0); }
+	public ATAN(): TerminalNode | undefined { return this.tryGetToken(BNGParser.ATAN, 0); }
+	public SINH(): TerminalNode | undefined { return this.tryGetToken(BNGParser.SINH, 0); }
+	public COSH(): TerminalNode | undefined { return this.tryGetToken(BNGParser.COSH, 0); }
+	public TANH(): TerminalNode | undefined { return this.tryGetToken(BNGParser.TANH, 0); }
+	public ASINH(): TerminalNode | undefined { return this.tryGetToken(BNGParser.ASINH, 0); }
+	public ACOSH(): TerminalNode | undefined { return this.tryGetToken(BNGParser.ACOSH, 0); }
+	public ATANH(): TerminalNode | undefined { return this.tryGetToken(BNGParser.ATANH, 0); }
+	public EXP(): TerminalNode | undefined { return this.tryGetToken(BNGParser.EXP, 0); }
+	public LN(): TerminalNode | undefined { return this.tryGetToken(BNGParser.LN, 0); }
+	public LOG10(): TerminalNode | undefined { return this.tryGetToken(BNGParser.LOG10, 0); }
+	public LOG2(): TerminalNode | undefined { return this.tryGetToken(BNGParser.LOG2, 0); }
+	public SQRT(): TerminalNode | undefined { return this.tryGetToken(BNGParser.SQRT, 0); }
+	public ABS(): TerminalNode | undefined { return this.tryGetToken(BNGParser.ABS, 0); }
+	public MIN(): TerminalNode | undefined { return this.tryGetToken(BNGParser.MIN, 0); }
+	public MAX(): TerminalNode | undefined { return this.tryGetToken(BNGParser.MAX, 0); }
+	public SUM(): TerminalNode | undefined { return this.tryGetToken(BNGParser.SUM, 0); }
+	public AVG(): TerminalNode | undefined { return this.tryGetToken(BNGParser.AVG, 0); }
+	public IF(): TerminalNode | undefined { return this.tryGetToken(BNGParser.IF, 0); }
+	public TIME(): TerminalNode | undefined { return this.tryGetToken(BNGParser.TIME, 0); }
+	public SAT(): TerminalNode | undefined { return this.tryGetToken(BNGParser.SAT, 0); }
+	public MM(): TerminalNode | undefined { return this.tryGetToken(BNGParser.MM, 0); }
+	public HILL(): TerminalNode | undefined { return this.tryGetToken(BNGParser.HILL, 0); }
+	public ARRHENIUS(): TerminalNode | undefined { return this.tryGetToken(BNGParser.ARRHENIUS, 0); }
+	public MRATIO(): TerminalNode | undefined { return this.tryGetToken(BNGParser.MRATIO, 0); }
+	public TFUN(): TerminalNode | undefined { return this.tryGetToken(BNGParser.TFUN, 0); }
+	public FUNCTIONPRODUCT(): TerminalNode | undefined { return this.tryGetToken(BNGParser.FUNCTIONPRODUCT, 0); }
+	constructor(parent: ParserRuleContext | undefined, invokingState: number) {
+		super(parent, invokingState);
+	}
+	// @Override
+	public get ruleIndex(): number { return BNGParser.RULE_keyword_as_component_name; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterKeyword_as_component_name) {
+			listener.enterKeyword_as_component_name(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitKeyword_as_component_name) {
+			listener.exitKeyword_as_component_name(this);
+		}
+	}
+	// @Override
+	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
+		if (visitor.visitKeyword_as_component_name) {
+			return visitor.visitKeyword_as_component_name(this);
 		} else {
 			return visitor.visitChildren(this);
 		}
@@ -7579,6 +8393,18 @@ export class State_listContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_state_list; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterState_list) {
+			listener.enterState_list(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitState_list) {
+			listener.exitState_list(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitState_list) {
 			return visitor.visitState_list(this);
@@ -7597,6 +8423,18 @@ export class State_nameContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_state_name; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterState_name) {
+			listener.enterState_name(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitState_name) {
+			listener.exitState_name(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitState_name) {
@@ -7653,6 +8491,18 @@ export class Seed_species_blockContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_seed_species_block; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterSeed_species_block) {
+			listener.enterSeed_species_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitSeed_species_block) {
+			listener.exitSeed_species_block(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitSeed_species_block) {
 			return visitor.visitSeed_species_block(this);
@@ -7696,6 +8546,18 @@ export class Seed_species_defContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_seed_species_def; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterSeed_species_def) {
+			listener.enterSeed_species_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitSeed_species_def) {
+			listener.exitSeed_species_def(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitSeed_species_def) {
@@ -7760,6 +8622,18 @@ export class Species_defContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_species_def; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterSpecies_def) {
+			listener.enterSpecies_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitSpecies_def) {
+			listener.exitSpecies_def(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitSpecies_def) {
 			return visitor.visitSpecies_def(this);
@@ -7779,6 +8653,18 @@ export class Molecule_compartmentContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_molecule_compartment; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterMolecule_compartment) {
+			listener.enterMolecule_compartment(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitMolecule_compartment) {
+			listener.exitMolecule_compartment(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitMolecule_compartment) {
 			return visitor.visitMolecule_compartment(this);
@@ -7793,6 +8679,9 @@ export class Molecule_patternContext extends ParserRuleContext {
 	public STRING(): TerminalNode { return this.getToken(BNGParser.STRING, 0); }
 	public LPAREN(): TerminalNode | undefined { return this.tryGetToken(BNGParser.LPAREN, 0); }
 	public RPAREN(): TerminalNode | undefined { return this.tryGetToken(BNGParser.RPAREN, 0); }
+	public pattern_bond_wildcard(): Pattern_bond_wildcardContext | undefined {
+		return this.tryGetRuleContext(0, Pattern_bond_wildcardContext);
+	}
 	public molecule_tag(): Molecule_tagContext | undefined {
 		return this.tryGetRuleContext(0, Molecule_tagContext);
 	}
@@ -7805,9 +8694,54 @@ export class Molecule_patternContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_molecule_pattern; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterMolecule_pattern) {
+			listener.enterMolecule_pattern(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitMolecule_pattern) {
+			listener.exitMolecule_pattern(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitMolecule_pattern) {
 			return visitor.visitMolecule_pattern(this);
+		} else {
+			return visitor.visitChildren(this);
+		}
+	}
+}
+
+
+export class Pattern_bond_wildcardContext extends ParserRuleContext {
+	public EMARK(): TerminalNode { return this.getToken(BNGParser.EMARK, 0); }
+	public PLUS(): TerminalNode | undefined { return this.tryGetToken(BNGParser.PLUS, 0); }
+	public QMARK(): TerminalNode | undefined { return this.tryGetToken(BNGParser.QMARK, 0); }
+	public MINUS(): TerminalNode | undefined { return this.tryGetToken(BNGParser.MINUS, 0); }
+	constructor(parent: ParserRuleContext | undefined, invokingState: number) {
+		super(parent, invokingState);
+	}
+	// @Override
+	public get ruleIndex(): number { return BNGParser.RULE_pattern_bond_wildcard; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterPattern_bond_wildcard) {
+			listener.enterPattern_bond_wildcard(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitPattern_bond_wildcard) {
+			listener.exitPattern_bond_wildcard(this);
+		}
+	}
+	// @Override
+	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
+		if (visitor.visitPattern_bond_wildcard) {
+			return visitor.visitPattern_bond_wildcard(this);
 		} else {
 			return visitor.visitChildren(this);
 		}
@@ -7823,6 +8757,18 @@ export class Molecule_tagContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_molecule_tag; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterMolecule_tag) {
+			listener.enterMolecule_tag(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitMolecule_tag) {
+			listener.exitMolecule_tag(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitMolecule_tag) {
@@ -7859,6 +8805,18 @@ export class Component_pattern_listContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_component_pattern_list; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterComponent_pattern_list) {
+			listener.enterComponent_pattern_list(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitComponent_pattern_list) {
+			listener.exitComponent_pattern_list(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitComponent_pattern_list) {
 			return visitor.visitComponent_pattern_list(this);
@@ -7870,7 +8828,29 @@ export class Component_pattern_listContext extends ParserRuleContext {
 
 
 export class Component_patternContext extends ParserRuleContext {
-	public STRING(): TerminalNode { return this.getToken(BNGParser.STRING, 0); }
+	public STRING(): TerminalNode | undefined { return this.tryGetToken(BNGParser.STRING, 0); }
+	public INT(): TerminalNode | undefined { return this.tryGetToken(BNGParser.INT, 0); }
+	public keyword_as_component_name(): Keyword_as_component_nameContext | undefined {
+		return this.tryGetRuleContext(0, Keyword_as_component_nameContext);
+	}
+	public bond_spec(): Bond_specContext[];
+	public bond_spec(i: number): Bond_specContext;
+	public bond_spec(i?: number): Bond_specContext | Bond_specContext[] {
+		if (i === undefined) {
+			return this.getRuleContexts(Bond_specContext);
+		} else {
+			return this.getRuleContext(i, Bond_specContext);
+		}
+	}
+	public DOT(): TerminalNode[];
+	public DOT(i: number): TerminalNode;
+	public DOT(i?: number): TerminalNode | TerminalNode[] {
+		if (i === undefined) {
+			return this.getTokens(BNGParser.DOT);
+		} else {
+			return this.getToken(BNGParser.DOT, i);
+		}
+	}
 	public TILDE(): TerminalNode[];
 	public TILDE(i: number): TerminalNode;
 	public TILDE(i?: number): TerminalNode | TerminalNode[] {
@@ -7889,20 +8869,23 @@ export class Component_patternContext extends ParserRuleContext {
 			return this.getRuleContext(i, State_valueContext);
 		}
 	}
-	public bond_spec(): Bond_specContext[];
-	public bond_spec(i: number): Bond_specContext;
-	public bond_spec(i?: number): Bond_specContext | Bond_specContext[] {
-		if (i === undefined) {
-			return this.getRuleContexts(Bond_specContext);
-		} else {
-			return this.getRuleContext(i, Bond_specContext);
-		}
-	}
 	constructor(parent: ParserRuleContext | undefined, invokingState: number) {
 		super(parent, invokingState);
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_component_pattern; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterComponent_pattern) {
+			listener.enterComponent_pattern(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitComponent_pattern) {
+			listener.exitComponent_pattern(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitComponent_pattern) {
@@ -7924,6 +8907,18 @@ export class State_valueContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_state_value; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterState_value) {
+			listener.enterState_value(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitState_value) {
+			listener.exitState_value(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitState_value) {
 			return visitor.visitState_value(this);
@@ -7935,7 +8930,8 @@ export class State_valueContext extends ParserRuleContext {
 
 
 export class Bond_specContext extends ParserRuleContext {
-	public EMARK(): TerminalNode { return this.getToken(BNGParser.EMARK, 0); }
+	public DOT(): TerminalNode | undefined { return this.tryGetToken(BNGParser.DOT, 0); }
+	public EMARK(): TerminalNode | undefined { return this.tryGetToken(BNGParser.EMARK, 0); }
 	public bond_id(): Bond_idContext | undefined {
 		return this.tryGetRuleContext(0, Bond_idContext);
 	}
@@ -7947,6 +8943,18 @@ export class Bond_specContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_bond_spec; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterBond_spec) {
+			listener.enterBond_spec(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitBond_spec) {
+			listener.exitBond_spec(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitBond_spec) {
@@ -7966,6 +8974,18 @@ export class Bond_idContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_bond_id; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterBond_id) {
+			listener.enterBond_id(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitBond_id) {
+			listener.exitBond_id(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitBond_id) {
@@ -8013,6 +9033,18 @@ export class Observables_blockContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_observables_block; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterObservables_block) {
+			listener.enterObservables_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitObservables_block) {
+			listener.exitObservables_block(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitObservables_block) {
 			return visitor.visitObservables_block(this);
@@ -8046,6 +9078,18 @@ export class Observable_defContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_observable_def; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterObservable_def) {
+			listener.enterObservable_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitObservable_def) {
+			listener.exitObservable_def(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitObservable_def) {
 			return visitor.visitObservable_def(this);
@@ -8065,6 +9109,18 @@ export class Observable_typeContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_observable_type; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterObservable_type) {
+			listener.enterObservable_type(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitObservable_type) {
+			listener.exitObservable_type(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitObservable_type) {
@@ -8101,6 +9157,18 @@ export class Observable_pattern_listContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_observable_pattern_list; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterObservable_pattern_list) {
+			listener.enterObservable_pattern_list(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitObservable_pattern_list) {
+			listener.exitObservable_pattern_list(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitObservable_pattern_list) {
 			return visitor.visitObservable_pattern_list(this);
@@ -8127,6 +9195,18 @@ export class Observable_patternContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_observable_pattern; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterObservable_pattern) {
+			listener.enterObservable_pattern(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitObservable_pattern) {
+			listener.exitObservable_pattern(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitObservable_pattern) {
@@ -8201,6 +9281,18 @@ export class Reaction_rules_blockContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_reaction_rules_block; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterReaction_rules_block) {
+			listener.enterReaction_rules_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitReaction_rules_block) {
+			listener.exitReaction_rules_block(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitReaction_rules_block) {
 			return visitor.visitReaction_rules_block(this);
@@ -8243,6 +9335,18 @@ export class Reaction_rule_defContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_reaction_rule_def; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterReaction_rule_def) {
+			listener.enterReaction_rule_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitReaction_rule_def) {
+			listener.exitReaction_rule_def(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitReaction_rule_def) {
@@ -8298,6 +9402,18 @@ export class Label_defContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_label_def; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterLabel_def) {
+			listener.enterLabel_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitLabel_def) {
+			listener.exitLabel_def(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitLabel_def) {
 			return visitor.visitLabel_def(this);
@@ -8318,6 +9434,15 @@ export class Reactant_patternsContext extends ParserRuleContext {
 			return this.getRuleContext(i, Species_defContext);
 		}
 	}
+	public INT(): TerminalNode[];
+	public INT(i: number): TerminalNode;
+	public INT(i?: number): TerminalNode | TerminalNode[] {
+		if (i === undefined) {
+			return this.getTokens(BNGParser.INT);
+		} else {
+			return this.getToken(BNGParser.INT, i);
+		}
+	}
 	public PLUS(): TerminalNode[];
 	public PLUS(i: number): TerminalNode;
 	public PLUS(i?: number): TerminalNode | TerminalNode[] {
@@ -8327,12 +9452,23 @@ export class Reactant_patternsContext extends ParserRuleContext {
 			return this.getToken(BNGParser.PLUS, i);
 		}
 	}
-	public INT(): TerminalNode | undefined { return this.tryGetToken(BNGParser.INT, 0); }
 	constructor(parent: ParserRuleContext | undefined, invokingState: number) {
 		super(parent, invokingState);
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_reactant_patterns; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterReactant_patterns) {
+			listener.enterReactant_patterns(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitReactant_patterns) {
+			listener.exitReactant_patterns(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitReactant_patterns) {
@@ -8354,6 +9490,15 @@ export class Product_patternsContext extends ParserRuleContext {
 			return this.getRuleContext(i, Species_defContext);
 		}
 	}
+	public INT(): TerminalNode[];
+	public INT(i: number): TerminalNode;
+	public INT(i?: number): TerminalNode | TerminalNode[] {
+		if (i === undefined) {
+			return this.getTokens(BNGParser.INT);
+		} else {
+			return this.getToken(BNGParser.INT, i);
+		}
+	}
 	public PLUS(): TerminalNode[];
 	public PLUS(i: number): TerminalNode;
 	public PLUS(i?: number): TerminalNode | TerminalNode[] {
@@ -8363,12 +9508,23 @@ export class Product_patternsContext extends ParserRuleContext {
 			return this.getToken(BNGParser.PLUS, i);
 		}
 	}
-	public INT(): TerminalNode | undefined { return this.tryGetToken(BNGParser.INT, 0); }
 	constructor(parent: ParserRuleContext | undefined, invokingState: number) {
 		super(parent, invokingState);
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_product_patterns; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterProduct_patterns) {
+			listener.enterProduct_patterns(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitProduct_patterns) {
+			listener.exitProduct_patterns(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitProduct_patterns) {
@@ -8388,6 +9544,18 @@ export class Reaction_signContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_reaction_sign; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterReaction_sign) {
+			listener.enterReaction_sign(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitReaction_sign) {
+			listener.exitReaction_sign(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitReaction_sign) {
@@ -8415,6 +9583,18 @@ export class Rate_lawContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_rate_law; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterRate_law) {
+			listener.enterRate_law(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitRate_law) {
+			listener.exitRate_law(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitRate_law) {
@@ -8453,6 +9633,18 @@ export class Rule_modifiersContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_rule_modifiers; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterRule_modifiers) {
+			listener.enterRule_modifiers(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitRule_modifiers) {
+			listener.exitRule_modifiers(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitRule_modifiers) {
 			return visitor.visitRule_modifiers(this);
@@ -8487,6 +9679,18 @@ export class Pattern_listContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_pattern_list; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterPattern_list) {
+			listener.enterPattern_list(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitPattern_list) {
+			listener.exitPattern_list(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitPattern_list) {
@@ -8534,6 +9738,18 @@ export class Functions_blockContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_functions_block; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterFunctions_block) {
+			listener.enterFunctions_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitFunctions_block) {
+			listener.exitFunctions_block(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitFunctions_block) {
 			return visitor.visitFunctions_block(this);
@@ -8570,6 +9786,18 @@ export class Function_defContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_function_def; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterFunction_def) {
+			listener.enterFunction_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitFunction_def) {
+			listener.exitFunction_def(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitFunction_def) {
 			return visitor.visitFunction_def(this);
@@ -8604,6 +9832,18 @@ export class Param_listContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_param_list; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterParam_list) {
+			listener.enterParam_list(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitParam_list) {
+			listener.exitParam_list(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitParam_list) {
@@ -8651,6 +9891,18 @@ export class Compartments_blockContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_compartments_block; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterCompartments_block) {
+			listener.enterCompartments_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitCompartments_block) {
+			listener.exitCompartments_block(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitCompartments_block) {
 			return visitor.visitCompartments_block(this);
@@ -8681,6 +9933,18 @@ export class Compartment_defContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_compartment_def; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterCompartment_def) {
+			listener.enterCompartment_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitCompartment_def) {
+			listener.exitCompartment_def(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitCompartment_def) {
@@ -8737,6 +10001,18 @@ export class Energy_patterns_blockContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_energy_patterns_block; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterEnergy_patterns_block) {
+			listener.enterEnergy_patterns_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitEnergy_patterns_block) {
+			listener.exitEnergy_patterns_block(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitEnergy_patterns_block) {
 			return visitor.visitEnergy_patterns_block(this);
@@ -8761,6 +10037,18 @@ export class Energy_pattern_defContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_energy_pattern_def; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterEnergy_pattern_def) {
+			listener.enterEnergy_pattern_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitEnergy_pattern_def) {
+			listener.exitEnergy_pattern_def(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitEnergy_pattern_def) {
@@ -8817,6 +10105,18 @@ export class Population_maps_blockContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_population_maps_block; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterPopulation_maps_block) {
+			listener.enterPopulation_maps_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitPopulation_maps_block) {
+			listener.exitPopulation_maps_block(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitPopulation_maps_block) {
 			return visitor.visitPopulation_maps_block(this);
@@ -8853,9 +10153,131 @@ export class Population_map_defContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_population_map_def; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterPopulation_map_def) {
+			listener.enterPopulation_map_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitPopulation_map_def) {
+			listener.exitPopulation_map_def(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitPopulation_map_def) {
 			return visitor.visitPopulation_map_def(this);
+		} else {
+			return visitor.visitChildren(this);
+		}
+	}
+}
+
+
+export class Anchors_blockContext extends ParserRuleContext {
+	public BEGIN(): TerminalNode { return this.getToken(BNGParser.BEGIN, 0); }
+	public ANCHORS(): TerminalNode[];
+	public ANCHORS(i: number): TerminalNode;
+	public ANCHORS(i?: number): TerminalNode | TerminalNode[] {
+		if (i === undefined) {
+			return this.getTokens(BNGParser.ANCHORS);
+		} else {
+			return this.getToken(BNGParser.ANCHORS, i);
+		}
+	}
+	public END(): TerminalNode { return this.getToken(BNGParser.END, 0); }
+	public LB(): TerminalNode[];
+	public LB(i: number): TerminalNode;
+	public LB(i?: number): TerminalNode | TerminalNode[] {
+		if (i === undefined) {
+			return this.getTokens(BNGParser.LB);
+		} else {
+			return this.getToken(BNGParser.LB, i);
+		}
+	}
+	public anchor_def(): Anchor_defContext[];
+	public anchor_def(i: number): Anchor_defContext;
+	public anchor_def(i?: number): Anchor_defContext | Anchor_defContext[] {
+		if (i === undefined) {
+			return this.getRuleContexts(Anchor_defContext);
+		} else {
+			return this.getRuleContext(i, Anchor_defContext);
+		}
+	}
+	constructor(parent: ParserRuleContext | undefined, invokingState: number) {
+		super(parent, invokingState);
+	}
+	// @Override
+	public get ruleIndex(): number { return BNGParser.RULE_anchors_block; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterAnchors_block) {
+			listener.enterAnchors_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitAnchors_block) {
+			listener.exitAnchors_block(this);
+		}
+	}
+	// @Override
+	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
+		if (visitor.visitAnchors_block) {
+			return visitor.visitAnchors_block(this);
+		} else {
+			return visitor.visitChildren(this);
+		}
+	}
+}
+
+
+export class Anchor_defContext extends ParserRuleContext {
+	public molecule_pattern(): Molecule_patternContext {
+		return this.getRuleContext(0, Molecule_patternContext);
+	}
+	public LPAREN(): TerminalNode | undefined { return this.tryGetToken(BNGParser.LPAREN, 0); }
+	public RPAREN(): TerminalNode | undefined { return this.tryGetToken(BNGParser.RPAREN, 0); }
+	public STRING(): TerminalNode[];
+	public STRING(i: number): TerminalNode;
+	public STRING(i?: number): TerminalNode | TerminalNode[] {
+		if (i === undefined) {
+			return this.getTokens(BNGParser.STRING);
+		} else {
+			return this.getToken(BNGParser.STRING, i);
+		}
+	}
+	public COMMA(): TerminalNode[];
+	public COMMA(i: number): TerminalNode;
+	public COMMA(i?: number): TerminalNode | TerminalNode[] {
+		if (i === undefined) {
+			return this.getTokens(BNGParser.COMMA);
+		} else {
+			return this.getToken(BNGParser.COMMA, i);
+		}
+	}
+	constructor(parent: ParserRuleContext | undefined, invokingState: number) {
+		super(parent, invokingState);
+	}
+	// @Override
+	public get ruleIndex(): number { return BNGParser.RULE_anchor_def; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterAnchor_def) {
+			listener.enterAnchor_def(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitAnchor_def) {
+			listener.exitAnchor_def(this);
+		}
+	}
+	// @Override
+	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
+		if (visitor.visitAnchor_def) {
+			return visitor.visitAnchor_def(this);
 		} else {
 			return visitor.visitChildren(this);
 		}
@@ -8878,6 +10300,18 @@ export class Actions_blockContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_actions_block; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterActions_block) {
+			listener.enterActions_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitActions_block) {
+			listener.exitActions_block(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitActions_block) {
@@ -8925,6 +10359,18 @@ export class Wrapped_actions_blockContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_wrapped_actions_block; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterWrapped_actions_block) {
+			listener.enterWrapped_actions_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitWrapped_actions_block) {
+			listener.exitWrapped_actions_block(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitWrapped_actions_block) {
 			return visitor.visitWrapped_actions_block(this);
@@ -8971,6 +10417,18 @@ export class Begin_actions_blockContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_begin_actions_block; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterBegin_actions_block) {
+			listener.enterBegin_actions_block(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitBegin_actions_block) {
+			listener.exitBegin_actions_block(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitBegin_actions_block) {
 			return visitor.visitBegin_actions_block(this);
@@ -9002,6 +10460,18 @@ export class Action_commandContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_action_command; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterAction_command) {
+			listener.enterAction_command(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitAction_command) {
+			listener.exitAction_command(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitAction_command) {
@@ -9035,6 +10505,18 @@ export class Generate_network_cmdContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_generate_network_cmd; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterGenerate_network_cmd) {
+			listener.enterGenerate_network_cmd(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitGenerate_network_cmd) {
+			listener.exitGenerate_network_cmd(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitGenerate_network_cmd) {
@@ -9073,6 +10555,18 @@ export class Simulate_cmdContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_simulate_cmd; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterSimulate_cmd) {
+			listener.enterSimulate_cmd(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitSimulate_cmd) {
+			listener.exitSimulate_cmd(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitSimulate_cmd) {
@@ -9113,6 +10607,18 @@ export class Write_cmdContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_write_cmd; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterWrite_cmd) {
+			listener.enterWrite_cmd(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitWrite_cmd) {
+			listener.exitWrite_cmd(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitWrite_cmd) {
@@ -9162,6 +10668,18 @@ export class Set_cmdContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_set_cmd; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterSet_cmd) {
+			listener.enterSet_cmd(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitSet_cmd) {
+			listener.exitSet_cmd(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitSet_cmd) {
 			return visitor.visitSet_cmd(this);
@@ -9204,6 +10722,18 @@ export class Other_action_cmdContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_other_action_cmd; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterOther_action_cmd) {
+			listener.enterOther_action_cmd(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitOther_action_cmd) {
+			listener.exitOther_action_cmd(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitOther_action_cmd) {
 			return visitor.visitOther_action_cmd(this);
@@ -9234,6 +10764,18 @@ export class Action_argsContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_action_args; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterAction_args) {
+			listener.enterAction_args(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitAction_args) {
+			listener.exitAction_args(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitAction_args) {
@@ -9270,6 +10812,18 @@ export class Action_arg_listContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_action_arg_list; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterAction_arg_list) {
+			listener.enterAction_arg_list(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitAction_arg_list) {
+			listener.exitAction_arg_list(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitAction_arg_list) {
 			return visitor.visitAction_arg_list(this);
@@ -9293,6 +10847,18 @@ export class Action_argContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_action_arg; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterAction_arg) {
+			listener.enterAction_arg(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitAction_arg) {
+			listener.exitAction_arg(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitAction_arg) {
@@ -9345,6 +10911,18 @@ export class Action_arg_valueContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_action_arg_value; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterAction_arg_value) {
+			listener.enterAction_arg_value(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitAction_arg_value) {
+			listener.exitAction_arg_value(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitAction_arg_value) {
 			return visitor.visitAction_arg_value(this);
@@ -9378,6 +10956,18 @@ export class Keyword_as_valueContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_keyword_as_value; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterKeyword_as_value) {
+			listener.enterKeyword_as_value(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitKeyword_as_value) {
+			listener.exitKeyword_as_value(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitKeyword_as_value) {
@@ -9414,6 +11004,18 @@ export class Nested_hash_listContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_nested_hash_list; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterNested_hash_list) {
+			listener.enterNested_hash_list(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitNested_hash_list) {
+			listener.exitNested_hash_list(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitNested_hash_list) {
 			return visitor.visitNested_hash_list(this);
@@ -9438,6 +11040,18 @@ export class Nested_hash_itemContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_nested_hash_item; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterNested_hash_item) {
+			listener.enterNested_hash_item(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitNested_hash_item) {
+			listener.exitNested_hash_item(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitNested_hash_item) {
@@ -9529,6 +11143,18 @@ export class Arg_nameContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_arg_name; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterArg_name) {
+			listener.enterArg_name(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitArg_name) {
+			listener.exitArg_name(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitArg_name) {
 			return visitor.visitArg_name(this);
@@ -9564,6 +11190,18 @@ export class Expression_listContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_expression_list; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterExpression_list) {
+			listener.enterExpression_list(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitExpression_list) {
+			listener.exitExpression_list(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitExpression_list) {
 			return visitor.visitExpression_list(this);
@@ -9583,6 +11221,18 @@ export class ExpressionContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_expression; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterExpression) {
+			listener.enterExpression(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitExpression) {
+			listener.exitExpression(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitExpression) {
@@ -9614,6 +11264,18 @@ export class Conditional_exprContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_conditional_expr; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterConditional_expr) {
+			listener.enterConditional_expr(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitConditional_expr) {
+			listener.exitConditional_expr(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitConditional_expr) {
@@ -9659,6 +11321,18 @@ export class Or_exprContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_or_expr; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterOr_expr) {
+			listener.enterOr_expr(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitOr_expr) {
+			listener.exitOr_expr(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitOr_expr) {
 			return visitor.visitOr_expr(this);
@@ -9702,6 +11376,18 @@ export class And_exprContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_and_expr; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterAnd_expr) {
+			listener.enterAnd_expr(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitAnd_expr) {
+			listener.exitAnd_expr(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitAnd_expr) {
@@ -9783,6 +11469,18 @@ export class Equality_exprContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_equality_expr; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterEquality_expr) {
+			listener.enterEquality_expr(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitEquality_expr) {
+			listener.exitEquality_expr(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitEquality_expr) {
 			return visitor.visitEquality_expr(this);
@@ -9802,6 +11500,18 @@ export class Relational_exprContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_relational_expr; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterRelational_expr) {
+			listener.enterRelational_expr(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitRelational_expr) {
+			listener.exitRelational_expr(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitRelational_expr) {
@@ -9846,6 +11556,18 @@ export class Additive_exprContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_additive_expr; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterAdditive_expr) {
+			listener.enterAdditive_expr(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitAdditive_expr) {
+			listener.exitAdditive_expr(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitAdditive_expr) {
@@ -9900,6 +11622,18 @@ export class Multiplicative_exprContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_multiplicative_expr; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterMultiplicative_expr) {
+			listener.enterMultiplicative_expr(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitMultiplicative_expr) {
+			listener.exitMultiplicative_expr(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitMultiplicative_expr) {
 			return visitor.visitMultiplicative_expr(this);
@@ -9935,6 +11669,18 @@ export class Power_exprContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_power_expr; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterPower_expr) {
+			listener.enterPower_expr(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitPower_expr) {
+			listener.exitPower_expr(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitPower_expr) {
 			return visitor.visitPower_expr(this);
@@ -9958,6 +11704,18 @@ export class Unary_exprContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_unary_expr; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterUnary_expr) {
+			listener.enterUnary_expr(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitUnary_expr) {
+			listener.exitUnary_expr(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitUnary_expr) {
@@ -9992,6 +11750,18 @@ export class Primary_exprContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_primary_expr; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterPrimary_expr) {
+			listener.enterPrimary_expr(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitPrimary_expr) {
+			listener.exitPrimary_expr(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitPrimary_expr) {
@@ -10047,6 +11817,18 @@ export class Function_callContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_function_call; }
 	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterFunction_call) {
+			listener.enterFunction_call(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitFunction_call) {
+			listener.exitFunction_call(this);
+		}
+	}
+	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitFunction_call) {
 			return visitor.visitFunction_call(this);
@@ -10061,14 +11843,26 @@ export class Observable_refContext extends ParserRuleContext {
 	public STRING(): TerminalNode { return this.getToken(BNGParser.STRING, 0); }
 	public LPAREN(): TerminalNode { return this.getToken(BNGParser.LPAREN, 0); }
 	public RPAREN(): TerminalNode { return this.getToken(BNGParser.RPAREN, 0); }
-	public expression(): ExpressionContext | undefined {
-		return this.tryGetRuleContext(0, ExpressionContext);
+	public expression_list(): Expression_listContext | undefined {
+		return this.tryGetRuleContext(0, Expression_listContext);
 	}
 	constructor(parent: ParserRuleContext | undefined, invokingState: number) {
 		super(parent, invokingState);
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_observable_ref; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterObservable_ref) {
+			listener.enterObservable_ref(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitObservable_ref) {
+			listener.exitObservable_ref(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitObservable_ref) {
@@ -10090,6 +11884,18 @@ export class LiteralContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return BNGParser.RULE_literal; }
+	// @Override
+	public enterRule(listener: BNGParserListener): void {
+		if (listener.enterLiteral) {
+			listener.enterLiteral(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BNGParserListener): void {
+		if (listener.exitLiteral) {
+			listener.exitLiteral(this);
+		}
+	}
 	// @Override
 	public accept<Result>(visitor: BNGParserVisitor<Result>): Result {
 		if (visitor.visitLiteral) {

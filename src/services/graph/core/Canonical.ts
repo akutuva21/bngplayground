@@ -56,7 +56,7 @@ export class GraphCanonicalizer {
     if (graph.molecules.length === 1) {
       let result = this.moleculeToString(graph.molecules[0], new Map(), graph, 0);
       if (graph.compartment) {
-        result = `@${graph.compartment}::${result}`;
+        result = `@${graph.compartment}:${result}`;
       }
       graph.cachedCanonical = result;
       return result;
@@ -507,7 +507,7 @@ export class GraphCanonicalizer {
     });
 
     const canonicalMolecules = canonicalStrings.join('.');
-    const finalResult = graph.compartment ? `@${graph.compartment}::${canonicalMolecules}` : canonicalMolecules;
+    const finalResult = graph.compartment ? `@${graph.compartment}:${canonicalMolecules}` : canonicalMolecules;
     // if (graph.molecules.length === 1 && graph.molecules[0].name === 'CCND') {
     //   console.error(`[Canonical] CCND comp='${graph.compartment}' => '${finalResult}'`);
     // }

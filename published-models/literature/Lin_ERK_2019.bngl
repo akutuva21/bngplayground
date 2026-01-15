@@ -476,21 +476,21 @@ saveConcentrations()
 simulate({suffix=>"ODE",method=>"ode",print_CDAT=>0,t_start=>0,t_end=>8640,n_steps=>1000})
  
 # perform an exact stochastic simulation - results are shown in Fig. 2(a)
-resetConcentrations()
-simulate({suffix=>"exact",method=>"ssa",print_CDAT=>0,t_start=>0,t_end=>8640,n_steps=>1000})
+# resetConcentrations()
+# simulate({suffix=>"exact",method=>"ssa",print_CDAT=>0,t_start=>0,t_end=>8640,n_steps=>1000})
 
 # perform a stochastic simulation using standard scaling ($\lambda=0.01$) 
 #   - Results are shown in Fig. 3(a), (c), (e) and (g).
-setParameter("lambda",0.01)
-resetConcentrations()
-simulate({suffix=>"std_scaling",method=>"ssa",print_CDAT=>0,t_start=>0,t_end=>8640,n_steps=>1000,\
-          print_functions=>1})
+# setParameter("lambda",0.01)
+# resetConcentrations()
+# simulate({suffix=>"std_scaling",method=>"ssa",print_CDAT=>0,t_start=>0,t_end=>8640,n_steps=>1000,\
+#           print_functions=>1})
 
 # perform a stochastic simulation using partial scaling ($N_c=300$) 
 #  - Results are shown in Fig. 3(b), (d), (f) and (h).
-resetParameters()
-resetConcentrations()
-simulate({suffix=>"partial_scaling",method=>"ssa",poplevel=>300,print_CDAT=>0,\
-          t_start=>0,t_end=>8640,n_steps=>1000})
+# resetParameters()
+# resetConcentrations()
+# simulate({suffix=>"partial_scaling",method=>"ssa",poplevel=>300,print_CDAT=>0,\
+#           t_start=>0,t_end=>8640,n_steps=>1000})
 
 end actions

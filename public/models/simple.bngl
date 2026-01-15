@@ -97,8 +97,8 @@ simulate_ode({suffix=>ode,t_start=>0,t_end=>12,n_steps=>120});
 
 # Run a stochastic simulation (Gillespie SSA) with new concentrations/parameters.
 # Results saved to files with prefix: "simple_ssa":
-resetConcentrations();            # reset concentrations to last saved values.
-simulate_ssa({suffix=>ssa,t_start=>0,t_end=>12,n_steps=>120});
+# resetConcentrations();            # reset concentrations to last saved values.
+# simulate_ssa({suffix=>ssa,t_start=>0,t_end=>12,n_steps=>120});
 
 # additional actions:
 # writeLatex();                   # Output equations in Latex format.

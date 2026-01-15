@@ -49,6 +49,7 @@ program_block
     | compartments_block
     | energy_patterns_block
     | population_maps_block
+    | anchors_block          // NEW: Support "begin anchors ... end anchors"
     | wrapped_actions_block
     | begin_actions_block  // NEW: Support "begin actions ... end actions"
     ;
@@ -68,11 +69,12 @@ param_name
     : STRING | arg_name
     ;
 
-// Molecule types block - supports "molecule types", "molecules", and "molecule_types"
+// Molecule types block - supports "molecule types", "molecules", "molecule_types", and "molecular types"
 molecule_types_block
     : BEGIN MOLECULE TYPES LB+ (molecule_type_def LB+)* END MOLECULE TYPES LB*
     | BEGIN MOLECULES LB+ (molecule_type_def LB+)* END MOLECULES LB*
     | BEGIN MOLECULE_TYPES LB+ (molecule_type_def LB+)* END MOLECULE_TYPES LB*
+    | BEGIN MOLECULAR TYPES LB+ (molecule_type_def LB+)* END MOLECULAR TYPES LB*  // NEW: 'begin molecular types' variant
     ;
 
 molecule_type_def
@@ -90,7 +92,15 @@ component_def_list
     ;
 
 component_def
-    : STRING (TILDE state_list)?
+    : (STRING | INT | keyword_as_component_name) (TILDE state_list)?
+    ;
+
+// Allow math function keywords to be used as component names (e.g., sin, max, exp)
+keyword_as_component_name
+    : SIN | COS | TAN | ASIN | ACOS | ATAN | SINH | COSH | TANH
+    | ASINH | ACOSH | ATANH | EXP | LN | LOG10 | LOG2 | SQRT | ABS
+    | MIN | MAX | SUM | AVG | IF | TIME | SAT |  MM | HILL | ARRHENIUS
+    | MRATIO | TFUN | FUNCTIONPRODUCT
     ;
 
 // Allow numeric states like ~0~p and mixed like ~2P~10P (INT followed by STRING)
@@ -127,8 +137,17 @@ molecule_compartment
 
 // Molecule patterns can have optional parentheses (e.g., ".CK1a" is valid in reactions)
 // Molecule tagging: pattern%1, pattern%2 for identifying molecules in reactions
+// Bond wildcards can appear after entire patterns: e.g., Smad1(loc~cyt)!+
 molecule_pattern
-    : STRING (LPAREN component_pattern_list? RPAREN)? molecule_tag?
+    : STRING (LPAREN component_pattern_list? RPAREN)? pattern_bond_wildcard? molecule_tag?
+    ;
+
+// Bond wildcards that apply to entire molecule patterns
+// These specify bond requirements for the whole molecule
+pattern_bond_wildcard
+    : EMARK PLUS      // !+ = molecule must have one or more bonds
+    | EMARK QMARK     // !? = molecule may or may not have bonds  
+    | EMARK MINUS     // !- = molecule must be completely unbound
     ;
 
 molecule_tag
@@ -140,10 +159,10 @@ component_pattern_list
     : component_pattern? (COMMA component_pattern?)*
     ;
 // Component patterns can have state, multiple bonds (e.g., !0!1), or bond wildcards
-// Component patterns can have state, multiple bonds (e.g., !0!1), or bond wildcards
 // Support mixed/interleaved state and bond attributes (e.g. site!?~?)
+// Support unbound notation with DOT (e.g., sin., ric.)
 component_pattern
-    : STRING (TILDE state_value | bond_spec)*
+    : (STRING | INT | keyword_as_component_name) ((TILDE state_value) | bond_spec | DOT)*
     ;
 
 state_value
@@ -151,7 +170,8 @@ state_value
     ;
 
 bond_spec
-    : EMARK bond_id
+    : DOT                    // Unbound binding site (e.g., sin., ric.)
+    | EMARK bond_id
     | EMARK PLUS
     | EMARK QMARK
     | EMARK MINUS  // !- means unbound (no bond)
@@ -206,14 +226,14 @@ label_def
     | INT
     ;
 
+
 reactant_patterns
-    : species_def (PLUS species_def)*
-    | INT  // 0 for null pattern
+    : (species_def | INT) (PLUS (species_def | INT))*
     ;
 
+// Products can be species + species, just 0, or mixed like species + 0
 product_patterns
-    : species_def (PLUS species_def)*
-    | INT  // 0 for null pattern
+    : (species_def | INT) (PLUS (species_def | INT))*
     ;
 
 reaction_sign
@@ -280,6 +300,15 @@ population_maps_block
 
 population_map_def
     : (STRING COLON)? species_def UNI_REACTION_SIGN STRING LPAREN param_list? RPAREN
+    ;
+
+// Anchors block (visualization/compartment anchors for cBNGL)
+anchors_block
+    : BEGIN ANCHORS LB+ (anchor_def LB+)* END ANCHORS LB*
+    ;
+
+anchor_def
+    : molecule_pattern (LPAREN (STRING (COMMA STRING)*)? RPAREN)?
     ;
 
 // Actions block (unwrapped - for loose commands)
@@ -463,7 +492,7 @@ function_call
     ;
 
 observable_ref
-    : STRING LPAREN expression? RPAREN
+    : STRING LPAREN expression_list? RPAREN
     ;
 
 literal

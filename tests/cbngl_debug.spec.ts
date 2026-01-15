@@ -16,7 +16,7 @@ if (typeof window === 'undefined') {
 (global as any).postMessage = () => { /* silent */ };
 
 const runDebug = async () => {
-    const { simulate } = await import('../services/bnglWorker');
+    const { simulate } = await import('../services/simulation/SimulationLoop');
     const { parseBNGLStrict } = await import('../src/parser/BNGLParserWrapper');
 
     const modelPath = path.join(__dirname, '../public/models/cBNGL_simple.bngl');
@@ -37,7 +37,7 @@ const runDebug = async () => {
         atol: 1e-12,
         rtol: 1e-12,
         solver: 'cvode'
-    });
+    }, { checkCancelled: () => { }, postMessage: () => { } });
 
     if (!results || !results.expandedReactions) {
         console.error('No expanded network data returned');

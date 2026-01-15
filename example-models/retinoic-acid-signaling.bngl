@@ -22,7 +22,7 @@ begin seed species
 end seed species
 
 begin reaction rules
-    RA(r) + RARRXR(l,state~repressed) <-> RA(r!1).RARRXR(l!1,state~repressed) k_bind, k_unbind
+    RA(r) + RARRXR(l,state~repressed) <-> RA(r!1).RARRXR(l!1,state~repressed) k_bind,k_unbind
     RA(r!1).RARRXR(l!1,state~repressed) -> RA(r!1).RARRXR(l!1,state~active) k_activation
     RARRXR(l,state~active) + Corepressor(state~bound) -> RARRXR(l,state~active) + Corepressor(state~released) k_activation
     RARRXR(l,state~active) + TargetGene(state~off) -> RARRXR(l,state~active) + TargetGene(state~on) k_expression
@@ -39,6 +39,7 @@ end observables
 
 begin actions
     generate_network({overwrite=>1})
-    simulate({method=>"ode",t_start=>0,t_end=>100,n_steps=>200})
+    simulate({method=>"ode",t_start=>0,t_end=>50,n_steps=>200})
 end actions
 end model
+

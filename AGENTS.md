@@ -1,5 +1,7 @@
 # AGENTS.md
 
+⚠️ **DO NOT GIT COMMIT ANYTHING WITHOUT EXPLICIT USER APPROVAL** ⚠️
+
 ## Development Commands
 
 ### Build & Development
@@ -230,7 +232,7 @@ The following are gitignored and should be considered temporary/debug:
 - These compare web simulator outputs against BioNetGen source to ensure robustness
 
 ### BioNetGen Reference
-- `bionetgen/` directory contains official BioNetGen source code
+- `bionetgen_repo/` and `bionetgen_python/` directories contain official BioNetGen source code
 - Used for regression testing and validation of parser/ODE solver accuracy
 - Reference outputs are generated from BioNetGen and compared against web simulator outputs
 
@@ -240,7 +242,7 @@ The following are gitignored and should be considered temporary/debug:
 - **Nauty WASM is integrated** and used for canonical labeling when `NautyService` is initialized
 - Nauty input uses an expanded graph encoding (molecule + component + bond vertices) to preserve component-level connectivity and multi-bonds
 - Fallback uses Weisfeiler-Lehman refinement + BFS-based canonical ordering when Nauty is unavailable
-- **Validation**: Species counts are verified against BNG2.pl in `tests/bng2-comparison.spec.ts` (62 models pass)
+- **Validation**: Species counts are verified against BNG2.pl in `tests/bng2-comparison.spec.ts`
 - Targeted regression: `tests/nauty-canonicalization.spec.ts`
 
 ### ODE Solver

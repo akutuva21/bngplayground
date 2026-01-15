@@ -37,7 +37,7 @@ const { parseBNGL, simulate, generateNetwork } = factory(selfObj);
 const constants = fs.readFileSync(path.join(__dirname, '..', 'constants.ts'), 'utf8');
 const start = constants.indexOf("id: 'quorum-sensing'");
 const snippet = constants.slice(start, start + 1500);
-const codeMatch = snippet.match(/code: `([\s\S]*?)`,\n    tags/);
+const codeMatch = snippet.match(/code: `([\s\S]*?)`,\n {4}tags/);
 if (!codeMatch) {
   throw new Error('quorum code not found');
 }

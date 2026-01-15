@@ -5,6 +5,7 @@ import type {
   WorkerRequest,
   WorkerResponse,
   SerializedWorkerError,
+  NetworkGeneratorOptions,
 } from '../types';
 
 type RequestOptions = {
@@ -20,7 +21,7 @@ type PendingRequest = {
   description?: string;
 };
 
-const DEFAULT_TIMEOUT_MS = 60_000;
+const DEFAULT_TIMEOUT_MS = 300_000;
 
 const extractErrorMessage = (payload: SerializedWorkerError | unknown): string => {
   if (payload && typeof payload === 'object' && 'message' in payload && typeof (payload as { message?: unknown }).message === 'string') {
@@ -159,7 +160,7 @@ class BnglService {
       this.promises.delete(id);
       pending.cleanup();
 
-      if (type === 'parse_success' || type === 'simulate_success') {
+      if (type === 'parse_success' || type === 'simulate_success' || type === 'generate_network_success') {
         pending.resolve(payload);
         return;
       }
@@ -169,7 +170,7 @@ class BnglService {
         return;
       }
 
-      if (type === 'parse_error' || type === 'simulate_error' || type === 'cache_model_error' || type === 'release_model_error') {
+      if (type === 'parse_error' || type === 'simulate_error' || type === 'cache_model_error' || type === 'release_model_error' || type === 'generate_network_error') {
         const errType = type === 'parse_error' ? 'parse' : type === 'simulate_error' ? 'simulate' : 'cache_model';
         const err = toError(errType === 'parse' ? 'parse' : 'simulate', payload);
         pending.reject(err);
@@ -340,6 +341,13 @@ class BnglService {
     return this.postMessage<SimulationResults>('simulate', { model, options }, {
       ...requestOptions,
       description: requestOptions?.description ?? `Simulation (${options.method})`,
+    });
+  }
+
+  public generateNetwork(model: BNGLModel, options?: NetworkGeneratorOptions, requestOptions?: RequestOptions): Promise<BNGLModel> {
+    return this.postMessage<BNGLModel>('generate_network', { model, options }, {
+      ...requestOptions,
+      description: requestOptions?.description ?? 'Network Generation'
     });
   }
 

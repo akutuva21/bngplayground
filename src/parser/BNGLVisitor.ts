@@ -262,8 +262,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     const compListCtx = molDef.component_def_list();
     if (compListCtx) {
       for (const compDef of compListCtx.component_def()) {
-        // component_def.STRING() returns single TerminalNode, not array
-        const compNameNode = compDef.STRING();
+        const compNameNode = compDef.STRING() || compDef.INT() || compDef.keyword_as_component_name();
         if (!compNameNode) continue;
         const compName = compNameNode.text;
         const stateList = compDef.state_list();
@@ -294,13 +293,20 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     if (!speciesDefCtx) return;
 
     let name = this.getSpeciesString(speciesDefCtx);
+    let isConstant = false;
 
-    // FIX: Check if seed_species_def matched a compartment prefix (AT STRING COLON)
-    // This happens because the grammar allows the prefix in the parent rule
+    // Check all children for $ prefix (constant/source species)
+    if (ctx.children) {
+      for (const child of ctx.children) {
+        if (child.text === '$') {
+          isConstant = true;
+          break;
+        }
+      }
+    }
+
+    // Handle compartment prefix (AT STRING COLON)
     if (ctx.AT()) {
-      // Find the compartment name associated with AT
-      // It's the STRING that comes after AT
-      // We can scan children to be sure
       let foundAt = false;
       for (let i = 0; i < ctx.children!.length; i++) {
         const child = ctx.children![i];
@@ -309,9 +315,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
           continue;
         }
         if (foundAt) {
-          // The next token/node should be the compartment name (or whitespace, but ANTLR tree usually has tokens)
-          // If it's a TerminalNode with text, use it
-          if (child.payload) { // check if it's a token
+          if (child.payload) {
             const tokenText = child.text;
             if (tokenText && tokenText !== ':' && tokenText !== '$') {
               name = `@${tokenText}:${name}`;
@@ -325,7 +329,11 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     const exprCtx = ctx.expression();
     const concentration = exprCtx ? this.evaluateExpression(exprCtx) : 0;
 
-    this.species.push({ name, initialConcentration: concentration });
+    this.species.push({
+      name,
+      initialConcentration: concentration,
+      isConstant
+    });
   }
 
   // Observables block
@@ -401,27 +409,18 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     const intNode = Array.isArray(labelInt) ? labelInt[0] : labelInt;
     const name = labelCtx ? (strNode?.text || intNode?.text) : undefined;
 
-    // Get reactants - check for null pattern (INT token like "0")
+    // Get reactants - collect all species and skip '0'
     const reactantSpecies = reactantCtx.species_def();
-    const reactantInt = reactantCtx.INT();
-    let reactants: string[];
-    if (reactantInt) {
-      // Null pattern: 0 -> Product
-      reactants = [];
-    } else {
-      reactants = reactantSpecies.map(sd => this.getSpeciesString(sd));
-    }
+    
+    // Original logic: "0 -> Product" meant reactants = []
+    // New logic: collect all species. If only '0' is present, results in [] anyway.
+    let reactants: string[] = reactantSpecies.map(sd => this.getSpeciesString(sd));
 
-    // Get products - check for null pattern (INT token like "0")
+    // Get products - collect all species and skip '0'
     const productSpecies = productCtx.species_def();
-    const productInt = productCtx.INT();
-    let products: string[];
-    if (productInt) {
-      // Null pattern: Reactant -> 0
-      products = [];
-    } else {
-      products = productSpecies.map(sd => this.getSpeciesString(sd));
-    }
+    
+    // Mixed products like "A + 0" should result in ["A"]
+    let products: string[] = productSpecies.map(sd => this.getSpeciesString(sd));
 
     // Get rate(s)
     const rateExpressions = rateLawCtx.expression();
@@ -619,6 +618,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
 
     // Build simulation phase
+    console.log(`[BNGLVisitor] visitSimulate_cmd: ${cmdText}, raw args:`, args);
     const phase: SimulationPhase = {
       method,
       t_start: args.t_start !== undefined ? evalNumericArg(args.t_start, 0) : undefined,
@@ -639,6 +639,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
         ? (String(args.print_functions).trim() === '1' || String(args.print_functions).trim().toLowerCase() === 'true')
         : undefined,
     };
+    console.log(`[BNGLVisitor] evaluated phase:`, phase);
 
     // Add to standardized actions list
     this.actions.push({
@@ -660,6 +661,8 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     if (args.rtol !== undefined) this.simulationOptions.rtol = evalNumericArg(args.rtol, this.simulationOptions.rtol ?? 1e-8);
   }
 
+
+
   // Explicitly ignore write commands (writeXML, writeSBML, etc)
   visitWrite_cmd(_ctx: Parser.Write_cmdContext): void {
     return;
@@ -672,18 +675,27 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     const text = ctx.text;
 
     // Handle setConcentration("Species", value)
-    const concMatch = text.match(/setConcentration\s*\(\s*"([^"]+)"\s*,\s*(.+?)\s*\)/i);
+    const concMatch = text.match(/setConcentration\s*\(\s*"([^"]+)"\s*,\s*(.+)\s*\)/i);
     if (concMatch) {
       const species = concMatch[1];
       let value: string | number = concMatch[2].trim();
 
-      // Try to parse as number
+      // Try to parse as number or evaluate expression
       if (value.startsWith('"') && value.endsWith('"')) {
         value = value.slice(1, -1); // Keep as parameter reference
       } else {
         const num = parseFloat(value);
         if (!isNaN(num)) {
           value = num;
+        } else {
+          // Try to evaluate as expression with current parameters
+          try {
+            const paramsMap = new Map(Object.entries(this.parameters));
+            value = CoreBNGLParser.evaluateExpression(value, paramsMap);
+          } catch (e) {
+            // If evaluation fails, keep as string (might be parameter ref)
+            console.warn(`[BNGLVisitor] Could not evaluate setConcentration expression: ${value}`);
+          }
         }
       }
 
@@ -693,6 +705,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       this.concentrationChanges.push({
         species,
         value,
+        mode: 'set',
         afterPhaseIndex
       });
       // Add to standardized actions
@@ -732,7 +745,6 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     // Handle addConcentration (similar to setConcentration but additive)
     const addMatch = text.match(/addConcentration\s*\(\s*"([^"]+)"\s*,\s*(.+?)\s*\)/i);
     if (addMatch) {
-      // For now, treat addConcentration same as setConcentration
       const species = addMatch[1];
       let value: string | number = addMatch[2].trim();
 
@@ -750,6 +762,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       this.concentrationChanges.push({
         species,
         value,
+        mode: 'add',
         afterPhaseIndex
       });
       // Add to standardized actions
@@ -829,15 +842,16 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       const compListCtx = mp.component_pattern_list();
 
       // If no component list, molecule has no components (e.g., "dead" or "I")
-      if (!compListCtx) return name;
+      // Normalize to name() to match GraphCanonicalizer and BioNetGen conventions
+      if (!compListCtx) return `${name}()`;
 
 
       // Filter out undefined/empty entries (from double commas ",,")
-      const compPatterns = compListCtx.component_pattern().filter(cp => cp && cp.STRING());
+      const compPatterns = compListCtx.component_pattern().filter(cp => cp && (cp.STRING() || cp.INT() || cp.keyword_as_component_name()));
       if (compPatterns.length === 0) return `${name}()`;
 
       const components = compPatterns.map(cp => {
-        const compNode = cp.STRING();
+        const compNode = cp.STRING() || cp.INT() || cp.keyword_as_component_name();
         let comp = compNode ? compNode.text : '';
 
         const stateCtxs = cp.state_value();
@@ -910,53 +924,36 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
   // Helper: Evaluate expression to number
   private evaluateExpression(ctx: Parser.ExpressionContext): number {
-    try {
-      const text = ctx.text;
-
-      // Simple cases
-      if (/^[0-9.eE+-]+$/.test(text)) {
-        return parseFloat(text);
-      }
-
-      // If it's just a parameter reference
-      if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(text) && this.parameters[text] !== undefined) {
-        return this.parameters[text];
-      }
-
-      // Try to substitute parameters and evaluate
-      let expr = text;
-      for (const [name, value] of Object.entries(this.parameters)) {
-        expr = expr.replace(new RegExp(`\\b${name}\\b`, 'g'), String(value));
-      }
-
-      // Replace math constants
-      expr = expr.replace(/\b_pi\b/g, String(Math.PI));
-      expr = expr.replace(/\b_e\b/g, String(Math.E));
-
-      // Replace math functions
-      expr = expr.replace(/\bexp\(/g, 'Math.exp(');
-      expr = expr.replace(/\bln\(/g, 'Math.log(');
-      expr = expr.replace(/\blog10\(/g, 'Math.log10(');
-      expr = expr.replace(/\bsqrt\(/g, 'Math.sqrt(');
-      expr = expr.replace(/\babs\(/g, 'Math.abs(');
-      expr = expr.replace(/\bsin\(/g, 'Math.sin(');
-      expr = expr.replace(/\bcos\(/g, 'Math.cos(');
-      expr = expr.replace(/\btan\(/g, 'Math.tan(');
-      expr = expr.replace(/\bpow\(/g, 'Math.pow(');
-      expr = expr.replace(/\^/g, '**');
-
-      // Evaluate
-      // eslint-disable-next-line no-new-func
-      const result = new Function('return ' + expr)();
-      if (typeof result !== 'number' || !isFinite(result)) {
-        console.warn(`[BNGLVisitor] Expression '${ctx.text}' evaluated to non-numeric: ${result}`);
-        return 0;
-      }
-      return result;
-    } catch (e: any) {
-      // MEDIUM BUG FIX: Warn instead of silently returning 0
-      console.warn(`[BNGLVisitor] Failed to evaluate expression '${ctx.text}': ${e.message || e}`);
-      return 0;
+    const text = ctx.text;
+    
+    // Convert parameters record to Map
+    const paramMap = new Map<string, number>(Object.entries(this.parameters));
+    
+    // Define Observables Map (if available in this context?)
+    // BNGLVisitor collects observables in this.observables [BNGLObservable[]]
+    // We can allow observable names as valid identifiers (value 1.0 or 0.0 for initial check)
+    // But for rate laws, we usually want to preserve structure?
+    // Wait, this method is used for evaluating CONSTANTS (like parameters).
+    // If we use it for rates, we might get numbers.
+    // But BNGLVisitor collects rate expressions as strings usually.
+    // It calls evaluateExpression ONLY for numeric arguments (like t_end, n_steps, parameter values).
+    
+    // However, if a parameter depends on a function?
+    // e.g. begin parameters; k1 f(); end parameters;
+    // Then we need function support here too.
+    
+    const funcMap = new Map<string, { args: string[], expr: string }>();
+    for (const f of this.functions) {
+      funcMap.set(f.name, { args: f.args, expr: f.expression });
     }
+    
+    // Also add observables to map so they don't cause errors if referenced in params (though uncommon)
+    // If a parameter references an observable, it's usually invalid in BNG unless it's an expression parameter.
+    const obsMap = new Map<string, number>(); 
+    for (const obs of this.observables) {
+        obsMap.set(obs.name, 1.0);
+    }
+
+    return CoreBNGLParser.evaluateExpression(text, paramMap, obsMap, funcMap);
   }
 }

@@ -1,11 +1,14 @@
 begin model
 begin parameters
-    k_transcribe 1.0
-    k_translate 4.0
-    k_bind 0.002
-    k_unbind 0.001
-    k_deg_m 0.2
-    k_deg_p 0.1
+    # Negative Feedback Loop
+    # Simple gene regulatory circuit with autorepression.
+    
+    k_transcribe 1.0   # mRNA synthesis
+    k_translate 4.0    # Protein synthesis
+    k_bind 0.002       # Repressor binding
+    k_unbind 0.001     # Repressor dissociation
+    k_deg_m 0.2        # mRNA degradation
+    k_deg_p 0.1        # Protein degradation
 end parameters
 
 begin molecule types
@@ -26,10 +29,18 @@ begin observables
 end observables
 
 begin reaction rules
+    # 1. Transcription (Constitutive when free)
     Gene(state~free) -> Gene(state~free) + mRNA() k_transcribe
+    
+    # 2. Translation
     mRNA() -> mRNA() + Protein() k_translate
+    
+    # 3. Feedback Repression
+    # Protein product binds its own gene promoter (Autorepression)
     Protein() + Gene(state~free) -> Protein() + Gene(state~bound) k_bind
     Gene(state~bound) -> Gene(state~free) k_unbind
+    
+    # 4. Degradation
     mRNA() -> 0 k_deg_m
     Protein() -> 0 k_deg_p
 end reaction rules
@@ -39,3 +50,4 @@ begin actions
     simulate({method=>"ode",t_end=>200,n_steps=>200})
 end actions
 end model
+

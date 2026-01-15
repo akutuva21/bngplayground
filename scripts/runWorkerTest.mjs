@@ -71,7 +71,7 @@ const start = quorum.indexOf("id: 'quorum-sensing'");
 const snippet = quorum.slice(start, start + 1500);
 console.log(snippet.split('\n').slice(0, 40).join('\n'));
 
-const codeMatch = snippet.match(/code: `([\s\S]*?)`,\n    tags/);
+const codeMatch = snippet.match(/code: `([\s\S]*?)`,\n {4}tags/);
 if (!codeMatch) {
   throw new Error('quorum code not found');
 }

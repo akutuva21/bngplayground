@@ -76,7 +76,7 @@ export const FIMTab: React.FC<FIMTabProps> = ({ model }) => {
       const id = cachedModelIdRef.current;
       if (typeof id === 'number') {
         bnglService.releaseModel(id).catch((err) => {
-          // eslint-disable-next-line no-console
+           
           console.warn('Failed to release cached model on FIMTab unmount', id, err);
         });
         cachedModelIdRef.current = null;
@@ -399,7 +399,7 @@ export const FIMTab: React.FC<FIMTabProps> = ({ model }) => {
                   a.remove();
                   URL.revokeObjectURL(url);
                 } catch (e) {
-                  // eslint-disable-next-line no-console
+                   
                   console.warn('Failed to export FIM', e);
                 }
               }}>Export JSON</Button>

@@ -1,40 +1,73 @@
 begin model
 begin parameters
-    k_on 0.002
-    k_off 0.0005
-    k_cat 0.05
-    k_on_i 0.0025
-    k_off_i 0.0004
+    # Competitive inhibition: Inhibitor (I) and Substrate (S) compete for the same
+    # active site of Enzyme (E).
+    
+    # Reaction rates
+    k_bind_s 1e-3      # Substrate binding
+    k_unbind_s 0.1     # Substrate dissociation
+    k_cat 1.0          # Catalysis (Product formation)
+    
+    k_bind_i 1e-4      # Inhibitor binding (Higher affinity proxy)
+    k_unbind_i 0.01    # Inhibitor dissociation
+    k_recovery 0.05    # Product clearance
+    
+    # Multi-substrate extension
+    k_bind_s2 5e-4     # Competitor substrate
+    
+    # Initials
+    Enzyme_tot 100
+    Substrate_tot 1000
+    Substrate2_tot 0
+    Inhibitor_tot 500
+    Product_init 0
 end parameters
 
 begin molecule types
-    Enzyme(s)
-    Substrate(b)
+    Enzyme(s,state~free~bound)
+    Substrate1(b)
+    Substrate2(b)
     Inhibitor(b)
     Product()
 end molecule types
 
 begin seed species
-    Enzyme(s) 50
-    Substrate(b) 300
-    Inhibitor(b) 150
+    Enzyme(s,state~free) Enzyme_tot
+    Substrate1(b) Substrate_tot
+    Substrate2(b) Substrate2_tot
+    Inhibitor(b) Inhibitor_tot
+    Product() Product_init
 end seed species
 
 begin observables
-    Molecules Free_enzyme Enzyme(s)
-    Molecules Complex Enzyme(s!1).Substrate(b!1)
-    Molecules Inhibited Enzyme(s!1).Inhibitor(b!1)
-    Molecules Product Product()
+    # KEY BIOLOGICAL OUTPUTS
+    Molecules Free_Enzyme    Enzyme(state~free)         # Working capacity
+    Molecules ES_Complex     Enzyme(s!1).Substrate1(b!1) # Catalytic intermediate
+    Molecules EI_Complex     Enzyme(s!1).Inhibitor(b!1)  # Sequestrated/Inhibited enzyme
+    Molecules Total_Product  Product()                  # Reaction velocity proxy
+    Molecules S_Remaining    Substrate1()               # Mass balance
 end observables
 
 begin reaction rules
-    Enzyme(s) + Substrate(b) <-> Enzyme(s!1).Substrate(b!1) k_on, k_off
-    Enzyme(s!1).Substrate(b!1) -> Enzyme(s) + Product() k_cat
-    Enzyme(s) + Inhibitor(b) <-> Enzyme(s!2).Inhibitor(b!2) k_on_i, k_off_i
+    ## CLASSIC COMPETITION
+    # Enzyme + Substrate <-> ES -> Enzyme + Product
+    Enzyme(s,state~free) + Substrate1(b) <-> Enzyme(s!1,state~bound).Substrate1(b!1) k_bind_s,k_unbind_s
+    Enzyme(s!1,state~bound).Substrate1(b!1) -> Enzyme(s,state~free) + Product() k_cat
+    
+    # Enzyme + Inhibitor <-> EI (Dead end complex)
+    Enzyme(s,state~free) + Inhibitor(b) <-> Enzyme(s!1,state~bound).Inhibitor(b!1) k_bind_i,k_unbind_i
+    
+    ## MULTI-SUBSTRATE EXTENSION
+    # Enzyme + Substrate2 <-> ES2
+    Enzyme(s,state~free) + Substrate2(b) <-> Enzyme(s!1,state~bound).Substrate2(b!1) k_bind_s2,k_unbind_s
+    
+    ## CLEARANCE
+    Product() -> 0 k_recovery
 end reaction rules
 
 begin actions
     generate_network({overwrite=>1})
-    simulate({method=>"ode",t_end=>180,n_steps=>180})
+    simulate({method=>"ode",t_end=>150,n_steps=>300})
 end actions
 end model
+

@@ -159,4 +159,10 @@ ode_published_models.json
 # Embedding cache (regenerated on build)
 .embedding-cache/
 
+# report files
+reports/
+
+# random bngl folder
+bng_exec_*/
+
 # End of .gitignore

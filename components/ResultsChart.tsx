@@ -342,11 +342,43 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
               if (typeof value !== 'number') return value;
               if (value === 0) return '0';
               const abs = Math.abs(value);
-              if (abs >= 1e9) return (value / 1e9).toFixed(1) + 'B';
-              if (abs >= 1e6) return (value / 1e6).toFixed(1) + 'M';
-              if (abs >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+
+              // Large numbers with suffixes
+              if (abs >= 1e9) {
+                const scaled = value / 1e9;
+                return Math.abs(scaled - Math.round(scaled)) < 0.01
+                  ? Math.round(scaled) + 'B'
+                  : scaled.toFixed(1) + 'B';
+              }
+              if (abs >= 1e6) {
+                const scaled = value / 1e6;
+                return Math.abs(scaled - Math.round(scaled)) < 0.01
+                  ? Math.round(scaled) + 'M'
+                  : scaled.toFixed(1) + 'M';
+              }
+              if (abs >= 1e3) {
+                const scaled = value / 1e3;
+                return Math.abs(scaled - Math.round(scaled)) < 0.01
+                  ? Math.round(scaled) + 'K'
+                  : scaled.toFixed(1) + 'K';
+              }
+
+              // Very small numbers
               if (abs < 0.01) return value.toExponential(1);
-              if (abs < 10) return value.toFixed(2);  // Show 2 decimals for small values
+
+              // Regular numbers - remove .00 for whole numbers
+              if (abs < 10) {
+                // For small values, show precision but remove unnecessary decimals
+                if (Math.abs(value - Math.round(value)) < 0.01) {
+                  return Math.round(value).toString();
+                }
+                return value.toFixed(2);
+              }
+
+              // Larger regular numbers - show as whole numbers if close to integer
+              if (Math.abs(value - Math.round(value)) < 0.01) {
+                return Math.round(value).toString();
+              }
               return value.toFixed(0);
             }}
           />

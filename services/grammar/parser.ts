@@ -15,7 +15,8 @@ import {
 
 const BINDING_VERBS = [
     'binds', 'binds to', 'interacts with', 'associates with', 'complexes with',
-    'attaches to', 'joins', 'connects to', 'docks to', 'recruits'
+    'attaches to', 'joins', 'connects to', 'docks to', 'recruits',
+    'forms complex with', 'forms a complex with', 'binds with'
 ];
 
 const PHOSPHORYLATION_VERBS = [
@@ -43,7 +44,8 @@ const DIMERIZATION_VERBS = [
 
 const TRANSLOCATION_VERBS = [
     'translocates to', 'translocate to', 'moves to', 'enters', 'exits',
-    'traffics to', 'localizes to', 'shuttles to', 'is transported to'
+    'traffics to', 'localizes to', 'shuttles to', 'is transported to',
+    'is secreted from', 'is released from'
 ];
 
 const ACTIVATION_VERBS = [

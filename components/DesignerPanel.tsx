@@ -4,13 +4,14 @@ import { BNGLGenerator } from '../services/grammar/generator';
 import { BioSentence } from '../services/grammar/types';
 import { CheatsheetModal } from './CheatsheetModal';
 import { Button } from './ui/Button';
+import { BNGLModel } from '../types';
 
 interface DesignerPanelProps {
   text: string;
   onTextChange: (text: string) => void;
   onCodeChange: (code: string) => void;
-  onParse: () => Promise<void>;
-  onSimulate: () => void;
+  onParse: () => Promise<BNGLModel | null>;
+  onSimulate: (model?: BNGLModel) => void;
 }
 
 const DEFAULT_TEXT = `# Welcome to Bio-Designer
@@ -36,7 +37,7 @@ Start with 50 of Zap70
 Start with 20 of SHP1
 
 # Run simulation
-Simulate for 100s with 200 steps
+Simulate for 0.25s with 200 steps
 `;
 
 export const DesignerPanel: React.FC<DesignerPanelProps> = ({ text, onTextChange, onCodeChange, onParse, onSimulate }) => {
@@ -79,8 +80,10 @@ export const DesignerPanel: React.FC<DesignerPanelProps> = ({ text, onTextChange
   const handleSync = async () => {
     if (lastGeneratedCode) {
       onCodeChange(lastGeneratedCode); // Ensure parent has latest
-      await onParse(); // Trigger parse/refresh in App
-      onSimulate(); // Auto-run simulation after parsing
+      const parsedModel = await onParse(); // Trigger parse/refresh in App
+      if (parsedModel) {
+        onSimulate(parsedModel); // Auto-run simulation after parsing
+      }
     }
   };
 
@@ -98,12 +101,12 @@ export const DesignerPanel: React.FC<DesignerPanelProps> = ({ text, onTextChange
           </p>
         </div>
         <div className="flex gap-2">
-           <Button variant="subtle" onClick={() => setIsCheatsheetOpen(true)} className="text-xs">
-             ? Cheatsheet
-           </Button>
-           <Button variant="primary" onClick={handleSync} className="text-xs">
-             ⚡ Sync & Visualize
-           </Button>
+          <Button variant="subtle" onClick={() => setIsCheatsheetOpen(true)} className="text-xs">
+            ? Cheatsheet
+          </Button>
+          <Button variant="primary" onClick={handleSync} className="text-xs">
+            ⚡ Sync & Visualize
+          </Button>
         </div>
       </div>
 
@@ -121,19 +124,18 @@ export const DesignerPanel: React.FC<DesignerPanelProps> = ({ text, onTextChange
               placeholder="Type your biological sentences here..."
             />
           </div>
-          
+
           {/* Logic Parser Feedback */}
           <div className="w-1/4 flex flex-col min-h-0">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Logic Parser</h3>
             <div className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md overflow-y-auto p-2">
               <div className="space-y-1">
                 {sentences.filter(s => s.type !== 'COMMENT').map((s) => (
-                  <div 
-                    key={s.id} 
-                    className={`p-2 rounded text-xs border-l-4 ${
-                      s.type === 'INVALID' ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 
-                      'border-green-500 bg-green-50 dark:bg-green-900/20'
-                    }`}
+                  <div
+                    key={s.id}
+                    className={`p-2 rounded text-xs border-l-4 ${s.type === 'INVALID' ? 'border-red-500 bg-red-50 dark:bg-red-900/20' :
+                        'border-green-500 bg-green-50 dark:bg-green-900/20'
+                      }`}
                   >
                     <div className="font-semibold mb-0.5">{s.type}</div>
                     {s.type === 'INVALID' ? (
@@ -161,7 +163,7 @@ export const DesignerPanel: React.FC<DesignerPanelProps> = ({ text, onTextChange
           </pre>
         </div>
       </div>
-      
+
       <CheatsheetModal isOpen={isCheatsheetOpen} onClose={() => setIsCheatsheetOpen(false)} />
     </div>
   );

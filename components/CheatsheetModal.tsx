@@ -56,6 +56,9 @@ export const CheatsheetModal: React.FC<CheatsheetModalProps> = ({ isOpen, onClos
                                 <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
                                     Receptor recruits Kinase
                                 </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                                    A forms a complex with B
+                                </code>
                             </div>
 
                             <div className="border border-slate-200 dark:border-slate-700 rounded p-3">
@@ -117,6 +120,9 @@ export const CheatsheetModal: React.FC<CheatsheetModalProps> = ({ isOpen, onClos
                                 </code>
                                 <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
                                     Factor moves to membrane
+                                </code>
+                                <code className="block text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                                    Interleukin is secreted from cell
                                 </code>
                             </div>
 

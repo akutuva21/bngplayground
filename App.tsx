@@ -115,7 +115,7 @@ function App() {
     }
   }, []); // Empty deps - run once on mount
 
-  const handleParse = useCallback(async () => {
+  const handleParse = useCallback(async (): Promise<BNGLModel | null> => {
     setResults(null);
     if (parseAbortRef.current) {
       parseAbortRef.current.abort('Parse request replaced.');
@@ -133,15 +133,17 @@ function App() {
       setEditorMarkers(validationWarningsToMarkers(code, warnings));
       const hasErrors = warnings.some((warning) => warning.severity === 'error');
       setStatus({ type: hasErrors ? 'warning' : 'success', message: hasErrors ? 'Model parsed with validation issues. Review the warnings panel.' : 'Model parsed successfully!' });
+      return parsedModel;
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
-        return;
+        return null;
       }
       setModel(null);
       setValidationWarnings([]);
       setEditorMarkers([]);
       const message = error instanceof Error ? error.message : 'An unknown error occurred.';
       setStatus({ type: 'error', message: `Parsing failed: ${message}` });
+      return null;
     } finally {
       if (parseAbortRef.current === controller) {
         parseAbortRef.current = null;
@@ -149,8 +151,9 @@ function App() {
     }
   }, [code]);
 
-  const handleSimulate = useCallback(async (options: SimulationOptions) => {
-    if (!model) {
+  const handleSimulate = useCallback(async (options: SimulationOptions, modelOverride?: BNGLModel) => {
+    const targetModel = modelOverride || model;
+    if (!targetModel) {
       setStatus({ type: 'warning', message: 'Please parse a model before simulating.' });
       return;
     }
@@ -163,14 +166,14 @@ function App() {
       return seedCount * Math.pow(Math.max(1, ruleCount), 1.5) * Math.max(1, molTypeCount);
     };
 
-    const complexity = estimateComplexity(model);
+    const complexity = estimateComplexity(targetModel);
     if (complexity > 150) {
       const proceed = window.confirm(
         `⚠️ Large Model Detected\n\n` +
         `Complexity score: ${Math.round(complexity)}\n` +
-        `• ${model.reactionRules?.length ?? 0} rules\n` +
-        `• ${model.species.length} seed species\n` +
-        `• ${model.moleculeTypes.length} molecule types\n\n` +
+        `• ${targetModel.reactionRules?.length ?? 0} rules\n` +
+        `• ${targetModel.species.length} seed species\n` +
+        `• ${targetModel.moleculeTypes.length} molecule types\n\n` +
         `Network generation may take 30-60 seconds. Continue?`
       );
       if (!proceed) return;
@@ -182,7 +185,7 @@ function App() {
     simulateAbortRef.current = controller;
     setIsSimulating(true);
     try {
-      const simResults = await bnglService.simulate(model, options, {
+      const simResults = await bnglService.simulate(targetModel, options, {
         signal: controller.signal,
         description: `Simulation (${options.method})`,
       });
@@ -330,12 +333,12 @@ function App() {
                   onTextChange={setDesignerText}
                   onCodeChange={handleCodeChange}
                   onParse={handleParse}
-                  onSimulate={() => handleSimulate({
+                  onSimulate={(modelOverride) => handleSimulate({
                     method: 'ode',
                     t_end: 100,
                     n_steps: 100,
                     solver: 'auto'
-                  })}
+                  }, modelOverride)}
                 />
               )}
             </div>

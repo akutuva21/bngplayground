@@ -175,6 +175,23 @@ export interface SimulationResults {
   // Expanded network data - for flux analysis
   expandedReactions?: BNGLReaction[];  // Concrete reactions from network expansion
   expandedSpecies?: BNGLSpecies[];  // Concrete species from network expansion
+  /** SSA influence data for Dynamic Influence Networks visualization */
+  ssaInfluence?: SSAInfluenceTimeSeries;
+}
+
+/** Single snapshot of rule influence data for DIN visualization */
+export interface SSAInfluenceData {
+  ruleNames: string[];           // Reaction/rule names
+  din_hits: number[];            // Firing counts per rule
+  din_fluxs: number[][];         // Influence matrix [i][j] = influence of rule i on rule j
+  din_start: number;             // Time window start
+  din_end: number;               // Time window end
+}
+
+/** Time-series of influence snapshots for animated DIN visualization */
+export interface SSAInfluenceTimeSeries {
+  windows: SSAInfluenceData[];      // Time-windowed snapshots for animation
+  globalSummary: SSAInfluenceData;  // Aggregate over entire simulation
 }
 
 export interface SimulationOptions {

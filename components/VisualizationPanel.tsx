@@ -13,6 +13,7 @@ import { ParameterEstimationTab } from './tabs/ParameterEstimationTab';
 import { FluxAnalysisTab } from './tabs/FluxAnalysisTab';
 import { ExpressionInputPanel, CustomExpression } from './ExpressionInputPanel';
 import { ComparisonPanel } from './ComparisonPanel';
+import { DynamicsViewer } from './DynamicsViewer';
 
 
 interface VisualizationPanelProps {
@@ -112,10 +113,12 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
       <div className="flex-1 min-w-0 flex flex-col min-h-0">
         <Tabs activeIndex={activeTabIndex} onActiveIndexChange={onActiveTabIndexChange}>
           <TabList>
-            {/* Essential tabs - always visible (3 only) */}
+            {/* Essential tabs - always visible */}
             <Tab>Time Courses</Tab>
             <Tab>Parameter Scan</Tab>
             <Tab>Regulatory Graph</Tab>
+            {/* Dynamics tab - only visible when SSA influence data exists */}
+            {results?.ssaInfluence && <Tab>Dynamics</Tab>}
             
             {/* Advanced tabs - conditionally visible */}
             {showAdvancedTabs && (
@@ -196,6 +199,18 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
                 onSelectRule={setSelectedRuleId}
               />
             </TabPanel>
+            
+            {/* Dynamics tab - only rendered when SSA influence data exists */}
+            {results?.ssaInfluence && (
+              <TabPanel>
+                <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">
+                  Dynamics – rule influence network from SSA simulation
+                </div>
+                <div className="h-[500px]">
+                  <DynamicsViewer influenceData={results.ssaInfluence} />
+                </div>
+              </TabPanel>
+            )}
             
             {/* Advanced panels - only rendered when showAdvancedTabs is true */}
             {showAdvancedTabs && (

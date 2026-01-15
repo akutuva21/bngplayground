@@ -5,7 +5,7 @@
  * functional rates, and stiffness detection.
  */
 
-import { BNGLModel, SimulationOptions, SimulationResults, SimulationPhase } from '../../types';
+import { BNGLModel, SimulationOptions, SimulationResults, SimulationPhase, SSAInfluenceData, SSAInfluenceTimeSeries } from '../../types';
 import { toBngGridTime } from '../parity/ParityService';
 import { countPatternMatches, isSpeciesMatch, isFunctionalRateExpr } from '../parity/PatternMatcher';
 import { evaluateFunctionalRate, evaluateExpressionOrParse, loadEvaluator } from './ExpressionEvaluator';
@@ -170,7 +170,8 @@ export async function simulate(
       rate: String(rateExpr),
       isFunctionalRate,
       propensityFactor: r.propensityFactor ?? 1,
-      productStoichiometries: r.productStoichiometries
+      productStoichiometries: r.productStoichiometries,
+      ruleName: (r as any).ruleName || (r as any).name
     };
   }).filter(r => r !== null) as {
     reactants: Int32Array;
@@ -181,6 +182,7 @@ export async function simulate(
     isFunctionalRate: boolean;
     propensityFactor: number;
     productStoichiometries?: number[];
+    ruleName?: string;
   }[];
 
   // concreteReactions.forEach((r, i) => {
@@ -343,6 +345,81 @@ export async function simulate(
 
     for (let i = 0; i < numSpecies; i++) state[i] = Math.round(state[i]);
 
+    // === DIN INFLUENCE TRACKING SETUP ===
+    const numReactions = concreteReactions.length;
+    
+    // Pre-compute: which reactions depend on which species? (for sparse influence tracking)
+    const speciesDependents: Map<number, number[]> = new Map();
+    for (let i = 0; i < numReactions; i++) {
+      for (let j = 0; j < concreteReactions[i].reactants.length; j++) {
+        const speciesIdx = concreteReactions[i].reactants[j];
+        if (!speciesDependents.has(speciesIdx)) {
+          speciesDependents.set(speciesIdx, []);
+        }
+        speciesDependents.get(speciesIdx)!.push(i);
+      }
+    }
+
+    // Global influence tracking
+    const ruleFirings = new Int32Array(numReactions);
+    const influenceMatrix = new Float64Array(numReactions * numReactions);
+
+    // Time-windowed snapshots for animation
+    const NUM_WINDOWS = 20;
+    const influenceWindows: SSAInfluenceData[] = [];
+    let windowRuleFirings = new Int32Array(numReactions);
+    let windowInfluenceMatrix = new Float64Array(numReactions * numReactions);
+    let windowStartTime = 0;
+    
+    // Calculate total simulation time for even window distribution
+    const totalSimTime = phases.reduce((sum, p) => sum + (p.t_end ?? options.t_end), 0);
+    const windowSize = totalSimTime / NUM_WINDOWS;
+    
+    // Extract meaningful reaction names from ruleName or reactants/products
+    const ruleNames = concreteReactions.map((rxn, i) => {
+      if (rxn.ruleName) return rxn.ruleName;
+      // Fallback: construct readable name from reactants and products
+      const reactantNames = Array.from(rxn.reactants).map(idx => {
+        const name = model.species[idx]?.name || `S${idx}`;
+        // Simplify species names: remove compartments and states for compactness
+        return name.split('@')[0].split('(')[0];
+      });
+      const productNames = Array.from(rxn.products).map(idx => {
+        const name = model.species[idx]?.name || `S${idx}`;
+        return name.split('@')[0].split('(')[0];
+      });
+      
+      // Build compact name like "A+B→C" or "A→∅" for degradation
+      const uniqueReactants = [...new Set(reactantNames)];
+      const uniqueProducts = [...new Set(productNames)];
+      
+      const reactStr = uniqueReactants.slice(0, 2).join('+');
+      const prodStr = uniqueProducts.length > 0 
+        ? uniqueProducts.slice(0, 2).join('+')
+        : '∅';
+      
+      return `${reactStr}→${prodStr}`;
+    });
+    
+    // Helper: unflatten matrix
+    const unflattenMatrix = (flat: Float64Array, n: number): number[][] => {
+      const matrix: number[][] = [];
+      for (let i = 0; i < n; i++) {
+        matrix.push(Array.from(flat.slice(i * n, (i + 1) * n)));
+      }
+      return matrix;
+    };
+    
+    // Helper: calculate propensity for a single reaction
+    const calcPropensity = (rxnIdx: number): number => {
+      const rxn = concreteReactions[rxnIdx];
+      let a = rxn.rateConstant * rxn.propensityFactor;
+      for (let j = 0; j < rxn.reactants.length; j++) {
+        a *= state[rxn.reactants[j]];
+      }
+      return a;
+    };
+
     let globalTime = 0;
     for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx++) {
       const phase = phases[phaseIdx];
@@ -447,8 +524,50 @@ export async function simulate(
         }
 
         const firedRxn = concreteReactions[reactionIndex];
+        
+        // === DIN INFLUENCE TRACKING: Capture old propensities BEFORE state change ===
+        ruleFirings[reactionIndex]++;
+        windowRuleFirings[reactionIndex]++;
+
+        const oldPropensities = new Map<number, number>();
+        const affectedSpeciesList = [...firedRxn.reactants, ...firedRxn.products];
+        for (const speciesIdx of affectedSpeciesList) {
+          const dependentReactions = speciesDependents.get(speciesIdx) ?? [];
+          for (const depRxn of dependentReactions) {
+            if (!oldPropensities.has(depRxn)) {
+              // Get the value that was already calculated at the top of the loop
+              oldPropensities.set(depRxn, propensities[depRxn]);
+            }
+          }
+        }
+        
+        // Apply state changes
         for (let j = 0; j < firedRxn.reactants.length; j++) state[firedRxn.reactants[j]]--;
         for (let j = 0; j < firedRxn.products.length; j++) state[firedRxn.products[j]]++;
+        
+        // === DIN INFLUENCE TRACKING: Compare with new propensities AFTER state change ===
+        for (const [depRxn, oldProp] of oldPropensities) {
+          const newProp = calcPropensity(depRxn);
+          if (Math.abs(newProp - oldProp) > 1e-18) {
+            const flux = newProp - oldProp;
+            influenceMatrix[reactionIndex * numReactions + depRxn] += flux;
+            windowInfluenceMatrix[reactionIndex * numReactions + depRxn] += flux;
+          }
+        }
+        
+        // === DIN INFLUENCE TRACKING: Time window snapshot ===
+        if (globalTime + t - windowStartTime >= windowSize && influenceWindows.length < NUM_WINDOWS) {
+          influenceWindows.push({
+            ruleNames: [...ruleNames],
+            din_hits: Array.from(windowRuleFirings),
+            din_fluxs: unflattenMatrix(windowInfluenceMatrix, numReactions),
+            din_start: windowStartTime,
+            din_end: globalTime + t
+          });
+          windowStartTime = globalTime + t;
+          windowRuleFirings.fill(0);
+          windowInfluenceMatrix.fill(0);
+        }
 
         while (t >= nextTOut && nextTOut <= phaseTEnd) {
           callbacks.checkCancelled();
@@ -481,7 +600,19 @@ export async function simulate(
       globalTime += phaseTEnd;
     }
 
-    return { headers, data, speciesHeaders, speciesData, expandedReactions: model.reactions, expandedSpecies: model.species } satisfies SimulationResults;
+    // === DIN INFLUENCE TRACKING: Build final result ===
+    const ssaInfluence: SSAInfluenceTimeSeries = {
+      windows: influenceWindows,
+      globalSummary: {
+        ruleNames: [...ruleNames],
+        din_hits: Array.from(ruleFirings),
+        din_fluxs: unflattenMatrix(influenceMatrix, numReactions),
+        din_start: 0,
+        din_end: globalTime
+      }
+    };
+
+    return { headers, data, speciesHeaders, speciesData, expandedReactions: model.reactions, expandedSpecies: model.species, ssaInfluence } satisfies SimulationResults;
   }
 
 

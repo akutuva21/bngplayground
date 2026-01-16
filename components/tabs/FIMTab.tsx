@@ -703,12 +703,12 @@ export const FIMTab: React.FC<FIMTabProps> = ({ model }) => {
                       <XAxis
                         dataKey="index"
                         tick={{ fontSize: 10 }}
-                        label={{ value: 'Index', position: 'insideBottom', offset: -5, style: { textAnchor: 'middle', fontSize: 10 } }}
+                        label={{ value: 'Index', position: 'insideBottom', offset: -5, style: { textAnchor: 'middle', fontSize: 10, fontWeight: 'bold' } }}
                       />
                       <YAxis
                         tick={{ fontSize: 10 }}
                         tickFormatter={(v) => Number(v).toExponential(1)}
-                        label={{ value: 'Eigenvalue', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: 10 } }}
+                        label={{ value: 'Eigenvalue', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: 10, fontWeight: 'bold' } }}
                       />
                       <Tooltip
                         formatter={(value: any) => [Number(value).toExponential(3), 'Eigenvalue']}
@@ -720,6 +720,9 @@ export const FIMTab: React.FC<FIMTabProps> = ({ model }) => {
                         stroke="#7c3aed"
                         strokeWidth={2}
                         dot={{ r: 3 }}
+                        animationDuration={1500}
+                        animationEasing="ease-out"
+                        isAnimationActive={true}
                       />
                     </LineChart>
                   </ResponsiveContainer>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Editor from '@monaco-editor/react';
 import { BioParser } from '../services/grammar/parser';
 import { BNGLGenerator } from '../services/grammar/generator';
 import { BioSentence } from '../services/grammar/types';
@@ -137,11 +138,13 @@ export const DesignerPanel: React.FC<DesignerPanelProps> = ({ text, onTextChange
                         'border-green-500 bg-green-50 dark:bg-green-900/20'
                       }`}
                   >
-                    <div className="font-semibold mb-0.5">{s.type}</div>
+                    <div className="font-semibold mb-0.5 text-[10px] uppercase tracking-wider opacity-70">{s.type}</div>
                     {s.type === 'INVALID' ? (
-                      <div className="text-red-600 dark:text-red-400">{s.error?.message || 'Syntax Error'}</div>
+                      <div className="text-red-600 dark:text-red-400 font-medium">{s.error?.message || 'Syntax Error'}</div>
                     ) : (
-                      <div className="text-slate-600 dark:text-slate-300 truncate" title={s.text}>{s.text}</div>
+                      <div className="text-slate-700 dark:text-slate-200 truncate font-medium" title={s.text}>
+                        {s.text}
+                      </div>
                     )}
                   </div>
                 ))}
@@ -150,17 +153,35 @@ export const DesignerPanel: React.FC<DesignerPanelProps> = ({ text, onTextChange
           </div>
         </div>
 
-        {/* BNGL Preview */}
-        <div className="h-48 flex flex-col">
+        {/* BNGL Preview (Monaco) */}
+        <div className="h-48 flex flex-col border-t border-slate-200 dark:border-slate-800 pt-2">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Generated BNGL Code</h3>
             <span className="text-xs text-slate-400">
               {lastGeneratedCode ? `${lastGeneratedCode.split('\n').length} lines` : 'No code generated'}
             </span>
           </div>
-          <pre className="flex-1 p-3 font-mono text-xs bg-slate-900 text-green-400 border border-slate-700 rounded-md overflow-auto whitespace-pre">
-            {lastGeneratedCode || '# BNGL code will appear here as you type...'}
-          </pre>
+          <div className="flex-1 min-h-0 border border-slate-200 dark:border-slate-700 rounded-md overflow-hidden shadow-sm">
+             <Editor
+                height="100%"
+                defaultLanguage="bngl"
+                value={lastGeneratedCode || '# BNGL code will appear here as you type...'}
+                theme="vs-dark" // We can toggle this based on system theme if needed, sticking to dark for code usually looks good or standard. Let's assume VS Dark for now as it contrasts well.
+                options={{
+                  readOnly: true,
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  fontSize: 12,
+                  fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
+                  lineNumbers: 'on',
+                  renderLineHighlight: 'none',
+                  overviewRulerLanes: 0,
+                  hideCursorInOverviewRuler: true,
+                  domReadOnly: true,
+                  readOnlyMessage: { value: "Generated from natural language. Edit above to change." }
+                }}
+              />
+          </div>
         </div>
       </div>
 

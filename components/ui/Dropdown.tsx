@@ -3,9 +3,10 @@ import React, { useState, useRef, useEffect } from 'react';
 interface DropdownProps {
   trigger: React.ReactNode;
   children: React.ReactNode;
+  direction?: 'up' | 'down';
 }
 
-export const Dropdown: React.FC<DropdownProps> = ({ trigger, children }) => {
+export const Dropdown: React.FC<DropdownProps> = ({ trigger, children, direction = 'down' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -21,11 +22,18 @@ export const Dropdown: React.FC<DropdownProps> = ({ trigger, children }) => {
     };
   }, []);
 
+  const alignmentClasses = direction === 'up' 
+    ? 'bottom-full mb-2 origin-bottom-right' 
+    : 'top-full mt-2 origin-top-right';
+
   return (
     <div className="relative inline-block text-left" ref={dropdownRef}>
       <div onClick={() => setIsOpen(!isOpen)}>{trigger}</div>
       {isOpen && (
-        <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+        <div 
+          className={`absolute right-0 w-56 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 ${alignmentClasses}`}
+          onClick={() => setIsOpen(false)} // Close on item click
+        >
           <div className="py-1" role="menu" aria-orientation="vertical">
             {children}
           </div>

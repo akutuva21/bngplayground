@@ -6,6 +6,9 @@ import { Card } from './ui/Card';
 import { CustomExpression, evaluateExpression } from './ExpressionInputPanel';
 import { computeDynamicObservable } from '../src/utils/dynamicObservable';
 
+import { Dropdown, DropdownItem } from './ui/Dropdown';
+import { ChevronDownIcon } from './icons/ChevronDownIcon';
+
 interface ResultsChartProps {
   results: SimulationResults | null;
   model: BNGLModel | null;
@@ -315,121 +318,129 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
     }
   };
 
+
+
+  // Custom Glassy Tooltip
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-lg shadow-lg text-xs">
+          <p className="font-semibold text-slate-700 dark:text-slate-200 mb-2">Time: {typeof label === 'number' ? label.toFixed(3) : label}</p>
+          <div className="flex flex-col gap-1 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+            {payload.map((entry: any, idx: number) => (
+              <div key={idx} className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                <span className="text-slate-500 dark:text-slate-400">{entry.name}:</span>
+                <span className="font-mono font-medium text-slate-700 dark:text-slate-200">
+                  {typeof entry.value === 'number' ? entry.value.toExponential(2) : entry.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
-    <Card className="max-w-full overflow-hidden">
-      <ResponsiveContainer width="100%" height={400}>
-        <LineChart
-          data={chartData}
-          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onDoubleClick={handleDoubleClick}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(128, 128, 128, 0.3)" />
-          <XAxis
-            dataKey="time"
-            label={{ value: 'Time', position: 'insideBottom', offset: -5 }}
-            type="number"
-            domain={currentDomain ? [currentDomain.x1, currentDomain.x2] : ['dataMin', 'dataMax']}
-            allowDataOverflow={true}
-          />
-          <YAxis
-            label={{ value: 'Concentration', angle: -90, position: 'insideLeft' }}
-            domain={currentDomain ? [currentDomain.y1, currentDomain.y2] : [0, 'dataMax']}
-            allowDataOverflow={true}
-            tickFormatter={(value) => {
-              if (typeof value !== 'number') return value;
-              if (value === 0) return '0';
-              const abs = Math.abs(value);
-
-              // Large numbers with suffixes
-              if (abs >= 1e9) {
-                const scaled = value / 1e9;
-                return Math.abs(scaled - Math.round(scaled)) < 0.01
-                  ? Math.round(scaled) + 'B'
-                  : scaled.toFixed(1) + 'B';
-              }
-              if (abs >= 1e6) {
-                const scaled = value / 1e6;
-                return Math.abs(scaled - Math.round(scaled)) < 0.01
-                  ? Math.round(scaled) + 'M'
-                  : scaled.toFixed(1) + 'M';
-              }
-              if (abs >= 1e3) {
-                const scaled = value / 1e3;
-                return Math.abs(scaled - Math.round(scaled)) < 0.01
-                  ? Math.round(scaled) + 'K'
-                  : scaled.toFixed(1) + 'K';
-              }
-
-              // Very small numbers
-              if (abs < 0.01) return value.toExponential(1);
-
-              // Regular numbers - remove .00 for whole numbers
-              if (abs < 10) {
-                // For small values, show precision but remove unnecessary decimals
-                if (Math.abs(value - Math.round(value)) < 0.01) {
-                  return Math.round(value).toString();
-                }
-                return value.toFixed(2);
-              }
-
-              // Larger regular numbers - show as whole numbers if close to integer
-              if (Math.abs(value - Math.round(value)) < 0.01) {
-                return Math.round(value).toString();
-              }
-              return value.toFixed(0);
-            }}
-          />
-          <Tooltip
-            formatter={(value: any) => {
-              const num = typeof value === 'number' ? value : parseFloat(value);
-              return num.toFixed(2);
-            }}
-            labelFormatter={(label) => `Time: ${typeof label === 'number' ? label.toFixed(2) : label}`}
-          />
-          {/* Only show in-chart legend when there are few series */}
-          {!useExternalLegend && <Legend onClick={handleLegendClick} content={<CustomLegend onHighlight={handleLegendHighlight} />} />}
-          {speciesToPlot.filter(filterVisibleSpecies).map((speciesName, i) => (
-            <Line
-              key={speciesName}
-              type="monotone"
-              dataKey={speciesName}
-              stroke={CHART_COLORS[i % CHART_COLORS.length]}
-              strokeWidth={highlightSet.has(speciesName) ? 3 : 1.5}
-              dot={false}
-              hide={!visibleSpecies.has(speciesName)}
-              strokeOpacity={highlightSet.size === 0 || highlightSet.has(speciesName) ? 1 : 0.35}
+    <Card className="max-w-full flex flex-col h-auto min-h-full">
+      <div className="h-[500px] w-full relative">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={chartData}
+            margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onDoubleClick={handleDoubleClick}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(128, 128, 128, 0.15)" vertical={false} />
+            <XAxis
+              dataKey="time"
+              label={{ value: 'Time', position: 'insideBottomRight', offset: -5, fill: '#334155', fontSize: 13, fontWeight: 'bold' }}
+              type="number"
+              domain={currentDomain ? [currentDomain.x1, currentDomain.x2] : ['dataMin', 'dataMax']}
+              allowDataOverflow={true}
+              tick={{ fontSize: 11, fill: 'black' }}
+              tickLine={{ stroke: 'black' }}
+              axisLine={{ stroke: 'black' }}
             />
-          ))}
-          {/* Expression lines with dashed style to distinguish */}
-          {expressions.map((expr) => (
-            <Line
-              key={expr.id}
-              type="monotone"
-              dataKey={expr.name}
-              stroke={expr.color}
-              strokeWidth={highlightSet.has(expr.name) ? 3 : 2}
-              strokeDasharray="5 3"
-              dot={false}
-              hide={!visibleSpecies.has(expr.name)}
-              strokeOpacity={highlightSet.size === 0 || highlightSet.has(expr.name) ? 1 : 0.35}
+            <YAxis
+              label={{ value: 'Concentration', angle: -90, position: 'insideLeft', fill: '#334155', fontSize: 13, fontWeight: 'bold' }}
+              domain={currentDomain ? [currentDomain.y1, currentDomain.y2] : [0, 'dataMax']}
+              allowDataOverflow={true}
+              tick={{ fontSize: 11, fill: 'black' }}
+              tickLine={{ stroke: 'black' }}
+              axisLine={{ stroke: 'black' }}
+              tickFormatter={(value) => {
+                if (typeof value !== 'number') return value;
+                if (value === 0) return '0';
+                const abs = Math.abs(value);
+                if (abs >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+                if (abs >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+                if (abs >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+                if (abs < 0.01) return value.toExponential(1);
+                return value.toFixed(2).replace(/\.00$/, '');
+              }}
             />
-          ))}
-          {selection && (
-            <ReferenceArea
-              x1={selection.x1}
-              x2={selection.x2}
-              strokeOpacity={0.3}
-              fill="#8884d8"
-              fillOpacity={0.2}
-            />
-          )}
-        </LineChart>
-      </ResponsiveContainer>
+            <Tooltip content={<CustomTooltip />} />
 
-      {/* External legend below the chart when there are many series */}
+            {!useExternalLegend && (
+              <Legend
+                onClick={handleLegendClick as any}
+                content={<CustomLegend onHighlight={handleLegendHighlight} />}
+                verticalAlign="bottom"
+                height={undefined}
+              />
+            )}
+
+            {speciesToPlot.filter(filterVisibleSpecies).map((speciesName, i) => (
+              <Line
+                key={speciesName}
+                type="monotone"
+                dataKey={speciesName}
+                stroke={CHART_COLORS[i % CHART_COLORS.length]}
+                strokeWidth={highlightSet.has(speciesName) ? 3 : 1.5}
+                dot={false}
+                hide={!visibleSpecies.has(speciesName)}
+                strokeOpacity={highlightSet.size === 0 || highlightSet.has(speciesName) ? 1 : 0.15}
+                animationDuration={1500}
+                animationEasing="ease-out"
+                isAnimationActive={true}
+              />
+            ))}
+            {/* Expression lines */}
+            {expressions.map((expr) => (
+              <Line
+                key={expr.id}
+                type="monotone"
+                dataKey={expr.name}
+                stroke={expr.color}
+                strokeWidth={highlightSet.has(expr.name) ? 3 : 2}
+                strokeDasharray="5 3"
+                dot={false}
+                hide={!visibleSpecies.has(expr.name)}
+                strokeOpacity={highlightSet.size === 0 || highlightSet.has(expr.name) ? 1 : 0.15}
+                isAnimationActive={true}
+                animationDuration={1500}
+                animationEasing="ease-out"
+              />
+            ))}
+            {selection && (
+              <ReferenceArea
+                x1={selection.x1}
+                x2={selection.x2}
+                strokeOpacity={0.3}
+                fill="#3b82f6"
+                fillOpacity={0.1}
+              />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* External legend */}
       {useExternalLegend && (
         <ExternalLegend
           series={speciesToPlot.filter(filterVisibleSpecies)}
@@ -440,43 +451,64 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
         />
       )}
 
-      <div className="mt-3 flex items-center justify-between gap-2">
+      {/* Toolbar */}
+      <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="inline-flex gap-2">
-            <button className={`px-3 py-1 rounded ${filterMode === 'all' ? 'bg-primary text-white' : 'bg-slate-100'}`} onClick={() => setFilterMode('all')}>All</button>
-            <button className={`px-3 py-1 rounded ${filterMode === 'search' ? 'bg-primary text-white' : 'bg-slate-100'}`} onClick={() => setFilterMode('search')}>Search</button>
+          <div className="inline-flex gap-1 p-0.5 bg-slate-100 dark:bg-slate-800 rounded-md">
+            <button
+              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${filterMode === 'all' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-700 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
+              onClick={() => setFilterMode('all')}
+            >
+              All
+            </button>
+            <button
+              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${filterMode === 'search' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-700 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
+              onClick={() => setFilterMode('search')}
+            >
+              Search
+            </button>
           </div>
           {filterMode === 'search' && (
-            <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Filter legends..." className="ml-2 border px-2 py-1 rounded text-sm" />
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Filter series..."
+              className="ml-1 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded text-xs bg-transparent dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
+            />
           )}
         </div>
+
         <div className="flex items-center gap-2">
+          {/* Reset View Button */}
           <button
-            onClick={() => exportAsCDAT(results?.speciesData, results?.speciesHeaders, chartData)}
-            className="px-3 py-1 rounded bg-purple-100 hover:bg-purple-200 dark:bg-purple-900 dark:hover:bg-purple-800 text-purple-700 dark:text-purple-300 text-sm"
-            title="Export as CDAT (species concentrations)"
+            onClick={() => { setZoomHistory([]); setSelection(null); onVisibleSpeciesChange(new Set(speciesToPlot)); }}
+            className="px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
-            📥 CDAT
+            Reset View
           </button>
-          <button
-            onClick={() => exportAsGDAT(chartData, speciesToPlot)}
-            className="px-3 py-1 rounded bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 text-sm"
-            title="Export as GDAT (observables)"
+
+          {/* Export Dropdown */}
+          <Dropdown
+            direction="up"
+            trigger={
+              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-sm text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                <span>📥 Export</span>
+                <ChevronDownIcon className="w-3 h-3 text-slate-400" />
+              </button>
+            }
           >
-            📥 GDAT
-          </button>
-          <button
-            onClick={() => exportAsCSV(chartData, speciesToPlot)}
-            className="px-3 py-1 rounded bg-teal-100 hover:bg-teal-200 dark:bg-teal-900 dark:hover:bg-teal-800 text-teal-700 dark:text-teal-300 text-sm"
-            title="Export as CSV (comma-separated values)"
-          >
-            📥 CSV
-          </button>
-          <button onClick={() => { setZoomHistory([]); setSelection(null); onVisibleSpeciesChange(new Set(speciesToPlot)); }} className="px-3 py-1 rounded bg-slate-100">Reset view</button>
+            <div className="px-2 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">Download Data</div>
+            <DropdownItem onClick={() => exportAsCSV(chartData, speciesToPlot)}>
+              Export as CSV
+            </DropdownItem>
+            <DropdownItem onClick={() => exportAsCDAT(results?.speciesData, results?.speciesHeaders, chartData)}>
+              Export as CDAT (Species)
+            </DropdownItem>
+            <DropdownItem onClick={() => exportAsGDAT(chartData, speciesToPlot)}>
+              Export as GDAT (Observables)
+            </DropdownItem>
+          </Dropdown>
         </div>
-      </div>
-      <div className="text-center text-xs text-slate-500 mt-2">
-        Click to toggle series. Double-click legend to isolate/restore. Drag chart to zoom. Double-click chart to reset view.
       </div>
     </Card>
   );

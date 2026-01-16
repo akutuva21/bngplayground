@@ -91,6 +91,7 @@ export interface ReactionRule {
   isFunctionalRate?: boolean;  // True if rate contains observables/functions
   propensityFactor?: number;  // Statistical factor for degeneracy
   comment?: string;
+  reactionString?: string; // String representation of the rule
 }
 
 export interface BNGLAction {

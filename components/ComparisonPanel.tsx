@@ -47,17 +47,17 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ model, baseRes
 
   const runComparison = useCallback(async () => {
     if (!model || !selectedParam) return;
-    
+
     setIsComparing(true);
     setError(null);
-    
+
     try {
       // Find the parameter value
       const originalValue = model.parameters[selectedParam];
       if (originalValue === undefined) throw new Error('Parameter not found');
-      
+
       const newValue = originalValue * comparisonFactor;
-      
+
       // Create modified model with new parameter value
       const modifiedModel = {
         ...model,
@@ -66,7 +66,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ model, baseRes
           [selectedParam]: newValue,
         },
       };
-      
+
       // Run simulation with modified model
       const results = await bnglService.simulate(modifiedModel, {
         method: 'ode',
@@ -74,7 +74,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ model, baseRes
         n_steps: 100,
         solver: 'auto',
       }, { description: `Comparison: ${selectedParam} × ${comparisonFactor}` });
-      
+
       setComparisonResults(results);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Comparison failed');
@@ -87,20 +87,20 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ model, baseRes
   // Merge base and comparison results for plotting
   const mergedData = useMemo(() => {
     if (!baseResults?.data || !comparisonResults?.data) return null;
-    
+
     const baseData = baseResults.data;
     const compData = comparisonResults.data;
-    
+
     return baseData.map((point, i) => {
       const merged: Record<string, number> = { time: point.time };
-      
+
       // Add base results with "_base" suffix
       Object.keys(point).forEach(key => {
         if (key !== 'time') {
           merged[`${key}_base`] = point[key];
         }
       });
-      
+
       // Add comparison results with "_comp" suffix
       if (compData[i]) {
         Object.keys(compData[i]).forEach(key => {
@@ -109,7 +109,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ model, baseRes
           }
         });
       }
-      
+
       return merged;
     });
   }, [baseResults, comparisonResults]);
@@ -170,11 +170,11 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ model, baseRes
       <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">
         What-If Comparison
       </h3>
-      
+
       <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
         Compare simulation results with modified parameter values.
       </p>
-      
+
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="flex-1 min-w-[200px]">
           <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
@@ -193,7 +193,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ model, baseRes
             ))}
           </select>
         </div>
-        
+
         <div className="w-32">
           <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
             Multiply by
@@ -210,7 +210,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ model, baseRes
             <option value={10}>10×</option>
           </select>
         </div>
-        
+
         <div className="flex items-end">
           <Button
             onClick={runComparison}
@@ -222,19 +222,19 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ model, baseRes
           </Button>
         </div>
       </div>
-      
+
       {error && (
         <div className="mb-4 p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded">
           {error}
         </div>
       )}
-      
+
       {!baseResults && (
         <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded text-center text-slate-500">
           Run a simulation first to enable comparison.
         </div>
       )}
-      
+
       {mergedData && (
         <div className="mt-4">
           <div className="flex items-center gap-4 mb-2 text-xs">
@@ -247,8 +247,8 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ model, baseRes
               Modified (dashed)
             </span>
           </div>
-          
-          <ResponsiveContainer width="100%" height={300}>
+
+          <ResponsiveContainer width="100%" height={400}>
             <LineChart
               data={mergedData}
               margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
@@ -256,12 +256,12 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ model, baseRes
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(128, 128, 128, 0.3)" />
               <XAxis
                 dataKey="time"
-                label={{ value: 'Time', position: 'insideBottom', offset: -5 }}
+                label={{ value: 'Time', position: 'insideBottom', offset: -5, fontWeight: 'bold' }}
                 type="number"
                 domain={['dataMin', 'dataMax']}
               />
               <YAxis
-                label={{ value: 'Concentration', angle: -90, position: 'insideLeft' }}
+                label={{ value: 'Concentration', angle: -90, position: 'insideLeft', fontWeight: 'bold' }}
                 domain={[0, 'dataMax']}
                 allowDataOverflow={true}
                 tickFormatter={formatYAxisTick}
@@ -289,6 +289,9 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ model, baseRes
                       dot={false}
                       hide={!isVisible}
                       name={`${name}_base`}
+                      animationDuration={1500}
+                      animationEasing="ease-out"
+                      isAnimationActive={true}
                     />
                     <Line
                       type="monotone"
@@ -299,6 +302,9 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ model, baseRes
                       dot={false}
                       hide={!isVisible}
                       name={`${name}_comp`}
+                      animationDuration={1500}
+                      animationEasing="ease-out"
+                      isAnimationActive={true}
                     />
                   </React.Fragment>
                 );

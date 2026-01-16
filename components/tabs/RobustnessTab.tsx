@@ -179,7 +179,7 @@ export const RobustnessTab: React.FC<RobustnessTabProps> = ({ model }) => {
                             <ResponsiveContainer width="100%" height="100%">
                                 <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                                    <XAxis dataKey="time" type="number" label={{ value: 'Time', position: 'insideBottomRight', offset: -5 }} />
+                                    <XAxis dataKey="time" type="number" label={{ value: 'Time', position: 'insideBottomRight', offset: -5, fontWeight: 'bold' }} />
                                     <YAxis tickFormatter={formatYAxisTick} />
                                     <Tooltip
                                         labelFormatter={(v) => `Time: ${Number(v).toFixed(2)}`}
@@ -206,7 +206,9 @@ export const RobustnessTab: React.FC<RobustnessTabProps> = ({ model }) => {
                                                     stroke="none"
                                                     fill={color}
                                                     fillOpacity={0.2}
-                                                    isAnimationActive={false}
+                                                    isAnimationActive={true}
+                                                    animationDuration={1500}
+                                                    animationEasing="ease-out"
                                                 />
                                                 {/* Mean Line */}
                                                 <Line
@@ -215,7 +217,9 @@ export const RobustnessTab: React.FC<RobustnessTabProps> = ({ model }) => {
                                                     stroke={color}
                                                     strokeWidth={2}
                                                     dot={false}
-                                                    isAnimationActive={false}
+                                                    isAnimationActive={true}
+                                                    animationDuration={1500}
+                                                    animationEasing="ease-out"
                                                 />
                                             </React.Fragment>
                                         );

@@ -59,7 +59,7 @@ const generateRange = (start: number, end: number, steps: number, isLog = false)
   if (isLog) {
     // Log scale requires positive start/end; fall back to linear if invalid
     if (start <= 0 || end <= 0) {
-       
+
       console.warn('Log scale requires positive start/end values. Falling back to linear.');
       isLog = false;
     }
@@ -718,7 +718,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
       // Best-effort release of the prepared model to avoid leaking cached worker state.
       if (typeof modelId === 'number') {
         bnglService.releaseModel(modelId).catch((err) => {
-           
+
           console.warn('Failed to release cached model after parameter scan', modelId, err);
         });
         if (cachedModelIdRef.current === modelId) cachedModelIdRef.current = null;
@@ -749,7 +749,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
       const id = cachedModelIdRef.current;
       if (typeof id === 'number') {
         bnglService.releaseModel(id).catch((err) => {
-           
+
           console.warn('Failed to release cached model on ParameterScanTab unmount', id, err);
         });
         cachedModelIdRef.current = null;
@@ -1186,13 +1186,13 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(128, 128, 128, 0.3)" />
                 <XAxis
                   dataKey="parameterValue"
-                  label={{ value: oneDResult.parameterName, position: 'insideBottom', offset: -5 }}
+                  label={{ value: oneDResult.parameterName, position: 'insideBottom', offset: -5, fontWeight: 'bold' }}
                   type="number"
                   domain={currentOneDDomain ? [currentOneDDomain.x1, currentOneDDomain.x2] : ['dataMin', 'dataMax']}
                   scale={isLogScale ? 'log' : 'linear'}
                 />
                 <YAxis
-                  label={{ value: selectedObservable, angle: -90, position: 'insideLeft' }}
+                  label={{ value: selectedObservable, angle: -90, position: 'insideLeft', fontWeight: 'bold' }}
                   domain={['auto', 'auto']}
                   allowDataOverflow={true}
                   tickFormatter={formatYAxisTick}
@@ -1208,6 +1208,9 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
                   stroke={CHART_COLORS[0]}
                   strokeWidth={1.5}
                   dot={false}
+                  animationDuration={1500}
+                  animationEasing="ease-out"
+                  isAnimationActive={true}
                 />
 
                 {oneDSelection && (

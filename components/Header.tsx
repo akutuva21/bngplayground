@@ -5,6 +5,11 @@ import { SunIcon } from './icons/SunIcon';
 import { EmailIcon } from './icons/EmailIcon';
 import { Button } from './ui/Button';
 import { ShareButton } from './ShareButton';
+import { Dropdown, DropdownItem } from './ui/Dropdown';
+import { QuestionMarkCircleIcon } from './icons/QuestionMarkCircleIcon';
+import { BookOpenIcon } from './icons/BookOpenIcon';
+import { EyeIcon } from './icons/EyeIcon';
+import { InfoIcon } from './icons/InfoIcon';
 
 interface HeaderProps {
   onAboutClick: (focus?: string) => void;
@@ -20,9 +25,10 @@ export const Header: React.FC<HeaderProps> = ({ onAboutClick, onExportSBML, code
   return (
     <header className="bg-white dark:bg-slate-800 border-b border-stone-200 dark:border-slate-700 shadow-sm sticky top-0 z-40">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-3">
-          <div className="flex items-center gap-2">
-            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-700 dark:ring-slate-600">
+        <div className="flex justify-between items-center py-2">
+          {/* Logo + Title */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-700 dark:ring-slate-600">
               <img
                 src="/bngplayground/logo.jpg"
                 alt="BioNetGen Visualizer logo"
@@ -30,60 +36,86 @@ export const Header: React.FC<HeaderProps> = ({ onAboutClick, onExportSBML, code
                 loading="lazy"
               />
             </div>
-            <div className="flex flex-col">
-              <h1 className="text-xl font-semibold leading-tight text-slate-800 dark:text-slate-100 sm:text-2xl">BioNetGen Playground</h1>
-              <p className="text-sm text-slate-500 dark:text-slate-300 sm:text-base">Write BNGL, parse models, simulate ODE/SSA, and visualize the results.</p>
+
+            <div className="flex flex-col md:flex-row md:items-baseline md:gap-3">
+              <h1 className="text-lg font-semibold leading-tight text-slate-800 dark:text-slate-100">
+                BNG Playground
+              </h1>
+
+              {/* Subtle Mode Switcher */}
+              <div className="flex border border-slate-200 dark:border-slate-700 rounded overflow-hidden">
+                <button
+                  onClick={() => onViewModeChange('code')}
+                  className={`px-2 py-0.5 text-xs font-medium transition-colors ${viewMode === 'code'
+                    ? 'bg-slate-100 dark:bg-slate-700 text-teal-700 dark:text-teal-400'
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                    }`}
+                >
+                  Code
+                </button>
+                <div className="w-px bg-slate-200 dark:bg-slate-700" />
+                <button
+                  onClick={() => onViewModeChange('design')}
+                  className={`px-2 py-0.5 text-xs font-medium transition-colors ${viewMode === 'design'
+                    ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400'
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                    }`}
+                >
+                  ✨ AI
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Mode Switcher */}
-          <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
-            <button
-              onClick={() => onViewModeChange('code')}
-              className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${
-                viewMode === 'code'
-                  ? 'bg-white dark:bg-slate-600 text-teal-600 dark:text-teal-400 shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-              }`}
-            >
-              Code Editor
-            </button>
-            <button
-              onClick={() => onViewModeChange('design')}
-              className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${
-                viewMode === 'design'
-                  ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-              }`}
-            >
-               ✨ Designer
-            </button>
-          </div>
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            {code && <ShareButton code={code} />}
 
-          <div className="flex items-center gap-3">
-            <Button onClick={() => onAboutClick('bngl')} variant="ghost">
-              What is BNGL?
-            </Button>
-            <Button onClick={() => onAboutClick('viz')} variant="ghost">Viz Conventions</Button>
-            <Button onClick={() => onAboutClick()} variant="ghost">About</Button>
-            <div className="border-l border-slate-300 dark:border-slate-600 h-6" />
-            <a
-              href="mailto:bionetgen.main@gmail.com?subject=BNG%20Playground%20Question"
-              className="p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
-              aria-label="Email us with questions"
-              title="Questions? Email bionetgen.main@gmail.com"
+            {/* Help Dropdown */}
+            <Dropdown
+              trigger={
+                <button className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 
+                                   dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                  title="Help & Resources">
+                  <QuestionMarkCircleIcon className="w-5 h-5" />
+                </button>
+              }
             >
-              <EmailIcon className="w-5 h-5" />
-            </a>
+              <DropdownItem onClick={() => onAboutClick('bngl')}>
+                <div className="flex items-center gap-2">
+                  <BookOpenIcon className="w-4 h-4 text-slate-400" />
+                  <span>BNGL Syntax Guide</span>
+                </div>
+              </DropdownItem>
+              <DropdownItem onClick={() => onAboutClick('viz')}>
+                <div className="flex items-center gap-2">
+                  <EyeIcon className="w-4 h-4 text-slate-400" />
+                  <span>Visualization Key</span>
+                </div>
+              </DropdownItem>
+              <DropdownItem onClick={() => onAboutClick()}>
+                <div className="flex items-center gap-2">
+                  <InfoIcon className="w-4 h-4 text-slate-400" />
+                  <span>About BNG Playground</span>
+                </div>
+              </DropdownItem>
+              <div className="border-t border-slate-100 dark:border-slate-700 my-1" />
+              <DropdownItem onClick={() => window.open('mailto:bionetgen.main@gmail.com?subject=BNG%20Playground%20Question')}>
+                <div className="flex items-center gap-2">
+                  <EmailIcon className="w-4 h-4 text-slate-400" />
+                  <span>Contact Us</span>
+                </div>
+              </DropdownItem>
+            </Dropdown>
+
+            {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="p-2 rounded text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition-colors"
               aria-label="Toggle theme"
             >
               {theme === 'light' ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}
             </button>
-            <Button onClick={onExportSBML} variant="subtle" className="text-xs">Export SBML</Button>
-            {code && <ShareButton code={code} />}
           </div>
         </div>
       </div>

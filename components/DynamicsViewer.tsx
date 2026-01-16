@@ -7,7 +7,8 @@
 
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import * as d3 from 'd3';
-import { SSAInfluenceTimeSeries, SSAInfluenceData } from '../types';
+import { BNGLModel, SimulationResults, SSAInfluenceTimeSeries, SSAInfluenceData } from '../types';
+import { EmptyState } from './ui/EmptyState';
 
 interface DynamicsViewerProps {
     influenceData: SSAInfluenceTimeSeries;
@@ -37,6 +38,24 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
     const instanceId = useRef(Math.random().toString(36).slice(2));
     const lastTransform = useRef<d3.ZoomTransform>(d3.zoomIdentity);
     const isFirstLoad = useRef(true);
+    // Add state for dimensions
+    const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Resize observer
+    useEffect(() => {
+        if (!containerRef.current) return;
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                const { width, height } = entry.contentRect;
+                if (width > 0 && height > 0) {
+                    setDimensions({ width, height });
+                }
+            }
+        });
+        resizeObserver.observe(containerRef.current);
+        return () => resizeObserver.disconnect();
+    }, []);
 
     const [currentWindow, setCurrentWindow] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -50,7 +69,18 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
     const [useAccessibleColors, setUseAccessibleColors] = useState(false);
     const [clusterMode, setClusterMode] = useState<'window' | 'global'>('window');
     const [showSelfInfluence, setShowSelfInfluence] = useState(false);
+    const [isDarkMode, setIsDarkMode] = useState(false);
     const [hideIsolatedNodes, setHideIsolatedNodes] = useState(false);
+
+    useEffect(() => {
+        const checkTheme = () => {
+            setIsDarkMode(document.documentElement.classList.contains('dark'));
+        };
+        checkTheme();
+        const observer = new MutationObserver(checkTheme);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
 
     const data: SSAInfluenceData | null = influenceData.windows.length > 0
         ? influenceData.windows[Math.min(currentWindow, influenceData.windows.length - 1)]
@@ -112,17 +142,28 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
         return false;
     }, [displayData, threshold, showSelfInfluence, showPositiveLinks, showNegativeLinks]);
 
-    const colors = useMemo(() => useAccessibleColors ? {
-        positive: '#0077bb',
-        negative: '#ee7733',
-        cluster: d3.schemeTableau10,
-        pin: '#ffaa00'
-    } : {
-        positive: '#4ade80',
-        negative: '#f87171',
-        cluster: d3.schemeCategory10,
-        pin: '#fbbf24'
-    }, [useAccessibleColors]);
+    const colors = useMemo(() => {
+        if (useAccessibleColors) {
+            return {
+                positive: isDarkMode ? '#0077bb' : '#005fa3',
+                negative: isDarkMode ? '#ee7733' : '#d15b18',
+                cluster: d3.schemeTableau10,
+                pin: isDarkMode ? '#ffaa00' : '#e69900',
+                text: isDarkMode ? '#ffffff' : '#1e293b',
+                nodeStroke: isDarkMode ? '#4f46e5' : '#4338ca',
+                nodeFill: '#6366f1'
+            };
+        }
+        return {
+            positive: isDarkMode ? '#4ade80' : '#16a34a',
+            negative: isDarkMode ? '#f87171' : '#dc2626',
+            cluster: d3.schemeCategory10,
+            pin: isDarkMode ? '#fbbf24' : '#d97706',
+            text: isDarkMode ? '#ffffff' : '#1e293b',
+            nodeStroke: isDarkMode ? '#4f46e5' : '#4338ca',
+            nodeFill: '#6366f1'
+        };
+    }, [useAccessibleColors, isDarkMode]);
 
     // Reset focus and window when data changes
     useEffect(() => {
@@ -252,8 +293,7 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
         svg.selectAll('*').remove();
 
         const container = svgRef.current.parentElement;
-        const width = container?.clientWidth || 800;
-        const height = container?.clientHeight || 500;
+        const { width, height } = dimensions;
 
         // Add zoom/pan support
         const g = svg.append('g');
@@ -327,8 +367,9 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
 
         // Re-apply last transform or auto-fit on first load
         if (isFirstLoad.current && nodes.length > 0) {
-            // Compute better initial zoom for large models
-            const initialScale = Math.max(0.15, Math.min(1, 800 / (Math.sqrt(nodes.length) * 150)));
+            // Compute initial zoom to fill available space - higher scale for fewer nodes
+            const baseScale = nodes.length <= 5 ? 1.5 : nodes.length <= 15 ? 1.2 : 1.0;
+            const initialScale = Math.max(0.3, Math.min(baseScale, 1200 / (Math.sqrt(nodes.length) * 100)));
             const initialTransform = d3.zoomIdentity
                 .translate(width / 2, height / 2)
                 .scale(initialScale)
@@ -343,7 +384,8 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
         // Double-click to reset zoom
         svg.on('dblclick.zoom', () => {
             isFirstLoad.current = true; // Trigger auto-fit again
-            const initialScale = Math.max(0.2, Math.min(1, 800 / (Math.sqrt(nodes.length || 1) * 150)));
+            const baseScale = nodes.length <= 5 ? 1.5 : nodes.length <= 15 ? 1.2 : 1.0;
+            const initialScale = Math.max(0.3, Math.min(baseScale, 1200 / (Math.sqrt(nodes.length || 1) * 100)));
             const resetTransform = d3.zoomIdentity
                 .translate(width / 2, height / 2)
                 .scale(initialScale)
@@ -359,7 +401,7 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
                 .attr('viewBox', '0 -5 10 10')
                 .attr('refX', 0)
                 .attr('refY', 0)
-                .attr('markerWidth', 7) // Increased from 5
+                .attr('markerWidth', 7) // Reverted to 7
                 .attr('markerHeight', 7)
                 .attr('orient', 'auto')
                 .append('path')
@@ -417,13 +459,12 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
                 if (useAccessibleColors) {
                     // Accessible: blue for positive, orange for negative
                     return d.value > 0
-                        ? d3.interpolate('#0077bb', '#00aaff')(strength)
-                        : d3.interpolate('#ee7733', '#ff9955')(strength);
+                        ? d3.interpolate(colors.positive, '#00aaff')(strength)
+                        : d3.interpolate(colors.negative, '#ff9955')(strength);
                 } else {
-                    // Default: green for positive, red for negative
                     return d.value > 0
-                        ? d3.interpolateGreens(0.3 + strength * 0.7)
-                        : d3.interpolateReds(0.3 + strength * 0.7);
+                        ? (isDarkMode ? d3.interpolateGreens(0.3 + strength * 0.7) : d3.interpolateGreens(0.4 + strength * 0.6))
+                        : (isDarkMode ? d3.interpolateReds(0.3 + strength * 0.7) : d3.interpolateReds(0.4 + strength * 0.6));
                 }
             })
             .attr('stroke-width', d => Math.max(1.5, Math.abs(d.value) / (maxFlux || 1) * 5))
@@ -481,9 +522,9 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
             .selectAll('circle')
             .data(nodes)
             .join('circle')
-            .attr('r', d => 25 + (d.hits / maxHits) * 15)
-            .attr('fill', '#6366f1')
-            .attr('stroke', d => pinnedNodesRef.current.has(d.id) ? colors.pin : '#4f46e5')
+            .attr('r', d => 25 + (d.hits / maxHits) * 15) // Reverted to base 25
+            .attr('fill', colors.nodeFill)
+            .attr('stroke', d => pinnedNodesRef.current.has(d.id) ? colors.pin : colors.nodeStroke)
             .attr('stroke-width', d => pinnedNodesRef.current.has(d.id) ? 3 : 2)
             .style('cursor', 'pointer')
             .on('click', (event, d) => {
@@ -495,7 +536,7 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
                     d.fx = null;
                     d.fy = null;
                     d3.select(event.currentTarget)
-                        .attr('stroke', '#4f46e5')
+                        .attr('stroke', colors.nodeStroke)
                         .attr('stroke-width', 2);
                 } else {
                     pinnedNodesRef.current.add(d.id);
@@ -581,8 +622,8 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
                 // Keep spaces if beneficial, but truncate length
                 return labelText.length > 15 ? labelText.substring(0, 13) + '…' : labelText;
             })
-            .attr('font-size', '11px')
-            .attr('fill', '#ffffff')
+            .attr('font-size', '11px') // Reverted to 11px
+            .attr('fill', colors.text)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
             .style('pointer-events', 'none')
@@ -629,14 +670,14 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
                 const targetId = typeof d.target === 'string' ? d.target : d.target.id;
 
                 const targetNode = nodeMap.get(targetId);
-                const targetRadius = targetNode ? 25 + (targetNode.hits / maxHits) * 15 : 25;
+                const targetRadius = targetNode ? 25 + (targetNode.hits / maxHits) * 15 : 25; // Reverted to 25
 
                 if (sourceId === targetId) {
                     // Self-influence: Render as a curved loop above the node
                     const x = d.source.x;
                     const y = d.source.y;
-                    const nodeR = 25 + (d.source.hits / maxHits) * 15;
-                    const loopR = 20;
+                    const nodeR = 25 + (d.source.hits / maxHits) * 15; // Reverted to 25
+                    const loopR = 20; // Reverted to 20
                     return `M ${x} ${y - nodeR} 
                             C ${x - loopR * 2} ${y - nodeR - loopR * 2.5}, 
                               ${x + loopR * 2} ${y - nodeR - loopR * 2.5}, 
@@ -678,46 +719,46 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
         });
 
         return () => simulation.stop();
-    }, [displayData, threshold, showPositiveLinks, showNegativeLinks, colors, useAccessibleColors, showSelfInfluence, hideIsolatedNodes]);
+    }, [displayData, threshold, showPositiveLinks, showNegativeLinks, colors, useAccessibleColors, showSelfInfluence, hideIsolatedNodes, isDarkMode, dimensions]);
 
     // Empty state
     if (!data || data.ruleNames.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-slate-900">
-                <div className="text-6xl mb-4 opacity-50">🕸️</div>
-                <h3 className="text-lg font-semibold mb-2 text-white">Rule Dynamics Visualization</h3>
-                <p className="text-slate-400 mb-2">
+            <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-slate-50 dark:bg-slate-900 transition-colors">
+                <div className="text-6xl mb-4 opacity-50 grayscale dark:grayscale-0">🕸️</div>
+                <h3 className="text-lg font-semibold mb-2 text-slate-800 dark:text-white">Rule Dynamics Visualization</h3>
+                <p className="text-slate-500 dark:text-slate-400 mb-2">
                     See how rules causally influence each other over time.
                 </p>
                 <ul className="text-slate-500 text-sm mb-4 text-left">
                     <li>• Node size = how often rule fired</li>
-                    <li>• <span className="text-green-400">Green</span> edges = positive influence</li>
-                    <li>• <span className="text-red-400">Red</span> edges = negative influence</li>
+                    <li>• {isDarkMode ? <span className="text-green-400">Green</span> : <span className="text-green-600">Green</span>} edges = positive influence</li>
+                    <li>• {isDarkMode ? <span className="text-red-400">Red</span> : <span className="text-red-600">Red</span>} edges = negative influence</li>
                     <li>• Animation shows temporal evolution</li>
                 </ul>
-                <p className="text-xs text-slate-600">Run an SSA simulation to generate influence data.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-600">Run an SSA simulation to generate influence data.</p>
             </div>
         );
     }
 
     return (
-        <div className="flex h-full bg-slate-900">
+        <div className="flex flex-col h-full min-h-0 bg-slate-50 dark:bg-slate-900 transition-colors">
             {/* Main visualization */}
-            <div className={`flex flex-col ${selectedNode ? 'flex-1' : 'w-full'} transition-all`}>
+            <div className={`flex flex-col flex-1 min-h-0 ${selectedNode ? '' : 'w-full'} transition-all`}>
                 {/* Tooltip */}
                 <div
                     ref={tooltipRef}
-                    className="fixed z-50 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-sm text-white shadow-lg pointer-events-none transition-opacity"
+                    className="fixed z-50 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-white shadow-lg pointer-events-none transition-opacity"
                     style={{ opacity: 0 }}
                 />
 
                 {/* Controls */}
-                <div className="flex flex-wrap items-center gap-3 p-3 border-b border-slate-700 bg-slate-800 flex-shrink-0">
+                <div className="flex flex-wrap items-center gap-3 p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0 transition-colors">
                     {influenceData.windows.length > 1 && (
                         <>
                             <button
                                 onClick={() => setIsPlaying(!isPlaying)}
-                                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-sm text-white transition-colors shrink-0"
+                                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-xs font-medium text-white transition-colors shrink-0 shadow-sm"
                                 title="Space to toggle"
                             >
                                 {isPlaying ? '⏸ Pause' : '▶ Play'}
@@ -728,20 +769,20 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
                                 max={influenceData.windows.length - 1}
                                 value={currentWindow}
                                 onChange={e => setCurrentWindow(Number(e.target.value))}
-                                className="flex-1 min-w-[100px] max-w-xs"
+                                className="flex-1 min-w-[100px] max-w-xs h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700"
                             />
-                            <span className="text-xs text-slate-400 whitespace-nowrap min-w-fit">
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap min-w-fit">
                                 Window {currentWindow + 1}/{influenceData.windows.length} · t = {formatTime(displayData.din_start)} – {formatTime(displayData.din_end)}
                             </span>
                         </>
                     )}
                     {influenceData.windows.length <= 1 && (
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
                             Global summary · t = {formatTime(displayData.din_start)} – {formatTime(displayData.din_end)}
                         </span>
                     )}
-                    <div className="flex items-center gap-2 border-l border-slate-700 pl-3">
-                        <label className="text-xs text-slate-400">
+                    <div className="flex items-center gap-2 border-l border-slate-300 dark:border-slate-600 pl-3 transition-colors">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
                             Min Strength:
                         </label>
                         <input
@@ -751,13 +792,13 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
                             step={0.05}
                             value={threshold}
                             onChange={e => setThreshold(Number(e.target.value))}
-                            className="w-16"
+                            className="w-16 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700"
                         />
-                        <span className="text-xs text-slate-500 w-8">{(threshold * 100).toFixed(0)}%</span>
+                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300 w-8 text-right">{(threshold * 100).toFixed(0)}%</span>
                     </div>
                     {influenceData.windows.length > 1 && (
-                        <div className="flex items-center gap-2 border-l border-slate-700 pl-3">
-                            <label className="text-xs text-slate-400">
+                        <div className="flex items-center gap-2 border-l border-slate-300 dark:border-slate-600 pl-3 transition-colors">
+                            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
                                 Speed:
                             </label>
                             <input
@@ -767,36 +808,39 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
                                 step={1}
                                 value={Math.log2(playbackSpeed)}
                                 onChange={e => setPlaybackSpeed(Math.pow(2, Number(e.target.value)))}
-                                className="w-16"
+                                className="w-16 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700"
                                 title="Playback speed"
                             />
-                            <span className="text-xs text-slate-500 w-10 text-right">{playbackSpeed}x</span>
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300 w-8 text-right">{playbackSpeed}x</span>
                         </div>
                     )}
                 </div>
 
                 {/* Focus slider with brushing */}
                 {influenceData.windows.length > 1 && (
-                    <div className="px-4 py-2 border-b border-slate-700 bg-slate-800/50">
+                    <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 transition-colors">
                         <div className="flex items-center gap-3 mb-1">
-                            <span className="text-xs text-slate-400 w-16">Focus:</span>
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300 w-16">Focus:</span>
                             {focusRange ? (
                                 <>
-                                    <span className="text-xs text-indigo-400 font-mono">
+                                    <span className="text-xs text-indigo-600 font-mono dark:text-indigo-400">
                                         {formatTime(influenceData.windows[focusRange[0]].din_start)} – {formatTime(influenceData.windows[focusRange[1]].din_end)}
+                                        <span className="text-slate-400 dark:text-slate-500 mx-2">
+                                            ({focusRange[1] - focusRange[0] + 1} windows)
+                                        </span>
                                     </span>
                                     <button
                                         onClick={() => setFocusRange(null)}
-                                        className="text-xs text-slate-500 hover:text-white transition-colors"
+                                        className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors ml-auto"
                                     >
                                         ✕ Clear
                                     </button>
                                 </>
                             ) : (
-                                <span className="text-xs text-slate-500">Drag to select range</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">Drag to select range</span>
                             )}
                         </div>
-                        <div className="relative h-8 bg-slate-900 rounded">
+                        <div className="relative h-6 bg-slate-100 dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-700">
                             {/* Background bar showing all windows */}
                             <div className="absolute inset-0 flex">
                                 {influenceData.windows.map((_, idx) => (
@@ -844,7 +888,7 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
                 )}
 
                 {/* Visualization */}
-                <div className="flex-1 relative overflow-hidden">
+                <div ref={containerRef} className="flex-1 min-h-0 relative overflow-hidden">
                     <svg ref={svgRef} className="w-full h-full" />
                     {!hasActiveLinks && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -855,62 +899,62 @@ export const DynamicsViewer: React.FC<DynamicsViewerProps> = ({ influenceData })
                     )}
                 </div>
 
-                {/* Legend */}
-                <div className="flex items-center gap-6 p-2 border-t border-slate-700 text-xs text-slate-400 flex-shrink-0">
-                    <button
-                        onClick={() => setShowPositiveLinks(!showPositiveLinks)}
-                        className={`flex items-center gap-1 transition-opacity ${!showPositiveLinks ? 'opacity-40' : ''}`}
-                        title="Toggle positive influences"
-                    >
-                        <span className="inline-block w-3 h-3 bg-green-400 rounded-full"></span>
-                        Positive ({showPositiveLinks ? 'on' : 'off'})
-                    </button>
-                    <button
-                        onClick={() => setShowNegativeLinks(!showNegativeLinks)}
-                        className={`flex items-center gap-1 transition-opacity ${!showNegativeLinks ? 'opacity-40' : ''}`}
-                        title="Toggle negative influences"
-                    >
-                        <span className="inline-block w-3 h-3 bg-red-400 rounded-full"></span>
-                        Negative ({showNegativeLinks ? 'on' : 'off'})
-                    </button>
-                    <span>Node size = firing count</span>
+                {/* Legend & Controls */}
+                <div className="flex items-center gap-4 px-3 py-2 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0 text-xs transition-colors overflow-x-auto flex-nowrap">
+
+                    {/* Legend Items */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                        <span className="text-slate-600 dark:text-slate-300">Positive</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                        <span className="text-slate-600 dark:text-slate-300">Negative</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 border-r border-slate-300 dark:border-slate-600 pr-3 shrink-0">
+                        <span className="text-slate-500 dark:text-slate-400">Size = firings</span>
+                    </div>
+
+                    {/* Toggles */}
                     <button
                         onClick={() => setUseScientificNotation(!useScientificNotation)}
-                        className="text-slate-400 hover:text-white transition-colors"
-                        title="Toggle scientific notation for large numbers"
+                        className="px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shrink-0"
+                        title="Toggle scientific notation"
                     >
                         {useScientificNotation ? 'e-notation' : '1,234'}
                     </button>
                     <button
                         onClick={() => setUseAccessibleColors(!useAccessibleColors)}
-                        className="text-slate-400 hover:text-white transition-colors"
+                        className="px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shrink-0"
                         title="Toggle colorblind-safe theme"
                     >
-                        {useAccessibleColors ? '🎨 A11y' : '🎨 Default'}
+                        🎨 {useAccessibleColors ? 'A11y' : 'Default'}
                     </button>
                     <button
                         onClick={() => setClusterMode(mode => mode === 'window' ? 'global' : 'window')}
-                        className="text-slate-400 hover:text-white transition-colors"
-                        title="Toggle between per-window and global clustering"
+                        className="px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shrink-0"
+                        title="Cluster mode"
                     >
                         {clusterMode === 'global' ? '🌍 Global' : '⏱️ Window'}
                     </button>
                     <button
                         onClick={() => setShowSelfInfluence(!showSelfInfluence)}
-                        className={`text-slate-400 hover:text-white transition-colors ${showSelfInfluence ? 'text-indigo-400' : ''}`}
-                        title="Toggle display of self-influences"
+                        className={`px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shrink-0 ${showSelfInfluence ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                        title="Toggle self-loops"
                     >
-                        {showSelfInfluence ? '⭕ Self-loop ON' : '⭕ Self-loop OFF'}
+                        ⭕ {showSelfInfluence ? 'Self ON' : 'Self OFF'}
                     </button>
                     <button
                         onClick={() => setHideIsolatedNodes(!hideIsolatedNodes)}
-                        className={`text-slate-400 hover:text-white transition-colors ${hideIsolatedNodes ? 'text-cyan-400' : ''}`}
-                        title="Hide nodes with no causal connections above threshold"
+                        className={`px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shrink-0 ${hideIsolatedNodes ? 'text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                        title="Filter isolated nodes"
                     >
-                        {hideIsolatedNodes ? '👻 Filtered' : '👻 All Nodes'}
+                        👻 {hideIsolatedNodes ? 'Filtered' : 'All'}
                     </button>
-                    <span className="text-yellow-400">Click to pin · Right-click for details</span>
-                    <span className="ml-auto text-slate-500">Scroll to zoom · Drag to pan · ← → Arrow keys | Space</span>
+
+                    <div className="ml-auto text-xs text-slate-400 dark:text-slate-500 shrink-0">
+                        Click: pin · Right-click: details · Scroll: zoom
+                    </div>
                 </div>
             </div>
 

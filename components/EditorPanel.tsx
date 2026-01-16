@@ -4,8 +4,9 @@ import { Card } from './ui/Card';
 import { LoadingSpinner } from './ui/LoadingSpinner';
 import { UploadIcon } from './icons/UploadIcon';
 import { XIcon } from './icons/XIcon';
+import { SimulationControls } from './SimulationControls';
 import { ExampleGalleryModal } from './ExampleGalleryModal';
-import { RadioGroup } from './ui/RadioGroup';
+
 import { ParameterPanel } from './ParameterPanel';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 // Minimal BNGL tidy helper (inlined to avoid module resolution issues)
@@ -104,12 +105,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   const [showIntroBanner, setShowIntroBanner] = useState(
     () => localStorage.getItem('bng-banner-dismissed') !== 'true'
   );
-  // Auto-open on first visit removed so the page isn't blocked by a modal on first load.
-  const [simulationMethod, setSimulationMethod] = useState<'default' | 'ode' | 'ssa'>('default');
-  const [customAtol, setCustomAtol] = useState<string>('');
-  const [customRtol, setCustomRtol] = useState<string>('');
-  const [odeSolver, setOdeSolver] = useState<'auto' | 'cvode' | 'cvode_auto' | 'cvode_sparse' | 'cvode_jac' | 'rosenbrock23' | 'rk45' | 'rk4' | 'webgpu_rk4'>('auto');
-  const [showAllSolvers, setShowAllSolvers] = useState(true);  // Show all solvers by default
+
   const [isParamsOpen, setIsParamsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -135,8 +131,32 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   return (
     <Card className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto pr-1">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">BNGL Model Editor</h2>
-        {/* Compact intro banner (dismissible, persisted) */}
+        {/* Header with Status */}
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-3">
+            BNGL Model Editor
+            {modelExists && validationWarnings.length === 0 && (
+              <span className="text-sm font-normal text-green-600 dark:text-green-400 flex items-center bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full">
+                ✅ Parsed
+              </span>
+            )}
+            {validationWarnings.length > 0 && (
+              <span className={`text-sm font-normal px-2 py-0.5 rounded-full flex items-center ${validationWarnings.some(w => w.severity === 'error')
+                ? 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/20'
+                : 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20'
+                }`}>
+                {validationWarnings.some(w => w.severity === 'error') ? '❌ Errors' : `⚠️ ${validationWarnings.length} Warnings`}
+              </span>
+            )}
+            {loadedModelName && (
+              <span className="text-sm font-normal text-slate-500 dark:text-slate-400 flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                📁 {loadedModelName}
+              </span>
+            )}
+          </h2>
+        </div>
+
+        {/* Compact intro banner */}
         {showIntroBanner && (
           <div className="flex items-center justify-between gap-2 rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800 px-3 py-2 text-sm">
             <span className="text-blue-800 dark:text-blue-200">
@@ -154,26 +174,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
             </button>
           </div>
         )}
-        {/* Model parse status bar */}
-        <div className="mb-2 flex items-center gap-3 flex-wrap">
-          {validationWarnings.length === 0 && modelExists ? (
-            <div className="inline-flex items-center gap-2 rounded px-3 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-sm">✅ Parsed OK</div>
-          ) : modelExists && validationWarnings.some(w => w.severity === 'error') ? (
-            <div className="inline-flex items-center gap-2 rounded px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm">❌ Parsed with errors</div>
-          ) : modelExists && validationWarnings.length > 0 ? (
-            <div className="inline-flex items-center gap-2 rounded px-3 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-sm">⚠️ Parsed with warnings</div>
-          ) : (
-            <div className="inline-flex items-center gap-2 rounded px-3 py-1 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm">📝 No model parsed</div>
-          )}
-          {loadedModelName && (
-            <div className="inline-flex items-center gap-2 rounded px-3 py-1 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-sm font-medium">
-              📁 {loadedModelName}
-            </div>
-          )}
-          {validationWarnings.length > 0 && (
-            <button onClick={onParse} className="text-xs underline text-slate-600 dark:text-slate-400">Re-parse</button>
-          )}
-        </div>
+
         <div className="relative flex-1 min-h-[24rem] overflow-hidden">
           <MonacoEditor
             language="bngl"
@@ -183,159 +184,44 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
             selection={selection}
           />
         </div>
-        {validationWarnings.length > 0 && (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-800/50">
-            <h3 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Model validation</h3>
-            <div className="max-h-48 overflow-y-auto pr-1">
-              <ul className="space-y-2">
-                {validationWarnings.map((warning, index) => {
-                  const badgeClass = warning.severity === 'error'
-                    ? 'bg-red-500'
-                    : warning.severity === 'warning'
-                      ? 'bg-amber-500'
-                      : 'bg-blue-500';
-                  const badgeLabel = warning.severity === 'error' ? 'Error' : warning.severity === 'warning' ? 'Warning' : 'Info';
-                  return (
-                    <li key={`${warning.message}-${index}`} className="rounded border border-slate-200 bg-white p-3 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-                      <div className="flex items-start gap-2">
-                        <span className={`mt-0.5 inline-flex h-5 shrink-0 items-center rounded-full px-2 text-xs font-semibold text-white ${badgeClass}`}>
-                          {badgeLabel}
-                        </span>
-                        <div className="flex-1">
-                          <p className="font-medium">{warning.message}</p>
-                          {warning.relatedElement && (
-                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Related: {warning.relatedElement}</p>
-                          )}
-                          {warning.suggestion && (
-                            <pre className="mt-2 whitespace-pre-wrap rounded bg-slate-100 p-2 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200">{warning.suggestion}</pre>
-                          )}
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </div>
-        )}
+
+        {/* Collapsible Validation Detail handled by gutter mainly, strictly critical errors can persist if needed */}
+        {/* Removed redundant big warning panel as per request */}
       </div>
+
       <div className="mt-4 flex flex-col gap-2 shrink-0 border-t border-slate-200 pt-3 dark:border-slate-700">
-        {/* Row 1: All action buttons */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <Button onClick={() => setIsGalleryOpen(true)}>Models</Button>
-          <Button variant="subtle" onClick={() => fileInputRef.current?.click()}>
-            <UploadIcon className="w-4 h-4 mr-1" />
-            Load
-          </Button>
-          <Button variant="subtle" onClick={() => onCodeChange(formatBNGLMini(code))}>
-            Format
-          </Button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            className="hidden"
-            accept=".bngl"
-          />
-          <div className="border-l border-slate-300 dark:border-slate-600 h-6 mx-1" />
-          <Button onClick={onParse}>Parse Model</Button>
-          <Button
-            onClick={() => {
-              if (!model) return;
+        {/* Row 1: Actions & Simulation Controls */}
+        <div className="flex flex-wrap gap-2 items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setIsGalleryOpen(true)}>Models</Button>
+            <Button variant="subtle" onClick={() => fileInputRef.current?.click()}>
+              <UploadIcon className="w-4 h-4 mr-1" />
+              Load
+            </Button>
+            <Button variant="subtle" onClick={() => onCodeChange(formatBNGLMini(code))}>
+              Format
+            </Button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              accept=".bngl"
+            />
+            <div className="border-l border-slate-300 dark:border-slate-600 h-6 mx-1" />
+            <Button onClick={onParse} variant="secondary">Parse</Button>
+          </div>
 
-              const base = getSimulationOptionsFromParsedModel(model, simulationMethod);
-              if (simulationMethod === 'ode') {
-                const atolValue = customAtol ? Number(customAtol) : (base.atol ?? 1e-6);
-                const rtolValue = customRtol ? Number(customRtol) : (base.rtol ?? 1e-3);
-                onSimulate({
-                  ...base,
-                  atol: atolValue,
-                  rtol: rtolValue,
-                  solver: odeSolver,
-                });
-                return;
-              }
-
-              onSimulate(base);
-            }}
-            disabled={isSimulating || !modelExists}
-            variant="primary"
-          >
-            {isSimulating && <LoadingSpinner className="w-4 h-4 mr-2" />}
-            {isSimulating ? 'Simulating...' : 'Run Simulation'}
-          </Button>
-
-        </div>
-        {/* Row 2: Simulation options */}
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <RadioGroup
-            name="simulationMethod"
-            value={simulationMethod}
-            onChange={(val) => setSimulationMethod(val as 'default' | 'ode' | 'ssa')}
-            options={[
-              { label: 'Default', value: 'default' },
-              { label: 'ODE', value: 'ode' },
-              { label: 'SSA', value: 'ssa' },
-            ]}
-          />
-          {simulationMethod === 'ode' && (
-            <>
-              <div className="border-l border-slate-300 dark:border-slate-600 h-4" />
-              <label className="text-slate-600 dark:text-slate-400">Solver:</label>
-              <div className="flex items-center gap-1">
-                <select
-                  value={odeSolver}
-                  onChange={(e) => setOdeSolver(e.target.value as typeof odeSolver)}
-                  className="rounded border border-slate-300 px-1 py-0.5 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
-                >
-                  <option value="auto">Auto (Recommended)</option>
-                  <option value="cvode">CVODE</option>
-                  {showAllSolvers && (
-                    <>
-                      <option value="cvode_auto">CVODE + Fallback</option>
-                      <option value="cvode_sparse">CVODE Sparse</option>
-                      <option value="cvode_jac">CVODE + Jacobian</option>
-                      <option value="rosenbrock23">Rosenbrock23</option>
-                      <option value="rk45">RK45</option>
-                      <option value="rk4">RK4</option>
-                      <option value="webgpu_rk4">WebGPU RK4 (Exp)</option>
-                    </>
-                  )}
-                </select>
-                {!showAllSolvers && (
-                  <button
-                    onClick={() => {
-                      setShowAllSolvers(true);
-                      localStorage.setItem('bng-show-all-solvers', 'true');
-                    }}
-                    className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 underline"
-                    title="Show all available ODE solvers"
-                  >
-                    more
-                  </button>
-                )}
-              </div>
-              <label className="text-slate-600 dark:text-slate-400">atol:</label>
-              <input
-                type="text"
-                value={customAtol}
-                onChange={(e) => setCustomAtol(e.target.value)}
-                placeholder="auto"
-                className="w-12 rounded border border-slate-300 px-1 py-0.5 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
-              />
-              <label className="text-slate-600 dark:text-slate-400">rtol:</label>
-              <input
-                type="text"
-                value={customRtol}
-                onChange={(e) => setCustomRtol(e.target.value)}
-                placeholder="auto"
-                className="w-12 rounded border border-slate-300 px-1 py-0.5 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
-              />
-            </>
-          )}
+          <div className="flex items-center gap-2">
+            <SimulationControls
+              onRun={onSimulate}
+              isSimulating={isSimulating}
+              modelExists={modelExists}
+            />
+          </div>
         </div>
 
-        {/* Row 3: Collapsible Parameter Sliders */}
+        {/* Row 2: Collapsible Parameter Sliders */}
         <div className="border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-800/50 overflow-hidden">
           <button
             onClick={() => setIsParamsOpen(!isParamsOpen)}
@@ -344,10 +230,10 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
             <span>Parameter Sliders</span>
             <ChevronDownIcon className={`w-4 h-4 transition-transform duration-200 ${isParamsOpen ? 'rotate-180' : ''}`} />
           </button>
-          
+
           {isParamsOpen && (
             <div className="border-t border-slate-200 dark:border-slate-700 p-2">
-               <ParameterPanel code={code} onCodeChange={onCodeChange} />
+              <ParameterPanel code={code} onCodeChange={onCodeChange} />
             </div>
           )}
         </div>

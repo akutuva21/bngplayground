@@ -47,7 +47,7 @@ function evaluateExpression(expression: string, variables: Record<string, number
     }
 
     // Use Function constructor for safe evaluation (only math operations)
-     
+
     const result = new Function(`return ${expr}`)();
 
     if (typeof result !== 'number' || !Number.isFinite(result)) {
@@ -243,12 +243,12 @@ export const ExpressionEvaluatorTab: React.FC<ExpressionEvaluatorTabProps> = ({
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(128, 128, 128, 0.3)" />
               <XAxis
                 dataKey="time"
-                label={{ value: 'Time', position: 'insideBottom', offset: -5 }}
+                label={{ value: 'Time', position: 'insideBottom', offset: -5, fontWeight: 'bold' }}
                 type="number"
                 domain={['dataMin', 'dataMax']}
               />
               <YAxis
-                label={{ value: 'Value', angle: -90, position: 'insideLeft' }}
+                label={{ value: 'Value', angle: -90, position: 'insideLeft', fontWeight: 'bold' }}
                 domain={['auto', 'auto']}
                 allowDataOverflow={true}
                 tickFormatter={formatYAxisTick}
@@ -276,6 +276,9 @@ export const ExpressionEvaluatorTab: React.FC<ExpressionEvaluatorTabProps> = ({
                   strokeWidth={1.5}
                   dot={false}
                   hide={!visibleExpressions.has(expr.name)}
+                  animationDuration={1500}
+                  animationEasing="ease-out"
+                  isAnimationActive={true}
                 />
               ))}
             </LineChart>

@@ -3,6 +3,12 @@
  * Encodes model source code as base64 in URL hash.
  */
 
+export interface SharedModelPayload {
+  code: string;
+  name?: string;
+  modelId?: string;
+}
+
 // Compress and encode BNGL code for URL
 export function encodeModelForUrl(code: string): string {
   try {
@@ -29,30 +35,70 @@ export function decodeModelFromUrl(encoded: string): string {
 }
 
 // Generate a shareable URL for the current model
-export function generateShareUrl(code: string): string {
+export function generateShareUrl(
+  code: string,
+  options?: { name?: string | null; modelId?: string | null }
+): string {
   const encoded = encodeModelForUrl(code);
+
+  const params: string[] = [];
+  params.push(`model=${encodeURIComponent(encoded)}`);
+  if (options?.name) {
+    params.push(`name=${encodeURIComponent(options.name)}`);
+  }
+  if (options?.modelId) {
+    params.push(`modelId=${encodeURIComponent(options.modelId)}`);
+  }
+
   // Use current URL but strip any existing hash, then add our model hash
   // This handles GitHub Pages paths like /bngplayground/ correctly
   const url = new URL(window.location.href);
-  url.hash = `model=${encoded}`;
+  url.hash = params.join('&');
   return url.toString();
 }
 
-// Extract model from URL hash if present
-export function getModelFromUrl(): string | null {
+function parseHashParams(hash: string): Record<string, string> {
+  const params: Record<string, string> = {};
+  const parts = hash.split('&');
+  for (const part of parts) {
+    if (!part) continue;
+    const [rawKey, ...rest] = part.split('=');
+    const rawValue = rest.join('=');
+    if (!rawKey) continue;
+    const key = decodeURIComponent(rawKey);
+    const value = decodeURIComponent(rawValue ?? '');
+    params[key] = value;
+  }
+  return params;
+}
+
+// Extract model + metadata from URL hash if present
+export function getSharedModelFromUrl(): SharedModelPayload | null {
   if (typeof window === 'undefined') return null;
-  const hash = window.location.hash;
+  const rawHash = window.location.hash || '';
+  const hash = rawHash.replace(/^#/, '');
   if (!hash || !hash.includes('model=')) return null;
-  
+
   try {
-    const match = hash.match(/model=([A-Za-z0-9+/=]+)/);
-    if (match && match[1]) {
-      return decodeModelFromUrl(match[1]);
-    }
+    const params = parseHashParams(hash);
+    const encoded = params.model;
+    if (!encoded) return null;
+    const code = decodeModelFromUrl(encoded);
+
+    return {
+      code,
+      name: params.name || undefined,
+      modelId: params.modelId || undefined,
+    };
   } catch (e) {
     console.warn('Failed to decode model from URL:', e);
   }
   return null;
+}
+
+// Extract only the model code from URL hash if present
+export function getModelFromUrl(): string | null {
+  return getSharedModelFromUrl()?.code ?? null;
 }
 
 // Clear the model from URL hash

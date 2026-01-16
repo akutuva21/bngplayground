@@ -13,6 +13,7 @@
     "generate:gdat": "node scripts/generateGdat.mjs",
     "generate:embeddings": "node scripts/generateEmbeddings.mjs",
     "generate:web-output": "node scripts/generate_web_output_playwright.mjs",
+    "test:share-link": "node scripts/playwright_share_link_test.mjs",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx"
   },

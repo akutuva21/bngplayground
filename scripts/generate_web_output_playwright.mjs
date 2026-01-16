@@ -8,7 +8,7 @@ import { chromium } from 'playwright';
 const PROJECT_ROOT = process.cwd();
 const WEB_OUTPUT_DIR = path.join(PROJECT_ROOT, 'web_output');
 const PORT = Number(process.env.WEB_OUTPUT_PORT || 5175);
-const TIMEOUT_PER_MODEL_MS = 300_000; // 5 minutes timeout per model to accommodate large networks
+const TIMEOUT_PER_MODEL_MS = 120_000; // 120 seconds timeout per model to accommodate large networks
 
 function readViteBasePath() {
   const envBase = process.env.WEB_OUTPUT_BASE;

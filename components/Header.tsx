@@ -15,11 +15,23 @@ interface HeaderProps {
   onAboutClick: (focus?: string) => void;
   onExportSBML?: () => void;
   code?: string;
+  modelName?: string | null;
+  modelId?: string | null;
+  onModelNameChange?: (name: string | null) => void;
   viewMode: 'code' | 'design';
   onViewModeChange: (mode: 'code' | 'design') => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onAboutClick, onExportSBML, code, viewMode, onViewModeChange }) => {
+export const Header: React.FC<HeaderProps> = ({
+  onAboutClick,
+  onExportSBML,
+  code,
+  modelName,
+  modelId,
+  onModelNameChange,
+  viewMode,
+  onViewModeChange,
+}) => {
   const [theme, toggleTheme] = useTheme();
 
   return (
@@ -69,7 +81,14 @@ export const Header: React.FC<HeaderProps> = ({ onAboutClick, onExportSBML, code
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            {code && <ShareButton code={code} />}
+            {code && (
+              <ShareButton
+                code={code}
+                modelName={modelName}
+                modelId={modelId}
+                onModelNameChange={onModelNameChange}
+              />
+            )}
 
             {/* Help Dropdown */}
             <Dropdown

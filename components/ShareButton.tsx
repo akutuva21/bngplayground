@@ -5,18 +5,33 @@ import { generateShareUrl } from '../src/utils/shareUrl';
 interface ShareButtonProps {
     code: string;
     className?: string;
+    modelName?: string | null;
+    modelId?: string | null;
+    onModelNameChange?: (name: string | null) => void;
 }
 
-export const ShareButton: React.FC<ShareButtonProps> = ({ code, className }) => {
+export const ShareButton: React.FC<ShareButtonProps> = ({ code, className, modelName, modelId, onModelNameChange }) => {
     const [copied, setCopied] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [shareUrl, setShareUrl] = useState('');
+    const [nameInput, setNameInput] = useState(modelName ?? '');
+
+    React.useEffect(() => {
+        setNameInput(modelName ?? '');
+    }, [modelName]);
+
+    React.useEffect(() => {
+        if (!showModal) return;
+        const url = generateShareUrl(code, {
+            name: nameInput.trim() || undefined,
+            modelId: modelId ?? undefined,
+        });
+        setShareUrl(url);
+    }, [showModal, code, nameInput, modelId]);
 
     const handleShare = useCallback(() => {
-        const url = generateShareUrl(code);
-        setShareUrl(url);
         setShowModal(true);
-    }, [code]);
+    }, []);
 
     const handleCopy = useCallback(async () => {
         try {
@@ -70,6 +85,26 @@ export const ShareButton: React.FC<ShareButtonProps> = ({ code, className }) => 
                         </div>
 
                         <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    Model Name (optional)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={nameInput}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        setNameInput(value);
+                                        onModelNameChange?.(value.trim() ? value : null);
+                                    }}
+                                    placeholder="e.g., My custom model"
+                                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md text-slate-700 dark:text-slate-200"
+                                />
+                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    Set a custom name for sharing and embeds.
+                                </p>
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                     Shareable Link

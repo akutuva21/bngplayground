@@ -26,7 +26,7 @@ const toTitleCase = (str: string): string => {
 interface ExampleGalleryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (code: string, modelName?: string) => void;
+  onSelect: (code: string, modelName?: string, modelId?: string) => void;
 }
 
 export const ExampleGalleryModal: React.FC<ExampleGalleryModalProps> = ({ isOpen, onClose, onSelect }) => {
@@ -193,7 +193,7 @@ export const ExampleGalleryModal: React.FC<ExampleGalleryModalProps> = ({ isOpen
                 </div>
               </div>
               <button
-                onClick={() => onSelect(example.code, toTitleCase(example.name))}
+                onClick={() => onSelect(example.code, toTitleCase(example.name), example.id)}
                 className="mt-3 w-full text-center px-4 py-2 text-sm font-semibold bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md transition-colors text-slate-800 dark:text-slate-100"
               >
                 Load Model

@@ -77,6 +77,7 @@ interface EditorPanelProps {
   editorMarkers: EditorMarker[];
   loadedModelName?: string | null;
   onModelNameChange?: (name: string | null) => void;
+  onModelIdChange?: (id: string | null) => void;
   selection?: {
     startLineNumber: number;
     endLineNumber: number;
@@ -98,6 +99,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   editorMarkers,
   loadedModelName,
   onModelNameChange,
+  onModelIdChange,
   selection,
 }) => {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -117,14 +119,16 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
         onCodeChange(e.target?.result as string);
         // Clear model name when loading from file
         onModelNameChange?.(file.name.replace(/\.bngl$/i, ''));
+        onModelIdChange?.(null);
       };
       reader.readAsText(file);
     }
   };
 
-  const handleLoadExample = (exampleCode: string, modelName?: string) => {
+  const handleLoadExample = (exampleCode: string, modelName?: string, modelId?: string) => {
     onCodeChange(exampleCode);
     onModelNameChange?.(modelName ?? null);
+    onModelIdChange?.(modelId ?? null);
     setIsGalleryOpen(false);
   };
 

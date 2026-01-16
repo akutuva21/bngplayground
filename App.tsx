@@ -8,10 +8,17 @@ import { StatusMessage } from './components/ui/StatusMessage';
 import { AboutModal } from './components/AboutModal';
 import { bnglService } from './services/bnglService';
 import { BNGLModel, SimulationOptions, SimulationResults, Status, ValidationWarning, EditorMarker } from './types';
-import { INITIAL_BNGL_CODE } from './constants';
+import { EXAMPLES, INITIAL_BNGL_CODE } from './constants';
 import SimulationModal from './components/SimulationModal';
 import { validateBNGLModel, validationWarningsToMarkers } from './services/modelValidation';
-import { getModelFromUrl, clearModelFromUrl } from './src/utils/shareUrl';
+import { getSharedModelFromUrl, clearModelFromUrl } from './src/utils/shareUrl';
+
+const normalizeCode = (value: string) => value.replace(/\r\n/g, '\n').trim();
+
+const findExampleById = (id?: string | null) => {
+  if (!id) return undefined;
+  return EXAMPLES.find((example) => example.id === id);
+};
 
 function App() {
   const PANEL_MAX_HEIGHT = 'calc(100vh - 100px)';
@@ -29,6 +36,7 @@ function App() {
   const [validationWarnings, setValidationWarnings] = useState<ValidationWarning[]>([]);
   const [editorMarkers, setEditorMarkers] = useState<EditorMarker[]>([]);
   const [loadedModelName, setLoadedModelName] = useState<string | null>(null);
+  const [loadedModelId, setLoadedModelId] = useState<string | null>(null);
 
   const [editorSelection] = useState<{ startLineNumber: number; endLineNumber: number } | undefined>(undefined);
   const [viewMode, setViewMode] = useState<'code' | 'design'>('code');
@@ -53,9 +61,21 @@ function App() {
 
   // Load model from URL hash on startup (for shared links)
   useEffect(() => {
-    const sharedCode = getModelFromUrl();
-    if (sharedCode) {
-      setCode(sharedCode);
+    const shared = getSharedModelFromUrl();
+    if (shared?.code) {
+      setCode(shared.code);
+
+      const example = findExampleById(shared.modelId);
+      const matchesExample = example && normalizeCode(example.code) === normalizeCode(shared.code);
+
+      if (matchesExample) {
+        setLoadedModelId(example.id);
+        setLoadedModelName(shared.name ?? example.name);
+      } else {
+        setLoadedModelId(null);
+        setLoadedModelName(shared.name ?? null);
+      }
+
       clearModelFromUrl(); // Clean up URL
       setStatus({ type: 'success', message: 'Model loaded from shared link!' });
     }
@@ -71,7 +91,7 @@ function App() {
   // Auto-run simulation on first visit for immediate value demonstration
   useEffect(() => {
     const hasVisited = localStorage.getItem('bng-has-visited');
-    const urlModel = getModelFromUrl();
+    const urlModel = getSharedModelFromUrl();
     
     // Only auto-run if: first visit, no URL model, and code matches default
     if (!hasVisited && !urlModel && code === INITIAL_BNGL_CODE) {
@@ -265,6 +285,13 @@ function App() {
     setResults(null);
     setValidationWarnings([]);
     setEditorMarkers([]);
+
+    if (loadedModelId) {
+      const example = findExampleById(loadedModelId);
+      if (!example || normalizeCode(example.code) !== normalizeCode(newCode)) {
+        setLoadedModelId(null);
+      }
+    }
   };
 
   const handleStatusClose = () => {
@@ -299,6 +326,9 @@ function App() {
           }
         }}
         code={code}
+        modelName={loadedModelName}
+        modelId={loadedModelId}
+        onModelNameChange={setLoadedModelName}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
       />
@@ -325,6 +355,7 @@ function App() {
                   editorMarkers={editorMarkers}
                   loadedModelName={loadedModelName}
                   onModelNameChange={setLoadedModelName}
+                  onModelIdChange={setLoadedModelId}
                   selection={editorSelection}
                 />
               ) : (

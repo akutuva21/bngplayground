@@ -60,10 +60,15 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
   const editorInstanceRef = useRef<any>(null);
   const onChangeRef = useRef(onChange);
   const markersRef = useRef<EditorMarker[]>(markers);
+  const valueRef = useRef<string>(value);
 
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   useEffect(() => {
     markersRef.current = markers;
@@ -241,7 +246,9 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
         }
 
         editor = monaco.editor.create(editorRef.current, {
-          value,
+          // Important: use the latest value. `value` may have changed while Monaco was loading
+          // (e.g., shared-link load on startup), and this effect only runs once.
+          value: valueRef.current,
           language,
           theme: theme === 'dark' ? 'bngl-dark' : 'bngl-light',
           automaticLayout: true,

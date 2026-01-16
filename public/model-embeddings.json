@@ -3,7 +3,7 @@
   "model": "all-MiniLM-L6-v2",
   "dimensions": 384,
   "count": 198,
-  "generated": "2026-01-15T21:51:12.917Z",
+  "generated": "2026-01-16T14:42:30.828Z",
   "models": [
     {
       "id": "example-models/akt-signaling",

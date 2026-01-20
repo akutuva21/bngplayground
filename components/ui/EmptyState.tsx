@@ -23,7 +23,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <div className={`flex flex-col items-center justify-center p-8 text-center h-full min-h-[300px] ${className}`}>
             {icon && (
                 <div className="mb-4 p-4 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400 dark:text-slate-500">
-                    {React.cloneElement(icon as React.ReactElement, { className: "w-8 h-8" })}
+                    {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-8 h-8" })}
                 </div>
             )}
 

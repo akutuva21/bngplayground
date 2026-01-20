@@ -174,4 +174,38 @@ bng_exec_*/
 playwright-report/
 test-results/
 
+# nfsim
+# nfsim source (allowed)
+
 # End of .gitignore
+
+nfsim_research/**/*.o
+nfsim_research/**/*.d
+nfsim_research/**/*.a
+nfsim_research/**/*.obj
+nfsim_research/**/*.lib
+nfsim_research/**/*.exe
+nfsim_research/build/
+nfsim_research/bin/
+nfsim_research/lib/
+nfsim_research/NFsim_mssys
+src/wasm/nfsim/build_ems/
+
+# nauty build artifacts
+src/wasm/nauty/*.o
+src/wasm/nauty/*.a
+src/wasm/nauty/*.lib
+src/wasm/nauty/*.exe
+src/wasm/nauty/*.rsp
+src/wasm/nauty/*.bat
+src/wasm/nauty/*.js
+src/wasm/nauty/*.wasm
+
+# Ignore build artifacts in nauty and nfsim build dirs
+src/wasm/nauty/*.o
+src/wasm/nauty/*.a
+src/wasm/nauty/*.lib
+src/wasm/nauty/*.exe
+src/wasm/nauty/compile.bat
+src/wasm/nauty/*.rsp
+src/wasm/nfsim/build_ems/

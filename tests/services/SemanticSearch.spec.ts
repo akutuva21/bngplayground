@@ -32,7 +32,13 @@ const mockIndex = {
 // Mock pipeline
 const mockPipeline = vi.fn();
 
-// Mock dynamic import of transformers
+// In the browser branch we load the UMD bundle which exposes a global
+// `transformers.pipeline`. For the tests we emulate that global.
+beforeEach(() => {
+    (global as any).transformers = { pipeline: (...args: any[]) => mockPipeline(...args) };
+});
+
+// Also mock the Node import path (used when `window` is undefined in tests)
 vi.mock('@xenova/transformers', () => ({
     pipeline: (...args: any[]) => mockPipeline(...args)
 }));

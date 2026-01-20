@@ -34,10 +34,6 @@ export const RegulatoryTab: React.FC<RegulatoryTabProps> = ({ model, selectedRul
   return (
     <div className="flex h-full flex-col gap-6">
       <section className="h-full flex flex-col">
-        <div className="mb-3 shrink-0">
-          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Regulatory Graph</h4>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Visual representation of rule influences (activation/inhibition).</p>
-        </div>
         <div className="flex-1 min-h-[500px] border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden relative">
           {regulatoryGraph.nodes.length > 0 ? (
             <RegulatoryGraphViewer graph={regulatoryGraph} onSelectRule={onSelectRule} />

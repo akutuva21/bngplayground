@@ -13,6 +13,8 @@ interface SimulationModalProps {
   reactionCount?: number;
   iteration?: number;
   simulationProgress?: number;  // 0-100, simulation time progress
+  simTime?: number; // simulation model time (t)
+  simTimeLabel?: string; // exact sim time string from logs
   phase?: 'generating' | 'simulating';
   hideNetworkStats?: boolean;
   model?: BNGLModel | null;
@@ -26,6 +28,8 @@ export function SimulationModal({
   reactionCount = 0,
   iteration = 0,
   simulationProgress,
+  simTime,
+  simTimeLabel,
   phase = 'generating',
   hideNetworkStats = false,
   model
@@ -87,7 +91,13 @@ export function SimulationModal({
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-600" />
         </div>
 
-        <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 min-h-[1.5rem]">{progressMessage || 'Initializing...'}</p>
+        <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 min-h-[1.5rem]">
+          {isSimulating
+            ? (simTimeLabel
+                ? `Sim time: ${simTimeLabel}`
+                : (typeof simTime === 'number' ? `Sim time: ${simTime.toFixed(2)}` : 'Initializing...'))
+            : (progressMessage || 'Initializing...')}
+        </p>
 
         {/* Progress Stats */}
         {!hideNetworkStats && (
@@ -112,9 +122,15 @@ export function SimulationModal({
           <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
             <span>{isSimulating ? 'Simulation Progress' : 'Network Generation'}</span>
             <span>
-              {progressPercent !== null
-                ? `${progressPercent}%`
-                : `${speciesCount.toLocaleString()} species generated`}
+              {isSimulating 
+                ? (simTimeLabel
+                    ? `t = ${simTimeLabel}`
+                    : (typeof simTime === 'number'
+                        ? `t = ${simTime.toFixed(2)}`
+                        : (progressPercent !== null ? `${progressPercent}%` : 'Simulating...')))
+                : (progressPercent !== null
+                    ? `${progressPercent}%`
+                    : `${speciesCount.toLocaleString()} species generated`)}
             </span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-3 overflow-hidden">

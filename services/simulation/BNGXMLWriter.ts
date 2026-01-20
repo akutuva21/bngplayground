@@ -71,7 +71,8 @@ export class BNGXMLWriter {
       .map((s, idx) => {
         const graph = BNGLParser.parseSpeciesGraph(s.name);
         const { moleculesXml, bondsXml } = this.serializeMolecules(graph, `S${idx + 1}`, moleculeTypeDefs, false);
-        return `      <Species id="S${idx + 1}" concentration="${escapeXml(String(s.initialConcentration))}" name="${escapeXml(s.name)}">\n        ${moleculesXml}\n        ${bondsXml}\n      </Species>\n`;
+        const compAttr = graph.compartment ? ` compartment="${escapeXml(graph.compartment)}"` : '';
+        return `      <Species id="S${idx + 1}" concentration="${escapeXml(String(s.initialConcentration))}" name="${escapeXml(s.name)}"${compAttr}>\n        ${moleculesXml}\n        ${bondsXml}\n      </Species>\n`;
       })
       .join('');
 
@@ -79,7 +80,7 @@ export class BNGXMLWriter {
       .flatMap((r, idx) => {
         const baseId = `RR${idx + 1}`;
         const baseName = r.name ?? baseId;
-        const variants: Array<{ id: string; name: string; reactants: string[]; products: string[]; rate?: number }> = [];
+        const variants: Array<{ id: string; name: string; reactants: string[]; products: string[]; rate?: number | string }> = [];
 
         if (r.isBidirectional && r.reverseRate !== undefined) {
           variants.push({
@@ -130,10 +131,16 @@ export class BNGXMLWriter {
           });
 
           const reactantPatterns = reactantPatternData
-            .map((p) => `\n          <ReactantPattern id="${p.prefix}">${p.moleculesXml}${p.bondsXml}</ReactantPattern>`)
+            .map((p) => {
+              const compAttr = p.graph.compartment ? ` compartment="${escapeXml(p.graph.compartment)}"` : '';
+              return `\n          <ReactantPattern id="${p.prefix}"${compAttr}>${p.moleculesXml}${p.bondsXml}</ReactantPattern>`;
+            })
             .join('');
           const productPatterns = productPatternData
-            .map((p) => `\n          <ProductPattern id="${p.prefix}">${p.moleculesXml}${p.bondsXml}</ProductPattern>`)
+            .map((p) => {
+              const compAttr = p.graph.compartment ? ` compartment="${escapeXml(p.graph.compartment)}"` : '';
+              return `\n          <ProductPattern id="${p.prefix}"${compAttr}>${p.moleculesXml}${p.bondsXml}</ProductPattern>`;
+            })
             .join('');
 
           const rateConstants: string[] = [];
@@ -308,12 +315,13 @@ export class BNGXMLWriter {
           .join('');
 
         const labelAttr = mol.label ? ` label="${escapeXml(mol.label)}"` : '';
+        const compAttr = mol.compartment ? ` compartment="${escapeXml(mol.compartment)}"` : '';
 
         const innerXml = componentsXml 
           ? `<ListOfComponents>${componentsXml}</ListOfComponents>`
           : '<ListOfComponents/>';
 
-        return `<Molecule id="${moleculeId}" name="${escapeXml(mol.name)}"${labelAttr}>${innerXml}</Molecule>`;
+        return `<Molecule id="${moleculeId}" name="${escapeXml(mol.name)}"${labelAttr}${compAttr}>${innerXml}</Molecule>`;
       })
       .join('');
 

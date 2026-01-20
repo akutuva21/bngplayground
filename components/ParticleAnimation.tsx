@@ -40,15 +40,14 @@ export const ParticleAnimation: React.FC<ParticleAnimationProps> = ({ type, clas
         return (
           <span
             key={particle.id}
-            className="absolute rounded-full opacity-70 animate-pulse"
+            className="absolute rounded-full opacity-70"
             style={{
               top: `${particle.top}%`,
               left: `${particle.left}%`,
               width: particle.size,
               height: particle.size,
               backgroundColor: color,
-              animationDelay: `${particle.delay}s`,
-              animationDuration: `${particle.duration}s`
+              animation: `float ${particle.duration}s ease-in-out ${particle.delay}s infinite`
             }}
           />
         );

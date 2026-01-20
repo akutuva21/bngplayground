@@ -21,4 +21,23 @@
   .prose {
     max-width: 80ch;
   }
+
+  @keyframes float {
+    0% {
+      transform: translate(0, 0);
+      opacity: 0.65;
+    }
+    50% {
+      transform: translate(0, -10px);
+      opacity: 0.95;
+    }
+    100% {
+      transform: translate(0, 0);
+      opacity: 0.65;
+    }
+  }
+
+  .animate-float {
+    animation: float 2.6s ease-in-out infinite;
+  }
 }

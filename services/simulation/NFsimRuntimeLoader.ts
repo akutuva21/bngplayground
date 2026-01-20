@@ -40,6 +40,7 @@ const createRuntimeFromModule = (module: any): NFsimRuntime | null => {
         throw new Error('NFsim run expects XML text input.');
       }
       const opts = options ?? {};
+      const progressCb = typeof (opts as any).progressCallback === 'function' ? (opts as any).progressCallback as (msg: string) => void : undefined;
       const modelName = (opts as any).modelName || 'model';
       const xmlPath = (opts as any).xmlPath || `/${modelName}.xml`;
       const outPath = (opts as any).outputPath || `/${modelName}.gdat`;
@@ -53,6 +54,53 @@ const createRuntimeFromModule = (module: any): NFsimRuntime | null => {
         module.FS.unlink(outPath);
       } catch {
         // ignore
+      }
+
+      // If the module honors Module.print/printErr, temporarily wire them to the supplied progress callback
+      let oldPrint: ((s: string) => void) | undefined;
+      let oldPrintErr: ((s: string) => void) | undefined;
+      let origConsoleLog: typeof console.log | undefined;
+      let origConsoleError: typeof console.error | undefined;
+
+      if (progressCb) {
+        if (module && typeof module.print === 'function') {
+          oldPrint = module.print.bind(module);
+          module.print = (s: any) => {
+            try {
+              progressCb(String(s));
+            } catch {}
+            try {
+              oldPrint?.(s);
+            } catch {}
+          };
+        }
+        if (module && typeof module.printErr === 'function') {
+          oldPrintErr = module.printErr.bind(module);
+          module.printErr = (s: any) => {
+            try {
+              progressCb(String(s));
+            } catch {}
+            try {
+              oldPrintErr?.(s);
+            } catch {}
+          };
+        }
+
+        // Also wrap global console so modules that use console.log still emit progress
+        origConsoleLog = console.log;
+        origConsoleError = console.error;
+        console.log = (...args: any[]) => {
+          try {
+            progressCb(args.map(String).join(' '));
+          } catch {}
+          origConsoleLog(...args);
+        };
+        console.error = (...args: any[]) => {
+          try {
+            progressCb(args.map(String).join(' '));
+          } catch {}
+          origConsoleError(...args);
+        };
       }
 
       module.FS.writeFile(xmlPath, xml);
@@ -77,7 +125,17 @@ const createRuntimeFromModule = (module: any): NFsimRuntime | null => {
         args.push('-v');
       }
 
-      module.callMain(args);
+      try {
+        module.callMain(args);
+      } finally {
+        // restore wrapped functions
+        if (progressCb) {
+          if (oldPrint) module.print = oldPrint;
+          if (oldPrintErr) module.printErr = oldPrintErr;
+          if (origConsoleLog) console.log = origConsoleLog;
+          if (origConsoleError) console.error = origConsoleError;
+        }
+      }
 
       const output = module.FS.readFile(outPath, { encoding: 'utf8' });
       return typeof output === 'string' ? output : String(output);
@@ -87,11 +145,63 @@ const createRuntimeFromModule = (module: any): NFsimRuntime | null => {
   }
 
   if (typeof module.run === 'function') {
-    return { run: module.run.bind(module), reset: module.reset?.bind(module) };
+    const run = (xml: string, options: Record<string, unknown> = {}) => {
+      const opts = options ?? {};
+      const progressCb = typeof (opts as any).progressCallback === 'function' ? (opts as any).progressCallback as (msg: string) => void : undefined;
+      let origConsoleLog: typeof console.log | undefined;
+      let origConsoleError: typeof console.error | undefined;
+      if (progressCb) {
+        origConsoleLog = console.log;
+        origConsoleError = console.error;
+        console.log = (...args: any[]) => {
+          try { progressCb(args.map(String).join(' ')); } catch {}
+          origConsoleLog(...args);
+        };
+        console.error = (...args: any[]) => {
+          try { progressCb(args.map(String).join(' ')); } catch {}
+          origConsoleError(...args);
+        };
+      }
+      try {
+        return module.run(xml, options);
+      } finally {
+        if (progressCb) {
+          if (origConsoleLog) console.log = origConsoleLog;
+          if (origConsoleError) console.error = origConsoleError;
+        }
+      }
+    };
+    return { run, reset: module.reset?.bind(module) };
   }
 
   if (typeof module.runNFsim === 'function') {
-    return { run: module.runNFsim.bind(module), reset: module.reset?.bind(module) };
+    const run = (xml: string, options: Record<string, unknown> = {}) => {
+      const opts = options ?? {};
+      const progressCb = typeof (opts as any).progressCallback === 'function' ? (opts as any).progressCallback as (msg: string) => void : undefined;
+      let origConsoleLog: typeof console.log | undefined;
+      let origConsoleError: typeof console.error | undefined;
+      if (progressCb) {
+        origConsoleLog = console.log;
+        origConsoleError = console.error;
+        console.log = (...args: any[]) => {
+          try { progressCb(args.map(String).join(' ')); } catch {}
+          origConsoleLog(...args);
+        };
+        console.error = (...args: any[]) => {
+          try { progressCb(args.map(String).join(' ')); } catch {}
+          origConsoleError(...args);
+        };
+      }
+      try {
+        return module.runNFsim(xml, options);
+      } finally {
+        if (progressCb) {
+          if (origConsoleLog) console.log = origConsoleLog;
+          if (origConsoleError) console.error = origConsoleError;
+        }
+      }
+    };
+    return { run, reset: module.reset?.bind(module) };
   }
 
   return null;
@@ -121,8 +231,8 @@ export async function ensureNFsimRuntime(): Promise<NFsimRuntime | null> {
     initPromise = (async () => {
       const { moduleUrl, wasmUrl, factory } = getRuntimeHints();
 
-      const baseUrl = typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL
-        ? import.meta.env.BASE_URL
+      const baseUrl = typeof import.meta !== 'undefined' && (import.meta as any).env?.BASE_URL
+        ? (import.meta as any).env.BASE_URL
         : '/';
       const normalizedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
       const resolvedWasmUrl = wasmUrl ?? `${normalizedBase}nfsim.wasm`;

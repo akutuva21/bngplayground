@@ -48,6 +48,8 @@ export default defineConfig(() => {
         'antlr4ts/Token',
         'jsep'
       ],
+      // Prevent Vite from pre-bundling the heavy transformers package for the dev server
+      exclude: ['@xenova/transformers'],
       force: true
     },
     resolve: {
@@ -56,9 +58,6 @@ export default defineConfig(() => {
         // Polyfill Node.js modules for ANTLR4 browser compatibility
         'util': 'util',
         'assert': 'assert',
-        // Exclude Node.js-only files from browser build
-        './cvode_node': false,
-        './cvode_node.ts': false,
       },
       // Avoid duplicate React copies in the bundle
       dedupe: ['react', 'react-dom']
@@ -73,8 +72,10 @@ export default defineConfig(() => {
       // This prevents a brittle catch-all `vendor_misc` that can mix UMD wrappers
       // with ESM bundles and produce runtime `exports`/`n` undefined errors.
       rollupOptions: {
-        external: ['module', 'fs', 'path'],
-      }
+        external: ['module', 'fs', 'path', '@xenova/transformers'],
+      },
+      // Keep standard minifier; explicit minifier selection avoids surprises
+      minify: 'esbuild' as const
     },
     worker: {
       // Use ES module format for workers to support code-splitting

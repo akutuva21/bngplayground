@@ -15,8 +15,12 @@ if not exist "%NFSIM_SRC%\src\NFsim.cpp" (
   exit /b 1
 )
 
-REM Activate Emscripten SDK environment (local path)
-call C:\Users\Achyudhan\emsdk\emsdk_env.bat
+REM Activate Emscripten SDK environment (if EMSDK env var is set)
+if defined EMSDK (
+  call "%EMSDK%\emsdk_env.bat"
+) else (
+  echo EMSDK environment variable not set. Assuming Emscripten is already in PATH.
+)
 
 REM Create a clean build directory
 set BUILD_DIR=%SCRIPT_DIR%build_ems

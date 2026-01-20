@@ -163,7 +163,7 @@ function exportAsCDAT(speciesData: Record<string, number>[] | undefined, species
   URL.revokeObjectURL(url);
 }
 
-export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpecies, onVisibleSpeciesChange, highlightedSeries = [], expressions = [] }) => {
+export const ResultsChart: React.FC<ResultsChartProps> = ({ results, model, isNFsim, visibleSpecies, onVisibleSpeciesChange, highlightedSeries = [], expressions = [] }) => {
   const [zoomHistory, setZoomHistory] = useState<ZoomDomain[]>([]);
   const [selection, setSelection] = useState<ZoomDomain | null>(null);
   const [filterMode, setFilterMode] = useState<'all' | 'search'>('all');
@@ -172,6 +172,12 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [xAxisScale, setXAxisScale] = useState<'linear' | 'log'>('linear');
   const [yAxisScale, setYAxisScale] = useState<'linear' | 'log'>('linear');
+
+  const isNFsimMode = useMemo(() => {
+    if (typeof isNFsim === 'boolean') return isNFsim;
+    const method = model?.simulationPhases?.[0]?.method;
+    return method === 'nf' || method === 'nfsim';
+  }, [isNFsim, model]);
 
   // Reset zoom when scale changes
   const handleXScaleChange = () => {
@@ -184,54 +190,6 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
     setYAxisScale(prev => prev === 'linear' ? 'log' : 'linear');
     setZoomHistory([]);
     setSelection(null);
-  };
-
-  // Calculate appropriate domain for log scale based on actual data
-  const getLogDomain = (dataKey: 'time' | 'y'): [number | 'dataMin' | 'auto', number | 'dataMax' | 'auto'] => {
-    if (!chartData || chartData.length === 0) return [0.001, 'auto'];
-    
-    let minVal = Infinity;
-    let maxVal = -Infinity;
-    
-    if (dataKey === 'time') {
-      // For time axis, just look at time values
-      chartData.forEach(point => {
-        const val = point.time;
-        if (typeof val === 'number' && val > 0) {
-          minVal = Math.min(minVal, val);
-          maxVal = Math.max(maxVal, val);
-        }
-      });
-    } else {
-      // For Y axis, look at all visible species values
-      chartData.forEach(point => {
-        speciesToPlot.forEach(species => {
-          if (visibleSpecies.has(species)) {
-            const val = point[species];
-            if (typeof val === 'number' && val > 0) {
-              minVal = Math.min(minVal, val);
-              maxVal = Math.max(maxVal, val);
-            }
-          }
-        });
-      });
-    }
-    
-    // If we found valid positive values, use them with some padding
-    if (minVal !== Infinity && maxVal !== -Infinity && minVal > 0) {
-      // Add padding in log space (multiply/divide by factor)
-      const logMin = Math.log10(minVal);
-      const logMax = Math.log10(maxVal);
-      const padding = (logMax - logMin) * 0.1; // 10% padding
-      
-      return [
-        Math.pow(10, logMin - padding),
-        Math.pow(10, logMax + padding)
-      ];
-    }
-    
-    // Fallback to default range
-    return [0.001, 'auto'];
   };
 
   useEffect(() => {
@@ -322,6 +280,42 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
     });
   }, [results, expressions]);
 
+  const speciesToPlot = (results?.headers ?? []).filter(h => h !== 'time');
+
+  const plotSeriesKeys = useMemo(() => {
+    const exprKeys = expressions.map(expr => expr.name);
+    return [...speciesToPlot, ...exprKeys];
+  }, [speciesToPlot, expressions]);
+
+  const plotData = useMemo(() => {
+    if (!chartData || chartData.length === 0) return [];
+    const useLogX = xAxisScale === 'log';
+    const useLogY = yAxisScale === 'log';
+
+    return chartData
+      .filter(point => !useLogX || (typeof point.time === 'number' && point.time > 0))
+      .map((point) => {
+        const next: Record<string, any> = { ...point };
+
+        if (useLogX && typeof point.time === 'number' && point.time > 0) {
+          next.__time = Math.log10(point.time);
+        }
+
+        if (useLogY) {
+          plotSeriesKeys.forEach((seriesKey) => {
+            const val = point[seriesKey];
+            if (typeof val === 'number' && val > 0) {
+              next[`__${seriesKey}`] = Math.log10(val);
+            } else {
+              next[`__${seriesKey}`] = null;
+            }
+          });
+        }
+
+        return next;
+      });
+  }, [chartData, plotSeriesKeys, xAxisScale, yAxisScale]);
+
   if (!results || results.data.length === 0) {
     return (
       <Card className="flex h-96 max-w-full items-center justify-center overflow-hidden">
@@ -376,8 +370,6 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
   const handleDoubleClick = () => {
     setZoomHistory([]);
   };
-
-  const speciesToPlot = results.headers.filter(h => h !== 'time');
   const filterVisibleSpecies = (name: string) => {
     if (filterMode === 'all') return true;
     if (filterMode === 'search') return searchTerm.trim() === '' ? true : name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -386,8 +378,10 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
   const currentDomain = zoomHistory.length > 0 ? zoomHistory[zoomHistory.length - 1] : undefined;
   const highlightSet = new Set(highlightedSeries);
 
-  // Use external legend when there are many series to keep chart size fixed
-  const useExternalLegend = speciesToPlot.length > LEGEND_THRESHOLD;
+  // Use external legend for consistent layout and spacing
+  const useExternalLegend = true;
+
+  const chartMarginBottom = 36;
 
   const handleToggleSeries = (name: string) => {
     const newVisibleSpecies = new Set(visibleSpecies);
@@ -412,19 +406,84 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
 
 
 
+  const yAxisBaseLabel = isNFsimMode ? 'Counts' : 'Concentration';
+  const yAxisLabel = yAxisScale === 'log' ? `log(${yAxisBaseLabel})` : yAxisBaseLabel;
+  const xAxisLabel = xAxisScale === 'log' ? 'log(Time)' : 'Time';
+
+  const formatAxisValue = (value: number, axis: 'x' | 'y') => {
+    if (axis === 'x' && xAxisScale === 'log') {
+      return Number.isFinite(value) ? value.toFixed(3) : String(value);
+    }
+    if (axis === 'y' && yAxisScale === 'log') {
+      return Number.isFinite(value) ? value.toFixed(3) : String(value);
+    }
+    const abs = Math.abs(value);
+    if (abs >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+    if (abs >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+    if (abs >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+    if (abs < 0.01) return value.toExponential(1);
+    return value.toFixed(2).replace(/\.00$/, '');
+  };
+
+
+  const getTransformedDomain = (axis: 'time' | 'y') => {
+    if (!plotData || plotData.length === 0) return ['dataMin', 'dataMax'] as const;
+
+    let minVal = Infinity;
+    let maxVal = -Infinity;
+
+    if (axis === 'time') {
+      const key = timeKey;
+      plotData.forEach((point) => {
+        const val = point[key];
+        if (typeof val === 'number' && Number.isFinite(val)) {
+          minVal = Math.min(minVal, val);
+          maxVal = Math.max(maxVal, val);
+        }
+      });
+    } else {
+      plotData.forEach((point) => {
+        plotSeriesKeys.forEach((seriesKey) => {
+          if (!visibleSpecies.has(seriesKey)) return;
+          const val = point[`__${seriesKey}`];
+          if (typeof val === 'number' && Number.isFinite(val)) {
+            minVal = Math.min(minVal, val);
+            maxVal = Math.max(maxVal, val);
+          }
+        });
+      });
+    }
+
+    if (minVal === Infinity || maxVal === -Infinity) {
+      return ['dataMin', 'dataMax'] as const;
+    }
+
+    const span = Math.max(1e-6, maxVal - minVal);
+    const padding = span * 0.08;
+    if (axis === 'time') {
+      // For log(Time), avoid pushing below the first data point
+      return [minVal, maxVal + padding] as const;
+    }
+    return [minVal - padding, maxVal + padding] as const;
+  };
+
+  const timeKey = xAxisScale === 'log' ? '__time' : 'time';
+
   // Custom Glassy Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-lg shadow-lg text-xs">
-          <p className="font-semibold text-slate-700 dark:text-slate-200 mb-2">Time: {typeof label === 'number' ? label.toFixed(3) : label}</p>
+          <p className="font-semibold text-slate-700 dark:text-slate-200 mb-2">
+            {xAxisLabel}: {typeof label === 'number' ? formatAxisValue(label, 'x') : label}
+          </p>
           <div className="flex flex-col gap-1 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
             {payload.map((entry: any, idx: number) => (
               <div key={idx} className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
                 <span className="text-slate-500 dark:text-slate-400">{entry.name}:</span>
                 <span className="font-mono font-medium text-slate-700 dark:text-slate-200">
-                  {typeof entry.value === 'number' ? entry.value.toExponential(2) : entry.value}
+                  {typeof entry.value === 'number' ? formatAxisValue(entry.value, 'y') : entry.value}
                 </span>
               </div>
             ))}
@@ -445,8 +504,8 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
         {hasValidDimensions ? (
           <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={50}>
           <LineChart
-            data={chartData}
-            margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+            data={plotData}
+            margin={{ top: 10, right: 20, left: 10, bottom: chartMarginBottom }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -454,54 +513,36 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
           >
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(128, 128, 128, 0.15)" vertical={false} />
             <XAxis
-              dataKey="time"
-              label={{ value: 'Time', position: 'insideBottomRight', offset: -5, fill: '#334155', fontSize: 13, fontWeight: 'bold' }}
+              dataKey={timeKey}
+              label={{ value: xAxisLabel, position: 'bottom', offset: 12, fill: '#334155', fontSize: 13, fontWeight: 'bold' }}
               type="number"
-              scale={xAxisScale}
-              domain={currentDomain ? [currentDomain.x1, currentDomain.x2] : xAxisScale === 'log' ? getLogDomain('time') : ['dataMin', 'dataMax']}
+              scale="linear"
+              domain={currentDomain ? [currentDomain.x1, currentDomain.x2] : (xAxisScale === 'log' ? getTransformedDomain('time') : ['dataMin', 'dataMax'])}
               allowDataOverflow={true}
               allowDecimals={true}
+              tickCount={7}
+              tickMargin={6}
               tick={{ fontSize: 11, fill: 'black' }}
               tickLine={{ stroke: 'black' }}
               axisLine={{ stroke: 'black' }}
               tickFormatter={(value) => {
                 if (typeof value !== 'number') return value;
-                if (value === 0) return '0';
-                const abs = Math.abs(value);
-                if (xAxisScale === 'log') {
-                  // For log scale, use exponential notation
-                  return value.toExponential(0);
-                }
-                // Linear scale formatting
-                if (abs >= 1e9) return (value / 1e9).toFixed(1) + 'B';
-                if (abs >= 1e6) return (value / 1e6).toFixed(1) + 'M';
-                if (abs >= 1e3) return (value / 1e3).toFixed(1) + 'K';
-                if (abs < 0.01) return value.toExponential(1);
-                return value.toFixed(2).replace(/\.00$/, '');
+                return formatAxisValue(value, 'x');
               }}
             />
             <YAxis
-              label={{ value: 'Concentration', angle: -90, position: 'insideLeft', fill: '#334155', fontSize: 13, fontWeight: 'bold' }}
-              scale={yAxisScale}
-              domain={currentDomain ? [currentDomain.y1, currentDomain.y2] : yAxisScale === 'log' ? getLogDomain('y') : [0, 'dataMax']}
+              label={{ value: yAxisLabel, angle: -90, position: 'insideLeft', fill: '#334155', fontSize: 13, fontWeight: 'bold' }}
+              scale="linear"
+              domain={currentDomain ? [currentDomain.y1, currentDomain.y2] : (yAxisScale === 'log' ? getTransformedDomain('y') : [0, 'dataMax'])}
               allowDataOverflow={true}
               allowDecimals={true}
+              tickCount={6}
               tick={{ fontSize: 11, fill: 'black' }}
               tickLine={{ stroke: 'black' }}
               axisLine={{ stroke: 'black' }}
               tickFormatter={(value) => {
                 if (typeof value !== 'number') return value;
-                if (value === 0) return '0';
-                const abs = Math.abs(value);
-                if (yAxisScale === 'log') {
-                  // For log scale, use exponential notation
-                  return value.toExponential(0);
-                }
-                if (abs >= 1e9) return (value / 1e9).toFixed(1) + 'B';
-                if (abs >= 1e6) return (value / 1e6).toFixed(1) + 'M';
-                if (abs >= 1e3) return (value / 1e3).toFixed(1) + 'K';
-                if (abs < 0.01) return value.toExponential(1);
-                return value.toFixed(2).replace(/\.00$/, '');
+                return formatAxisValue(value, 'y');
               }}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -511,7 +552,6 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
                 onClick={handleLegendClick as any}
                 content={<CustomLegend onHighlight={handleLegendHighlight} />}
                 verticalAlign="bottom"
-                height={undefined}
               />
             )}
 
@@ -519,7 +559,8 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
               <Line
                 key={speciesName}
                 type="monotone"
-                dataKey={speciesName}
+                dataKey={yAxisScale === 'log' ? `__${speciesName}` : speciesName}
+                name={speciesName}
                 stroke={CHART_COLORS[i % CHART_COLORS.length]}
                 strokeWidth={highlightSet.has(speciesName) ? 3 : 1.5}
                 dot={false}
@@ -535,7 +576,8 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
               <Line
                 key={expr.id}
                 type="monotone"
-                dataKey={expr.name}
+                dataKey={yAxisScale === 'log' ? `__${expr.name}` : expr.name}
+                name={expr.name}
                 stroke={expr.color}
                 strokeWidth={highlightSet.has(expr.name) ? 3 : 2}
                 strokeDasharray="5 3"

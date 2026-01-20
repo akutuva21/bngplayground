@@ -12,6 +12,7 @@ interface RulesTabProps {
   results: SimulationResults | null;
   selectedRuleId?: string | null;
   onSelectRule?: (ruleId: string) => void;
+  simulationMethod?: 'ode' | 'ssa' | 'nf';
 }
 
 const getRuleId = (rule: { name?: string }, index: number): string => rule.name ?? `rule_${index + 1}`;
@@ -25,7 +26,7 @@ const getRuleLabel = (rule: { name?: string }, index: number): string => {
   return name;
 };
 
-export const RulesTab: React.FC<RulesTabProps> = ({ model, results, selectedRuleId, onSelectRule }) => {
+export const RulesTab: React.FC<RulesTabProps> = ({ model, results, selectedRuleId, onSelectRule, simulationMethod }) => {
   const [selectedAtomId, setSelectedAtomId] = useState<string | null>(null);
   const [overlaySpecies, setOverlaySpecies] = useState<Set<string>>(new Set());
   const [highlightedSeries, setHighlightedSeries] = useState<string[]>([]);
@@ -277,6 +278,7 @@ export const RulesTab: React.FC<RulesTabProps> = ({ model, results, selectedRule
             <ResultsChart
               results={results}
               model={model}
+              isNFsim={simulationMethod === 'nf'}
               visibleSpecies={overlaySpecies}
               onVisibleSpeciesChange={setOverlaySpecies}
               highlightedSeries={highlightedSeries}

@@ -13,8 +13,9 @@ export const ModelExplorerTab: React.FC<ModelExplorerTabProps> = ({ onLoadModel 
     };
 
     return (
-        <div className="h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-950 p-8">
-            <div className="max-w-2xl text-center space-y-6">
+        <div className="h-full flex flex-col items-center justify-center px-4 pb-6">
+            <div className="w-full max-w-4xl rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-900 to-slate-950 p-8 shadow-sm">
+                <div className="max-w-2xl mx-auto text-center space-y-6">
                 <div className="text-6xl mb-4">🌎</div>
                 <h2 className="text-3xl font-bold text-white">Model Explorer</h2>
                 <p className="text-lg text-slate-300">
@@ -48,6 +49,7 @@ export const ModelExplorerTab: React.FC<ModelExplorerTabProps> = ({ onLoadModel 
                 <p className="text-slate-500 text-sm mt-8">
                     Uses local ML embeddings to project high-dimensional model content onto a 2D/3D map.
                 </p>
+                </div>
             </div>
         </div>
     );

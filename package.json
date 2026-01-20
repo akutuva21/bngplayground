@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "npm run generate:embeddings && vite build",
     "build:quick": "vite build",
+    "build:verify": "node scripts/check_dist.js",
+    "build:full": "npm run build && npm run build:verify",
     "preview": "vite preview",
     "test": "vitest --run",
     "test:watch": "vitest",

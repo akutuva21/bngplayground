@@ -32,6 +32,10 @@ function App() {
   const [currentMethod, setCurrentMethod] = useState<'ode' | 'ssa' | 'nf'>('ode');
   const [generationProgress, setGenerationProgress] = useState<string>('');
   const [progressStats, setProgressStats] = useState<{ species: number; reactions: number; iteration: number }>({ species: 0, reactions: 0, iteration: 0 });
+  const [simulationProgress, setSimulationProgress] = useState<number | undefined>(0);
+  const [simulationTime, setSimulationTime] = useState<number | undefined>(0);
+  const [simulationTimeLabel, setSimulationTimeLabel] = useState<string | undefined>(undefined);
+  const [simOptions, setSimOptions] = useState<SimulationOptions | null>(null);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [aboutFocus, setAboutFocus] = useState<string | null>(null);
   const [activeVizTab, setActiveVizTab] = useState<number>(0);
@@ -47,6 +51,11 @@ function App() {
 
   const parseAbortRef = useRef<AbortController | null>(null);
   const simulateAbortRef = useRef<AbortController | null>(null);
+  const simOptionsRef = useRef<SimulationOptions | null>(null);
+
+  useEffect(() => {
+    simOptionsRef.current = simOptions;
+  }, [simOptions]);
 
   // Ensure the worker is terminated if the app component is ever unmounted (e.g. during HMR or tab close)
   useEffect(() => {
@@ -310,6 +319,7 @@ const handleSimulate = useCallback(async (options: SimulationOptions, modelOverr
   // Resolve effective method (e.g. handle 'default' -> 'nf' if model has simulate_nf)
   const effectiveMethod = resolveAutoMethod(targetModel, options.method);
   setCurrentMethod(effectiveMethod);
+  setSimOptions(options);
   setIsSimulating(true);
   try {
     // Note: We still pass the original options to the worker, letting it also resolve 'default' if needed,
@@ -361,22 +371,61 @@ const handleCancelSimulation = useCallback(() => {
 }, []);
 
 useEffect(() => {
-  if (!isSimulating) {
-    // Reset progress stats when not simulating
-    setProgressStats({ species: 0, reactions: 0, iteration: 0 });
-    setGenerationProgress('');
-    return undefined;
-  }
   const onProgress = (payload: any) => {
     if (!payload) return;
-    // Update progress stats from generate_network_progress payload
-    const speciesCount = payload.species ?? payload.speciesCount ?? 0;
-    const reactionCount = payload.reactions ?? payload.reactionCount ?? 0;
-    const iteration = payload.iteration ?? 0;
-    setProgressStats({ species: speciesCount, reactions: reactionCount, iteration });
-    const msg = payload.message ?? `Generated ${speciesCount} species, ${reactionCount} reactions`;
-    setGenerationProgress(String(msg));
+
+    // Extract simulation time (use console-derived NFsim logs as source of truth)
+    let simTimeVal: number | undefined = undefined;
+
+    const isAuthoritativeSimTime = payload.source === 'nfsim-console' ||
+      (typeof payload.message === 'string' && /(?:^|\b)Sim\s*time\s*[:=]/i.test(payload.message));
+
+    if (isAuthoritativeSimTime && typeof payload.simulationTime === 'number') {
+      simTimeVal = payload.simulationTime;
+    } else if (typeof payload.simTime === 'number') {
+      simTimeVal = payload.simTime;
+    } else if (typeof payload.message === 'string') {
+      // Strict regex: only parse "Sim time" to avoid CPU time
+      const m = payload.message.match(/(?:^|\b)Sim\s*time\s*[:=]\s*([+-]?(?:\d+\.?\d*|\d*\.\d+)(?:e[+-]?\d+)?)/i) ||
+                payload.message.match(/\bt\s*=\s*([+-]?(?:\d+\.?\d*|\d*\.\d+)(?:e[+-]?\d+)?)/i);
+      if (m) {
+        const val = Number(m[1]);
+        setSimulationTimeLabel(m[1]);
+        if (!isNaN(val)) simTimeVal = val;
+      }
+    }
+
+    if (typeof simTimeVal === 'number' && Number.isFinite(simTimeVal)) {
+      setSimulationTime(simTimeVal);
+
+      // Use simulationProgress from payload if provided, else calculate
+      if (isAuthoritativeSimTime && typeof payload.simulationProgress === 'number') {
+        setSimulationProgress(payload.simulationProgress);
+      } else {
+        const tEnd = simOptionsRef.current?.t_end;
+        if (typeof tEnd === 'number' && tEnd > 0) {
+          const next = (simTimeVal / tEnd) * 100;
+          setSimulationProgress(prev => (prev === undefined || next > prev) ? next : prev);
+        }
+      }
+    } else if (typeof payload.simulationProgress === 'number') {
+      setSimulationProgress(payload.simulationProgress);
+    }
+
+    // Update progress stats
+    if (payload.species !== undefined || payload.speciesCount !== undefined || payload.reactionCount !== undefined || payload.iteration !== undefined) {
+      setProgressStats(prev => ({
+        species: payload.species ?? payload.speciesCount ?? prev.species,
+        reactions: payload.reactions ?? payload.reactionCount ?? prev.reactions,
+        iteration: payload.iteration ?? prev.iteration
+      }));
+    }
+
+    if (payload.message) {
+      setGenerationProgress(String(payload.message));
+    }
   };
+
   const onWarning = (payload: any) => {
     if (!payload) return;
     setGenerationProgress(`⚠️ ${String(payload.message ?? 'Warning during generation')}`);
@@ -388,7 +437,30 @@ useEffect(() => {
     unsubP();
     unsubW();
   };
+}, []);
+
+useEffect(() => {
+  if (!isSimulating) {
+    // Reset progress stats when not simulating
+    setProgressStats({ species: 0, reactions: 0, iteration: 0 });
+    setGenerationProgress('');
+    setSimulationProgress(0);
+    setSimulationTime(0);
+    setSimulationTimeLabel(undefined);
+  }
 }, [isSimulating]);
+
+// Simulation progress estimator for silent solvers (like NFsim)
+useEffect(() => {
+  if (!isSimulating || currentMethod !== 'nf' || !simOptions) {
+    return undefined;
+  }
+
+  // The simulator is now correctly parsing Sim time logs from the console. 
+  // We don't need a wall-clock estimator anymore as it just causes lag/confusion.
+  // The onProgress handler will catch scientific notation logs and update the UI in real time.
+  return undefined;
+}, [isSimulating, currentMethod, simOptions]);
 
 const handleCodeChange = (newCode: string) => {
   console.log('[App] handleCodeChange called:', {
@@ -497,6 +569,7 @@ return (
               onSimulate={handleSimulate}
               isSimulating={isSimulating}
               onCancelSimulation={handleCancelSimulation}
+              simulationMethod={currentMethod}
               activeTabIndex={activeVizTab}
               onActiveTabIndexChange={setActiveVizTab}
 
@@ -510,6 +583,9 @@ return (
           speciesCount={progressStats.species}
           reactionCount={progressStats.reactions}
           iteration={progressStats.iteration}
+          simulationProgress={simulationProgress}
+          simTime={simulationTime}
+          simTimeLabel={simulationTimeLabel}
           phase={currentMethod === 'nf' ? 'simulating' : 'generating'}
           hideNetworkStats={currentMethod === 'nf'}
           model={model}

@@ -68,8 +68,15 @@ async function getEmbedder(): Promise<Pipeline> {
   isLoading = true;
   try {
     console.log('[SemanticSearch] Loading embedding model...');
-    const { pipeline } = await import('@xenova/transformers');
+
+    // Use a small runtime loader that picks the correct transformers backend
+    // for the current environment (browser: UMD on window or CDN; Node: direct import).
+    // This centralizes the browser-safe logic and keeps the Vite build from
+    // accidentally pulling Node-only code into client chunks.
+    const { loadTransformersPipeline } = await import('@/src/utils/transformersLoader');
+    const pipeline = await loadTransformersPipeline();
     embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+
     console.log('[SemanticSearch] Model loaded.');
     return embedder;
   } catch (err) {
@@ -134,7 +141,17 @@ export async function semanticSearch(query: string, topK: number = 10): Promise<
 
   // Compute query embedding
   const output = await embed(query, { pooling: 'mean', normalize: true });
+  // Debugging: ensure output has expected shape
+  if (!output || !output.data) {
+    console.warn('[SemanticSearch][DEBUG] embed output is missing data:', output);
+    throw new Error('Embedding pipeline returned unexpected output');
+  }
+
+
   const queryEmbedding = Array.from(output.data) as number[];
+  if (!Array.isArray(queryEmbedding) || queryEmbedding.length === 0) {
+    console.warn('[SemanticSearch][DEBUG] queryEmbedding length:', queryEmbedding && queryEmbedding.length);
+  }
 
   // Score all models
   const scores: Array<{ model: ModelEmbedding; score: number }> = index.models.map(model => ({

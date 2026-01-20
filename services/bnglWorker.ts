@@ -41,6 +41,8 @@ type JobState = {
 };
 
 const jobStates = new Map<number, JobState>();
+let activeSimulationJobId: number | null = null;
+let activeSimulationMethod: 'ode' | 'ssa' | 'nf' | null = null;
 
 // Ring buffer for logs to prevent memory blowup
 // Default size (1000) chosen to capture ~5-10 minutes of active simulation logs
@@ -111,6 +113,25 @@ const originalConsoleDebug = console.debug;
 console.log = (...args: any[]) => {
   const message = args.map((arg) => safeStringify(arg)).join(' ');
   logBuffer.add(message);
+  // Forward NFsim sim-time logs as progress updates when possible
+  if (activeSimulationJobId !== null && activeSimulationMethod === 'nf') {
+    try {
+      const match = message.match(/(?:^|\b)Sim\s*time\s*[:=]\s*([0-9.eE+-]+)/i) ||
+                    message.match(/\bt\s*=\s*([0-9.eE+-]+)/i);
+      if (match) {
+        const val = Number(match[1]);
+        if (!Number.isNaN(val)) {
+          ctx.postMessage({
+            id: activeSimulationJobId,
+            type: 'progress',
+            payload: { message, simulationTime: val, source: 'nfsim-console' }
+          });
+        }
+      }
+    } catch {
+      // best-effort only
+    }
+  }
   originalConsoleLog(...args); // Still log to actual console for debugging
 };
 
@@ -380,6 +401,10 @@ if (typeof ctx.addEventListener === 'function') {
           // Update options with resolved method so declared simulators don't have to guess 'default'
           options.method = effectiveMethod;
 
+          // Track active simulation for progress forwarding
+          activeSimulationJobId = id;
+          activeSimulationMethod = effectiveMethod;
+
           // Check for model-defined simulation parameters to override defaults
           // This ensures that "simulate_nf({t_end=>1, n_steps=>20})" in the file is respected
           if (model.actions) {
@@ -502,6 +527,12 @@ if (typeof ctx.addEventListener === 'function') {
                 throw new Error(`Model incompatible with NFsim:\n• ${errorMessages.join('\n• ')}`);
               }
 
+              safePostMessage({
+                id,
+                type: 'progress',
+                payload: { message: 'NFsim progress hook active' }
+              });
+
               const nfOptions: NFsimSimulationOptions = {
                 t_end: options.t_end,
                 n_steps: options.n_steps,
@@ -514,7 +545,7 @@ if (typeof ctx.addEventListener === 'function') {
               };
 
               // Run via encapsulated runner
-              return await runNFsimSimulation(model, nfOptions);
+              return await runNFsimSimulation(model, nfOptions, id);
 
             } else {
               console.log(`[Worker] Received 'simulate' request. Model has ${phases.length} phases. Options: t_end=${options?.t_end}, method=${options?.method}`);
@@ -534,6 +565,10 @@ if (typeof ctx.addEventListener === 'function') {
           safePostMessage(response);
         } finally {
           markJobComplete(id);
+          if (activeSimulationJobId === id) {
+            activeSimulationJobId = null;
+            activeSimulationMethod = null;
+          }
         }
       })();
       return;

@@ -55,7 +55,8 @@ const ensureExpandedNetwork = async (model: BNGLModel): Promise<BNGLModel> => {
 
 export async function runNFsimSimulation(
   inputModel: BNGLModel,
-  options: NFsimSimulationOptions
+  options: NFsimSimulationOptions,
+  jobId?: number
 ): Promise<SimulationResults> {
   const validation = validateModelForNFsim(inputModel);
   if (!validation.valid) {
@@ -71,7 +72,42 @@ export async function runNFsimSimulation(
       ...options,
       cb: options.cb ?? hasSpeciesObservables
     };
-    const gdat = await runNFsim(xml, runOptions);
+    // Attach a progress callback so we can forward NFsim stdout lines to the main thread as 'progress' messages
+    const progressCallback = (line: string) => {
+      try {
+        const message = String(line).trim();
+        // Strict regex: only parse "Sim time" to avoid CPU time / events noise
+        const tm = message.match(/(?:^|\b)Sim\s*time\s*[:=]\s*([0-9.eE+-]+)/i) ||
+             message.match(/\bt\s*=\s*([0-9.eE+-]+)/i);
+        
+        const payload: any = { message: line, source: 'nfsim-progress' };
+        if (tm) {
+          const val = Number(tm[1]);
+          if (!isNaN(val)) {
+            payload.simulationTime = val;
+            // Also set a percentage if t_end is known
+            if (options.t_end) {
+              payload.simulationProgress = (val / options.t_end) * 100;
+            }
+          }
+        }
+        
+        // Log to worker console so we can see it in dev tools
+        if (payload.simulationTime !== undefined) {
+           console.log(`[NF Progress] t=${payload.simulationTime.toFixed(4)}`);
+        }
+
+        (self as any).postMessage({ id: jobId ?? -1, type: 'progress', payload });
+      } catch (e) {
+        // swallow
+      }
+    };
+
+    const gdat = await runNFsim(xml, { ...runOptions, progressCallback });
+
+    // Ensure final progress update shows completed time
+    (globalThis as any).postMessage({ id: jobId ?? -1, type: 'progress', payload: { message: 'Simulation complete', simulationProgress: 100, simulationTime: runOptions.t_end } });
+
     return NFsimResultAdapter.adaptGdatToSimulationResults(gdat, inputModel);
   } catch (error) {
     const formatted = formatNFsimError(error);

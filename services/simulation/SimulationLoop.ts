@@ -1455,7 +1455,8 @@ export async function simulate(
 
         if (i % Math.ceil(phase_n_steps / 10) === 0) {
           const phaseProgress = (i / phase_n_steps) * 100;
-          callbacks.postMessage({ type: 'progress', message: `Simulating: ${phaseProgress.toFixed(0)}%`, simulationProgress: phaseProgress });
+          // Include simulation time (model time) where possible to help UI show a running time metric
+          callbacks.postMessage({ type: 'progress', message: `Simulating: ${phaseProgress.toFixed(0)}%`, simulationProgress: phaseProgress, simulationTime: phaseStart + t });
         }
       }
     } finally {

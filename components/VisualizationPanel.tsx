@@ -27,6 +27,7 @@ interface VisualizationPanelProps {
   onSimulate: (options: SimulationOptions) => void;
   isSimulating: boolean;
   onCancelSimulation: () => void;
+  simulationMethod?: 'ode' | 'ssa' | 'nf';
   activeTabIndex?: number;
   onActiveTabIndexChange?: (idx: number) => void;
 
@@ -48,12 +49,26 @@ const TabButton: React.FC<{
   </button>
 );
 
+const TabHeader: React.FC<{ title: string; description?: string }> = ({ title, description }) => (
+  <div className="mb-3 flex flex-col gap-1">
+    <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 tracking-wide">
+      {title}
+    </h4>
+    {description ? (
+      <p className="text-xs text-slate-500 dark:text-slate-400">
+        {description}
+      </p>
+    ) : null}
+  </div>
+);
+
 export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
   model,
   results,
   onSimulate,
   isSimulating,
   onCancelSimulation,
+  simulationMethod,
   activeTabIndex,
   onActiveTabIndexChange,
 
@@ -239,13 +254,15 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
       <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 10 ? '' : 'p-4'}`}>
         {activeTab === 0 && (
           <div className="h-full flex flex-col">
-            <div className="mb-3 text-sm text-slate-600 dark:text-slate-400 shrink-0">
-              Time Courses – plot observables vs time
-            </div>
+            <TabHeader
+              title="Time Courses"
+              description="Plot observables vs time"
+            />
             <div className="flex-1 min-h-0">
               <ResultsChart
                 results={results}
                 model={model}
+                isNFsim={simulationMethod === 'nf'}
                 visibleSpecies={visibleSpecies}
                 onVisibleSpeciesChange={setVisibleSpecies}
                 expressions={expressions}
@@ -264,9 +281,10 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
 
         {activeTab === 1 && networkViewMode === 'regulatory' && (
           <div className="h-full flex flex-col">
-            <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">
-              Regulatory Graph – visual representation of rule influences
-            </div>
+            <TabHeader
+              title="Regulatory Graph"
+              description="Visual representation of rule influences"
+            />
             <RegulatoryTab
               model={model}
               selectedRuleId={selectedRuleId}
@@ -277,19 +295,20 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
 
         {activeTab === 1 && networkViewMode === 'contact' && (
           <div className="h-full flex flex-col">
-            <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">
-              Contact Map – visualization of molecule interactions
-            </div>
+            <TabHeader
+              title="Contact Map"
+              description="Visualization of molecule interactions"
+            />
             <ContactMapTab model={model} onSelectRule={setSelectedRuleId} />
           </div>
         )}
 
         {activeTab === 1 && networkViewMode === 'dynamics' && (
           <div className="h-full flex flex-col">
-            <div className="mb-3 shrink-0">
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Dynamics Graph</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Dynamic causal network from SSA simulation events. Nodes pulse when rules fire.</p>
-            </div>
+            <TabHeader
+              title="Dynamics Graph"
+              description="Dynamic causal network from SSA simulation events. Nodes pulse when rules fire."
+            />
             <div className="min-h-[800px] h-[70vh] relative border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-900">
               {results?.ssaInfluence ? (
                 <DynamicsViewer influenceData={results.ssaInfluence} />
@@ -321,29 +340,36 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
 
         {activeTab === 1 && networkViewMode === 'rules' && (
           <div className="h-full flex flex-col">
-            <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">
-              Rules Inspector - browse rules and their atomic impacts
-            </div>
+            <TabHeader
+              title="Rules Inspector"
+              description="Browse rules and their atomic impacts"
+            />
             <RulesTab
               model={model}
               results={results}
               selectedRuleId={selectedRuleId}
               onSelectRule={setSelectedRuleId}
+              simulationMethod={simulationMethod}
             />
           </div>
         )}
 
         {activeTab === 2 && (
           <div className="h-full flex flex-col">
-            <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">
-              Parameter Scan – explore how observables change with parameter values
-            </div>
+            <TabHeader
+              title="Parameter Scan"
+              description="Explore how observables change with parameter values"
+            />
             <ParameterScanTab model={model} />
           </div>
         )}
 
         {activeTab === 3 && (
           <div className="h-full flex flex-col">
+            <TabHeader
+              title="Steady State"
+              description="Analyze steady-state behavior and convergence"
+            />
             <SteadyStateTab
               model={model}
               results={results}
@@ -356,57 +382,70 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
 
         {activeTab === 4 && (
           <div className="h-full flex flex-col">
-            <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">
-              Identifiability (FIM) – parameter sensitivity analysis
-            </div>
+            <TabHeader
+              title="Identifiability (FIM)"
+              description="Parameter sensitivity analysis"
+            />
             <FIMTab model={model} />
           </div>
         )}
 
         {activeTab === 5 && (
           <div className="h-full flex flex-col">
-            <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">
-              Parameter Estimation – fit parameters to experimental data
-            </div>
+            <TabHeader
+              title="Parameter Estimation"
+              description="Fit parameters to experimental data"
+            />
             <ParameterEstimationTab model={model} />
           </div>
         )}
 
         {activeTab === 6 && (
           <div className="h-full flex flex-col">
-            <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">
-              Flux Analysis – visualize reaction flux contributions
-            </div>
+            <TabHeader
+              title="Flux Analysis"
+              description="Visualize reaction flux contributions"
+            />
             <FluxAnalysisTab model={model} results={results} />
           </div>
         )}
 
         {activeTab === 7 && (
           <div className="h-full flex flex-col">
+            <TabHeader
+              title="Verification"
+              description="Compare output against validation baselines"
+            />
             <VerificationTab model={model} results={results} />
           </div>
         )}
 
         {activeTab === 8 && (
           <div className="h-full flex flex-col">
-            <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">
-              What-If Compare – see how parameter changes affect simulation results
-            </div>
+            <TabHeader
+              title="What-If Compare"
+              description="See how parameter changes affect simulation results"
+            />
             <ComparisonPanel model={model} baseResults={results} />
           </div>
         )}
 
         {activeTab === 9 && (
           <div className="h-full flex flex-col">
-            <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">
-              Rule Cartoons – compact visualization of rules and their effects
-            </div>
+            <TabHeader
+              title="Rule Cartoons"
+              description="Compact visualization of rules and their effects"
+            />
             <CartoonTab model={model} selectedRuleId={selectedRuleId} onSelectRule={setSelectedRuleId} />
           </div>
         )}
 
         {activeTab === 10 && (
           <div className="h-full flex flex-col">
+            <TabHeader
+              title="Model Explorer"
+              description="Browse curated example models and load presets"
+            />
             <ModelExplorerTab onLoadModel={(code, name, id) => {
               console.log("Model Explorer: request to load model", { name, id });
               // TODO: Implement model loading via custom event or prop callback
@@ -416,6 +455,10 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
 
         {activeTab === 11 && (
           <div className="h-full flex flex-col">
+            <TabHeader
+              title="Trajectory Explorer"
+              description="Inspect trajectories and compare simulation runs"
+            />
             <TrajectoryExplorerTab model={model} />
           </div>
         )}

@@ -72,11 +72,11 @@ begin reaction rules
     
     # 4. Signaling & Translocation
     # Insulin binds IR at PM
-    Insulin(b)@Blood + IR(b)@PM <-> Insulin(b!1)@Blood.IR(b!1)@PM k_ins_bind,0.01
+    Insulin(b)@Blood + IR(b,s~U)@PM <-> Insulin(b!1)@Blood.IR(b!1,s~P)@PM k_ins_bind,0.01
     
     # Active IR promotes GLUT4 exocytosis (Tissue -> PM)
     # Functional rule: IR(Bound) catalyzes GLUT4 move
-    Insulin(b!1).IR(b!1)@PM + GLUT4(loc~vesicle)@Tissue -> Insulin(b!1).IR(b!1)@PM + GLUT4(loc~PM)@PM k_glut4_exo
+    Insulin(b!1)@Blood.IR(b!1,s~P)@PM + GLUT4(loc~vesicle)@Tissue -> Insulin(b!1)@Blood.IR(b!1,s~P)@PM + GLUT4(loc~PM)@PM k_glut4_exo
     
     # Endocytosis (PM -> Tissue)
     GLUT4(loc~PM)@PM -> GLUT4(loc~vesicle)@Tissue k_glut4_endo

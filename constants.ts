@@ -50,7 +50,7 @@ import ruleBasedEgfrTutorial from './published-models/growth-factor-signaling/Ru
 import an2009 from './published-models/immune-signaling/An_2009.bngl?raw';
 import baruabcr2012 from './published-models/immune-signaling/BaruaBCR_2012.bngl?raw';
 import baruafceri2012 from './published-models/immune-signaling/BaruaFceRI_2012.bngl?raw';
-import blbr from './published-models/immune-signaling/blbr.bngl?raw';
+// blbr removed - has generate_network but NO simulate command
 import chylekfceri2014 from './published-models/immune-signaling/ChylekFceRI_2014.bngl?raw';
 import chylektcr2014 from './published-models/immune-signaling/ChylekTCR_2014.bngl?raw';
 import faeder2003 from './published-models/immune-signaling/Faeder_2003.bngl?raw';
@@ -325,8 +325,8 @@ export const BNG2_COMPATIBLE_MODELS = new Set([
   // Native Tutorials - BAB (0)
   // All failed benchmark
 
-  // Native Tutorials - CBNGL (2)
-  'BLBR',
+  // Native Tutorials - CBNGL (1)
+  // BLBR removed - uses method=>"nf" (NFsim only)
   'cBNGL_simple',
 
   // Native Tutorials - LargerModels (3)
@@ -403,16 +403,18 @@ export const BNG2_COMPATIBLE_MODELS = new Set([
   'wound-healing-pdgf-signaling',
 ]);
 
-// Models that require NFsim (network-free simulation) - kept for reference but not displayed
-// const NFSIM_MODELS = new Set([
-//   'Blinov_ran',
-//   'McMillan_2021',
-//   'Blinov_egfr',
-//   'Ligon_2014',
-//   'Model_ZAP', // Also has generate_network, so it's in compatible list
-//   'polymer',
-//   'polymer_draft',
-// // ]);
+// Models that use NFsim (network-free simulation) - for reference
+// These models are now included in the gallery since NFsim is supported
+export const NFSIM_MODELS = new Set([
+  'Blinov_ran',
+  'McMillan_2021',
+  'Blinov_egfr',
+  'Ligon_2014',
+  'Model_ZAP',
+  'polymer',
+  'polymer_draft',
+  'BLBR', // Bivalent ligand-bivalent receptor tutorial model
+]);
 
 // Helper to filter models to only those supported by the web simulator UI.
 // For now we only expose models that include an explicit ODE `simulate(...)` action.
@@ -541,7 +543,7 @@ export const BNG2_PARSE_AND_ODE_VERIFIED_MODELS = new Set([
   'wound-healing-pdgf-signaling',
 
   // Missing Published Models
-  'blbr',
+  // 'blbr', // REMOVED: Has generate_network but NO simulate command
   'ChylekFceRI_2014',
   'Dushek_2011',
   'Erdem_2021',
@@ -629,8 +631,8 @@ export const BNG2_EXCLUDED_MODELS = new Set([
   // ========================================================
   // NFsim-only models (require network-free simulation)
   // ========================================================
-  'polymer',        // Uses Species>N syntax, NFsim only
-  'polymer_draft',  // Uses Species>N syntax, NFsim only
+  // 'polymer',        // Uses Species>N syntax, NFsim only - Removed as it is in NFSIM_MODELS
+  // 'polymer_draft',  // Uses Species>N syntax, NFsim only - Removed as it is in NFSIM_MODELS
 
   // ========================================================
   // Models too slow for web benchmark (large network expansion)
@@ -684,36 +686,34 @@ export const BNG2_EXCLUDED_MODELS = new Set([
 
 const filterCompatibleModels = (models: Example[]): Example[] =>
   models.filter((m) => {
+    // Exclude models that are known to fail in BNG2.pl
     if (BNG2_EXCLUDED_MODELS.has(m.id)) return false;
 
     const lines = m.code.split('\n');
 
     // Check for uncommented actions
     let hasSimulate = false;
-    let hasIncompatibleAction = false;
 
     for (const line of lines) {
       const codePart = line.split('#')[0];
-      if (codePart.includes('simulate(')) {
+      // Check for any simulate action (simulate, simulate_ode, simulate_ssa, simulate_nf, etc.)
+      if (codePart.includes('simulate')) {
         hasSimulate = true;
-      }
-      if (
-        codePart.includes('simulate_nf') ||
-        codePart.includes('parameter_scan') ||
-        codePart.includes('method=>"nf"') ||
-        codePart.includes("method=>'nf'") ||
-        codePart.includes('method=>"nfsim"')
-      ) {
-        hasIncompatibleAction = true;
+        break; // Found a simulate action, no need to continue
       }
     }
-
-    if (hasIncompatibleAction) return false;
+    
+    // Debug logging for specific models and all NFsim models
+    if (m.id === 'Model_ZAP' || m.id === 'polymer' || m.id === 'polymer_draft' || NFSIM_MODELS.has(m.id)) {
+      console.log(`[filterCompatibleModels] ${m.id}: hasSimulate=${hasSimulate}, excluded=${BNG2_EXCLUDED_MODELS.has(m.id)}, isNFsim=${NFSIM_MODELS.has(m.id)}`);
+    }
+    
+    // Require at least some simulate action
+    // This includes ODE, SSA, and NFsim simulations
     if (!hasSimulate) return false;
 
     return true;
   });
-
 const CELL_REGULATION: Example[] = [
   {
     id: 'Barua_2013',
@@ -1025,13 +1025,14 @@ const IMMUNE_SIGNALING: Example[] = [
     code: baruafceri2012,
     tags: ['published', 'immunology'],
   },
-  {
-    id: 'blbr',
-    name: 'BLBR',
-    description: 'Bivalent ligand binding',
-    code: blbr,
-    tags: ['published', 'immunology'],
-  },
+  // REMOVED: blbr model has generate_network but NO simulate command
+  // {
+  //   id: 'blbr',
+  //   name: 'BLBR',
+  //   description: 'Bivalent ligand binding',
+  //   code: blbr,
+  //   tags: ['published', 'immunology'],
+  // },
   {
     id: 'ChylekFceRI_2014',
     name: 'Chylek 2014 (FceRI)',
@@ -1171,701 +1172,601 @@ const TEST_MODELS: Example[] = [
     description: 'Akt signaling pathway',
     code: aktSignaling,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'allosteric-activation',
     name: 'allosteric activation',
     description: 'Allosteric switch',
     code: allostericActivation,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'ampk-signaling',
+    name: 'ampk signaling',
+    description: 'AMPK pathway',
+    code: ampkSignaling,
+    tags: ['example model'],
+  },  {
     id: 'apoptosis-cascade',
     name: 'apoptosis cascade',
     description: 'Apoptosis signaling',
     code: apoptosisCascade,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'auto-activation-loop',
     name: 'auto activation loop',
     description: 'Positive feedback loop',
     code: autoActivationLoop,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'autophagy-regulation',
+    name: 'autophagy regulation',
+    description: 'Autophagy control',
+    code: autophagyRegulation,
+    tags: ['example model'],
+  },  {
+    id: 'bcr-signaling',
+    name: 'bcr signaling',
+    description: 'B cell signaling',
+    code: bcrSignaling,
+    tags: ['example model'],
+  },  {
     id: 'beta-adrenergic-response',
     name: 'beta adrenergic response',
     description: 'β-adrenergic signaling',
     code: betaAdrenergicResponse,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'bistable-toggle-switch',
     name: 'bistable toggle switch',
     description: 'Genetic toggle switch',
     code: bistableToggleSwitch,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'blood-coagulation-thrombin',
     name: 'blood coagulation thrombin',
     description: 'Thrombin activation',
     code: bloodCoagulationThrombin,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'bmp-signaling',
+    name: 'bmp signaling',
+    description: 'BMP pathway',
+    code: bmpSignaling,
+    tags: ['example model'],
+  },  {
     id: 'brusselator-oscillator',
     name: 'brusselator oscillator',
     description: 'Brusselator oscillator',
     code: brusselatorOscillator,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'calcineurin-nfat-pathway',
+    name: 'calcineurin nfat pathway',
+    description: 'NFAT nuclear import',
+    code: calcineurinNfatPathway,
+    tags: ['example model'],
+  },  {
     id: 'calcium-spike-signaling',
     name: 'calcium spike signaling',
     description: 'Calcium oscillations',
     code: calciumSpikeSignaling,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'caspase-activation-loop',
+    name: 'caspase activation loop',
+    description: 'Apoptotic loop',
+    code: caspaseActivationLoop,
+    tags: ['example model'],
+  },  {
+    id: 'cd40-signaling',
+    name: 'cd40 signaling',
+    description: 'CD40 pathway',
+    code: cd40Signaling,
+    tags: ['example model'],
+  },  {
     id: 'cell-cycle-checkpoint',
     name: 'cell cycle checkpoint',
     description: 'Cell cycle control',
     code: cellCycleCheckpoint,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'checkpoint-kinase-signaling',
+    name: 'checkpoint kinase signaling',
+    description: 'DNA damage checkpoint',
+    code: checkpointKinaseSignaling,
+    tags: ['example model'],
+  },  {
     id: 'chemotaxis-signal-transduction',
     name: 'chemotaxis signal transduction',
     description: 'Bacterial chemotaxis',
     code: chemotaxisSignalTransduction,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'circadian-oscillator',
     name: 'circadian oscillator',
     description: 'Circadian rhythm',
     code: circadianOscillator,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'clock-bmal1-gene-circuit',
+    name: 'clock bmal1 gene circuit',
+    description: 'Circadian circuit',
+    code: clockBmal1GeneCircuit,
+    tags: ['example model'],
+  },  {
     id: 'competitive-enzyme-inhibition',
     name: 'competitive enzyme inhibition',
     description: 'Enzyme inhibition',
     code: competitiveEnzymeInhibition,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'complement-activation-cascade',
     name: 'complement activation cascade',
     description: 'Complement cascade',
     code: complementActivationCascade,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'contact-inhibition-hippo-yap',
+    name: 'contact inhibition hippo yap',
+    description: 'Hippo/YAP pathway',
+    code: contactInhibitionHippoYap,
+    tags: ['example model'],
+  },  {
     id: 'cooperative-binding',
     name: 'cooperative binding',
     description: 'Cooperative binding',
     code: cooperativeBinding,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'dna-damage-repair',
     name: 'dna damage repair',
     description: 'DNA repair pathway',
     code: dnaDamageRepair,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'dna-methylation-dynamics',
+    name: 'dna methylation dynamics',
+    description: 'Epigenetic dynamics',
+    code: dnaMethylationDynamics,
+    tags: ['example model'],
+  },  {
+    id: 'dr5-apoptosis-signaling',
+    name: 'dr5 apoptosis signaling',
+    description: 'TRAIL/DR5 pathway',
+    code: dr5ApoptosisSignaling,
+    tags: ['example model'],
+  },  {
     id: 'dual-site-phosphorylation',
     name: 'dual site phosphorylation',
     description: 'Multisite phosphorylation',
     code: dualSitePhosphorylation,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'e2f-rb-cell-cycle-switch',
+    name: 'e2f rb cell cycle switch',
+    description: 'G1/S switch',
+    code: e2fRbCellCycleSwitch,
+    tags: ['example model'],
+  },  {
     id: 'egfr-signaling-pathway',
     name: 'egfr signaling pathway',
     description: 'EGFR pathway model',
     code: egfrSignalingPathway,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'eif2a-stress-response',
+    name: 'eif2a stress response',
+    description: 'Translation control',
+    code: eif2aStressResponse,
+    tags: ['example model'],
+  },  {
+    id: 'endosomal-sorting-rab',
+    name: 'endosomal sorting rab',
+    description: 'Rab sorting cycle',
+    code: endosomalSortingRab,
+    tags: ['example model'],
+  },  {
     id: 'er-stress-response',
     name: 'er stress response',
     description: 'ER stress signaling',
     code: erStressResponse,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'erk-nuclear-translocation',
+    name: 'erk nuclear translocation',
+    description: 'ERK translocation',
+    code: erkNuclearTranslocation,
+    tags: ['example model'],
+  },  {
+    id: 'fgf-signaling-pathway',
+    name: 'fgf signaling pathway',
+    description: 'FGF signaling',
+    code: fgfSignalingPathway,
+    tags: ['example model'],
+  },  {
+    id: 'gas6-axl-signaling',
+    name: 'gas6 axl signaling',
+    description: 'GAS6/AXL pathway',
+    code: gas6AxlSignaling,
+    tags: ['example model'],
+  },  {
     id: 'gene-expression-toggle',
     name: 'gene expression toggle',
     description: 'Transcription toggle',
     code: geneExpressionToggle,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'glioblastoma-egfrviii-signaling',
+    name: 'glioblastoma egfrviii signaling',
+    description: 'EGFRvIII signaling',
+    code: glioblastomaEgfrviiiSignaling,
+    tags: ['example model'],
+  },  {
     id: 'glycolysis-branch-point',
     name: 'glycolysis branch point',
     description: 'Metabolic branch point',
     code: glycolysisBranchPoint,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'gpcr-desensitization-arrestin',
+    name: 'gpcr desensitization arrestin',
+    description: 'Arrestin feedback',
+    code: gpcrDesensitizationArrestin,
+    tags: ['example model'],
+  },  {
+    id: 'hedgehog-signaling-pathway',
+    name: 'hedgehog signaling pathway',
+    description: 'Hedgehog pathway',
+    code: hedgehogSignalingPathway,
+    tags: ['example model'],
+  },  {
     id: 'hematopoietic-growth-factor',
     name: 'hematopoietic growth factor',
     description: 'Cytokine signaling',
     code: hematopoieticGrowthFactor,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'hif1a-degradation-loop',
+    name: 'hif1a degradation loop',
+    description: 'Hypoxia sensor',
+    code: hif1aDegradationLoop,
+    tags: ['example model'],
+  },  {
     id: 'hypoxia-response-signaling',
     name: 'hypoxia response signaling',
     description: 'Hypoxia signaling',
     code: hypoxiaResponseSignaling,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'il1b-signaling',
+    name: 'il1b signaling',
+    description: 'IL-1β pathway',
+    code: il1bSignaling,
+    tags: ['example model'],
+  },  {
+    id: 'il6-jak-stat-pathway',
+    name: 'il6 jak stat pathway',
+    description: 'IL-6/STAT signaling',
+    code: il6JakStatPathway,
+    tags: ['example model'],
+  },  {
     id: 'immune-synapse-formation',
     name: 'immune synapse formation',
     description: 'Immune synapse',
     code: immuneSynapseFormation,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'inflammasome-activation',
     name: 'inflammasome activation',
     description: 'Inflammasome signaling',
     code: inflammasomeActivation,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'inositol-phosphate-metabolism',
+    name: 'inositol phosphate metabolism',
+    description: 'IP3 metabolism',
+    code: inositolPhosphateMetabolism,
+    tags: ['example model'],
+  },  {
     id: 'insulin-glucose-homeostasis',
     name: 'insulin glucose homeostasis',
     description: 'Glucose regulation',
     code: insulinGlucoseHomeostasis,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'interferon-signaling',
     name: 'interferon signaling',
     description: 'Interferon pathway',
     code: interferonSignaling,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'ire1a-xbp1-er-stress',
+    name: 'ire1a xbp1 er stress',
+    description: 'UPR pathway',
+    code: ire1aXbp1ErStress,
+    tags: ['example model'],
+  },  {
     id: 'jak-stat-cytokine-signaling',
     name: 'jak stat cytokine signaling',
     description: 'JAK/STAT signaling',
     code: jakStatCytokineSignaling,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'jnk-mapk-signaling',
+    name: 'jnk mapk signaling',
+    description: 'Stress MAPK',
+    code: jnkMapkSignaling,
+    tags: ['example model'],
+  },  {
+    id: 'kir-channel-regulation',
+    name: 'kir channel regulation',
+    description: 'Ion channel control',
+    code: kirChannelRegulation,
+    tags: ['example model'],
+  },  {
+    id: 'l-type-calcium-channel-dynamics',
+    name: 'l-type calcium channel dynamics',
+    description: 'LTCC dynamics',
+    code: lTypeCalciumChannelDynamics,
+    tags: ['example model'],
+  },  {
     id: 'lac-operon-regulation',
     name: 'lac operon regulation',
     description: 'Lac operon control',
     code: lacOperonRegulation,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'lipid-mediated-pip3-signaling',
     name: 'lipid mediated pip3 signaling',
     description: 'PIP3 signaling',
     code: lipidMediatedPip3Signaling,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'mapk-signaling-cascade',
     name: 'mapk signaling cascade',
     description: 'MAPK kinase cascade',
     code: mapkSignalingCascade,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'michaelis-menten-kinetics',
     name: 'michaelis menten kinetics',
     description: 'Enzyme kinetics',
     code: michaelisMentenKinetics,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'mtor-signaling',
     name: 'mtor signaling',
     description: 'mTOR pathway',
     code: mtorSignaling,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'mtorc2-signaling',
+    name: 'mtorc2 signaling',
+    description: 'mTORC2 pathway',
+    code: mtorc2Signaling,
+    tags: ['example model'],
+  },  {
     id: 'myogenic-differentiation',
     name: 'myogenic differentiation',
     description: 'Myogenesis pathway',
     code: myogenicDifferentiation,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'negative-feedback-loop',
     name: 'negative feedback loop',
     description: 'Negative feedback',
     code: negativeFeedbackLoop,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'neurotransmitter-release',
     name: 'neurotransmitter release',
     description: 'Synaptic release',
     code: neurotransmitterRelease,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'nfkb-feedback',
     name: 'nfkb feedback',
     description: 'NF-κB signaling',
     code: nfkbFeedback,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'no-cgmp-signaling',
+    name: 'no cgmp signaling',
+    description: 'Nitric oxide pathway',
+    code: noCgmpSignaling,
+    tags: ['example model'],
+  },  {
     id: 'notch-delta-lateral-inhibition',
     name: 'notch delta lateral inhibition',
     description: 'Lateral inhibition',
     code: notchDeltaLateralInhibition,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'oxidative-stress-response',
     name: 'oxidative stress response',
     description: 'Redox signaling',
     code: oxidativeStressResponse,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'p38-mapk-signaling',
+    name: 'p38 mapk signaling',
+    description: 'p38 stress pathway',
+    code: p38MapkSignaling,
+    tags: ['example model'],
+  },  {
     id: 'p53-mdm2-oscillator',
     name: 'p53 mdm2 oscillator',
     description: 'p53/Mdm2 circuit',
     code: p53Mdm2Oscillator,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'parp1-mediated-dna-repair',
+    name: 'parp1 mediated dna repair',
+    description: 'PARP1 DNA repair',
+    code: parp1MediatedDnaRepair,
+    tags: ['example model'],
+  },  {
     id: 'phosphorelay-chain',
     name: 'phosphorelay chain',
     description: 'Phosphorelay system',
     code: phosphorelayChain,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'platelet-activation',
     name: 'platelet activation',
     description: 'Platelet signaling',
     code: plateletActivation,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'predator-prey-dynamics',
     name: 'predator prey dynamics',
     description: 'Lotka-Volterra model',
     code: predatorPreyDynamics,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'quorum-sensing-circuit',
     name: 'quorum sensing circuit',
     description: 'Bacterial quorum sensing',
     code: quorumSensingCircuit,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'rab-gtpase-cycle',
     name: 'rab gtpase cycle',
     description: 'Rab GTPase cycle',
     code: rabGtpaseCycle,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'rankl-rank-signaling',
+    name: 'rankl rank signaling',
+    description: 'Osteoclast signaling',
+    code: ranklRankSignaling,
+    tags: ['example model'],
+  },  {
+    id: 'ras-gef-gap-cycle',
+    name: 'ras gef gap cycle',
+    description: 'Ras activation cycle',
+    code: rasGefGapCycle,
+    tags: ['example model'],
+  },  {
     id: 'repressilator-oscillator',
     name: 'repressilator oscillator',
     description: 'Repressilator circuit',
     code: repressilatorOscillator,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'retinoic-acid-signaling',
     name: 'retinoic acid signaling',
     description: 'Retinoic acid pathway',
     code: retinoicAcidSignaling,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'rho-gtpase-actin-cytoskeleton',
+    name: 'rho gtpase actin cytoskeleton',
+    description: 'Actin remodeling',
+    code: rhoGtpaseActinCytoskeleton,
+    tags: ['example model'],
+  },  {
+    id: 'shp2-phosphatase-regulation',
+    name: 'shp2 phosphatase regulation',
+    description: 'SHP2 signaling',
+    code: shp2PhosphataseRegulation,
+    tags: ['example model'],
+  },  {
     id: 'signal-amplification-cascade',
     name: 'signal amplification cascade',
     description: 'Amplification cascade',
     code: signalAmplificationCascade,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'simple-dimerization',
     name: 'simple dimerization',
     description: 'Receptor dimerization',
     code: simpleDimerization,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'sir-epidemic-model',
     name: 'sir epidemic model',
     description: 'SIR epidemic model',
     code: sirEpidemicModel,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'smad-tgf-beta-signaling',
     name: 'smad tgf beta signaling',
     description: 'TGF-β/Smad signaling',
     code: smadTgfBetaSignaling,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'sonic-hedgehog-gradient',
+    name: 'sonic hedgehog gradient',
+    description: 'Shh morphogen',
+    code: sonicHedgehogGradient,
+    tags: ['example model'],
+  },  {
+    id: 'stat3-mediated-transcription',
+    name: 'stat3 mediated transcription',
+    description: 'STAT3 transcription',
+    code: stat3MediatedTranscription,
+    tags: ['example model'],
+  },  {
     id: 'stress-response-adaptation',
     name: 'stress response adaptation',
     description: 'Adaptation circuit',
     code: stressResponseAdaptation,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'synaptic-plasticity-ltp',
     name: 'synaptic plasticity ltp',
     description: 'LTP synaptic model',
     code: synapticPlasticityLtp,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 't-cell-activation',
     name: 't cell activation',
     description: 'T cell signaling',
     code: tCellActivation,
     tags: ['example model'],
-  },
-  {
+  },  {
+    id: 'tlr3-dsrna-sensing',
+    name: 'tlr3 dsrna sensing',
+    description: 'TLR3 RNA sensing',
+    code: tlr3DsrnaSensing,
+    tags: ['example model'],
+  },  {
     id: 'tnf-induced-apoptosis',
     name: 'tnf induced apoptosis',
     description: 'TNF signaling',
     code: tnfInducedApoptosis,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'two-component-system',
     name: 'two component system',
     description: 'Two-component relay',
     code: twoComponentSystem,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'vegf-angiogenesis',
     name: 'vegf angiogenesis',
     description: 'VEGF signaling',
     code: vegfAngiogenesis,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'viral-sensing-innate-immunity',
     name: 'viral sensing innate immunity',
     description: 'RNA sensing pathway',
     code: viralSensingInnateImmunity,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'wnt-beta-catenin-signaling',
     name: 'wnt beta catenin signaling',
     description: 'Wnt/β-catenin pathway',
     code: wntBetaCateninSignaling,
     tags: ['example model'],
-  },
-  {
+  },  {
     id: 'wound-healing-pdgf-signaling',
     name: 'wound healing pdgf signaling',
     description: 'PDGF signaling',
     code: woundHealingPdgfSignaling,
     tags: ['example model'],
   },
-  {
-    id: 'ampk-signaling',
-    name: 'ampk signaling',
-    description: 'AMPK pathway',
-    code: ampkSignaling,
-    tags: ['example model'],
-  },
-  {
-    id: 'autophagy-regulation',
-    name: 'autophagy regulation',
-    description: 'Autophagy control',
-    code: autophagyRegulation,
-    tags: ['example model'],
-  },
-  {
-    id: 'bcr-signaling',
-    name: 'bcr signaling',
-    description: 'B cell signaling',
-    code: bcrSignaling,
-    tags: ['example model'],
-  },
-  {
-    id: 'bmp-signaling',
-    name: 'bmp signaling',
-    description: 'BMP pathway',
-    code: bmpSignaling,
-    tags: ['example model'],
-  },
-  {
-    id: 'calcineurin-nfat-pathway',
-    name: 'calcineurin nfat pathway',
-    description: 'NFAT nuclear import',
-    code: calcineurinNfatPathway,
-    tags: ['example model'],
-  },
-  {
-    id: 'caspase-activation-loop',
-    name: 'caspase activation loop',
-    description: 'Apoptotic loop',
-    code: caspaseActivationLoop,
-    tags: ['example model'],
-  },
-  {
-    id: 'cd40-signaling',
-    name: 'cd40 signaling',
-    description: 'CD40 pathway',
-    code: cd40Signaling,
-    tags: ['example model'],
-  },
-  {
-    id: 'checkpoint-kinase-signaling',
-    name: 'checkpoint kinase signaling',
-    description: 'DNA damage checkpoint',
-    code: checkpointKinaseSignaling,
-    tags: ['example model'],
-  },
-  {
-    id: 'clock-bmal1-gene-circuit',
-    name: 'clock bmal1 gene circuit',
-    description: 'Circadian circuit',
-    code: clockBmal1GeneCircuit,
-    tags: ['example model'],
-  },
-  {
-    id: 'contact-inhibition-hippo-yap',
-    name: 'contact inhibition hippo yap',
-    description: 'Hippo/YAP pathway',
-    code: contactInhibitionHippoYap,
-    tags: ['example model'],
-  },
-  {
-    id: 'dna-methylation-dynamics',
-    name: 'dna methylation dynamics',
-    description: 'Epigenetic dynamics',
-    code: dnaMethylationDynamics,
-    tags: ['example model'],
-  },
-  {
-    id: 'dr5-apoptosis-signaling',
-    name: 'dr5 apoptosis signaling',
-    description: 'TRAIL/DR5 pathway',
-    code: dr5ApoptosisSignaling,
-    tags: ['example model'],
-  },
-  {
-    id: 'e2f-rb-cell-cycle-switch',
-    name: 'e2f rb cell cycle switch',
-    description: 'G1/S switch',
-    code: e2fRbCellCycleSwitch,
-    tags: ['example model'],
-  },
-  {
-    id: 'eif2a-stress-response',
-    name: 'eif2a stress response',
-    description: 'Translation control',
-    code: eif2aStressResponse,
-    tags: ['example model'],
-  },
-  {
-    id: 'endosomal-sorting-rab',
-    name: 'endosomal sorting rab',
-    description: 'Rab sorting cycle',
-    code: endosomalSortingRab,
-    tags: ['example model'],
-  },
-  {
-    id: 'erk-nuclear-translocation',
-    name: 'erk nuclear translocation',
-    description: 'ERK translocation',
-    code: erkNuclearTranslocation,
-    tags: ['example model'],
-  },
-  {
-    id: 'fgf-signaling-pathway',
-    name: 'fgf signaling pathway',
-    description: 'FGF signaling',
-    code: fgfSignalingPathway,
-    tags: ['example model'],
-  },
-  {
-    id: 'gpcr-desensitization-arrestin',
-    name: 'gpcr desensitization arrestin',
-    description: 'Arrestin feedback',
-    code: gpcrDesensitizationArrestin,
-    tags: ['example model'],
-  },
-  {
-    id: 'gas6-axl-signaling',
-    name: 'gas6 axl signaling',
-    description: 'GAS6/AXL pathway',
-    code: gas6AxlSignaling,
-    tags: ['example model'],
-  },
-  {
-    id: 'glioblastoma-egfrviii-signaling',
-    name: 'glioblastoma egfrviii signaling',
-    description: 'EGFRvIII signaling',
-    code: glioblastomaEgfrviiiSignaling,
-    tags: ['example model'],
-  },
-  {
-    id: 'hedgehog-signaling-pathway',
-    name: 'hedgehog signaling pathway',
-    description: 'Hedgehog pathway',
-    code: hedgehogSignalingPathway,
-    tags: ['example model'],
-  },
-  {
-    id: 'hif1a-degradation-loop',
-    name: 'hif1a degradation loop',
-    description: 'Hypoxia sensor',
-    code: hif1aDegradationLoop,
-    tags: ['example model'],
-  },
-  {
-    id: 'il1b-signaling',
-    name: 'il1b signaling',
-    description: 'IL-1β pathway',
-    code: il1bSignaling,
-    tags: ['example model'],
-  },
-  {
-    id: 'il6-jak-stat-pathway',
-    name: 'il6 jak stat pathway',
-    description: 'IL-6/STAT signaling',
-    code: il6JakStatPathway,
-    tags: ['example model'],
-  },
-  {
-    id: 'inositol-phosphate-metabolism',
-    name: 'inositol phosphate metabolism',
-    description: 'IP3 metabolism',
-    code: inositolPhosphateMetabolism,
-    tags: ['example model'],
-  },
-  {
-    id: 'ire1a-xbp1-er-stress',
-    name: 'ire1a xbp1 er stress',
-    description: 'UPR pathway',
-    code: ire1aXbp1ErStress,
-    tags: ['example model'],
-  },
-  {
-    id: 'jnk-mapk-signaling',
-    name: 'jnk mapk signaling',
-    description: 'Stress MAPK',
-    code: jnkMapkSignaling,
-    tags: ['example model'],
-  },
-  {
-    id: 'kir-channel-regulation',
-    name: 'kir channel regulation',
-    description: 'Ion channel control',
-    code: kirChannelRegulation,
-    tags: ['example model'],
-  },
-  {
-    id: 'l-type-calcium-channel-dynamics',
-    name: 'l-type calcium channel dynamics',
-    description: 'LTCC dynamics',
-    code: lTypeCalciumChannelDynamics,
-    tags: ['example model'],
-  },
-  {
-    id: 'mtorc2-signaling',
-    name: 'mtorc2 signaling',
-    description: 'mTORC2 pathway',
-    code: mtorc2Signaling,
-    tags: ['example model'],
-  },
-  {
-    id: 'no-cgmp-signaling',
-    name: 'no cgmp signaling',
-    description: 'Nitric oxide pathway',
-    code: noCgmpSignaling,
-    tags: ['example model'],
-  },
-  {
-    id: 'p38-mapk-signaling',
-    name: 'p38 mapk signaling',
-    description: 'p38 stress pathway',
-    code: p38MapkSignaling,
-    tags: ['example model'],
-  },
-  {
-    id: 'parp1-mediated-dna-repair',
-    name: 'parp1 mediated dna repair',
-    description: 'PARP1 DNA repair',
-    code: parp1MediatedDnaRepair,
-    tags: ['example model'],
-  },
-  {
-    id: 'rankl-rank-signaling',
-    name: 'rankl rank signaling',
-    description: 'Osteoclast signaling',
-    code: ranklRankSignaling,
-    tags: ['example model'],
-  },
-  {
-    id: 'ras-gef-gap-cycle',
-    name: 'ras gef gap cycle',
-    description: 'Ras activation cycle',
-    code: rasGefGapCycle,
-    tags: ['example model'],
-  },
-  {
-    id: 'rho-gtpase-actin-cytoskeleton',
-    name: 'rho gtpase actin cytoskeleton',
-    description: 'Actin remodeling',
-    code: rhoGtpaseActinCytoskeleton,
-    tags: ['example model'],
-  },
-  {
-    id: 'shp2-phosphatase-regulation',
-    name: 'shp2 phosphatase regulation',
-    description: 'SHP2 signaling',
-    code: shp2PhosphataseRegulation,
-    tags: ['example model'],
-  },
-  {
-    id: 'sonic-hedgehog-gradient',
-    name: 'sonic hedgehog gradient',
-    description: 'Shh morphogen',
-    code: sonicHedgehogGradient,
-    tags: ['example model'],
-  },
-  {
-    id: 'stat3-mediated-transcription',
-    name: 'stat3 mediated transcription',
-    description: 'STAT3 transcription',
-    code: stat3MediatedTranscription,
-    tags: ['example model'],
-  },
-  {
-    id: 'tlr3-dsrna-sensing',
-    name: 'tlr3 dsrna sensing',
-    description: 'TLR3 RNA sensing',
-    code: tlr3DsrnaSensing,
-    tags: ['example model'],
-  },
-
 ];
 
 const NATIVE_TUTORIALS: Example[] = [
@@ -1969,8 +1870,8 @@ const NATIVE_TUTORIALS: Example[] = [
   },
   {
     id: 'BLBR',
-    name: 'BLBR',
-    description: 'Bivalent ligand/receptor',
+    name: 'BLBR Tutorial',
+    description: 'Bivalent ligand/receptor (tutorial)',
     code: BLBRTutorial,
     tags: ['published', 'tutorial', 'native'],
   },
@@ -2439,7 +2340,8 @@ const CANCER_MODELS: Example[] = [
 
 const IMMUNOLOGY_MODELS: Example[] = [
   ...TEST_MODELS.filter(m => ["bcr-signaling", "cd40-signaling", "complement-activation-cascade", "immune-synapse-formation", "inflammasome-activation", "interferon-signaling", "jak-stat-cytokine-signaling", "t-cell-activation", "tlr3-dsrna-sensing", "viral-sensing-innate-immunity", "platelet-activation", "blood-coagulation-thrombin"].includes(m.id)),
-  ...IMMUNE_SIGNALING.filter(m => ["An_2009", "BaruaBCR_2012", "BaruaFceRI_2012", "ChylekTCR_2014", "Lin_TCR_2019", "Cheemalavagu_JAK_STAT"].includes(m.id)),
+  ...IMMUNE_SIGNALING.filter(m => ["An_2009", "BaruaBCR_2012", "BaruaFceRI_2012", "ChylekTCR_2014", "Lin_TCR_2019", "Cheemalavagu_JAK_STAT", "Model_ZAP"].includes(m.id)),
+  ...COMPLEX_MODELS.filter(m => ["McMillan_2021"].includes(m.id)),
 ];
 
 const NEUROSCIENCE_MODELS: Example[] = [
@@ -2450,7 +2352,7 @@ const NEUROSCIENCE_MODELS: Example[] = [
 
 const CELL_CYCLE_MODELS: Example[] = [
   ...TEST_MODELS.filter(m => ["apoptosis-cascade", "caspase-activation-loop", "cell-cycle-checkpoint", "dr5-apoptosis-signaling", "e2f-rb-cell-cycle-switch", "tnf-induced-apoptosis", "parp1-mediated-dna-repair", "p53-mdm2-oscillator", "clock-bmal1-gene-circuit"].includes(m.id)),
-  ...CELL_REGULATION.filter(m => ["Hat_2016", "vilar_2002", "vilar_2002b"].includes(m.id)),
+  ...CELL_REGULATION.filter(m => ["Hat_2016", "vilar_2002", "vilar_2002b", "Blinov_ran"].includes(m.id)),
   ...GROWTH_FACTOR_SIGNALING.filter(m => ["Lang_2024"].includes(m.id)),
   ...COMPLEX_MODELS.filter(m => ["Blinov_2006"].includes(m.id)),
   ...NATIVE_TUTORIALS.filter(m => ["Repressilator", "CircadianOscillator"].includes(m.id)),
@@ -2571,5 +2473,24 @@ if ((import.meta as any)?.env?.DEV) {
   console.log('[BNGL gallery] excluded example ids (first 50):', excludedExamples.slice(0, 50));
 }
 
-// Flat list of all compatible models
-export const EXAMPLES: Example[] = MODEL_CATEGORIES.flatMap(cat => cat.models);
+// Flat list of all compatible models (deduplicated by ID)
+export const EXAMPLES: Example[] = Array.from(
+  new Map(
+    MODEL_CATEGORIES.flatMap(cat => cat.models).map(model => [model.id, model])
+  ).values()
+);
+
+// Debug: Log EXAMPLES count in dev mode
+if ((import.meta as any)?.env?.DEV) {
+  console.log('[BNGL gallery] EXAMPLES count after deduplication:', EXAMPLES.length);
+  const blbrEntries = EXAMPLES.filter(m => m.id === 'BLBR' || m.id === 'blbr');
+  console.log('[BNGL gallery] BLBR entries:', blbrEntries.length, blbrEntries.map(m => ({ id: m.id, name: m.name })));
+  
+  // Log NFsim models specifically
+  const nfsimInExamples = EXAMPLES.filter(m => NFSIM_MODELS.has(m.id));
+  console.log('[BNGL gallery] NFsim models in EXAMPLES:', nfsimInExamples.length, nfsimInExamples.map(m => m.id));
+  
+  // Log Model_ZAP specifically
+  const modelZapEntries = EXAMPLES.filter(m => m.id === 'Model_ZAP');
+  console.log('[BNGL gallery] Model_ZAP entries:', modelZapEntries.length, modelZapEntries.map(m => ({ id: m.id, name: m.name })));
+}

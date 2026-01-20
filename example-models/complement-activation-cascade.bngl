@@ -4,12 +4,12 @@ begin parameters
     # Advanced features: DeleteMolecules for factor cleavage and Hill kinetics for MAC.
     
     # AP Initiation (Tick-over & Surface stabilization)
-    k_tickover 1e-3    # C3(H2O) formation
+    k_tickover 0.5    # C3(H2O) formation
     k_bind_surf 1.0     # C3b covalent attachment
     
     # Amplification (Convertase Relay)
     k_c3_conv_max 50.0  # Max C3 cleavage by convertase
-    k_bind_fb 2.0       # Factor B recruitment
+    k_bind_fb 20.0       # Factor B recruitment
     k_act_fd 5.0        # Factor D catalytic trigger
     
     # Terminal Pathway (Lysis)
@@ -49,9 +49,9 @@ begin observables
     Molecules Opsonization_C3b C3(s~b)                  # Phagocytosis flag
     Molecules C5b_Active      C5(s~b)                  # C5b status
     Molecules MAC_Intensity   MAC()                    # Final lytic effector
-    Molecules C3_Convertase   C3(s~b!1).FB(s~Bb!1)     # Amplification node
+    Molecules C3_Convertase   C3(s~b!1).FB(b!1,s~Bb)     # Amplification node
     Molecules C5_Generated    C5(s~b)                  # Terminal trigger relay
-    Molecules FB_Consumed     FB(s~Bb)                 # Resource depletion
+    Molecules FB_Consumed     FB(b!+,s~Bb)                 # Resource depletion
 end observables
 
 begin functions
@@ -69,17 +69,17 @@ begin reaction rules
     
     ## AMPLIFICATION Phase
     # C3b recruits Factor B
-    C3(s~b) + FB(s~U) <-> C3(s~b!1).FB(s~U!1) k_bind_fb,0.5
+    C3(s~b) + FB(s~U,b) <-> C3(s~b!1).FB(s~U,b!1) k_bind_fb,0.5
     
     # Factor D cleaves B -> Bb (Active Convertase)
-    C3(s~b!1).FB(s~U!1) -> C3(s~b!1).FB(s~Bb!1) k_act_fd
+    C3(s~b!1).FB(s~U,b!1) -> C3(s~b!1).FB(s~Bb,b!1) k_act_fd
     
     # Convertase cleaves more C3 (Negative feedback on C3 reservoir)
-    C3(s~b!1).FB(s~Bb!1) + C3(s~U,loc~free) -> C3(s~b!1).FB(s~Bb!1) + C3(s~b,loc~free) k_c3_conv_max
+    C3(s~b!1).FB(s~Bb,b!1) + C3(s~U,loc~free) -> C3(s~b!1).FB(s~Bb,b!1) + C3(s~b,loc~free) k_c3_conv_max
     
     ## TERMINAL Phase
     # C3bBb also acts as C5 convertase (Simplified)
-    C3(s~b!1).FB(s~Bb!1) + C5(s~U) -> C3(s~b!1).FB(s~Bb!1) + C5(s~b) 1.0
+    C3(s~b!1).FB(s~Bb,b!1) + C5(s~U) -> C3(s~b!1).FB(s~Bb,b!1) + C5(s~b) 1.0
     
     # C5b triggers MAC formation (Functional Rate - Hill)
     0 -> MAC() v_mac()
@@ -87,7 +87,7 @@ begin reaction rules
     ## REGULATION Stage
     # Factor I cleaves C3b to iC3b (Inactive)
     # DeleteMolecules: Final removal of the active signaling factor
-    C3(s~b) -> C3(s~i) k_inh_fi DeleteMolecules
+    C3(s~b) -> C3(s~i) k_inh_fi
     
     # Reset
     FB(s~Bb) -> 0 0.1

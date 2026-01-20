@@ -351,15 +351,20 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     if (!typeCtx || strings.length === 0 || !patternListCtx) return;
 
     // Check for MOLECULES or SPECIES tokens first, then fall back to STRING
-    let typeText = 'molecules';
+    // Use lowercase to match BNGLModel interface and simulation expectations
+    let type: 'molecules' | 'species' | 'counter' | string = 'molecules';
     if (typeCtx.SPECIES()) {
-      typeText = 'species';
+      type = 'species';
     } else if (typeCtx.MOLECULES()) {
-      typeText = 'molecules';
+      type = 'molecules';
+    } else if ((typeCtx as any).COUNTER?.()) {
+      type = 'counter';
     } else if (typeCtx.STRING()) {
-      typeText = typeCtx.STRING()!.text.toLowerCase();
+      const text = typeCtx.STRING()!.text.toLowerCase();
+      if (text === 'species' || text === 'molecules' || text === 'counter') {
+        type = text;
+      }
     }
-    const type: 'molecules' | 'species' = typeText === 'species' ? 'species' : 'molecules';
 
     // Get observable name - skip label if present
     const name = ctx.COLON() && strings.length >= 2 ? strings[1].text : strings[0].text;
@@ -374,7 +379,23 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       return op.text;
     });
 
-    this.observables.push({ type, name, pattern: patterns.join(', ') });
+    // Check for count filter (>N syntax) in the first pattern (NFsim limitation: typically per-species observable)
+    // We scan the patterns for the grammar extension we added: species_def (GT INT)?
+    // Since we are iterating observable patterns, let's look at the first one's context
+    let countFilter: number | undefined;
+    if (patternListCtx.observable_pattern().length > 0) {
+      const firstOp = patternListCtx.observable_pattern()[0];
+      const gtToken = firstOp.GT();
+      // INT() returns a single TerminalNode or undefined in the new generated parser
+      const intToken = firstOp.INT();
+      if (gtToken && intToken) {
+        // If it's an array (old parser style), take first. If single node, use it.
+        const token = Array.isArray(intToken) ? intToken[0] : intToken;
+        countFilter = parseInt(token.text);
+      }
+    }
+
+    this.observables.push({ type, name, pattern: patterns.join(', '), countFilter });
   }
 
   // Reaction rules block
@@ -411,14 +432,14 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
     // Get reactants - collect all species and skip '0'
     const reactantSpecies = reactantCtx.species_def();
-    
+
     // Original logic: "0 -> Product" meant reactants = []
     // New logic: collect all species. If only '0' is present, results in [] anyway.
     let reactants: string[] = reactantSpecies.map(sd => this.getSpeciesString(sd));
 
     // Get products - collect all species and skip '0'
     const productSpecies = productCtx.species_def();
-    
+
     // Mixed products like "A + 0" should result in ["A"]
     let products: string[] = productSpecies.map(sd => this.getSpeciesString(sd));
 
@@ -431,14 +452,18 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
     // Check modifiers (can be prefix or suffix, so we get an array)
     let deleteMolecules = false;
+    let moveConnected = false;
     const constraints: string[] = [];
 
     // rule_modifiers() returns an array in the new grammar
     const modifiersList = ctx.rule_modifiers();
 
     const processModifiers = (modifiersCtx: Parser.Rule_modifiersContext) => {
-      if (modifiersCtx.DELETEMOLECULES() || modifiersCtx.MOVECONNECTED()) {
+      if (modifiersCtx.DELETEMOLECULES()) {
         deleteMolecules = true;
+      }
+      if (modifiersCtx.MOVECONNECTED()) {
+        moveConnected = true;
       }
 
       const getPatternListStr = (pl?: Parser.Pattern_listContext) => {
@@ -482,6 +507,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       reverseRate,
       isBidirectional,
       deleteMolecules,
+      moveConnected,
       constraints,
     });
   }
@@ -532,6 +558,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
     const exprCtx = ctx.expression();
     const size = exprCtx ? this.evaluateExpression(exprCtx) : 1;
+
 
     // Parent is the last STRING if there are multiple
     const parent = strings.length >= (ctx.COLON() ? 3 : 2)
@@ -613,8 +640,14 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     let method: 'ode' | 'ssa' | 'nf' = 'ode';
     const cmdText = ctx.text.toLowerCase();
     if (cmdText.includes('simulate_nf')) method = 'nf';
-    else if (cmdText.includes('simulate_ssa') || args.method === 'ssa') method = 'ssa';
-    else if (args.method) method = args.method === 'ssa' ? 'ssa' : 'ode';
+    else if (cmdText.includes('simulate_ssa') || args.method === 'ssa' || args.method === '"ssa"') method = 'ssa';
+    else if (args.method) {
+      // Remove quotes if present
+      const methodValue = String(args.method).replace(/['"]/g, '').toLowerCase();
+      if (methodValue === 'nf' || methodValue === 'nfsim') method = 'nf';
+      else if (methodValue === 'ssa') method = 'ssa';
+      else method = 'ode';
+    }
 
 
     // Build simulation phase
@@ -847,10 +880,12 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
 
       // Filter out undefined/empty entries (from double commas ",,")
-      const compPatterns = compListCtx.component_pattern().filter(cp => cp && (cp.STRING() || cp.INT() || cp.keyword_as_component_name()));
-      if (compPatterns.length === 0) return `${name}()`;
+      const compPatterns = compListCtx.component_pattern();
+      const validComps = compPatterns.filter(cp => cp && (cp.STRING() || cp.INT() || cp.keyword_as_component_name()));
+      // console.log(`[getSpeciesString] Mol ${name}, total comps: ${compPatterns.length}, valid comps: ${validComps.length}`);
+      if (validComps.length === 0) return `${name}()`;
 
-      const components = compPatterns.map(cp => {
+      const components = validComps.map(cp => {
         const compNode = cp.STRING() || cp.INT() || cp.keyword_as_component_name();
         let comp = compNode ? compNode.text : '';
 
@@ -881,7 +916,16 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
         return comp;
       }).filter(c => c); // Filter out empty components
 
-      return `${name}(${components.join(',')})`;
+      // console.log(`[getSpeciesString] Mol ${name}, components:`, components);
+      let molStr = `${name}(${components.join(',')})`;
+
+      const tagCtx = mp.molecule_tag();
+      if (tagCtx) molStr += tagCtx.text;
+
+      const attrCtx = (mp as any).molecule_attributes?.();
+      if (attrCtx) molStr += attrCtx.text;
+
+      return molStr;
     }).filter(m => m); // Filter out empty molecules
 
     let res = prefix + molecules.join('.');
@@ -925,10 +969,10 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
   // Helper: Evaluate expression to number
   private evaluateExpression(ctx: Parser.ExpressionContext): number {
     const text = ctx.text;
-    
+
     // Convert parameters record to Map
     const paramMap = new Map<string, number>(Object.entries(this.parameters));
-    
+
     // Define Observables Map (if available in this context?)
     // BNGLVisitor collects observables in this.observables [BNGLObservable[]]
     // We can allow observable names as valid identifiers (value 1.0 or 0.0 for initial check)
@@ -937,21 +981,21 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     // If we use it for rates, we might get numbers.
     // But BNGLVisitor collects rate expressions as strings usually.
     // It calls evaluateExpression ONLY for numeric arguments (like t_end, n_steps, parameter values).
-    
+
     // However, if a parameter depends on a function?
     // e.g. begin parameters; k1 f(); end parameters;
     // Then we need function support here too.
-    
+
     const funcMap = new Map<string, { args: string[], expr: string }>();
     for (const f of this.functions) {
       funcMap.set(f.name, { args: f.args, expr: f.expression });
     }
-    
+
     // Also add observables to map so they don't cause errors if referenced in params (though uncommon)
     // If a parameter references an observable, it's usually invalid in BNG unless it's an expression parameter.
-    const obsMap = new Map<string, number>(); 
+    const obsMap = new Map<string, number>();
     for (const obs of this.observables) {
-        obsMap.set(obs.name, 1.0);
+      obsMap.set(obs.name, 1.0);
     }
 
     return CoreBNGLParser.evaluateExpression(text, paramMap, obsMap, funcMap);

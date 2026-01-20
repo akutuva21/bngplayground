@@ -46,7 +46,7 @@ end seed species
 
 begin observables
     # KEY BIOLOGICAL OUTPUTS
-    Molecules Active_TF       STAT3(s~P,loc~nuc!+)    # Functional transcriptional factor
+    Molecules Active_TF       STAT3(s~P,loc~nuc)    # Functional transcriptional factor
     Molecules pgp130_Signals  gp130(s~P)                # Active signaling platform status
     Molecules Global_pSTAT3   STAT3(s~P)                # Total activation burden
     Molecules SOCS_Feedback   SOCS()                   # Inhibition status

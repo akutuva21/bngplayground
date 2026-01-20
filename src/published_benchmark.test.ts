@@ -95,12 +95,10 @@ function checkBNG2Parse(modelPath: string, tempDir: string): { success: boolean;
 }
 
 // Unsupported features in Web Simulator
-const UNSUPPORTED_FEATURES = ['simulate_nf', 'readFile'];
+const UNSUPPORTED_FEATURES = ['readFile'];
 // Models that fail BNG2.pl parsing - only test web simulator on models BNG2.pl can parse
 const SKIP_MODELS = new Set([
-    // simulate_nf models
-    'Model_ZAP',
-    'polymer',
+    // Models that are inherently problematic or not relevant for this benchmark
     'polymer_draft',
     'McMillan_2021',
     // BNG2.pl parse errors (tested 2024-12-07)

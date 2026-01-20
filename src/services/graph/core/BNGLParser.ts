@@ -1,9 +1,9 @@
-import { Component } from './Component.ts';
-import { Molecule } from './Molecule.ts';
-import { SpeciesGraph } from './SpeciesGraph.ts';
+import { Component } from './Component';
+import { Molecule } from './Molecule';
+import { SpeciesGraph } from './SpeciesGraph';
 
 import { evaluateExpressionHighPrecision, needsHighPrecision } from './highPrecisionEvaluator';
-import { RxnRule } from './RxnRule.ts';
+import { RxnRule } from './RxnRule';
 
 const shouldLogParser = false;
 
@@ -160,11 +160,28 @@ export class BNGLParser {
       // Let's stick to the simpler regex for now:
     }
 
+    // Extract molecule label (e.g., A(b)!1%2) outside parentheses
+    let label: string | undefined;
+    let baseStr = cleanStr;
+    let depth = 0;
+    for (let i = 0; i < cleanStr.length; i++) {
+      const char = cleanStr[i];
+      if (char === '(') depth++;
+      if (char === ')') depth--;
+      if (char === '%' && depth === 0) {
+        baseStr = cleanStr.slice(0, i).trim();
+        label = cleanStr.slice(i + 1).trim();
+        break;
+      }
+    }
+
     // Parse name and components
-    const match = cleanStr.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?(?:@([A-Za-z0-9_]+))?\s*$/);
+    const match = baseStr.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?(?:@([A-Za-z0-9_]+))?\s*$/);
     if (!match) {
       // Molecule without components, e.g., "A"
-      return new Molecule(cleanStr, [], compartment);
+      const molecule = new Molecule(baseStr, [], compartment);
+      if (label) molecule.label = label;
+      return molecule;
     }
 
     const name = match[1];
@@ -176,7 +193,9 @@ export class BNGLParser {
     }
 
     if (!componentStr.trim()) {
-      return new Molecule(name, [], compartment, true);
+      const molecule = new Molecule(name, [], compartment, true);
+      if (label) molecule.label = label;
+      return molecule;
     }
 
     const components: Component[] = [];
@@ -190,7 +209,9 @@ export class BNGLParser {
       components.push(component);
     }
 
-    return new Molecule(name, components, compartment);
+    const molecule = new Molecule(name, components, compartment);
+    if (label) molecule.label = label;
+    return molecule;
   }
 
   /**
@@ -529,6 +550,10 @@ export class BNGLParser {
       evaluable = evaluable.replace(/\basin\(/g, 'Math.asin(');
       evaluable = evaluable.replace(/\bacos\(/g, 'Math.acos(');
       evaluable = evaluable.replace(/\batan\(/g, 'Math.atan(');
+      evaluable = evaluable.replace(/\basinh\(/g, 'Math.asinh(');
+      evaluable = evaluable.replace(/\bacosh\(/g, 'Math.acosh(');
+      evaluable = evaluable.replace(/\batanh\(/g, 'Math.atanh(');
+      evaluable = evaluable.replace(/\brint\(/g, 'Math.round(');
       evaluable = evaluable.replace(/\batan2\(/g, 'Math.atan2(');
       evaluable = evaluable.replace(/\bpow\(/g, 'Math.pow(');
       evaluable = evaluable.replace(/\bmin\(/g, 'Math.min(');
@@ -536,10 +561,11 @@ export class BNGLParser {
       evaluable = evaluable.replace(/\bfloor\(/g, 'Math.floor(');
       evaluable = evaluable.replace(/\bceil\(/g, 'Math.ceil(');
 
-      // Check if mratio or if is used
+      // Check if mratio, if, or FunctionProduct is used
       const usesMratio = /\bmratio\s*\(/g.test(evaluable);
       const usesIf = /\bif\s*\(/g.test(evaluable);
-      let needsHP = usesIf || usesMratio;
+      const usesFunctionProduct = /\bFunctionProduct\s*\(/gi.test(evaluable);
+      let needsHP = usesIf || usesMratio || usesFunctionProduct;
 
       // Also check if any custom function is used
       if (functions) {

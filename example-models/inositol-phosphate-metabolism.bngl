@@ -24,7 +24,7 @@ begin parameters
     IP3_init 10
     IP4_init 0
     Ca_init 50         # Intracellular Calcium
-    k_agonist_synth 0  # Initial agonist synthesis rate
+    k_agonist_synth 10.0  # Initial agonist synthesis rate
 end parameters
 
 begin molecule types
@@ -40,7 +40,7 @@ begin seed species
     IP3() IP3_init
     IP4() IP4_init
     Calcium() Ca_init
-    Agonist(s~off) 1
+    Agonist(s~off) 1000
 end seed species
 
 begin observables
@@ -70,7 +70,7 @@ end functions
 begin reaction rules
     ## ACTIVATION 
     # Agonist triggers activity
-    0 -> Agonist(s~on) k_agonist_synth
+    Agonist(s~off) -> Agonist(s~on) k_agonist_synth
     
     # PLC hydrolysis (TotalRate)
     PIP2() -> IP3() v_plc() TotalRate
@@ -93,11 +93,7 @@ end reaction rules
 
 begin actions
     generate_network({overwrite=>1})
-    # Phase 1: Basal (0-20)
-    simulate({method=>"ode",t_end=>20,n_steps=>40})
-    # Phase 2: Stimulus (20-150)
-    setParameter("k_agonist_synth",1.0)
-    simulate({continue=>1,method=>"ode",t_end=>130,n_steps=>260,continue=>1})
+    simulate({method=>"ode",t_end=>150,n_steps=>300})
 end actions
 end model
 

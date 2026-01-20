@@ -37,9 +37,11 @@
     "react-dom": "^19.2.3",
     "react-markdown": "^9.0.1",
     "recharts": "^3.3.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "umap-js": "^1.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@types/decimal.js": "^0.0.32",
@@ -48,11 +50,13 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.0.0",
     "@webgpu/types": "^0.1.68",
+    "@xmldom/xmldom": "^0.8.11",
     "antlr4ts": "^0.5.0-alpha.4",
     "antlr4ts-cli": "^0.5.0-alpha.4",
     "assert": "^2.1.0",
     "autoprefixer": "^10.4.19",
     "baseline-browser-mapping": "^2.9.11",
+    "fast-check": "^4.5.3",
     "playwright": "^1.50.1",
     "postcss": "^8.4.47",
     "sucrase": "^3.35.1",

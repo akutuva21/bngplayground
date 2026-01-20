@@ -26,7 +26,7 @@ begin parameters
     mRNA_init 0
     Prot_init 10
     RBP_tot 100
-    v_stim_current 0.1  # Current stimulation level
+    v_stim_current 0.1
 end parameters
 
 begin molecule types
@@ -52,8 +52,7 @@ begin observables
     Molecules TF_Dimers       Protein(b!1).Protein(b!1) # Active driver
 end observables
 
-begin functions
-end functions
+
 
 begin reaction rules
     ## TRANSCRIPTION
@@ -84,14 +83,18 @@ end reaction rules
 
 begin actions
     generate_network({overwrite=>1})
-    # Approximate oscillation with 4 phases
-    simulate({method=>"ode",t_end=>50,n_steps=>100})
-    setParameter("v_stim_current",5.0)
-    simulate({continue=>1,method=>"ode",t_end=>50,n_steps=>100,continue=>1})
+    # Phase 1: Basal
     setParameter("v_stim_current",0.1)
-    simulate({continue=>1,method=>"ode",t_end=>50,n_steps=>100,continue=>1})
+    simulate({method=>"ode",t_end=>50,n_steps=>100})
+    # Phase 2: High Stimulus
     setParameter("v_stim_current",5.0)
-    simulate({continue=>1,method=>"ode",t_end=>50,n_steps=>100,continue=>1})
+    simulate({method=>"ode",t_end=>100,n_steps=>100,continue=>1,suffix=>"2"})
+    # Phase 3: Recovery
+    setParameter("v_stim_current",0.1)
+    simulate({method=>"ode",t_end=>150,n_steps=>100,continue=>1,suffix=>"3"})
+    # Phase 4: Re-activation
+    setParameter("v_stim_current",5.0)
+    simulate({method=>"ode",t_end=>200,n_steps=>100,continue=>1,suffix=>"4"})
 end actions
 end model
 

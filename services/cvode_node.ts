@@ -15,13 +15,19 @@ const __dirname = dirname(__filename);
 // Make require available for the CVODE loader
 const require = createRequire(import.meta.url);
 
-// Provide a polyfill for the CVODE loader
-if (typeof globalThis.require === 'undefined') {
+// Provide polyfills for the CVODE loader in ESM context
+if (typeof (globalThis as any).require === 'undefined') {
   (globalThis as any).require = require;
+}
+if (typeof (globalThis as any).__filename === 'undefined') {
+  (globalThis as any).__filename = __filename;
+}
+if (typeof (globalThis as any).__dirname === 'undefined') {
+  (globalThis as any).__dirname = __dirname;
 }
 
 // Path to cvode.wasm file
-const wasmPath = join(__dirname, 'cvode.wasm');
+const wasmPath = join(__dirname, '..', 'public', 'cvode.wasm');
 
 // Create module config with locateFile for Node.js
 const moduleConfig = {
@@ -43,13 +49,29 @@ try {
 }
 
 // Re-export the CVODE module creation function
-import createCVodeModuleBase from './cvode_loader.js';
-
 export default async function createCVodeModule(config = {}): Promise<any> {
-  return createCVodeModuleBase({
-    ...moduleConfig,
-    ...config,
-  });
+  console.log('[cvode_node] Starting createCVodeModule...');
+  try {
+    console.log('[cvode_node] Polyfilling require...');
+    const require = createRequire(import.meta.url);
+    if (!(globalThis as any).require) {
+      (globalThis as any).require = require;
+    }
+
+    console.log('[cvode_node] Dynamically importing cvode_loader.js...');
+    const mod = await import('./cvode_loader.js');
+    console.log('[cvode_node] Import success. Type of default:', typeof mod.default);
+
+    const createCVodeModuleBase = mod.default;
+    console.log('[cvode_node] Calling createCVodeModuleBase...');
+    return await createCVodeModuleBase({
+      ...moduleConfig,
+      ...config,
+    });
+  } catch (e) {
+    console.error('[cvode_node] Error during initialization:', e);
+    throw e;
+  }
 }
 
 export { createCVodeModule };

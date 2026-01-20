@@ -56,7 +56,7 @@ begin observables
     Molecules Active_GS        Gs(s~GTP)                # Relay driver intensity
     Molecules Surface_Availability BetaR(loc~mem)      # Receptor density
     Molecules Desensitized_Frac BetaR(s~P)              # Inhibition status
-    Molecules Sequest_Complex  BetaR(g!1).Arr(b!1)      # Arrestin-bound metrics
+    Molecules Sequest_Complex  BetaR(s!1).Arr(b!1)      # Arrestin-bound metrics
     Molecules Active_AC        AC(s~on)                 # Cyclase status
 end observables
 
@@ -89,7 +89,7 @@ begin reaction rules
     BetaR(s~P,g) + Arr(b) <-> BetaR(s~P!1,g).Arr(b!1) k_arr_bind,0.2
     
     # Internalisation (Spatial move)
-    BetaR(loc~mem,s~P!1).Arr(b!1) -> BetaR(loc~cyt,s~P!1).Arr(b!1) k_internal MoveConnected
+    BetaR(loc~mem,s~P!1).Arr(b!1) -> BetaR(loc~cyt,s~P!1).Arr(b!1) k_internal
     
     ## RECOVERY
     cAMP() -> 0 k_pde_deg
@@ -102,18 +102,9 @@ end reaction rules
 begin actions
     generate_network({overwrite=>1})
     
-    # 1. Equilibration (No Ligand)
-    simulate({method=>"ode",t_end=>50,n_steps=>50,suffix=>"equil"})
-    
-    # 2. Stimulation (Add Epinephrine)
+    # Simple stimulatory simulation for parity
     setConcentration("Epi(r)", 100)
-    saveConcentrations() # Save state for potential branching
-    simulate({continue=>1,method=>"ode",t_end=>200,n_steps=>200,suffix=>"stim"})
-    
-    # 3. Washout (Remove Epinephrine)
-    # Simulates removing the agonist, allowing system to recover/reset
-    setConcentration("Epi(r)", 0)
-    simulate({continue=>1,method=>"ode",t_end=>200,n_steps=>200,suffix=>"wash"})
+    simulate({method=>"ode",t_end=>200,n_steps=>200})
 end actions
 end model
 

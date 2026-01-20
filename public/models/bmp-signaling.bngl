@@ -71,8 +71,8 @@ begin reaction rules
     
     ## RECEPTION
     # BMP binds Type II R,then recruits Type I
-    BMP(r2,b) + Receptor2(l) <-> BMP(r2!1,b).Receptor2(l!1) k_bmp_bind,0.1
-    Receptor2(l!+,r) + Receptor1(l,s~U) <-> Receptor2(l!+,r!1).Receptor1(l!1,s~P) k_complex,0.1
+    BMP(r2,b) + Receptor2(l,s~U) <-> BMP(r2!1,b).Receptor2(l!1,s~A) k_bmp_bind,0.1
+    Receptor2(l!+,r,s~A) + Receptor1(l,s~U) <-> Receptor2(l!+,r!1,s~A).Receptor1(l!1,s~P) k_complex,0.1
     
     ## SIGNAL RELAY
     # Active complex phosphorylates Smad1
@@ -85,7 +85,7 @@ begin reaction rules
     ## TRANSPORT
     # pSmad1 dimerizes and translocates
     Smad1(s~P,loc~cyt) + Smad4(b,loc~cyt) <-> Smad1(s~P!1,loc~cyt).Smad4(b!1,loc~cyt) 2.0,0.1
-    Smad1(loc~cyt,s~U)!+ -> Smad1(loc~nuc,s~U)!+ k_import MoveConnected
+    Smad1(loc~cyt,s~U)!+ -> Smad1(loc~nuc,s~U)!+ k_import
     
     ## FEEDBACK INDUCTION
     # Nuclear factor induces Smad6

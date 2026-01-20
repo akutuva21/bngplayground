@@ -16,6 +16,7 @@ import { Param_nameContext } from "./BNGParser";
 import { Molecule_types_blockContext } from "./BNGParser";
 import { Molecule_type_defContext } from "./BNGParser";
 import { Molecule_defContext } from "./BNGParser";
+import { Molecule_attributesContext } from "./BNGParser";
 import { Component_def_listContext } from "./BNGParser";
 import { Component_defContext } from "./BNGParser";
 import { Keyword_as_component_nameContext } from "./BNGParser";
@@ -56,8 +57,6 @@ import { Energy_patterns_blockContext } from "./BNGParser";
 import { Energy_pattern_defContext } from "./BNGParser";
 import { Population_maps_blockContext } from "./BNGParser";
 import { Population_map_defContext } from "./BNGParser";
-import { Anchors_blockContext } from "./BNGParser";
-import { Anchor_defContext } from "./BNGParser";
 import { Actions_blockContext } from "./BNGParser";
 import { Wrapped_actions_blockContext } from "./BNGParser";
 import { Begin_actions_blockContext } from "./BNGParser";
@@ -239,6 +238,17 @@ export interface BNGParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitMolecule_def?: (ctx: Molecule_defContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `BNGParser.molecule_attributes`.
+	 * @param ctx the parse tree
+	 */
+	enterMolecule_attributes?: (ctx: Molecule_attributesContext) => void;
+	/**
+	 * Exit a parse tree produced by `BNGParser.molecule_attributes`.
+	 * @param ctx the parse tree
+	 */
+	exitMolecule_attributes?: (ctx: Molecule_attributesContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `BNGParser.component_def_list`.
@@ -679,28 +689,6 @@ export interface BNGParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitPopulation_map_def?: (ctx: Population_map_defContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `BNGParser.anchors_block`.
-	 * @param ctx the parse tree
-	 */
-	enterAnchors_block?: (ctx: Anchors_blockContext) => void;
-	/**
-	 * Exit a parse tree produced by `BNGParser.anchors_block`.
-	 * @param ctx the parse tree
-	 */
-	exitAnchors_block?: (ctx: Anchors_blockContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `BNGParser.anchor_def`.
-	 * @param ctx the parse tree
-	 */
-	enterAnchor_def?: (ctx: Anchor_defContext) => void;
-	/**
-	 * Exit a parse tree produced by `BNGParser.anchor_def`.
-	 * @param ctx the parse tree
-	 */
-	exitAnchor_def?: (ctx: Anchor_defContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `BNGParser.actions_block`.

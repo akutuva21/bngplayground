@@ -69,7 +69,7 @@ function normalizeBaseName(name: string): string {
 function hasGdatFile(baseName: string): boolean {
   const normalized = normalizeBaseName(baseName);
   const files = fs.readdirSync(BNG_OUTPUT_DIR);
-  
+
   for (const file of files) {
     if (file.endsWith('.gdat')) {
       const fileBase = path.basename(file, '.gdat');
@@ -84,11 +84,11 @@ function hasGdatFile(baseName: string): boolean {
 async function runBNG2(bnglPath: string, baseName: string): Promise<BNGResult> {
   return new Promise((resolve) => {
     console.log(`\n[${baseName}] Running BNG2.pl...`);
-    
+
     // Copy BNGL to temp directory to avoid path-with-spaces issues
     const tempBngl = path.join(TEMP_DIR, `${baseName}.bngl`);
     fs.copyFileSync(bnglPath, tempBngl);
-    
+
     const proc = spawn('perl', [BNG2_PL, tempBngl], {
       cwd: TEMP_DIR,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -117,50 +117,67 @@ async function runBNG2(bnglPath: string, baseName: string): Promise<BNGResult> {
 
     proc.on('close', (code) => {
       clearTimeout(timeout);
-      
+
       if (code === 0) {
-        // Check if GDAT was created in temp dir
-        const tempGdatFile = path.join(TEMP_DIR, `${baseName}.gdat`);
+        // Check for GDAT files (including multi-phase _2.gdat etc)
+        const files = fs.readdirSync(TEMP_DIR);
+        // Match base.gdat and base_N.gdat
+        const gdatFiles = files.filter(f =>
+          (f === `${baseName}.gdat` || (f.startsWith(`${baseName}_`) && f.endsWith('.gdat')))
+        ).sort((a, b) => {
+          // Sort: base.gdat first, then _2, _3...
+          if (a === `${baseName}.gdat`) return -1;
+          if (b === `${baseName}.gdat`) return 1;
+
+          // Extract number from base_N.gdat
+          const numA = parseInt(a.match(/_(\d+)\.gdat$/)?.[1] || '0');
+          const numB = parseInt(b.match(/_(\d+)\.gdat$/)?.[1] || '0');
+          return numA - numB;
+        });
+
         const targetGdatFile = path.join(BNG_OUTPUT_DIR, `${baseName}.gdat`);
-        
-        if (fs.existsSync(tempGdatFile)) {
-          // Copy GDAT to output directory
-          fs.copyFileSync(tempGdatFile, targetGdatFile);
-          console.log(`[${baseName}] ✓ Success - GDAT created`);
+
+        if (gdatFiles.length > 0) {
+          if (gdatFiles.length === 1) {
+            // Single file - just copy
+            console.log(`[${baseName}] Found 1 GDAT file. Checking Temp Dir content:`, files);
+            fs.copyFileSync(path.join(TEMP_DIR, gdatFiles[0]), targetGdatFile);
+            console.log(`[${baseName}] ✓ Success - GDAT created`);
+          } else {
+            // Multiple files - concatenate
+            console.log(`[${baseName}] Concatenating ${gdatFiles.length} phase files...`);
+
+            // Read first file (keep header)
+            let combinedContent = fs.readFileSync(path.join(TEMP_DIR, gdatFiles[0]), 'utf8');
+
+            // Append others (skip header)
+            for (let i = 1; i < gdatFiles.length; i++) {
+              const content = fs.readFileSync(path.join(TEMP_DIR, gdatFiles[i]), 'utf8');
+              const lines = content.split('\n');
+              const dataLines = lines.filter(l => l.trim().length > 0 && !l.trim().startsWith('#'));
+
+              if (dataLines.length > 0) {
+                if (!combinedContent.endsWith('\n')) combinedContent += '\n';
+                combinedContent += dataLines.join('\n');
+              }
+            }
+
+            fs.writeFileSync(targetGdatFile, combinedContent);
+            console.log(`[${baseName}] ✓ Success - Multi-phase GDAT files concatenated`);
+          }
+
           resolve({
             model: baseName,
             status: 'success',
             gdatFile: `${baseName}.gdat`,
           });
         } else {
-          // Check for multi-phase output
-          const files = fs.readdirSync(TEMP_DIR);
-          const phaseFiles = files.filter(f => 
-            f.startsWith(baseName) && f.endsWith('.gdat')
-          );
-          
-          if (phaseFiles.length > 0) {
-            // Copy all phase files
-            phaseFiles.forEach(f => {
-              fs.copyFileSync(
-                path.join(TEMP_DIR, f),
-                path.join(BNG_OUTPUT_DIR, f)
-              );
-            });
-            console.log(`[${baseName}] ✓ Success - Multi-phase GDAT files created`);
-            resolve({
-              model: baseName,
-              status: 'success',
-              gdatFile: phaseFiles.join(', '),
-            });
-          } else {
-            console.log(`[${baseName}] ✗ No GDAT file found after execution`);
-            resolve({
-              model: baseName,
-              status: 'failed',
-              error: 'No GDAT output',
-            });
-          }
+          console.log(`[${baseName}] ✗ No GDAT file found after execution`);
+          resolve({
+            model: baseName,
+            status: 'failed',
+            error: 'No GDAT output',
+          });
         }
       } else {
         console.log(`[${baseName}] ✗ Failed (exit code ${code})`);
@@ -237,6 +254,14 @@ async function main() {
       continue;
     }
 
+    // Filter by env var
+    if (process.env.MODELS) {
+      const allowed = process.env.MODELS.split(',').map(s => s.trim());
+      if (!allowed.includes(baseName)) {
+        continue;
+      }
+    }
+
     // Run BNG2.pl (overwrite existing GDAT files)
     const result = await runBNG2(bnglPath, baseName);
     results.push(result);
@@ -273,7 +298,7 @@ async function main() {
   const reportPath = path.join(PROJECT_ROOT, 'bng_generation_report.json');
   fs.writeFileSync(reportPath, JSON.stringify(results, null, 2));
   console.log(`\nReport written to: ${reportPath}`);
-  
+
   // Cleanup temp directory
   try {
     fs.rmSync(TEMP_DIR, { recursive: true, force: true });
@@ -290,6 +315,6 @@ main().catch(err => {
     if (fs.existsSync(TEMP_DIR)) {
       fs.rmSync(TEMP_DIR, { recursive: true, force: true });
     }
-  } catch {}
+  } catch { }
   process.exit(1);
 });

@@ -27,6 +27,10 @@ begin parameters
     PKA_stim 0         # Signaling drive
     V_Clamp -30.0      # Current voltage
     k_pka_current 0    # PKA activity
+    
+    # Voltage Dynamics
+    k_v_stim 50.0
+    k_v_leak 1.0
 end parameters
 
 begin molecule types
@@ -38,6 +42,7 @@ end molecule types
 begin seed species
     LTCC(b,g~C,s~R,p~U,loc~mem) LTCC_tot
     Calcium() Ca_init
+    Voltage() 1
 end seed species
 
 begin observables
@@ -54,7 +59,8 @@ end observables
 
 begin functions
     # Voltage-dependent opening probability (Boltzmann)
-    v_open() = k_open_max / (1 + exp(-(V_Clamp - (V_half + v_pka_shift()))/k_slope))
+    # Voltage-dependent opening probability (Boltzmann), V_mem approx -70 + Voltage_Level
+    v_open() = k_open_max / (1 + exp(-( (-70 + Voltage_Level) - (V_half + v_pka_shift()))/k_slope))
     
     # Local Calcium dependent inactivation (Functional Rate)
     v_inact() = k_inact_max * (Ca_Level / (Km_ca + Ca_Level))
@@ -63,7 +69,7 @@ begin functions
     v_pka_shift() = if(Phospho_LTCC > 0,k_pka_shift,0)
     
     # Recovery rate (voltage dependent)
-    v_rec() = if(V_Clamp < -20,0.5,0.05)
+    v_rec() = if( (-70 + Voltage_Level) < -20,0.5,0.05)
 end functions
 
 begin reaction rules
@@ -89,26 +95,20 @@ begin reaction rules
     Calcium() -> 0 k_ca_pump
     
     ## MODULATION Phase
-    0 -> LTCC(b,g~C,s~R,p~P,loc~mem) k_pka_current
+    LTCC(p~U) -> LTCC(p~P) 20.0
     
     # Reset
-    LTCC(b,p~P) -> LTCC(b,p~U) 0.01
+    # Reset
+    LTCC(p~P) -> LTCC(p~U) 0.01
+
+    ## VOLTAGE DYNAMICS
+    0 -> Voltage() k_v_stim
+    Voltage() -> 0 k_v_leak
 end reaction rules
 
 begin actions
     generate_network({overwrite=>1})
-    # Phase 1: Basal (0-30)
-    simulate({method=>"ode",t_end=>30,n_steps=>60})
-    # Phase 2: Pulse begins (30-50)
-    setParameter("V_Clamp",10.0)
-    simulate({continue=>1,method=>"ode",t_end=>20,n_steps=>40,continue=>1})
-    # Phase 3: PKA activation (50-80)
-    setParameter("k_pka_current",2.0)
-    simulate({continue=>1,method=>"ode",t_end=>30,n_steps=>60,continue=>1})
-    # Phase 4: Recovery (80-150)
-    setParameter("V_Clamp",-30.0)
-    setParameter("k_pka_current",0)
-    simulate({continue=>1,method=>"ode",t_end=>70,n_steps=>140,continue=>1})
+    simulate({method=>"ode",t_end=>150,n_steps=>300})
 end actions
 end model
 

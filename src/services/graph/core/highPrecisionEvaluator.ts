@@ -275,12 +275,77 @@ class HighPrecisionVisitor extends AbstractParseTreeVisitor<Decimal> implements 
       case 'sinh': return arg.sinh();
       case 'cosh': return arg.cosh();
       case 'tanh': return arg.tanh();
+      case 'asinh': return arg.asinh();
+      case 'acosh': return arg.acosh();
+      case 'atanh': return arg.atanh();
+      case 'rint': return arg.round();
+      case 'mratio':
+        if (args.length !== 3) throw new Error('mratio() requires 3 arguments');
+        return this.mratio(args[0], args[1], args[2]);
+      case 'functionproduct':
+        if (args.length !== 2) throw new Error('FunctionProduct() requires 2 arguments');
+        return args[0].times(args[1]);
       case 'floor': return arg.floor();
       case 'ceil': return arg.ceil();
       case 'min': return Decimal.min(...args);
       case 'max': return Decimal.max(...args);
       default: throw new Error(`Unknown function: ${funcName}`);
     }
+  }
+
+  private mratio(a: Decimal, b: Decimal, z: Decimal): Decimal {
+    const eps = new Decimal(1e-16);
+    const tiny = new Decimal(1e-32);
+
+    let f = tiny;
+    let C = f;
+    let D = new Decimal(0);
+    let err = new Decimal(2);
+
+    let odd = 1;
+    let even = 0;
+    let iodd = 0;
+    let ieven = 0;
+    let j = 0;
+
+    while (err.gt(eps) && j < 10000) {
+      j++;
+
+      let p: Decimal;
+      if (j === 1) {
+        p = new Decimal(1);
+      } else {
+        const den = b.plus(j - 2).times(b.plus(j - 1));
+        let num: Decimal;
+        if (odd === 1) {
+          iodd++;
+          num = z.times(a.plus(iodd));
+        } else {
+          ieven++;
+          num = z.times(a.minus(b.plus(ieven - 1)));
+        }
+        p = num.dividedBy(den);
+      }
+
+      const q = new Decimal(1.0);
+
+      D = q.plus(p.times(D));
+      if (D.abs().lt(tiny)) D = tiny;
+      C = q.plus(p.dividedBy(C));
+      if (C.abs().lt(tiny)) C = tiny;
+      D = new Decimal(1.0).dividedBy(D);
+
+      const Delta = C.times(D);
+      f = Delta.times(f);
+
+      err = Delta.minus(1.0).abs();
+
+      const tmp = odd;
+      odd = even;
+      even = tmp;
+    }
+
+    return f;
   }
 }
 

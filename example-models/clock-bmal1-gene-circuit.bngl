@@ -6,6 +6,8 @@ begin parameters
     # Assembly
     k_bind_act 2.5     # CLOCK:BMAL1 heterodimerization
     k_transcribe 2.0   # Functional driver
+    k_bind_dna 1.0     # DNA binding
+    k_unbind_dna 0.1
     
     # Negative Loops (Secondary rev-erba/ror)
     k_ror_synth 0.5    # BMAL1-mediated ROR production
@@ -32,6 +34,7 @@ begin molecule types
     Bmal1(b1,b2,loc~cyt~nuc)
     ROR(b)
     RevErb(b)
+    DNA(p)
 end molecule types
 
 begin seed species
@@ -39,6 +42,7 @@ begin seed species
     Bmal1(b1,b2,loc~cyt) Bmal1_tot
     ROR(b) ROR_tot
     RevErb(b) Rev_tot
+    DNA(p) 10
 end seed species
 
 begin observables
@@ -59,10 +63,13 @@ end functions
 begin reaction rules
     ## ACTIVATION 
     # Bmal1 moves to nucleus
-    Bmal1(b1,b2,loc~cyt) <-> Bmal1(b1,b2,loc~nuc) k_import,k_export MoveConnected
+    Bmal1(b1,b2,loc~cyt) <-> Bmal1(b1,b2,loc~nuc) k_import,k_export
     
     # Heterodimerization (The Engine)
     Clock(b) + Bmal1(b1,loc~nuc) <-> Clock(b!1).Bmal1(b1!1,loc~nuc) k_bind_act,0.2
+
+    # DNA Binding (Transcription ON)
+    Clock(b!1).Bmal1(b1!1,b2,loc~nuc) + DNA(p) <-> Clock(b!1).Bmal1(b1!1,b2!2,loc~nuc).DNA(p!2) k_bind_dna,k_unbind_dna
     
     ## SECONDARY LOOP (The Tuning)
     # Active complex induces RevErb and ROR

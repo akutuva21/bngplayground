@@ -10,7 +10,7 @@ begin parameters
     Vol_Nuc 10
     
     # Sensing & Dimerization
-    k_bind_rna 1e-4    # dsRNA binding to TLR3
+    k_bind_rna 0.01    # dsRNA binding to TLR3
     k_dimer_max 1.5    # Max receptor dimerization
     Km_dimer 200       # Half-saturation for dimerization
     
@@ -53,7 +53,7 @@ begin molecule types
 end molecule types
 
 begin seed species
-    dsRNA(b)@End dsRNA_tot
+    dsRNA(b)@End_M dsRNA_tot
     TLR3(l,d,t)@End_M TLR3_tot
     TRIF(b,s~U)@Cyt TRIF_tot
     IRF3(s~U)@Cyt IRF3_tot
@@ -64,7 +64,7 @@ begin observables
     # KEY BIOLOGICAL OUTPUTS
     Molecules Active_TLR3     TLR3(d!+)@End_M          # Any dimerized receptor
     Molecules TRIF_Bound      TLR3(t!1).TRIF(b!1)      # Active signaling platform (Implicit loc)
-    Molecules Pathogen_Sense  dsRNA(b!+)@End           # Target recognition status
+    Molecules Pathogen_Sense  dsRNA(b!+)@End_M           # Target recognition status
     Molecules Nucleark_IRF3   IRF3(s~P)@Nuc            # Final Antiviral output
     Molecules Cyto_IRF3       IRF3(s~P)@Cyt            # Intermediate
     Molecules Regulator_Load  SARM()@Cyt               # Feedback status
@@ -79,7 +79,7 @@ begin reaction rules
     ## RECOGNITION
     # dsRNA binds TLR3 monomer (End lumen binds End_M receptor)
     # dsRNA stays in End, TLR3 stays in End_M
-    dsRNA(b)@End + TLR3(l)@End_M <-> dsRNA(b!1)@End.TLR3(l!1)@End_M k_bind_rna,0.1
+    dsRNA(b)@End_M + TLR3(l)@End_M <-> dsRNA(b!1)@End_M.TLR3(l!1)@End_M k_bind_rna,0.1
     
     # Occupied TLR3 dimerizes (Functional Rate)
     # Both in End_M
@@ -92,7 +92,7 @@ begin reaction rules
     
     # Active TRIF platform activates IRF3 (Cyt)
     # Catalysis: TRIF@Cyt (bound to TLR3) hits IRF3@Cyt
-    TRIF(s!+,b!+)@Cyt + IRF3(s~U)@Cyt -> TRIF(s!+,b!+)@Cyt + IRF3(s~P)@Cyt k_irf3_act
+    TRIF(s~U,b!+)@Cyt + IRF3(s~U)@Cyt -> TRIF(s~U,b!+)@Cyt + IRF3(s~P)@Cyt k_irf3_act
     
     ## TRANSPORT
     # p-IRF3 moves to Nucleus
@@ -109,7 +109,7 @@ begin reaction rules
     ## CLEARANCE
     IRF3(s~P)@Nuc -> IRF3(s~U)@Cyt 0.05
     # Dissociation/Reset
-    dsRNA(b!1)@End.TLR3(l!1)@End_M -> dsRNA(b)@End + TLR3(l)@End_M 0.01
+    dsRNA(b!1)@End_M.TLR3(l!1)@End_M -> dsRNA(b)@End_M + TLR3(l)@End_M 0.01
     SARM()@Cyt -> 0 0.02
 end reaction rules
 

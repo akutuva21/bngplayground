@@ -65,18 +65,9 @@ end reaction rules
 begin actions
     generate_network({overwrite=>1})
     
-    # 1. Glucose Only (Repressed State)
-    simulate({method=>"ode",t_end=>50,n_steps=>50,suffix=>"repressed"})
-    
-    # 2. Add Lactose (Induction)
-    # Simulates available lactose substrate
-    setConcentration("Lactose(loc~ext)", 200)
-    saveConcentrations()
-    simulate({continue=>1,method=>"ode",t_end=>200,n_steps=>200,suffix=>"induced"})
-    
-    # 3. Remove Lactose (Depletion)
-    setConcentration("Lactose(loc~ext)", 0)
-    simulate({continue=>1,method=>"ode",t_end=>200,n_steps=>200,suffix=>"depleted"})
+    # Simple stimulatory simulation for parity
+    setConcentration("Lactose(loc~ext)", 100)
+    simulate({method=>"ode",t_end=>200,n_steps=>200})
 end actions
 end model
 

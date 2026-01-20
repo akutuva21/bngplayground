@@ -1,33 +1,63 @@
 begin model
 begin parameters
-    k_on1 0.01
-    k_off1 0.005
-    k_on2 0.02
-    k_off2 0.003
+    # Cooperative binding: The binding of the first ligand molecule increases 
+    # the affinity for the second ligand molecule (Positive Cooperativity).
+    
+    # Reaction rates
+    k_on_1 1e-4        # Binding of 1st ligand
+    k_off_1 0.1        # Dissociation of 1st ligand
+    
+    k_coop 10.0        # Cooperativity factor (A_2nd = k_on_1 * k_coop)
+    k_off_2 0.01       # Dissociation of 2nd ligand (often slower in positive coop)
+    
+    # Competition extension
+    k_on_comp 5e-5     # Competitive (non-cooperative) ligand
+    
+    # Initials
+    Receptor_tot 500   # Bivalent receptor
+    Ligand_tot 1000
+    Competitor_tot 0
 end parameters
 
 begin molecule types
-    Ligand()
-    Receptor(site1~U~B,site2~U~B)
+    Receptor(l1,l2)
+    Ligand(b)
+    Competitor(b)
 end molecule types
 
 begin seed species
-    Ligand() 200
-    Receptor(site1~U,site2~U) 50
+    Receptor(l1,l2) Receptor_tot
+    Ligand(b) Ligand_tot
+    Competitor(b) Competitor_tot
 end seed species
 
 begin observables
-    Molecules Unbound Receptor(site1~U,site2~U)
-    Molecules Single_bound_site1 Receptor(site1~B,site2~U)
-    Molecules Single_bound_site2 Receptor(site1~U,site2~B)
-    Molecules Double_bound Receptor(site1~B,site2~B)
+    # KEY BIOLOGICAL OUTPUTS
+    Molecules Free_Rec       Receptor(l1,l2)          # Unbound state
+    Molecules Mono_Bound     Receptor(l1!+,l2),Receptor(l1,l2!+) # Single occupancy
+    Molecules Fully_Occupied Receptor(l1!+,l2!+)      # Dual occupancy (Signaling state)
+    Molecules Total_Bound    Ligand(b!+)               # Mass balance
+    Molecules Half_Life      Receptor(l1!1).Ligand(b!1)  # For monitoring stability
 end observables
 
 begin reaction rules
-    Ligand() + Receptor(site1~U) -> Ligand() + Receptor(site1~B) k_on1
-    Receptor(site1~B) -> Receptor(site1~U) k_off1
-    Ligand() + Receptor(site2~U) -> Ligand() + Receptor(site2~B) k_on2
-    Receptor(site2~B) -> Receptor(site2~U) k_off2
+    ## COOPERATIVE BINDING SCHEME (BIVALENT)
+    
+    # Binding to first site (l1)
+    Receptor(l1,l2) + Ligand(b) <-> Receptor(l1!1,l2).Ligand(b!1) k_on_1,k_off_1
+    
+    # Binding to first site (l2)
+    Receptor(l1,l2) + Ligand(b) <-> Receptor(l1,l2!1).Ligand(b!1) k_on_1,k_off_1
+    
+    # Cooperative binding to second site (if l1 is occupied,bind l2)
+    Receptor(l1!+,l2) + Ligand(b) <-> Receptor(l1!+,l2!1).Ligand(b!1) k_on_1*k_coop,k_off_2
+    
+    # Cooperative binding to second site (if l2 is occupied,bind l1)
+    Receptor(l1,l2!+) + Ligand(b) <-> Receptor(l1!1,l2!+).Ligand(b!1) k_on_1*k_coop,k_off_2
+    
+    ## COMPETITION (NON-COOPERATIVE)
+    Receptor(l1) + Competitor(b) <-> Receptor(l1!1).Competitor(b!1) k_on_comp,0.1
+    Receptor(l2) + Competitor(b) <-> Receptor(l2!1).Competitor(b!1) k_on_comp,0.1
 end reaction rules
 
 begin actions
@@ -35,3 +65,4 @@ begin actions
     simulate({method=>"ode",t_end=>100,n_steps=>200})
 end actions
 end model
+

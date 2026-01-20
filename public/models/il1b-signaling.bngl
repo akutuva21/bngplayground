@@ -4,7 +4,7 @@ begin parameters
     # Advanced features: TotalRate for signal amplification and Hill kinetics for relay.
     
     # Reception
-    k_bind_il1 1e-4
+    k_bind_il1 0.01
     k_trim 1.0         # Receptor clustering drive
     
     # MyD88 Relay (The Scaffold)
@@ -57,7 +57,7 @@ end observables
 
 begin functions
     # Dimer/Cluster-driven IRAK activation (TotalRate)
-    v_signal_burst() = k_irak_act_max * (Active_Clusters / 200)^n_hill
+    v_signal_burst() = k_irak_act_max * (Active_Clusters / 10)^n_hill
 end functions
 
 begin reaction rules

@@ -1,8 +1,9 @@
 import { bnglService } from '../../services/bnglService';
-import { MODEL_CATEGORIES, BNG2_EXCLUDED_MODELS } from '../../constants';
+import { MODEL_CATEGORIES, BNG2_EXCLUDED_MODELS, NFSIM_MODELS } from '../../constants';
 import { BNGLModel, SimulationResults, SimulationPhase, SimulationOptions } from '../../types';
 import { getSimulationOptionsFromParsedModel } from './simulationOptions';
 import { downloadCsv } from './download';
+import { SafeExpressionEvaluator } from '../../services/safeExpressionEvaluator';
 
 function normalizeFilterNames(names?: string[]) {
     if (!names || names.length === 0) return null;
@@ -25,17 +26,38 @@ function safeModelName(name: string) {
  * @param model - Parsed BNGL model with potential multiple simulation phases
  * @returns Concatenated simulation results with monotonic time
  */
-async function executeMultiPhaseSimulation(model: BNGLModel): Promise<SimulationResults> {
-    const phases = model.simulationPhases || [];
+async function executeMultiPhaseSimulation(model: BNGLModel, seed?: number): Promise<SimulationResults> {
+    const allPhases = model.simulationPhases || [];
+
+    // Determine which phases to actually include in the final output.
+    // To match BNG2 parity, we typically only want the LAST continuous chain 
+    // of phases that share a common time axis (or the last phase if no continue).
+    let recordFromIdx = 0;
+    for (let i = 0; i < allPhases.length; i++) {
+        // Fix: handle undefined/null continue as false
+        if (!allPhases[i].continue) {
+            recordFromIdx = i;
+        }
+    }
+
+
+    // Execution Plan:
+    // 1. We must EXECUTE all phases 0..N sequentially to ensure state propagates correctly.
+    // 2. We only RECORD phases starting from recordFromIdx (the formatted output chain).
 
     // If single phase or no phases, use standard execution
-    if (phases.length <= 1) {
-        const options = getSimulationOptionsFromParsedModel(model, 'ode', { solver: 'cvode' });
+    if (allPhases.length <= 1) {
+        // Fix: Detect method from the model's phase to respect 'nf' or 'ssa'
+        const defaultMethod = allPhases.length > 0 ? (allPhases[0].method || 'ode') : 'ode';
+        const options = getSimulationOptionsFromParsedModel(model, defaultMethod as any, {
+            solver: 'cvode',
+            ...(seed !== undefined ? { seed } : {})
+        });
         return await bnglService.simulate(model, options, { description: 'Single Phase' });
     }
 
-    // Multi-phase execution: run each phase sequentially
-    console.log(`Executing ${phases.length} simulation phases sequentially`);
+    // Multi-phase execution: run each phase sequentially from the beginning
+    console.log(`Executing ${allPhases.length} simulation phases sequentially (recording from index ${recordFromIdx})`);
 
     let cumulativeTime = 0;
     let allData: Record<string, number>[] = [];
@@ -45,11 +67,15 @@ async function executeMultiPhaseSimulation(model: BNGLModel): Promise<Simulation
     let combinedExpandedReactions: any[] | undefined;
     let combinedExpandedSpecies: any[] | undefined;
 
-    for (let i = 0; i < phases.length; i++) {
-        const phase = phases[i];
+    for (let i = 0; i < allPhases.length; i++) {
+        const phase = allPhases[i];
         const phaseNum = i + 1;
 
-        console.log(`Phase ${phaseNum}/${phases.length}: t_end=${phase.t_end}, n_steps=${phase.n_steps}, continue=${phase.continue}`);
+        // SKIP LOGIC: If this phase is an "equilibration" phase that is part of the recorded set
+        // but has steps <= 1, we might want to skip RECORDING it, but we must still EXECUTE it if it's needed for state.
+        // Actually, execute everything. Filter output later.
+
+        console.log(`Phase ${phaseNum}/${allPhases.length}: t_end=${phase.t_end}, n_steps=${phase.n_steps}, continue=${phase.continue}`);
 
         // For continuation phases, BNG2 typically treats t_end as ABSOLUTE time.
         // However, some models (like bistable-toggle-switch) specify 't_end' as a DURATION relative to the start of the phase.
@@ -68,6 +94,7 @@ async function executeMultiPhaseSimulation(model: BNGLModel): Promise<Simulation
             solver: 'cvode',
             ...(phase.atol !== undefined ? { atol: phase.atol } : {}),
             ...(phase.rtol !== undefined ? { rtol: phase.rtol } : {}),
+            ...(seed !== undefined ? { seed } : {}),
         };
 
         console.log(`[Multi-phase] Phase ${i + 1} simulating for duration=${effectiveDuration} (continue=${phase.continue}, previousEndTime=${previousEndTime})`);
@@ -95,6 +122,7 @@ async function executeMultiPhaseSimulation(model: BNGLModel): Promise<Simulation
             console.log(`[Multi-phase] Phase ${i + 1} initialized from finalState. First species: ${singlePhaseModel.species[0].name} = ${singlePhaseModel.species[0].initialConcentration}, NFkB_Inactive = ${singlePhaseModel.species.find(s => s.name.includes('NFkB'))?.initialConcentration}`);
         }
 
+        // Apply concentration changes that occur after the previous phase
         // Apply concentration changes that occur after the previous phase
         const concentrationChanges = (model.concentrationChanges || [])
             .filter(c => c.afterPhaseIndex === i - 1);
@@ -164,6 +192,86 @@ async function executeMultiPhaseSimulation(model: BNGLModel): Promise<Simulation
         for (const pChange of parameterChanges) {
             if (typeof pChange.value === 'number') {
                 singlePhaseModel.parameters[pChange.parameter] = pChange.value;
+            } else {
+                // If value is a string (expression), try to evaluate it first
+                // Wait, BNGLVisitor stores raw string for expressions like "10*60".
+                // We should evaluate it using CURRENT parameters.
+                try {
+                    const val = SafeExpressionEvaluator.compile(String(pChange.value))(singlePhaseModel.parameters);
+                    if (!isNaN(val)) {
+                        singlePhaseModel.parameters[pChange.parameter] = val;
+                        console.log(`[Multi-phase] Applied setParameter: ${pChange.parameter} = ${val} (expr: ${pChange.value})`);
+                    }
+                } catch (e) {
+                    console.warn(`[Multi-phase] Failed to evaluate parameter change: ${pChange.parameter}=${pChange.value}`);
+                }
+            }
+        }
+
+        // CRITICAL FIX: Recalculate all dependent parameters and reaction rates!
+        // Hat_2016 and other models update base parameters (like IR_on) and expect
+        // derived parameters (like production_rate) to update automatically.
+        if (singlePhaseModel.paramExpressions) {
+            console.log('[Multi-phase] Recalculating dependent parameters and reaction rates...');
+            const maxPasses = 10;
+            const resolvedParams: Record<string, number> = { ...singlePhaseModel.parameters };
+
+            // Re-resolve parameters
+            for (let pass = 0; pass < maxPasses; pass++) {
+                let allResolved = true;
+                for (const [name, expr] of Object.entries(singlePhaseModel.paramExpressions)) {
+                    // Try to evaluate using current resolved params
+                    try {
+                        const val = SafeExpressionEvaluator.compile(expr)(resolvedParams);
+                        if (!isNaN(val)) {
+                            resolvedParams[name] = val;
+                        } else {
+                            allResolved = false;
+                        }
+                    } catch (e) {
+                        allResolved = false;
+                    }
+                }
+                if (allResolved) break;
+            }
+            singlePhaseModel.parameters = resolvedParams;
+            console.log('[Multi-phase] Parameters updated.');
+
+            // Re-evaluate reaction rates
+            if (singlePhaseModel.reactionRules) {
+                let updates = 0;
+                for (const rule of singlePhaseModel.reactionRules) {
+                    if (rule.rateExpression) {
+                        try {
+                            const val = SafeExpressionEvaluator.compile(rule.rateExpression)(resolvedParams);
+                            if (!isNaN(val)) {
+                                (rule as any).rateConstant = val; // Force update
+                                updates++;
+                            }
+                        } catch (e) {
+                            // ignore
+                        }
+                    }
+                    if (rule.isBidirectional && rule.reverseRate) {
+                        // We probably don't have reverseRateExpression stored? BNGLVisitor stored rateExpression=rate.
+                        // But reverseRate is also a string.
+                        // Assuming reverseRate holds the expression.
+                        try {
+                            const val = SafeExpressionEvaluator.compile(rule.reverseRate)(resolvedParams);
+                            if (!isNaN(val)) {
+                                // We need to set reverseRateConstant property if it exists?
+                                // NetworkGenerator probably expects it?
+                                // Actually NetworkGenerator constructor splits bidirectional rules?
+                                // No, NetworkGenerator processes RULES.
+                                // Line 728 parseBNGL.ts: calculates `reverseRate` (number).
+                                // BUT NetworkGenerator does NOT recalculate it from string if passed.
+                                // We might need to handle this if NetworkGenerator supports it.
+                                // For now, assume rateConstant forward is main issue.
+                            }
+                        } catch (e) { }
+                    }
+                }
+                console.log(`[Multi-phase] Updated ${updates} reaction rate constants.`);
             }
         }
 
@@ -194,13 +302,24 @@ async function executeMultiPhaseSimulation(model: BNGLModel): Promise<Simulation
             ...(model.parameterChanges?.map(c => c.afterPhaseIndex) ?? [])
         ].filter(idx => idx !== undefined && idx >= -1);
 
-        const hasChangeBeforeFirstPhase = allChangeIndices.some(idx => idx === -1);
-        const nextPhaseIsRestart = i < phases.length - 1 && phases[i + 1].continue === false;
-        const isInitialEquilibrationPhase = i === 0 && phases.length > 1 && !hasChangeBeforeFirstPhase && nextPhaseIsRestart;
+        const hasChangeBeforeFirstPhase = allChangeIndices.some(idx => idx === recordFromIdx - 1); // Check for changes before the *first* phase of the processed set
+        const nextPhaseIsRestart = i < allPhases.length - 1 && allPhases[i + 1].continue === false;
+        // const isInitialEquilibrationPhase = i === 0 && finalPhases.length > 1 && !hasChangeBeforeFirstPhase && nextPhaseIsRestart && (phase.n_steps ?? 100) <= 1;
 
-        const shouldIncludeOutput = (phase.n_steps ?? 100) > 1
-            && !phase.steady_state
-            && !isInitialEquilibrationPhase;
+        // RECORDING CONDITION:
+        // 1. Must be in the "record" window (i >= recordFromIdx)
+        // 2. Must not be a 1-step equilibration (unless it's the only thing we have)
+        const inRecordWindow = i >= recordFromIdx;
+        const isEquil = (phase.n_steps ?? 100) <= 1;
+
+        // If we are in record window, do we skip?
+        // Skip if it's an equilibration AND we have more phases coming in this chain
+        // (Actually, relying on recordFromIdx logic is safer. If recordFromIdx points to an Equil phase, we arguably should show it?)
+        // Let's stick to: Output if in window AND not pure-zero-step (n_steps >= 1 usually means output requested).
+
+        const shouldIncludeOutput = inRecordWindow
+            && (phase.n_steps ?? 100) >= 1
+            && !phase.steady_state;
 
         if (shouldIncludeOutput) {
             // Reset cumulative time for first output phase
@@ -292,6 +411,12 @@ export async function runModels(modelNames?: string[]) {
     let successCount = 0;
     let failCount = 0;
 
+    const globalAny = (typeof window !== 'undefined' ? (window as any) : undefined);
+    const batchSeed = typeof globalAny?.__batchSeed === 'number' ? globalAny.__batchSeed : undefined;
+    if (batchSeed !== undefined) {
+        console.log(`[Batch] Using deterministic seed: ${batchSeed}`);
+    }
+
     for (const modelDef of modelsToProcess) {
         console.group(`Processing: ${modelDef.name}`);
         try {
@@ -327,7 +452,7 @@ export async function runModels(modelNames?: string[]) {
                 console.log(`[Batch] Auto-injecting default simulate action for ${model.name}`);
                 model.simulationPhases.push({ method: 'ode', t_end: 100, n_steps: 100 });
             }
-            const results: SimulationResults = await executeMultiPhaseSimulation(model);
+            const results: SimulationResults = await executeMultiPhaseSimulation(model, batchSeed);
             console.timeEnd('Simulate');
 
             if (modelDef.id === 'Lang_2024' || modelDef.name.includes('Lang')) {
@@ -393,9 +518,15 @@ export async function runAllModels() {
     return runModels();
 }
 
+export async function runNfSimModels() {
+    const nfModels = Array.from(NFSIM_MODELS).filter(m => !BNG2_EXCLUDED_MODELS.has(m));
+    return runModels(nfModels);
+}
+
 // Expose on window for Playwright
 if (typeof window !== 'undefined') {
     (window as any).runModels = runModels;
     (window as any).runAllModels = runAllModels;
+    (window as any).runNfSimModels = runNfSimModels;
     (window as any).getModelNames = getModelNames;
 }

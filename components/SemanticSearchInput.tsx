@@ -6,7 +6,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { SearchIcon } from './icons/SearchIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
-import { semanticSearch, preloadEmbeddingModel, SearchResult } from '../services/semanticSearch';
+import { semanticSearch, preloadEmbeddingModel, SearchResult } from '@/services/semanticSearch';
 
 interface SemanticSearchInputProps {
   onResults: (results: SearchResult[]) => void;
@@ -26,7 +26,7 @@ export const SemanticSearchInput: React.FC<SemanticSearchInputProps> = ({
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
+
   // Preload embedding model on mount
   useEffect(() => {
     setIsModelLoading(true);
@@ -35,17 +35,17 @@ export const SemanticSearchInput: React.FC<SemanticSearchInputProps> = ({
     const timer = setTimeout(() => setIsModelLoading(false), 3000);
     return () => clearTimeout(timer);
   }, []);
-  
+
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       onResults([]);
       return;
     }
-    
+
     setIsSearching(true);
     setError(null);
     onSearchStart();
-    
+
     try {
       const results = await semanticSearch(searchQuery, 20);
       onResults(results);
@@ -58,21 +58,21 @@ export const SemanticSearchInput: React.FC<SemanticSearchInputProps> = ({
       onSearchEnd();
     }
   }, [onResults, onSearchStart, onSearchEnd]);
-  
+
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
     setQuery(newQuery);
-    
+
     // Debounce search
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
-    
+
     debounceRef.current = setTimeout(() => {
       performSearch(newQuery);
     }, 300);
   }, [performSearch]);
-  
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       if (debounceRef.current) {
@@ -81,7 +81,7 @@ export const SemanticSearchInput: React.FC<SemanticSearchInputProps> = ({
       performSearch(query);
     }
   }, [query, performSearch]);
-  
+
   const handleClear = useCallback(() => {
     setQuery('');
     setError(null);
@@ -90,7 +90,7 @@ export const SemanticSearchInput: React.FC<SemanticSearchInputProps> = ({
       clearTimeout(debounceRef.current);
     }
   }, [onResults]);
-  
+
   return (
     <div className="relative">
       <div className="relative">
@@ -102,7 +102,7 @@ export const SemanticSearchInput: React.FC<SemanticSearchInputProps> = ({
             <SearchIcon className="w-5 h-5 text-slate-400" />
           )}
         </div>
-        
+
         <input
           type="text"
           value={query}
@@ -111,7 +111,7 @@ export const SemanticSearchInput: React.FC<SemanticSearchInputProps> = ({
           placeholder={placeholder}
           className="w-full pl-10 pr-24 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
         />
-        
+
         {/* Clear button when there's a query */}
         {query && (
           <button
@@ -124,7 +124,7 @@ export const SemanticSearchInput: React.FC<SemanticSearchInputProps> = ({
             </svg>
           </button>
         )}
-        
+
         {/* AI badge */}
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
           <SparklesIcon className="w-4 h-4 text-amber-500" />
@@ -133,12 +133,12 @@ export const SemanticSearchInput: React.FC<SemanticSearchInputProps> = ({
           </span>
         </div>
       </div>
-      
+
       {/* Error message */}
       {error && (
         <p className="mt-1 text-xs text-red-500 dark:text-red-400">{error}</p>
       )}
-      
+
       {/* Helper text */}
       {!error && query.length === 0 && (
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">

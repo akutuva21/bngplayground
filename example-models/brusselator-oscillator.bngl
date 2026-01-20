@@ -15,7 +15,7 @@ begin parameters
     
     # Environmental Control
     k_temp_mod 1.0     # Base temp effect
-    v_temp_current 0.8 # Initial temperature modulation
+    v_temp_current 2.5
     A_pool 100         # Reservoir
     B_drive 2.5        # Force
     X_init 1.0
@@ -53,6 +53,8 @@ begin functions
     
     # Saturable decay of activator X
     v_decay() = k_decay_max * X_Level / (Km_x + X_Level)
+    
+
 end functions
 
 begin reaction rules
@@ -78,11 +80,15 @@ end reaction rules
 
 begin actions
     generate_network({overwrite=>1})
-    # Phase 1: Initial Temp (0-20)
+    # Phase 1: Cool (0-20)
+    setParameter("v_temp_current", 2.5)
     simulate({method=>"ode",t_end=>20,n_steps=>200})
-    # Phase 2: Shifted Temp (20-60)
-    setParameter("v_temp_current",1.2)
-    simulate({continue=>1,method=>"ode",t_end=>40,n_steps=>400,continue=>1})
+    # Phase 2: Heat Pulse (20-40)
+    setParameter("v_temp_current", 5.0)
+    simulate({method=>"ode",t_end=>40,n_steps=>200,continue=>1,suffix=>"2"})
+    # Phase 3: Recovery (40-60)
+    setParameter("v_temp_current", 2.5)
+    simulate({method=>"ode",t_end=>60,n_steps=>200,continue=>1,suffix=>"3"})
 end actions
 end model
 

@@ -46,7 +46,7 @@ end seed species
 
 begin observables
     # KEY BIOLOGICAL OUTPUTS
-    Molecules Transl_Sequest eIF2a(s~P!1).eIF2B(b!1)    # Core inhibitory complex
+    Molecules Transl_Sequest eIF2a(b!1).eIF2B(b!1)    # Core inhibitory complex
     Molecules Active_GEF     eIF2B(b)                 # Available translational drive
     Molecules Global_Stark   eIF2a(s~P)               # Total stress signal
     Molecules Signal_Sensor  PERK(s~on)               # Sensing activity

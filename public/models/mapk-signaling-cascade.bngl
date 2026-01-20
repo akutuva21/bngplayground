@@ -1,13 +1,16 @@
 begin model
 begin parameters
-    k_bind 1.0
-    k_unbind 0.1
-    k_act1 0.5
-    k_deact1 0.05
-    k_act2 0.4
-    k_deact2 0.04
-    k_act3 0.3
-    k_deact3 0.03
+    # Rate Constants
+    k_bind   1.0   # Ligand binding
+    k_unbind 0.1   # Dissociation
+    k_act1   0.5   # Receptor activation
+    k_deact1 0.05  # Receptor deactivation
+    
+    # Cascade Kinetics
+    k_act2   0.4   # MAPKKK activation
+    k_deact2 0.04  # MAPKKK deactivation
+    k_act3   0.3   # MAPKK/MAPK activation
+    k_deact3 0.03  # MAPKK/MAPK deactivation
 end parameters
 
 begin molecule types
@@ -19,7 +22,7 @@ begin molecule types
 end molecule types
 
 begin seed species
-    Ligand(r) 100
+    Ligand(r) 0
     Receptor(l,state~inactive) 50
     MAPKKK(state~U) 30
     MAPKK(state~U) 100
@@ -28,25 +31,50 @@ end seed species
 
 begin observables
     Molecules Active_Receptor Receptor(state~active)
-    Molecules MAPKKK_P MAPKKK(state~P)
-    Molecules MAPKK_P MAPKK(state~P)
-    Molecules MAPK_P MAPK(state~P)
+    Molecules MAPKKK_P      MAPKKK(state~P)
+    Molecules MAPKK_P       MAPKK(state~P)
+    Molecules MAPK_P        MAPK(state~P)
 end observables
 
 begin reaction rules
-    Ligand(r) + Receptor(l,state~inactive) <-> Ligand(r!1).Receptor(l!1,state~inactive) k_bind, k_unbind
+    # 1. Receptor Activation
+    Ligand(r) + Receptor(l,state~inactive) <-> Ligand(r!1).Receptor(l!1,state~inactive) k_bind,k_unbind
     Ligand(r!1).Receptor(l!1,state~inactive) -> Ligand(r!1).Receptor(l!1,state~active) k_act1
     Receptor(state~active) -> Receptor(state~inactive) k_deact1
+    
+    # 2. MAPKKK Activation (Raf)
+    # Active receptor activates MAPKKK
     Receptor(state~active) + MAPKKK(state~U) -> Receptor(state~active) + MAPKKK(state~P) k_act2
+    # Phosphatase action
     MAPKKK(state~P) -> MAPKKK(state~U) k_deact2
+    
+    # 3. MAPKK Activation (MEK)
+    # Active MAPKKK activates MAPKK
     MAPKKK(state~P) + MAPKK(state~U) -> MAPKKK(state~P) + MAPKK(state~P) k_act3
     MAPKK(state~P) -> MAPKK(state~U) k_deact3
+    
+    # 4. MAPK Activation (ERK)
+    # Active MAPKK activates MAPK
     MAPKK(state~P) + MAPK(state~U) -> MAPKK(state~P) + MAPK(state~P) k_act3
     MAPK(state~P) -> MAPK(state~U) k_deact3
 end reaction rules
 
 begin actions
     generate_network({overwrite=>1})
-    simulate({method=>"ode",t_end=>60,n_steps=>120})
+    
+    # 1. Equilibration (No Ligand)
+    simulate({method=>"ode",t_end=>20,n_steps=>40,suffix=>"equil"})
+    
+    # 2. Stimulation (Add Ligand)
+    # Activates the MAPK cascade
+    setConcentration("Ligand(r)", 100)
+    saveConcentrations()
+    simulate({continue=>1,method=>"ode",t_end=>80,n_steps=>160,suffix=>"stim"})
+    
+    # 3. Washout (Remove Ligand)
+    # Simulates signal termination
+    setConcentration("Ligand(r)", 0)
+    simulate({continue=>1,method=>"ode",t_end=>100,n_steps=>200,suffix=>"wash"})
 end actions
 end model
+

@@ -6,7 +6,7 @@ begin parameters
     # Sensing
     k_nutrients 0.8    # Sustained mTOR drive
     k_stress 1.5       # Starvation trigger
-    k_stress_multiplier 0.1 # Current stress boost
+    k_stress_multiplier 0.1
     
     # Kinase Competition
     k_mtor_ulk 2.0     # mTOR inhibits ULK1
@@ -51,13 +51,15 @@ begin observables
     Molecules Growth_Sensor   mTOR(s~on)               # Nutrient status
     Molecules Primed_ULK1     ULK1(s~active)           # Initiator status
     Molecules Cargo_Capture   p62(b!+)                 # Functional clearance
+    
+    Molecules Cargo_Capture   p62(b!+)                 # Functional clearance
 end observables
 
 begin reaction rules
     ## SENSING (Stress/Nutrient competition)
     # Nutrients keep mTOR active
     0 -> mTOR(s~on) k_nutrients
-    # Induction after t=50
+    # Induction using stress multiplier
     mTOR(s~on) -> mTOR(s~off) k_stress * k_stress_multiplier
     
     # Stress activates AMPK
@@ -89,11 +91,12 @@ end reaction rules
 
 begin actions
     generate_network({overwrite=>1})
-    # Phase 1: High Nutrients (0-50)
+    # Phase 1: Basal (Normal Nutrients)
+    setParameter("k_stress_multiplier", 0.1)
     simulate({method=>"ode",t_end=>50,n_steps=>100})
-    # Phase 2: Stress / Starvation begins (50-150)
-    setParameter("k_stress_multiplier",2.0)
-    simulate({continue=>1,method=>"ode",t_end=>100,n_steps=>200,continue=>1})
+    # Phase 2: Stress (Starvation pulse)
+    setParameter("k_stress_multiplier", 2.0)
+    simulate({method=>"ode",t_end=>150,n_steps=>200,continue=>1,suffix=>"2"})
 end actions
 end model
 

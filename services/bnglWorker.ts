@@ -8,7 +8,24 @@ import type {
   WorkerResponse,
   SerializedWorkerError,
   NetworkGeneratorOptions,
+  SimulationResults,
 } from '../types';
+
+import { generateExpandedNetwork as generateExpandedNetworkService } from './simulation/NetworkExpansion';
+import { simulate } from './simulation/SimulationLoop';
+import {
+  resolveCompartmentVolumes,
+  requiresCompartmentResolution
+} from './simulation/CompartmentResolver';
+import {
+  runNFsimSimulation,
+  validateModelForNFsim,
+  NFsimSimulationOptions
+} from './simulation/NFsimRunner';
+import {
+  getCacheSizes as getEvaluatorCacheSizes,
+  loadEvaluator
+} from './simulation/ExpressionEvaluator';
 
 // SafeExpressionEvaluator will be dynamically imported only when functional rates are enabled to avoid bundling vulnerable libs
 // Using official ANTLR parser for bng2.pl parity (util polyfill added in vite.config.ts)
@@ -17,16 +34,6 @@ import { parseBNGLStrict as parseBNGLModel } from '../src/parser/BNGLParserWrapp
 const ctx: DedicatedWorkerGlobalScope = typeof self !== 'undefined'
   ? (self as unknown as DedicatedWorkerGlobalScope)
   : ({} as unknown as DedicatedWorkerGlobalScope);
-
-// Feature flags & runtime configuration moved to a small module
-// (keeps the worker file smaller and test-friendly)
-// featureFlags import removed as unused in worker shell
-import { generateExpandedNetwork as generateExpandedNetworkService } from './simulation/NetworkExpansion';
-import {
-  getCacheSizes as getEvaluatorCacheSizes,
-  loadEvaluator
-} from './simulation/ExpressionEvaluator';
-import { simulate } from './simulation/SimulationLoop';
 
 type JobState = {
   cancelled: boolean;
@@ -239,14 +246,25 @@ export function getCacheSizes() {
   return getEvaluatorCacheSizes();
 }
 
-function parseBNGL(jobId: number, bnglCode: string): BNGLModel {
+async function parseBNGL(jobId: number, bnglCode: string): Promise<BNGLModel> {
   ensureNotCancelled(jobId);
-  return parseBNGLModel(bnglCode);
+  console.log('[Worker-Debug] parseBNGL called for job', jobId);
+
+  // 1. Unified parsing via ANTLR (Strict)
+  const model = parseBNGLModel(bnglCode);
+
+  // 2. Resolve compartmental volumes if needed
+  if (requiresCompartmentResolution(model)) {
+    console.log('[Worker] Model has compartments, resolving volumes...');
+    return await resolveCompartmentVolumes(model);
+  }
+
+  return model;
 }
 
 
 if (typeof ctx.addEventListener === 'function') {
-  ctx.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
+  ctx.addEventListener('message', async (event: MessageEvent<WorkerRequest>) => {
     const message = event.data;
     if (!message || typeof message !== 'object') {
       console.warn('[Worker] Received malformed message', message);
@@ -272,7 +290,7 @@ if (typeof ctx.addEventListener === 'function') {
       registerJob(id);
       try {
         const code = typeof payload === 'string' ? payload : '';
-        const model = parseBNGL(id, code);
+        const model = await parseBNGL(id, code);
         const response: WorkerResponse = { id, type: 'parse_success', payload: model };
         ctx.postMessage(response);
       } catch (error) {
@@ -321,6 +339,11 @@ if (typeof ctx.addEventListener === 'function') {
 
               (cached.reactions || []).forEach((r) => {
                 const rateConst = nextModel.parameters[r.rate] ?? Number.parseFloat(r.rate);
+                if (isNaN(rateConst)) {
+                  console.warn(`[Worker] Unresolved rate parameter: ${r.rate}`);
+                  // If we can't resolve it, we'll let SimulationLoop handle it (sets to 0) 
+                  // but we'll log it here for diagnostics.
+                }
                 nextModel.reactions.push({ ...r, rateConstant: rateConst });
               });
               model = nextModel;
@@ -335,7 +358,93 @@ if (typeof ctx.addEventListener === 'function') {
           const hasRules = (model.reactionRules && model.reactionRules.length > 0);
           const hasReactions = (model.reactions && model.reactions.length > 0);
 
-          if (hasRules && !hasReactions) {
+          // Determine if this is an NFsim simulation
+          const phases = model.simulationPhases || [];
+
+          // Resolve effective method from 'default' (Auto) to explicit 'ode'/'ssa'/'nf'
+          // Priority: 
+          // 1. Explicit override from options.method (if not 'default')
+          // 2. Explicit method in model actions/phases (if they exist)
+          // 3. Fallback to 'ode'
+          let effectiveMethod: 'ode' | 'ssa' | 'nf' = 'ode';
+
+          if (options.method && options.method !== 'default') {
+            effectiveMethod = options.method as 'ode' | 'ssa' | 'nf';
+          } else if (phases.length > 0) {
+            const m = phases[0].method;
+            if (m === 'nf' || m === 'ssa' || m === 'ode') {
+              effectiveMethod = m;
+            }
+          }
+
+          // Update options with resolved method so declared simulators don't have to guess 'default'
+          options.method = effectiveMethod;
+
+          // Check for model-defined simulation parameters to override defaults
+          // This ensures that "simulate_nf({t_end=>1, n_steps=>20})" in the file is respected
+          if (model.actions) {
+            // Find the relevant action for the effective method
+            // We search for `simulate_{method}` or generic `simulate` with matching method arg
+            const simAction = model.actions.slice().reverse().find(a =>
+              a.type === `simulate_${effectiveMethod}` ||
+              (a.type === 'simulate' && (a.args['method'] === effectiveMethod || (!a.args['method'] && effectiveMethod === 'ode'))) // default simulate is ode
+            );
+
+            if (simAction) {
+              if (simAction.args['t_end'] !== undefined) {
+                const tEnd = Number(simAction.args['t_end']);
+                if (!isNaN(tEnd)) {
+                  console.log(`[Worker] Overriding t_end with model value: ${tEnd} (was ${options.t_end})`);
+                  options.t_end = tEnd;
+                }
+              }
+              if (simAction.args['n_steps'] !== undefined) {
+                const nSteps = Number(simAction.args['n_steps']);
+                if (!isNaN(nSteps)) {
+                  console.log(`[Worker] Overriding n_steps with model value: ${nSteps} (was ${options.n_steps})`);
+                  options.n_steps = nSteps;
+                }
+              }
+              if (simAction.args['utl'] !== undefined) {
+                const utl = Number(simAction.args['utl']);
+                if (!isNaN(utl)) {
+                  console.log(`[Worker] Overriding utl with model value: ${utl} (was ${options.utl ?? 'default'})`);
+                  options.utl = utl;
+                }
+              }
+              if (simAction.args['gml'] !== undefined) {
+                const gml = Number(simAction.args['gml']);
+                if (!isNaN(gml)) {
+                  console.log(`[Worker] Overriding gml with model value: ${gml}`);
+                  options.gml = gml;
+                }
+              }
+              if (simAction.args['equilibrate'] !== undefined || simAction.args['eq'] !== undefined) {
+                const eq = Number(simAction.args['equilibrate'] ?? simAction.args['eq']);
+                if (!isNaN(eq)) {
+                  console.log(`[Worker] Overriding equilibrate with model value: ${eq}`);
+                  options.equilibrate = eq;
+                }
+              }
+              if (simAction.args['seed'] !== undefined) {
+                const seed = Number(simAction.args['seed']);
+                if (!isNaN(seed)) {
+                  console.log(`[Worker] Overriding seed with model value: ${seed}`);
+                  options.seed = seed;
+                }
+              }
+            }
+          }
+
+          const isNF = effectiveMethod === 'nf';
+
+          // Check for mixed-method workflows (phases with different methods)
+          const hasMixedMethods = phases.length > 1 &&
+            phases.some(p => p.method !== phases[0].method);
+
+          console.log(`[Worker Debug] Resolved method: ${effectiveMethod}, isNF=${isNF}, hasMixedMethods=${hasMixedMethods}`);
+
+          if (hasRules && !hasReactions && !isNF) {
             console.log('[Worker] Auto-generating network from reaction rules...');
             console.log('[Worker] Model parameters:', model.parameters);
             console.log('[Worker] Model reactionRules:', model.reactionRules.map((r, i) => `${i}: ${r.rate}`));
@@ -356,13 +465,66 @@ if (typeof ctx.addEventListener === 'function') {
             }
           }
 
-          // Delegate to SimulationLoop service
-          const phases = model.simulationPhases || [];
-          console.log(`[Worker] Received 'simulate' request. Model has ${phases.length} phases. Options: t_end=${options.t_end}`);
-          const results = await simulate(id, model, options, {
-            checkCancelled: () => ensureNotCancelled(id),
-            postMessage: (msg) => safePostMessage(msg)
-          });
+          // Delegate to appropriate simulator
+          const results: SimulationResults = await (async () => {
+            // For mixed-method workflows, use the main simulation loop
+            // which will delegate individual phases to appropriate simulators
+            if (hasMixedMethods) {
+              console.log('[Worker] Using mixed-method simulation workflow');
+              return await simulate(id, model, options, {
+                checkCancelled: () => ensureNotCancelled(id),
+                postMessage: (msg) => safePostMessage(msg)
+              });
+            }
+
+            // For pure NFsim simulations (all phases are 'nf' or single phase)
+            if (isNF) {
+              console.log('[Worker] Using NFsim for simulation');
+
+              if (!model) throw new Error('Model missing for NFsim simulation');
+              if (!options) throw new Error('Options missing for NFsim simulation');
+
+              // Validate model suitability
+              const validation = validateModelForNFsim(model);
+
+              if (validation.warnings && validation.warnings.length > 0) {
+                const warningMessages = validation.warnings.map(w => w.message);
+                console.warn('[Worker] NFsim warnings:\n• ' + warningMessages.join('\n• '));
+                safePostMessage({
+                  id: -1,
+                  type: 'warning',
+                  payload: { message: `NFsim Warnings:\n• ${warningMessages.join('\n• ')}` }
+                });
+              }
+
+              if (!validation.valid) {
+                const errorMessages = validation.errors.map(e => e.message);
+                throw new Error(`Model incompatible with NFsim:\n• ${errorMessages.join('\n• ')}`);
+              }
+
+              const nfOptions: NFsimSimulationOptions = {
+                t_end: options.t_end,
+                n_steps: options.n_steps,
+                seed: options.seed,
+                utl: options.utl,
+                gml: options.gml,
+                equilibrate: options.equilibrate,
+                timeoutMs: 300000, // 5 minutes for NFsim simulations
+                requireRuntime: true
+              };
+
+              // Run via encapsulated runner
+              return await runNFsimSimulation(model, nfOptions);
+
+            } else {
+              console.log(`[Worker] Received 'simulate' request. Model has ${phases.length} phases. Options: t_end=${options?.t_end}, method=${options?.method}`);
+              if (!model || !options) throw new Error('Model or options missing during simulate');
+              return await simulate(id, model, options, {
+                checkCancelled: () => ensureNotCancelled(id),
+                postMessage: (msg) => safePostMessage(msg)
+              });
+            }
+          })();
 
           const response: WorkerResponse = { id, type: 'simulate_success', payload: results };
           ctx.postMessage(response);

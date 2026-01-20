@@ -11,6 +11,8 @@ import { VerificationTab } from './tabs/VerificationTab';
 import { ParameterScanTab } from './tabs/ParameterScanTab';
 import { ParameterEstimationTab } from './tabs/ParameterEstimationTab';
 import { FluxAnalysisTab } from './tabs/FluxAnalysisTab';
+import { ModelExplorerTab } from './tabs/ModelExplorerTab';
+import { TrajectoryExplorerTab } from './tabs/TrajectoryExplorerTab';
 import { ExpressionInputPanel, CustomExpression } from './ExpressionInputPanel';
 import { ComparisonPanel } from './ComparisonPanel';
 import { DynamicsViewer } from './DynamicsViewer';
@@ -136,9 +138,11 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
   // 7: Verification
   // 8: What-If Compare
   // 9: Rule Cartoons
+  // 10: Model Explorer
+  // 11: Trajectory Explorer
 
   // Map activeTab to a group for UI highlighting
-  const isAnalysisTab = activeTab >= 2 && activeTab <= 9;
+  const isAnalysisTab = activeTab >= 2 && activeTab <= 11;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-0 border rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm relative">
@@ -153,11 +157,12 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
             🔗 Network
           </TabButton>
 
+
           {/* Analysis Dropdown */}
           <div className="relative flex items-center">
             <Dropdown
               trigger={
-                <button className={`flex items-center gap-1 py-2 px-3 border-b-2 font-medium text-sm transition-colors ${isAnalysisTab
+                <button className={`flex items-center gap-1 py-2 px-3 border-b-2 font-medium text-sm transition-colors ${isAnalysisTab || activeTab === 10
                   ? 'border-teal-600 text-teal-600 dark:text-teal-400 dark:border-teal-400'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'
                   }`}>
@@ -167,19 +172,23 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
               }
             >
               <div className="px-2 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">Parameter Analysis</div>
-              <DropdownItem onClick={() => setActiveTab(2)}>Parameter Scan</DropdownItem>
-              <DropdownItem onClick={() => setActiveTab(3)}>Steady State</DropdownItem>
-              <DropdownItem onClick={() => setActiveTab(4)}>Sensitivity (FIM)</DropdownItem>
-              <DropdownItem onClick={() => setActiveTab(5)}>Parameter Estimation</DropdownItem>
+              <DropdownItem onClick={() => setActiveTab(2)}>🔍 Parameter Scan</DropdownItem>
+              <DropdownItem onClick={() => setActiveTab(3)}>⚖️ Steady State</DropdownItem>
+              <DropdownItem onClick={() => setActiveTab(4)}>🎯 Sensitivity (FIM)</DropdownItem>
+              <DropdownItem onClick={() => setActiveTab(5)}>🧬 Parameter Estimation</DropdownItem>
 
               <div className="border-t border-slate-100 dark:border-slate-700 my-1" />
               <div className="px-2 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">Model Analysis</div>
-              <DropdownItem onClick={() => setActiveTab(6)}>Flux Analysis</DropdownItem>
-              <DropdownItem onClick={() => setActiveTab(9)}>Rule Cartoons</DropdownItem>
-              <DropdownItem onClick={() => setActiveTab(8)}>What-If Compare</DropdownItem>
-              <DropdownItem onClick={() => setActiveTab(7)}>Verification</DropdownItem>
+              <DropdownItem onClick={() => setActiveTab(11)}>☄️ Trajectory Explorer</DropdownItem>
+              <DropdownItem onClick={() => setActiveTab(6)}>🌊 Flux Analysis</DropdownItem>
+              <DropdownItem onClick={() => setActiveTab(9)}>🎨 Rule Cartoons</DropdownItem>
+              <DropdownItem onClick={() => setActiveTab(8)}>🤔 What-If Compare</DropdownItem>
+              <DropdownItem onClick={() => setActiveTab(7)}>✅ Verification</DropdownItem>
+              <div className="border-t border-slate-50 dark:border-slate-800/50 my-0.5" />
+              <DropdownItem onClick={() => setActiveTab(10)}>🌎 Model Explorer</DropdownItem>
             </Dropdown>
           </div>
+
         </nav>
 
         {/* Network View Toggle - only visible on Network tab */}
@@ -225,8 +234,9 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
         )}
       </div>
 
+
       {/* Content Panels */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4">
+      <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 10 ? '' : 'p-4'}`}>
         {activeTab === 0 && (
           <div className="h-full flex flex-col">
             <div className="mb-3 text-sm text-slate-600 dark:text-slate-400 shrink-0">
@@ -394,6 +404,22 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
             <CartoonTab model={model} selectedRuleId={selectedRuleId} onSelectRule={setSelectedRuleId} />
           </div>
         )}
+
+        {activeTab === 10 && (
+          <div className="h-full flex flex-col">
+            <ModelExplorerTab onLoadModel={(code, name, id) => {
+              console.log("Model Explorer: request to load model", { name, id });
+              // TODO: Implement model loading via custom event or prop callback
+            }} />
+          </div>
+        )}
+
+        {activeTab === 11 && (
+          <div className="h-full flex flex-col">
+            <TrajectoryExplorerTab model={model} />
+          </div>
+        )}
+
 
       </div>
     </div>

@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Explorer - UMAP Visualization</title>
+    <style>
+        :root {
+            --bg-primary: #0a0f1a;
+            --bg-secondary: rgba(15,23,42,0.98);
+            --bg-tertiary: rgba(30,41,59,0.6);
+            --border-color: #1e3a5f;
+            --text-primary: white;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #14b8a6;
+            --accent-light: #5eead4;
+            --canvas-bg: radial-gradient(ellipse at center, #0f172a 0%, #020617 100%);
+        }
+        :root.light {
+            --bg-primary: #f8fafc;
+            --bg-secondary: rgba(255,255,255,0.98);
+            --bg-tertiary: rgba(241,245,249,0.9);
+            --border-color: #cbd5e1;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --accent: #0d9488;
+            --accent-light: #14b8a6;
+            --canvas-bg: radial-gradient(ellipse at center, #f1f5f9 0%, #e2e8f0 100%);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg-primary); color: var(--text-primary); overflow: hidden; transition: background 0.3s, color 0.3s; }
+        #app { display: flex; flex-direction: column; width: 100vw; height: 100vh; }
+        .header { background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(10px); z-index: 100; transition: background 0.3s; }
+        .title { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--text-primary); }
+        .subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .controls { display: flex; gap: 12px; align-items: center; }
+        .search { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 14px; color: var(--text-primary); width: 260px; font-size: 13px; transition: all 0.2s; }
+        .search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(20,184,166,0.2); }
+        .btn { background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+        .btn:hover { background: rgba(20,184,166,0.15); }
+        .btn.active { background: rgba(20,184,166,0.3); border-color: var(--accent); color: var(--accent-light); }
+        .viz { flex: 1; position: relative; overflow: hidden; background: var(--canvas-bg); transition: background 0.3s; }
+        #canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+        #canvas:active { cursor: grabbing; }
+        .tooltip { position: fixed; pointer-events: none; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 18px; color: var(--text-primary); max-width: 360px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 1000; backdrop-filter: blur(10px); }
+        .tooltip-title { font-weight: 700; color: var(--accent-light); margin-bottom: 6px; font-size: 15px; }
+        .tooltip-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+        .tooltip-tag { font-size: 9px; color: white; padding: 2px 6px; border-radius: 4px; display: inline-block; text-transform: uppercase; letter-spacing: 0.05em; }
+        .tooltip-obs { color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
+        .loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-primary); }
+        .spinner { width: 50px; height: 50px; border: 3px solid var(--border-color); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .legend { position: absolute; top: 80px; right: 20px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 16px; font-size: 12px; backdrop-filter: blur(10px); display: flex; flex-wrap: wrap; gap: 10px; max-width: 500px; transition: background 0.3s; }
+        .legend-item { display: flex; align-items: center; gap: 8px; padding: 6px 12px; cursor: pointer; border-radius: 6px; transition: all 0.15s; background: var(--bg-tertiary); border: 1px solid transparent; }
+        .legend-item:hover { background: rgba(20,184,166,0.2); border-color: var(--accent); }
+        .legend-item.active { background: rgba(20,184,166,0.3); border-color: var(--accent); }
+        .legend-dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 4px currentColor; }
+        .legend-label { color: var(--text-primary); font-size: 12px; white-space: nowrap; font-weight: 500; }
+        .info { position: absolute; bottom: 20px; right: 20px; color: var(--text-muted); font-size: 11px; text-align: right; }
+        .theme-btn { font-size: 18px; padding: 6px 10px; }
+        .help { position: absolute; bottom: 20px; left: 20px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; font-size: 11px; color: var(--text-secondary); max-width: 280px; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <div>
+                <div class="title">🌎 Model Explorer</div>
+                <div class="subtitle"><span id="count">...</span> models • Drag to pan • Scroll to zoom</div>
+            </div>
+            <div class="controls">
+                <input id="search" type="text" placeholder="Search models..." class="search" />
+                <button id="btn-2d" class="btn active">2D</button>
+                <button id="btn-3d" class="btn">3D</button>
+                <button id="btn-theme" class="btn theme-btn" title="Toggle light/dark mode">🌙</button>
+                <button class="btn" onclick="history.back()">← Back</button>
+            </div>
+        </div>
+        <div class="viz">
+            <canvas id="canvas"></canvas>
+            <div id="tooltip" class="tooltip" style="display: none;"></div>
+            <div id="legend" class="legend" style="display: none;"></div>
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <div id="status" style="color: #64748b;">Initializing...</div>
+            </div>
+            <div class="info" id="info"></div>
+            <div class="help">
+                <strong>Click</strong> to lock neighbors • <strong>Double-click</strong> to load model • <strong>Arrow keys</strong> to navigate
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        const colors = ['#ef4444', '#f97316', '#facc15', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#ec4899', '#f43f5e', '#10b981', '#f59e0b', '#ef4444'];
+        let models = [];
+        let colorMap = {};
+        let mode = '2d';
+        let zoom = 1, panX = 0, panY = 0, rotY = 0, rotX = 0;
+        let isDragging = false, lastX = 0, lastY = 0;
+        let hoveredIdx = -1, selectedIdx = -1, lockedIdx = -1;
+        let animationFrame;
+        let activeFilters = new Set();
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+
+        function getDisplayName(m) {
+            if (m.filename) return m.filename.replace(/\.bngl$/i, '').replace(/_/g, ' ');
+            if (m.id) return m.id.split('/').pop().replace(/_/g, ' ');
+            return 'Unknown';
+        }
+
+        function cosineSim(a, b) {
+            let dot = 0, na = 0, nb = 0;
+            for (let i = 0; i < a.length; i++) { dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
+            return dot / (Math.sqrt(na) * Math.sqrt(nb) + 1e-8);
+        }
+
+        // Find top N similar models
+        function findSimilar(model, topN = 5) {
+            if (!model.embedding) return [];
+            const sims = models.map((m, idx) => ({
+                idx,
+                sim: idx === models.indexOf(model) ? -1 : cosineSim(model.embedding, m.embedding)
+            }));
+            return sims.sort((a, b) => b.sim - a.sim).slice(0, topN).map(s => s.idx);
+        }
+
+        async function init() {
+            document.getElementById('status').textContent = 'Loading models...';
+            const resp = await fetch('./model-embeddings.json');
+            const json = await resp.json();
+            
+            const hasPrecomputed = json.hasUMAP || (json.models && json.models[0]?.umap2D);
+            
+            models = Object.values(json.models || json).map(m => ({
+                ...m, 
+                displayName: getDisplayName(m),
+                pos2D: m.umap2D || [Math.random() * 10, Math.random() * 10],
+                pos3D: m.umap3D || [Math.random() * 10, Math.random() * 10, Math.random() * 10],
+                tags: m.tags || [m.category || 'Other']
+            }));
+            document.getElementById('count').textContent = models.length;
+
+            // Build color map from all unique tags
+            const allTags = [...new Set(models.flatMap(m => m.tags))];
+            allTags.forEach((tag, i) => colorMap[tag] = colors[i % colors.length]);
+            
+            // Assign primary color (first tag)
+            models.forEach(m => m.color = colorMap[m.tags[0]] || '#94a3b8');
+
+            if (!hasPrecomputed) {
+                document.getElementById('status').textContent = 'Computing layout...';
+                await new Promise(r => setTimeout(r, 50));
+                const embeddings = models.map(m => m.embedding);
+                const layout2D = computeLayoutFallback(embeddings, 2);
+                const layout3D = computeLayoutFallback(embeddings, 3);
+                models.forEach((m, i) => { m.pos2D = layout2D[i]; m.pos3D = layout3D[i]; });
+            }
+
+            renderLegend();
+            document.getElementById('loading').style.display = 'none';
+            
+            // Parse URL params
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('model')) {
+                const modelId = params.get('model');
+                selectedIdx = models.findIndex(m => m.id === modelId || m.filename === modelId);
+            }
+            if (params.has('zoom')) zoom = parseFloat(params.get('zoom'));
+            if (params.has('x')) panX = parseFloat(params.get('x'));
+            if (params.has('y')) panY = parseFloat(params.get('y'));
+            
+            resize();
+            animate();
+        }
+        
+        function computeLayoutFallback(data, dims) {
+            const n = data.length;
+            const result = data.map(() => dims === 3 ? [Math.random()*10, Math.random()*10, Math.random()*10] : [Math.random()*10, Math.random()*10]);
+            for (let e = 0; e < 80; e++) {
+                const lr = 0.5 * (1 - e / 80);
+                for (let i = 0; i < n; i++) {
+                    const f = dims === 3 ? [0,0,0] : [0,0];
+                    for (let j = 0; j < n; j++) {
+                        if (i === j) continue;
+                        const d = result[i].map((v,k) => result[j][k] - v);
+                        const dist = Math.sqrt(d.reduce((s,v) => s+v*v, 0)) + 0.1;
+                        const force = -0.02 / dist;
+                        d.forEach((v,k) => f[k] += (v/dist) * force);
+                    }
+                    result[i] = result[i].map((v,k) => v + f[k] * lr);
+                }
+            }
+            return result;
+        }
+
+        function resize() {
+            canvas.width = canvas.clientWidth * window.devicePixelRatio;
+            canvas.height = canvas.clientHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+
+        function project3D(p) {
+            const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+            const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+            let x = p[0] * cosY - p[2] * sinY;
+            let z = p[0] * sinY + p[2] * cosY;
+            let y = p[1] * cosX - z * sinX;
+            z = p[1] * sinX + z * cosX;
+            const scale = 300 / (z + 20);
+            return [x * scale, y * scale, z];
+        }
+
+        function draw() {
+            const w = canvas.clientWidth, h = canvas.clientHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            const search = document.getElementById('search').value.toLowerCase();
+            let filtered = models;
+            
+            if (activeFilters.size > 0) {
+                filtered = models.filter(m => m.tags.some(t => activeFilters.has(t)));
+            }
+            
+            if (search) {
+                filtered = filtered.filter(m => 
+                    m.displayName.toLowerCase().includes(search) || 
+                    m.tags.some(t => t.toLowerCase().includes(search)) ||
+                    (m.observables || []).some(o => o.toLowerCase().includes(search))
+                );
+            }
+
+            const positions = filtered.map(m => mode === '3d' ? project3D(m.pos3D) : m.pos2D);
+            if (positions.length === 0) return;
+
+            const xs = positions.map(p => p[0]), ys = positions.map(p => p[1]);
+            const xMin = Math.min(...xs), xMax = Math.max(...xs);
+            const yMin = Math.min(...ys), yMax = Math.max(...ys);
+            const range = Math.max(xMax - xMin, yMax - yMin, 1);
+            const scale = Math.min(w, h) * 0.4 * zoom / range;
+            const cx = w / 2 + panX, cy = h / 2 + panY;
+
+            const sorted = filtered.map((m, i) => ({ m, p: positions[i], i: models.indexOf(m) }));
+            if (mode === '3d') sorted.sort((a, b) => a.p[2] - b.p[2]);
+
+            // Draw similarity lines
+            const activeSimIdx = hoveredIdx >= 0 ? hoveredIdx : lockedIdx;
+            if (activeSimIdx >= 0) {
+                const activeModel = models[activeSimIdx];
+                const similar = findSimilar(activeModel, 8);
+                ctx.strokeStyle = activeSimIdx === lockedIdx ? 'rgba(20,184,166,0.5)' : 'rgba(20,184,166,0.3)';
+                ctx.lineWidth = activeSimIdx === lockedIdx ? 2 : 1.5;
+                similar.forEach(si => {
+                    const sm = models[si];
+                    if (!sm._screenX) return;
+                    ctx.beginPath();
+                    ctx.moveTo(activeModel._screenX, activeModel._screenY);
+                    ctx.lineTo(sm._screenX, sm._screenY);
+                    ctx.stroke();
+                });
+            }
+
+            const time = Date.now() * 0.003;
+            sorted.forEach(({ m, p, i }) => {
+                const x = cx + (p[0] - (xMin + xMax) / 2) * scale;
+                const y = cy + (p[1] - (yMin + yMax) / 2) * scale;
+                const isHovered = i === hoveredIdx;
+                const isSelected = i === selectedIdx;
+                const isLocked = i === lockedIdx;
+                
+                let r = (mode === '3d' ? Math.max(3, 8 - p[2] * 0.2) : 6) * zoom;
+                if (isHovered || isSelected || isLocked) r *= 1.3;
+                
+                const opacity = mode === '3d' ? Math.max(0.3, 1 - (p[2] + 10) * 0.03) : 0.85;
+
+                // Pulsing highlight for selected model
+                if (isSelected) {
+                    const pulse = (Math.sin(time * 2) + 1) * 0.5;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r * (1.2 + pulse * 0.8), 0, Math.PI * 2);
+                    ctx.strokeStyle = m.color;
+                    ctx.globalAlpha = 0.3 * (1 - pulse);
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                }
+
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fillStyle = m.color;
+                ctx.globalAlpha = opacity;
+                ctx.fill();
+
+                if (isHovered || isSelected || isLocked) {
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = isSelected || isLocked ? '#14b8a6' : '#fff';
+                    ctx.lineWidth = isLocked ? 3 : 2;
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1;
+
+                m._screenX = x;
+                m._screenY = y;
+                m._radius = r;
+            });
+
+            document.getElementById('info').textContent = `${mode.toUpperCase()} • ${filtered.length} models • Zoom: ${zoom.toFixed(1)}x`;
+        }
+
+        function animate() {
+            if (mode === '3d' && !isDragging) rotY += 0.003;
+            draw();
+            animationFrame = requestAnimationFrame(animate);
+        }
+
+        function renderLegend() {
+            const legend = document.getElementById('legend');
+            legend.style.display = 'flex';
+            legend.innerHTML = Object.entries(colorMap).map(([tag, color]) => 
+                `<div class="legend-item" data-tag="${tag}"><div class="legend-dot" style="background:${color};color:${color}"></div><div class="legend-label">${tag}</div></div>`
+            ).join('');
+            legend.querySelectorAll('.legend-item').forEach(el => {
+                el.onclick = () => { 
+                    const tag = el.dataset.tag;
+                    if (activeFilters.has(tag)) {
+                        activeFilters.delete(tag);
+                        el.classList.remove('active');
+                    } else {
+                        activeFilters.add(tag);
+                        el.classList.add('active');
+                    }
+                };
+            });
+        }
+
+        function updateURL() {
+            const params = new URLSearchParams();
+            if (selectedIdx >= 0) params.set('model', models[selectedIdx].id);
+            params.set('zoom', zoom.toFixed(2));
+            params.set('x', panX.toFixed(0));
+            params.set('y', panY.toFixed(0));
+            history.replaceState(null, '', '?' + params.toString());
+        }
+
+        // Event handlers
+        canvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            zoom *= e.deltaY > 0 ? 0.9 : 1.1;
+            zoom = Math.max(0.3, Math.min(5, zoom));
+            updateURL();
+        }, { passive: false });
+
+        canvas.addEventListener('mousedown', e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mouseleave', () => { isDragging = false; tooltip.style.display = 'none'; hoveredIdx = -1; });
+
+        canvas.addEventListener('click', e => {
+            if (hoveredIdx >= 0 && !isDragging) {
+                lockedIdx = (lockedIdx === hoveredIdx) ? -1 : hoveredIdx;
+            } else if (!isDragging) {
+                lockedIdx = -1;
+            }
+        });
+
+        canvas.addEventListener('dblclick', e => {
+            if (hoveredIdx >= 0) {
+                selectedIdx = hoveredIdx;
+                const m = models[selectedIdx];
+                const targetPath = window.location.pathname.replace(/umap\.html$/, '');
+                window.location.href = `${window.location.origin}${targetPath}?model=${encodeURIComponent(m.id)}`;
+            }
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (isDragging) {
+                const dx = e.clientX - lastX, dy = e.clientY - lastY;
+                if (mode === '3d') { rotY += dx * 0.01; rotX += dy * 0.01; }
+                else { panX += dx; panY += dy; }
+                lastX = e.clientX; lastY = e.clientY;
+                updateURL();
+                return;
+            }
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+            hoveredIdx = -1;
+            for (let i = models.length - 1; i >= 0; i--) {
+                const m = models[i];
+                if (m._screenX === undefined) continue;
+                const dx = mx - m._screenX, dy = my - m._screenY;
+                if (dx * dx + dy * dy < (m._radius + 4) * (m._radius + 4)) {
+                    hoveredIdx = i;
+                    break;
+                }
+            }
+            if (hoveredIdx >= 0) {
+                const m = models[hoveredIdx];
+                tooltip.style.display = 'block';
+                const tagBadges = m.tags.map(t => `<span class="tooltip-tag" style="background:${colorMap[t]}">${t}</span>`).join('');
+                const obs = m.observables && m.observables.length > 0 
+                    ? m.observables.slice(0, 8).join(', ') + (m.observables.length > 8 ? ` (+${m.observables.length - 8})` : '')
+                    : 'None';
+                const simMode = m.simulationMode || 'Unknown';
+                tooltip.innerHTML = `
+                    <div class="tooltip-title">${m.displayName}</div>
+                    <div class="tooltip-tags">${tagBadges}</div>
+                    <div class="tooltip-obs"><strong>Observables:</strong> ${obs}</div>
+                    <div class="tooltip-obs" style="margin-top:4px"><strong>Simulation:</strong> ${simMode}</div>
+                `;
+                let x = e.clientX + 15, y = e.clientY - 15;
+                if (x + 360 > window.innerWidth) x = e.clientX - 375;
+                if (y < 10) y = 10;
+                tooltip.style.left = x + 'px';
+                tooltip.style.top = y + 'px';
+            } else {
+                tooltip.style.display = 'none';
+            }
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT') return;
+            if (selectedIdx < 0) selectedIdx = 0;
+            
+            const current = models[selectedIdx];
+            const currentPos = mode === '3d' ? project3D(current.pos3D) : current.pos2D;
+            
+            let nearest = -1, minDist = Infinity;
+            models.forEach((m, i) => {
+                if (i === selectedIdx) return;
+                const pos = mode === '3d' ? project3D(m.pos3D) : m.pos2D;
+                const dx = pos[0] - currentPos[0], dy = pos[1] - currentPos[1];
+                
+                let isInDirection = false;
+                if (e.key === 'ArrowUp') isInDirection = dy < -0.5 && Math.abs(dx) < Math.abs(dy);
+                else if (e.key === 'ArrowDown') isInDirection = dy > 0.5 && Math.abs(dx) < Math.abs(dy);
+                else if (e.key === 'ArrowLeft') isInDirection = dx < -0.5 && Math.abs(dy) < Math.abs(dx);
+                else if (e.key === 'ArrowRight') isInDirection = dx > 0.5 && Math.abs(dy) < Math.abs(dx);
+                
+                if (isInDirection) {
+                    const dist = dx * dx + dy * dy;
+                    if (dist < minDist) { minDist = dist; nearest = i; }
+                }
+            });
+            
+            if (nearest >= 0) {
+                selectedIdx = nearest;
+                hoveredIdx = nearest;
+                e.preventDefault();
+            } else if (e.key === 'Enter' && selectedIdx >= 0) {
+                const m = models[selectedIdx];
+                const targetPath = window.location.pathname.replace(/umap\.html$/, '');
+                window.location.href = `${window.location.origin}${targetPath}?model=${encodeURIComponent(m.id)}`;
+            }
+        });
+
+        document.getElementById('btn-2d').onclick = () => { mode = '2d'; document.getElementById('btn-2d').classList.add('active'); document.getElementById('btn-3d').classList.remove('active'); };
+        document.getElementById('btn-3d').onclick = () => { mode = '3d'; document.getElementById('btn-3d').classList.add('active'); document.getElementById('btn-2d').classList.remove('active'); };
+        
+        // Theme toggle
+        let isLight = localStorage.getItem('umap-theme') === 'light';
+        function applyTheme() {
+            document.documentElement.classList.toggle('light', isLight);
+            document.getElementById('btn-theme').textContent = isLight ? '☀️' : '🌙';
+        }
+        applyTheme();
+        document.getElementById('btn-theme').onclick = () => { isLight = !isLight; localStorage.setItem('umap-theme', isLight ? 'light' : 'dark'); applyTheme(); };
+        
+        document.getElementById('search').addEventListener('input', () => {});
+        window.addEventListener('resize', resize);
+
+        init();
+    </script>
+</body>
+</html>

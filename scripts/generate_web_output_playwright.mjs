@@ -35,6 +35,7 @@ function normalizeBasePath(p) {
 
 const BASE_PATH = normalizeBasePath(readViteBasePath());
 const BASE_URL = `http://localhost:${PORT}${BASE_PATH}`;
+const WEB_OUTPUT_SEED = Number(process.env.WEB_OUTPUT_SEED || '12345');
 
 function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
@@ -157,8 +158,20 @@ async function main() {
     const context = await browser.newContext({ acceptDownloads: true });
     const page = await context.newPage();
 
-    page.on('console', msg => console.log(`[browser] ${msg.text()}`));
-    page.on('pageerror', err => console.error('[browser error]', err));
+    const logPath = path.join(PROJECT_ROOT, 'browser_console.log');
+    // Clear log file
+    fs.writeFileSync(logPath, '');
+    const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+
+    page.on('console', msg => {
+      const text = msg.text();
+      console.log(`[browser] ${text}`);
+      logStream.write(`[browser] ${text}\n`);
+    });
+    page.on('pageerror', err => {
+      console.error('[browser error]', err);
+      logStream.write(`[browser error] ${err}\n`);
+    });
 
     let activeDownloads = 0;
     page.on('download', (download) => {
@@ -177,6 +190,13 @@ async function main() {
     console.log('[generate:web-output] Opening app...');
     await page.goto(BASE_URL, { timeout: 120000 });
     await waitForPageToSettleAfterNavigation(page);
+
+    if (Number.isFinite(WEB_OUTPUT_SEED)) {
+      await page.evaluate((seed) => {
+        window.__batchSeed = seed;
+        console.log(`[BatchRunner] Using deterministic seed: ${seed}`);
+      }, WEB_OUTPUT_SEED);
+    }
 
     // Get full list of models from the app
     const allModels = await page.evaluate(() => window.getModelNames());

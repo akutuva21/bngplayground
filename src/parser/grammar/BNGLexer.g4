@@ -18,6 +18,7 @@ PARAMETERS: 'parameters';
 COMPARTMENTS: 'compartments';
 MOLECULE: [mM] 'olecule';
 MOLECULES: MOLECULE 's';
+COUNTER: 'Counter';
 TYPES: 'types';
 SEED: 'seed';
 SPECIES: [sS] 'pecies';
@@ -35,7 +36,7 @@ POPULATION: 'population';
 MAPS: 'maps';
 ENERGY: 'energy';
 PATTERNS: 'patterns';
-ANCHORS: 'anchors';
+
 MOLECULAR: 'molecular';
 
 // Keywords - Modifiers

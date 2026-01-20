@@ -235,26 +235,30 @@ export class NetworkGenerator {
    * - When V_source < V_dest (e.g., membrane to cytoplasm), rate decreases
    */
   private getTransportVolumeScale(source: SpeciesGraph, dest: SpeciesGraph): number {
-    if (this.compartmentVolumes.size === 0) return 1;
+    // For ODE simulation (concentration-based), transport A@V1 -> A@V2
+    // d[A@V1]/dt = -k*[A@V1]
+    // d[A@V2]/dt = +k*[A@V1] * (V1/V2)
+    // We set product stoichiometry to (V1/V2) so SimulationLoop adds velocity * stoich.
+    
+    // 1. Identify compartments
+    const getComp = (s: SpeciesGraph) => { 
+        if (s.compartment) return s.compartment;
+        if (s.molecules.length > 0 && s.molecules[0].compartment) return s.molecules[0].compartment;
+        return null; 
+    };
+    
+    const c1Name = getComp(source);
+    const c2Name = getComp(dest);
 
-    const sourceComp = source.compartment;
-    const destComp = dest.compartment;
+    if (!c1Name || !c2Name || c1Name === c2Name) return 1;
 
-    // No compartments specified - no scaling
-    if (!sourceComp || !destComp) return 1;
+    const c1 = this.options.compartments?.find(c => c.name === c1Name);
+    const c2 = this.options.compartments?.find(c => c.name === c2Name);
 
-    // Same compartment - no scaling
-    if (sourceComp === destComp) return 1;
+    if (!c1 || !c2 || c2.size === 0) return 1;
 
-    const vSource = this.compartmentVolumes.get(sourceComp);
-    const vDest = this.compartmentVolumes.get(destComp);
-
-    // Both volumes must be defined and destination non-zero
-    if (vSource !== undefined && vDest !== undefined && vDest > 0) {
-      return vSource / vDest;
-    }
-
-    return 1;
+    // Return V_source / V_dest
+    return c1.size / c2.size;
   }
 
 

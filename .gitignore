@@ -168,4 +168,10 @@ reports/
 # random bngl folder
 bng_exec_*/
 
+# agent
+.agent/skills
+.kiro
+playwright-report/
+test-results/
+
 # End of .gitignore

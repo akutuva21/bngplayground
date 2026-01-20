@@ -1,4 +1,9 @@
 import { useMemo } from 'react';
+import { BNGLModel } from '../types';
+import { ParticleAnimation } from './ParticleAnimation';
+
+const getRuleId = (rule: { name?: string }, index: number): string => rule.name ?? `rule_${index + 1}`;
+const getRuleLabel = (rule: { name?: string }, index: number): string => rule.name ?? `Rule ${index + 1}`;
 
 interface SimulationModalProps {
   isGenerating: boolean;
@@ -9,17 +14,21 @@ interface SimulationModalProps {
   iteration?: number;
   simulationProgress?: number;  // 0-100, simulation time progress
   phase?: 'generating' | 'simulating';
+  hideNetworkStats?: boolean;
+  model?: BNGLModel | null;
 }
 
-export function SimulationModal({ 
-  isGenerating, 
-  progressMessage, 
+export function SimulationModal({
+  isGenerating,
+  progressMessage,
   onCancel,
   speciesCount = 0,
   reactionCount = 0,
   iteration = 0,
   simulationProgress,
-  phase = 'generating'
+  phase = 'generating',
+  hideNetworkStats = false,
+  model
 }: SimulationModalProps) {
   if (!isGenerating) return null;
 
@@ -38,10 +47,40 @@ export function SimulationModal({
   // Color for simulation progress
   const progressColor = 'from-teal-400 to-teal-500';
 
+  // Determine simulation method for particle animation
+  const simulationMethod = useMemo(() => {
+    if (!model || !model.simulationPhases || model.simulationPhases.length === 0) return 'ode';
+    
+    // Check if multiphase (more than one phase)
+    if (model.simulationPhases.length > 1) return 'multiphase';
+    
+    const phase = model.simulationPhases[0];
+    if (phase.method === 'nf' || phase.method === 'nfsim') return 'nfsim';
+    if (phase.method === 'ssa') return 'ssa';
+    return 'ode';
+  }, [model]);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl relative overflow-hidden">
+
+        {/* Particle Animation Background */}
+        {isSimulating && model && (
+          <div className="h-64 w-full mb-4 border border-slate-200 dark:border-slate-700 rounded overflow-hidden relative bg-slate-50 dark:bg-slate-900">
+            <ParticleAnimation type={simulationMethod as 'nfsim' | 'ode' | 'ssa' | 'multiphase'} />
+            <div className="absolute bottom-2 right-2 text-xs text-slate-400 dark:text-slate-500 bg-white/80 dark:bg-slate-800/80 px-2 py-1 rounded">
+              {simulationMethod === 'nfsim' 
+                ? 'Network-Free Stochastic' 
+                : simulationMethod === 'ssa' 
+                ? 'Gillespie SSA' 
+                : simulationMethod === 'multiphase'
+                ? 'Multi-Phase Simulation'
+                : 'ODE Integration'}
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mb-4 relative z-10">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {isSimulating ? 'Simulating...' : 'Generating Network...'}
           </h3>
@@ -51,20 +90,22 @@ export function SimulationModal({
         <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 min-h-[1.5rem]">{progressMessage || 'Initializing...'}</p>
 
         {/* Progress Stats */}
-        <div className="grid grid-cols-3 gap-2 mb-3 text-center">
-          <div className="bg-slate-100 dark:bg-slate-700 rounded p-2">
-            <div className="text-lg font-bold text-teal-600 dark:text-teal-400">{speciesCount.toLocaleString()}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Species</div>
+        {!hideNetworkStats && (
+          <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+            <div className="bg-slate-100 dark:bg-slate-700 rounded p-2">
+              <div className="text-lg font-bold text-teal-600 dark:text-teal-400">{speciesCount.toLocaleString()}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Species</div>
+            </div>
+            <div className="bg-slate-100 dark:bg-slate-700 rounded p-2">
+              <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{reactionCount.toLocaleString()}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Reactions</div>
+            </div>
+            <div className="bg-slate-100 dark:bg-slate-700 rounded p-2">
+              <div className="text-lg font-bold text-purple-600 dark:text-purple-400">{iteration}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{isSimulating ? 'Step' : 'Iteration'}</div>
+            </div>
           </div>
-          <div className="bg-slate-100 dark:bg-slate-700 rounded p-2">
-            <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{reactionCount.toLocaleString()}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Reactions</div>
-          </div>
-          <div className="bg-slate-100 dark:bg-slate-700 rounded p-2">
-            <div className="text-lg font-bold text-purple-600 dark:text-purple-400">{iteration}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">{isSimulating ? 'Step' : 'Iteration'}</div>
-          </div>
-        </div>
+        )}
 
         {/* Progress Bar */}
         <div className="mb-2">

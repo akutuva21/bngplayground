@@ -8,7 +8,7 @@ begin parameters
     k_rictor_bind 0.01 # Recruit Rictor (Stabilizing)
     
     # Activation
-    k_act_max 1.5      # Max mTORC2 activation
+    k_act_max 5.0      # Max mTORC2 activation
     Km_pip3 300        # Half-saturation by PIP3
     n_hill 2.0         # Cooperativity in activation
     
@@ -22,7 +22,9 @@ begin parameters
     Rictor_tot 400
     AKT_init 800
     SGK_init 300
-    PIP3_level 100     # Input drive
+    PIP3_level 100     # Input drive (Parameter for scaling)
+    k_syn_pip3 10.0
+    k_deg_pip3 0.1
 end parameters
 
 begin molecule types
@@ -40,7 +42,7 @@ begin seed species
     Rictor(b) Rictor_tot
     AKT(s~U) AKT_init
     SGK1(s~U) SGK_init
-    PIP3() PIP3_level
+    PIP3() 0
 end seed species
 
 begin observables
@@ -54,7 +56,8 @@ end observables
 
 begin functions
     # Hill-like activation rate
-    v_act() = k_act_max * (PIP3_level^n_hill) / (Km_pip3^n_hill + PIP3_level^n_hill)
+    # Hill-like activation rate
+    v_act() = k_act_max * (PIP3_Sensors^n_hill) / (Km_pip3^n_hill + PIP3_Sensors^n_hill)
 end functions
 
 begin reaction rules
@@ -81,6 +84,10 @@ begin reaction rules
     AKT(s~P) -> AKT(s~U) 0.05
     SGK1(s~P) -> SGK1(s~U) 0.05
     mTOR(s~P) -> mTOR(s~U) 0.01
+
+    ## PIP3 Dynamics
+    0 -> PIP3() k_syn_pip3
+    PIP3() -> 0 k_deg_pip3
 end reaction rules
 
 begin actions

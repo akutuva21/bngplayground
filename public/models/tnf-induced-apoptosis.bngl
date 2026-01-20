@@ -25,9 +25,9 @@ begin seed species
 end seed species
 
 begin reaction rules
-    TNF(r) + TNFR(l,state~inactive) <-> TNF(r!1).TNFR(l!1,state~inactive) k_bind, k_unbind
+    TNF(r) + TNFR(l,state~inactive) <-> TNF(r!1).TNFR(l!1,state~inactive) k_bind,k_unbind
     TNF(r!1).TNFR(l!1,state~inactive) -> TNF(r!1).TNFR(l!1,state~active) k_activate
-    TNFR(l,state~active) + Caspase8(state~inactive) -> TNFR(l,state~active) + Caspase8(state~active) k_activate
+    TNFR(state~active) + Caspase8(state~inactive) -> TNFR(state~active) + Caspase8(state~active) k_activate
     Caspase8(state~active) + BID(state~cyto) -> Caspase8(state~active) + BID(state~truncated) k_bid
     BID(state~truncated) + Caspase3(state~inactive) -> BID(state~truncated) + Caspase3(state~active) k_casp3
     Caspase3(state~active) -> Caspase3(state~inactive) k_reset
@@ -45,6 +45,7 @@ end observables
 
 begin actions
     generate_network({overwrite=>1})
-    simulate({method=>"ode",t_start=>0,t_end=>80,n_steps=>160})
+    simulate({method=>"ode",t_start=>0,t_end=>20,n_steps=>160})
 end actions
 end model
+

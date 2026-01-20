@@ -126,6 +126,12 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   };
 
   const handleLoadExample = (exampleCode: string, modelName?: string, modelId?: string) => {
+    console.log('[EditorPanel] handleLoadExample called:', {
+      modelId,
+      modelName,
+      codeLength: exampleCode.length,
+      codePreview: exampleCode.substring(0, 200)
+    });
     onCodeChange(exampleCode);
     onModelNameChange?.(modelName ?? null);
     onModelIdChange?.(modelId ?? null);
@@ -133,7 +139,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   };
 
   return (
-    <Card className="flex h-full min-h-0 flex-col overflow-hidden">
+    <Card className="flex h-full min-h-0 flex-col overflow-hidden" data-testid="editor-panel">
       <div className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto pr-1">
         {/* Header with Status */}
         <div className="flex items-center justify-between flex-wrap gap-2">
@@ -221,6 +227,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
               onRun={onSimulate}
               isSimulating={isSimulating}
               modelExists={modelExists}
+              model={model}
             />
           </div>
         </div>

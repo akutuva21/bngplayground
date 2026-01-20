@@ -52,11 +52,10 @@ export function resetSemanticSearchState() {
 
 /**
  * Load the embedding model (lazy, cached).
- * Uses all-MiniLM-L6-v2 (~22MB download, cached in IndexedDB).
  */
 async function getEmbedder(): Promise<Pipeline> {
   if (embedder) return embedder;
-  
+
   if (isLoading) {
     // Wait for ongoing load
     while (isLoading) {
@@ -65,11 +64,10 @@ async function getEmbedder(): Promise<Pipeline> {
     if (loadError) throw loadError;
     return embedder!;
   }
-  
+
   isLoading = true;
   try {
     console.log('[SemanticSearch] Loading embedding model...');
-    // Dynamic import to handle the case when package is not yet installed
     const { pipeline } = await import('@xenova/transformers');
     embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
     console.log('[SemanticSearch] Model loaded.');
@@ -87,7 +85,7 @@ async function getEmbedder(): Promise<Pipeline> {
  */
 async function getEmbeddingsIndex(): Promise<EmbeddingsIndex> {
   if (embeddingsIndex) return embeddingsIndex;
-  
+
   // Use Vite's BASE_URL or default to root
   // @ts-expect-error - Vite injects import.meta.env at build time
   const baseUrl = import.meta.env?.BASE_URL || '/';
@@ -95,7 +93,7 @@ async function getEmbeddingsIndex(): Promise<EmbeddingsIndex> {
   if (!response.ok) {
     throw new Error(`Failed to load embeddings index: ${response.status}`);
   }
-  
+
   embeddingsIndex = await response.json();
   console.log(`[SemanticSearch] Loaded ${embeddingsIndex!.count} model embeddings.`);
   return embeddingsIndex!;
@@ -108,13 +106,13 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   let dotProduct = 0;
   let normA = 0;
   let normB = 0;
-  
+
   for (let i = 0; i < a.length; i++) {
     dotProduct += a[i] * b[i];
     normA += a[i] * a[i];
     normB += b[i] * b[i];
   }
-  
+
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
@@ -127,26 +125,26 @@ export function cosineSimilarity(a: number[], b: number[]): number {
  */
 export async function semanticSearch(query: string, topK: number = 10): Promise<SearchResult[]> {
   if (!query.trim()) return [];
-  
+
   // Load resources in parallel
   const [embed, index] = await Promise.all([
     getEmbedder(),
     getEmbeddingsIndex(),
   ]);
-  
+
   // Compute query embedding
   const output = await embed(query, { pooling: 'mean', normalize: true });
   const queryEmbedding = Array.from(output.data) as number[];
-  
+
   // Score all models
   const scores: Array<{ model: ModelEmbedding; score: number }> = index.models.map(model => ({
     model,
     score: cosineSimilarity(queryEmbedding, model.embedding),
   }));
-  
+
   // Sort by score descending and take top K
   scores.sort((a, b) => b.score - a.score);
-  
+
   return scores.slice(0, topK).map(({ model, score }) => ({
     id: model.id,
     filename: model.filename,

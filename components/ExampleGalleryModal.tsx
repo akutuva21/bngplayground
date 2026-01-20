@@ -3,7 +3,7 @@ import { Modal } from './ui/Modal';
 import { Card } from './ui/Card';
 import { Input } from './ui/Input';
 import { SearchIcon } from './icons/SearchIcon';
-import { MODEL_CATEGORIES } from '../constants';
+import { MODEL_CATEGORIES, EXAMPLES } from '../constants';
 import { SemanticSearchInput, SearchResult } from './SemanticSearchInput';
 
 // Helper to convert model names to Title Case
@@ -40,8 +40,15 @@ export const ExampleGalleryModal: React.FC<ExampleGalleryModalProps> = ({ isOpen
     return MODEL_CATEGORIES.find(cat => cat.id === selectedCategory) || MODEL_CATEGORIES[0];
   }, [selectedCategory]);
 
-  // Get all models flat for semantic search mapping
-  const allModels = useMemo(() => MODEL_CATEGORIES.flatMap(cat => cat.models), []);
+  // Get all models flat for semantic search mapping (use deduplicated EXAMPLES)
+  const allModels = useMemo(() => EXAMPLES, []);
+
+  // Debug: Log model counts in dev mode
+  if ((import.meta as any)?.env?.DEV) {
+    console.log('[ExampleGalleryModal] Total embedded models:', EXAMPLES.length);
+    console.log('[ExampleGalleryModal] Models after category filtering:', allModels.length);
+    console.log('[ExampleGalleryModal] Total category count:', MODEL_CATEGORIES.reduce((sum, cat) => sum + cat.models.length, 0));
+  }
 
   const filteredExamples = useMemo(() => {
     // If semantic search returned results, use those
@@ -104,7 +111,7 @@ export const ExampleGalleryModal: React.FC<ExampleGalleryModalProps> = ({ isOpen
     <Modal isOpen={isOpen} onClose={onClose} title="BNGL Models" size="3xl">
       <div className="mt-4">
         <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
-          Browse {MODEL_CATEGORIES.reduce((sum, cat) => sum + cat.models.length, 0)} models.
+          Browse {EXAMPLES.length} models across {MODEL_CATEGORIES.length} categories.
         </p>
 
         {/* Semantic Search */}
@@ -193,7 +200,15 @@ export const ExampleGalleryModal: React.FC<ExampleGalleryModalProps> = ({ isOpen
                 </div>
               </div>
               <button
-                onClick={() => onSelect(example.code, toTitleCase(example.name), example.id)}
+                onClick={() => {
+                  console.log('[ExampleGalleryModal] Load Model clicked:', {
+                    id: example.id,
+                    name: example.name,
+                    codeLength: example.code.length,
+                    codePreview: example.code.substring(0, 200)
+                  });
+                  onSelect(example.code, toTitleCase(example.name), example.id);
+                }}
                 className="mt-3 w-full text-center px-4 py-2 text-sm font-semibold bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md transition-colors text-slate-800 dark:text-slate-100"
               >
                 Load Model

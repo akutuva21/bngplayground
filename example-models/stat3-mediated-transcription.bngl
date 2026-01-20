@@ -42,7 +42,13 @@ begin seed species
     mRNA() mRNA_init
 end seed species
 
-# ... (Observables block unchanged)
+begin observables
+    Molecules Active_Dimer     STAT3(b!+,loc~nuc)       # Nuclear signaling pool
+    Molecules Total_pSTAT3     STAT3(s~P)               # Aggregate signal
+    Molecules DNA_Engagement   DNA(b!+)                 # Transcription driver
+    Molecules mRNA_Level       mRNA()                   # Gene expression
+    Molecules PIAS3_Feedback   PIAS3()                  # Negative feedback intensity
+end observables
 
 begin reaction rules
     ## ACTIVATION PHASE

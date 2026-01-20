@@ -1,7 +1,7 @@
 begin model
 begin parameters
     # Kinetic Parameters
-    k_bind   0.012   # TCR-pMHC interaction
+    k_bind   0.1   # TCR-pMHC interaction
     k_unbind 0.0012  # Dissociation
     k_lck    0.45    # Lck kinase activation
     k_zap    0.35    # ZAP70 phosphorylation
@@ -32,7 +32,7 @@ begin reaction rules
     
     # 3. Downstream Signaling
     # Active TCR recruits/activates ZAP70
-    TCR(p,state~active) + ZAP70(phos~U) -> TCR(p,state~active) + ZAP70(phos~P) k_zap
+    TCR(p!+,state~active) + ZAP70(phos~U) -> TCR(p!+,state~active) + ZAP70(phos~P) k_zap
     
     # 4. Reset Mechanisms (Phosphatases/Disassembly)
     ZAP70(phos~P) -> ZAP70(phos~U) k_reset

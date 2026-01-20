@@ -1,9 +1,9 @@
 begin model
 begin parameters
-    k_bind 0.01
+    k_bind 1.0
     k_unbind 0.001
-    k_activation 0.3
-    k_expression 0.35
+    k_activation 10.0
+    k_expression 1.0
     k_reset 0.06
 end parameters
 
@@ -24,8 +24,8 @@ end seed species
 begin reaction rules
     RA(r) + RARRXR(l,state~repressed) <-> RA(r!1).RARRXR(l!1,state~repressed) k_bind,k_unbind
     RA(r!1).RARRXR(l!1,state~repressed) -> RA(r!1).RARRXR(l!1,state~active) k_activation
-    RARRXR(l,state~active) + Corepressor(state~bound) -> RARRXR(l,state~active) + Corepressor(state~released) k_activation
-    RARRXR(l,state~active) + TargetGene(state~off) -> RARRXR(l,state~active) + TargetGene(state~on) k_expression
+    RARRXR(l!+,state~active) + Corepressor(state~bound) -> RARRXR(l!+,state~active) + Corepressor(state~released) k_activation
+    RARRXR(l!+,state~active) + TargetGene(state~off) -> RARRXR(l!+,state~active) + TargetGene(state~on) k_expression
     Corepressor(state~released) -> Corepressor(state~bound) k_reset
     TargetGene(state~on) -> TargetGene(state~off) k_reset
     RARRXR(l,state~active) -> RARRXR(l,state~repressed) k_reset

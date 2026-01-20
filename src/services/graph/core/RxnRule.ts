@@ -14,13 +14,17 @@ export class RxnRule {
   deleteBonds: Array<[number, number, number, number]>; // [mol1, comp1, mol2, comp2]
   addBonds: Array<[number, number, number, number]>;
   changeStates: Array<[number, number, string]>; // [mol, comp, newState]
-  deleteMolecules: number[]; // molecule indices to delete
-  addMolecules: Molecule[]; // molecules to add
+  deleteMolecules: number[]; // reactant molecule indices to delete
+  addMolecules: Array<[number, Molecule]>; // [productMolIdx, molecule] to add
+  changeCompartments: Array<[number, string]>; // [reactantMolIdx, newCompartment]
   excludeReactants: Array<{ reactantIndex: number; pattern: SpeciesGraph }>;
   includeReactants: Array<{ reactantIndex: number; pattern: SpeciesGraph }>;
   isDeleteMolecules: boolean;
   isMoveConnected: boolean;
-  
+
+  // Mapping from Product Molecule Global Index to Reactant Molecule Global Index
+  molecularMap: Map<number, number>;
+
   // For reverse bimolecular rules: max allowed molecules in reactant species
   // Prevents reverse rules from matching complexes larger than forward can produce
   maxReactantMoleculeCount?: number;
@@ -44,10 +48,12 @@ export class RxnRule {
     this.changeStates = [];
     this.deleteMolecules = [];
     this.addMolecules = [];
+    this.changeCompartments = [];
     this.excludeReactants = [];
     this.includeReactants = [];
     this.isDeleteMolecules = false;
     this.isMoveConnected = false;
+    this.molecularMap = new Map();
   }
 
   /**

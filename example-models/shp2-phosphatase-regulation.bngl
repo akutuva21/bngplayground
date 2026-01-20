@@ -4,7 +4,7 @@ begin parameters
     # Advanced features: MM kinetics and exclude_reactants.
     
     # Receptor-Phosphatase Interaction
-    k_bind_rtk 1e-4    # SHP2 binds p-RTK
+    k_bind_rtk 1.0    # SHP2 binds p-RTK
     k_unbind 0.1
     
     # Activation (Relief of autoinhibition)
@@ -45,13 +45,13 @@ end observables
 
 begin functions
     # Michaelis-Menten rate for dephosphorylation
-    v_dephos() = v_max_shp2 * Active_Substrate / (Km_substrate + Active_Substrate)
+    v_dephos() = (v_max_shp2 * Active_Enzyme) / (Km_substrate + Active_Substrate)
 end functions
 
 begin reaction rules
     ## RECRUITMENT
     # SHP2 binds p-RTK via SH2 domain
-    RTK(s~P,b) + SHP2(sh2) <-> RTK(s~P!1,b).SHP2(sh2!1) k_bind_rtk,k_unbind
+    RTK(s~P,b) + SHP2(sh2) <-> RTK(s~P,b!1).SHP2(sh2!1) k_bind_rtk,k_unbind
     
     ## ACTIVATION (Gating)
     # Binding to RTK relieves autoinhibition
@@ -60,7 +60,7 @@ begin reaction rules
     ## ENZYMATIC ACTION
     # Active SHP2 dephosphorylates substrate
     # exclude_reactants: SHP2 cannot dephosphorylate if it's already complexed with its recruiter in a way that blocks active site (Simplified)
-    SHP2(s~open) + Substrate(s~P) -> SHP2(s~open) + Substrate(s~U) v_dephos()
+    Substrate(s~P) -> Substrate(s~U) v_dephos()
     
     ## RECOVERY
     SHP2(s~open) -> SHP2(s~closed) k_shp2_reset

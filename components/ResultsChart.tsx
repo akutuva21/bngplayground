@@ -16,6 +16,7 @@ interface ResultsChartProps {
   onVisibleSpeciesChange: (species: Set<string>) => void;
   highlightedSeries?: string[];
   expressions?: CustomExpression[];
+  isNFsim?: boolean; // Flag to indicate if this is NFsim data (counts vs concentrations)
 }
 
 type ZoomDomain = {
@@ -167,6 +168,97 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
   const [selection, setSelection] = useState<ZoomDomain | null>(null);
   const [filterMode, setFilterMode] = useState<'all' | 'search'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [wrapperRef, setWrapperRef] = useState<HTMLDivElement | null>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [xAxisScale, setXAxisScale] = useState<'linear' | 'log'>('linear');
+  const [yAxisScale, setYAxisScale] = useState<'linear' | 'log'>('linear');
+
+  // Reset zoom when scale changes
+  const handleXScaleChange = () => {
+    setXAxisScale(prev => prev === 'linear' ? 'log' : 'linear');
+    setZoomHistory([]);
+    setSelection(null);
+  };
+
+  const handleYScaleChange = () => {
+    setYAxisScale(prev => prev === 'linear' ? 'log' : 'linear');
+    setZoomHistory([]);
+    setSelection(null);
+  };
+
+  // Calculate appropriate domain for log scale based on actual data
+  const getLogDomain = (dataKey: 'time' | 'y'): [number | 'dataMin' | 'auto', number | 'dataMax' | 'auto'] => {
+    if (!chartData || chartData.length === 0) return [0.001, 'auto'];
+    
+    let minVal = Infinity;
+    let maxVal = -Infinity;
+    
+    if (dataKey === 'time') {
+      // For time axis, just look at time values
+      chartData.forEach(point => {
+        const val = point.time;
+        if (typeof val === 'number' && val > 0) {
+          minVal = Math.min(minVal, val);
+          maxVal = Math.max(maxVal, val);
+        }
+      });
+    } else {
+      // For Y axis, look at all visible species values
+      chartData.forEach(point => {
+        speciesToPlot.forEach(species => {
+          if (visibleSpecies.has(species)) {
+            const val = point[species];
+            if (typeof val === 'number' && val > 0) {
+              minVal = Math.min(minVal, val);
+              maxVal = Math.max(maxVal, val);
+            }
+          }
+        });
+      });
+    }
+    
+    // If we found valid positive values, use them with some padding
+    if (minVal !== Infinity && maxVal !== -Infinity && minVal > 0) {
+      // Add padding in log space (multiply/divide by factor)
+      const logMin = Math.log10(minVal);
+      const logMax = Math.log10(maxVal);
+      const padding = (logMax - logMin) * 0.1; // 10% padding
+      
+      return [
+        Math.pow(10, logMin - padding),
+        Math.pow(10, logMax + padding)
+      ];
+    }
+    
+    // Fallback to default range
+    return [0.001, 'auto'];
+  };
+
+  useEffect(() => {
+    if (!wrapperRef) return;
+    
+    setDimensions({ 
+      width: wrapperRef.offsetWidth, 
+      height: wrapperRef.offsetHeight 
+    });
+
+    const observer = new ResizeObserver(entries => {
+      window.requestAnimationFrame(() => {
+        const entry = entries[0];
+        if (entry) {
+          const { width, height } = entry.contentRect;
+          if (width > 0 && height > 0) {
+            setDimensions({ width, height });
+          }
+        }
+      });
+    });
+
+    observer.observe(wrapperRef);
+    return () => observer.disconnect();
+  }, [wrapperRef]);
+
+  const hasValidDimensions = dimensions.width > 0 && dimensions.height > 0;
 
   // Reset zoom state when the results object changes to avoid carrying zoom across runs
   useEffect(() => {
@@ -345,8 +437,13 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
 
   return (
     <Card className="max-w-full flex flex-col h-auto min-h-full">
-      <div className="h-[500px] w-full relative">
-        <ResponsiveContainer width="100%" height="100%">
+      <div 
+        ref={setWrapperRef}
+        className="h-[500px] w-full relative" 
+        style={{ width: '100%', height: 500, minHeight: 500 }}
+      >
+        {hasValidDimensions ? (
+          <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={50}>
           <LineChart
             data={chartData}
             margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
@@ -360,16 +457,10 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
               dataKey="time"
               label={{ value: 'Time', position: 'insideBottomRight', offset: -5, fill: '#334155', fontSize: 13, fontWeight: 'bold' }}
               type="number"
-              domain={currentDomain ? [currentDomain.x1, currentDomain.x2] : ['dataMin', 'dataMax']}
+              scale={xAxisScale}
+              domain={currentDomain ? [currentDomain.x1, currentDomain.x2] : xAxisScale === 'log' ? getLogDomain('time') : ['dataMin', 'dataMax']}
               allowDataOverflow={true}
-              tick={{ fontSize: 11, fill: 'black' }}
-              tickLine={{ stroke: 'black' }}
-              axisLine={{ stroke: 'black' }}
-            />
-            <YAxis
-              label={{ value: 'Concentration', angle: -90, position: 'insideLeft', fill: '#334155', fontSize: 13, fontWeight: 'bold' }}
-              domain={currentDomain ? [currentDomain.y1, currentDomain.y2] : [0, 'dataMax']}
-              allowDataOverflow={true}
+              allowDecimals={true}
               tick={{ fontSize: 11, fill: 'black' }}
               tickLine={{ stroke: 'black' }}
               axisLine={{ stroke: 'black' }}
@@ -377,6 +468,35 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
                 if (typeof value !== 'number') return value;
                 if (value === 0) return '0';
                 const abs = Math.abs(value);
+                if (xAxisScale === 'log') {
+                  // For log scale, use exponential notation
+                  return value.toExponential(0);
+                }
+                // Linear scale formatting
+                if (abs >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+                if (abs >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+                if (abs >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+                if (abs < 0.01) return value.toExponential(1);
+                return value.toFixed(2).replace(/\.00$/, '');
+              }}
+            />
+            <YAxis
+              label={{ value: 'Concentration', angle: -90, position: 'insideLeft', fill: '#334155', fontSize: 13, fontWeight: 'bold' }}
+              scale={yAxisScale}
+              domain={currentDomain ? [currentDomain.y1, currentDomain.y2] : yAxisScale === 'log' ? getLogDomain('y') : [0, 'dataMax']}
+              allowDataOverflow={true}
+              allowDecimals={true}
+              tick={{ fontSize: 11, fill: 'black' }}
+              tickLine={{ stroke: 'black' }}
+              axisLine={{ stroke: 'black' }}
+              tickFormatter={(value) => {
+                if (typeof value !== 'number') return value;
+                if (value === 0) return '0';
+                const abs = Math.abs(value);
+                if (yAxisScale === 'log') {
+                  // For log scale, use exponential notation
+                  return value.toExponential(0);
+                }
                 if (abs >= 1e9) return (value / 1e9).toFixed(1) + 'B';
                 if (abs >= 1e6) return (value / 1e6).toFixed(1) + 'M';
                 if (abs >= 1e3) return (value / 1e3).toFixed(1) + 'K';
@@ -438,6 +558,11 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
             )}
           </LineChart>
         </ResponsiveContainer>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-slate-400">
+            Initializing chart dimensions...
+          </div>
+        )}
       </div>
 
       {/* External legend */}
@@ -476,6 +601,25 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, visibleSpec
               className="ml-1 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded text-xs bg-transparent dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
             />
           )}
+          
+          {/* Scale toggles */}
+          <div className="flex items-center gap-1 ml-2 pl-2 border-l border-slate-200 dark:border-slate-700">
+            <span className="text-xs text-slate-500 dark:text-slate-400 mr-1">Scale:</span>
+            <button
+              onClick={handleXScaleChange}
+              className={`px-2 py-1 text-xs font-medium rounded transition-colors ${xAxisScale === 'log' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+              title="Toggle X-axis scale (resets zoom)"
+            >
+              X: {xAxisScale === 'log' ? 'Log' : 'Linear'}
+            </button>
+            <button
+              onClick={handleYScaleChange}
+              className={`px-2 py-1 text-xs font-medium rounded transition-colors ${yAxisScale === 'log' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+              title="Toggle Y-axis scale (resets zoom)"
+            >
+              Y: {yAxisScale === 'log' ? 'Log' : 'Linear'}
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

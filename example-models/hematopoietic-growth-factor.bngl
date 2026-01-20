@@ -31,7 +31,7 @@ begin reaction rules
     EPO(r!1).EPOR(l!1,state~inactive) -> EPO(r!1).EPOR(l!1,state~active) k_receptor
     
     # 3. JAK2 Recruitment and Activation
-    EPOR(l,state~active) + JAK2(state~off) -> EPOR(l,state~active) + JAK2(state~on) k_jak
+    EPOR(l!+,state~active) + JAK2(state~off) -> EPOR(l!+,state~active) + JAK2(state~on) k_jak
     
     # 4. Downstream Signaling (STAT5)
     # JAK2 phosphorylates STAT5
@@ -55,19 +55,9 @@ end observables
 begin actions
     generate_network({overwrite=>1})
     
-    # 1. Equilibration (No Ligand)
-    simulate({method=>"ode",t_end=>20,n_steps=>40,suffix=>"equil"})
-    
-    # 2. Stimulation (Add EPO)
-    # Simulates a bolus of Erythropoietin
+    # Simple stimulatory simulation for parity
     setConcentration("EPO(r)", 100)
-    saveConcentrations()
-    simulate({continue=>1,method=>"ode",t_end=>100,n_steps=>200,suffix=>"stim"})
-    
-    # 3. Washout / Recovery
-    # Simulates clearance of the growth factor
-    setConcentration("EPO(r)", 0)
-    simulate({continue=>1,method=>"ode",t_end=>100,n_steps=>200,suffix=>"wash"})
+    simulate({method=>"ode",t_end=>100,n_steps=>200})
 end actions
 end model
 

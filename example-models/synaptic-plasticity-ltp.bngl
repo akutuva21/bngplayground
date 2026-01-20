@@ -23,7 +23,7 @@ begin parameters
     k_ampar_endo 0.05    # Basal endocytosis
     
     # Stimulation Protocol Parameters
-    Glu_input    0       # Controlled by setParameter
+    Glu_input    100.0   # Controlled by stimulus rule
 end parameters
 
 begin molecule types
@@ -32,12 +32,14 @@ begin molecule types
     Calcium(b)
     CaMKII(ca,state~inactive~active)
     AMPAR(loc~intra~surf)   # Intracellular vs Surface
+    GluSource()
 end molecule types
 
 begin seed species
-    Glutamate(r) Glu_init
-    NMDA(l,channel~closed) NMDA_init
-    Calcium(b) Calcium_init
+    Glutamate(r) 0
+    NMDA(l,channel~closed) 50
+    Calcium(b) 10
+    GluSource() 1000
     CaMKII(ca,state~inactive) CaMKII_init
     AMPAR(loc~surf) 20      # Basal surface level
     AMPAR(loc~intra) 80     # Reserve pool
@@ -51,8 +53,8 @@ begin observables
 end observables
 
 begin reaction rules
-    # 1. Glutamate Binding and NMDAR Activation
-    0 -> Glutamate(r) Glu_input
+    # 1. Glutamate Release
+    GluSource() -> GluSource() + Glutamate(r) Glu_input
     Glutamate(r) -> 0 10.0 # Rapid clearance
     
     Glutamate(r) + NMDA(l,channel~closed) <-> Glutamate(r!1).NMDA(l!1,channel~closed) k_bind_glu, k_unbind_glu
@@ -60,18 +62,13 @@ begin reaction rules
     Glutamate(r!1).NMDA(l!1,channel~open) -> Glutamate(r!1).NMDA(l!1,channel~closed) k_close_nmda
 
     # 2. Calcium Influx (Flux through open channels)
-    # Simplified: Open NMDA catalyzes Calcium entry
     NMDA(channel~open) -> NMDA(channel~open) + Calcium(b) k_ca_influx
     Calcium(b) -> 0 k_ca_pump
 
     # 3. CaMKII Activation
-    # Calcium binds CaMKII and activates it
     Calcium(b) + CaMKII(ca,state~inactive) <-> Calcium(b!1).CaMKII(ca!1,state~active) k_camkii_act, k_camkii_deact
 
     # 4. AMPAR Trafficking (LTP Expression)
-    # Active CaMKII promotes insertion of AMPARs into synapse
-    # Note: Use wildcard s!+ (if defined) or simpler specific binding if preferred. 
-    # Here we use catalysis for simplicity in this demo model.
     CaMKII(state~active) + AMPAR(loc~intra) -> CaMKII(state~active) + AMPAR(loc~surf) k_ampar_ins
     
     # Constitutive recycling
@@ -80,28 +77,6 @@ end reaction rules
 
 begin actions
     generate_network({overwrite=>1})
-    
-    # Phase 1: Equilibration (Low basal activity)
-    simulate({method=>"ode",t_end=>20,n_steps=>40})
-    
-    # Phase 2: HFS Protocol (3 Pulses of Glutamate)
-    # Pulse 1
-    setParameter("Glu_input", 20)
-    simulate({continue=>1,method=>"ode",t_end=>22,n_steps=>20,continue=>1})
-    setParameter("Glu_input", 0)
-    simulate({continue=>1,method=>"ode",t_end=>30,n_steps=>50,continue=>1})
-    
-    # Pulse 2
-    setParameter("Glu_input", 20)
-    simulate({continue=>1,method=>"ode",t_end=>32,n_steps=>20,continue=>1})
-    setParameter("Glu_input", 0)
-    simulate({continue=>1,method=>"ode",t_end=>40,n_steps=>50,continue=>1})
-    
-    # Pulse 3 (LTP Induction/Maintenance)
-    setParameter("Glu_input", 20)
-    simulate({continue=>1,method=>"ode",t_end=>42,n_steps=>20,continue=>1})
-    setParameter("Glu_input", 0)
-    simulate({continue=>1,method=>"ode",t_end=>100,n_steps=>300,continue=>1})
+    simulate({method=>"ode",t_end=>100,n_steps=>300})
 end actions
 end model
-

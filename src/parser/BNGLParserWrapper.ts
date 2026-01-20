@@ -32,7 +32,36 @@ export function parseBNGLWithANTLR(input: string): ParseResult {
     // Create lexer and parser
     // Some published BNGL files can start with a UTF-8 BOM (U+FEFF). BNG2.pl
     // accepts this; our lexer should too.
-    const sanitizedInput = input.replace(/^\uFEFF/, '');
+    let sanitizedInput = input.replace(/^\uFEFF/, '');
+
+    // Normalize legacy 'begin molecules' / 'end molecules' blocks to
+    // the preferred 'begin molecule types' / 'end molecule types' form.
+    // We do this as a pre-parse normalization to preserve repository files
+    // but remain compatible with BNG2.pl. We skip lines that are comments.
+    function normalizeLegacyBlocks(src: string): { normalized: string; warned: boolean } {
+      const lines = src.split(/\r\n|\n/);
+      let warned = false;
+      const out = lines.map(line => {
+        const trimmedStart = line.replace(/^\s*/, '');
+        // Skip commented lines
+        if (/^#/.test(trimmedStart)) return line;
+        if (/^\s*begin\s+molecules\b/i.test(line)) {
+          warned = true;
+          return line.replace(/begin\s+molecules\b/i, 'begin molecule types');
+        }
+        if (/^\s*end\s+molecules\b/i.test(line)) {
+          warned = true;
+          return line.replace(/end\s+molecules\b/i, 'end molecule types');
+        }
+        return line;
+      });
+      return { normalized: out.join('\n'), warned };
+    }
+
+    const { normalized, warned } = normalizeLegacyBlocks(sanitizedInput);
+    sanitizedInput = normalized;
+    if (warned) console.warn('[BNGL parser] Rewrote legacy "begin molecules"/"end molecules" to "begin molecule types" for parsing. Consider updating the model file.');
+
     const inputStream = CharStreams.fromString(sanitizedInput);
     const lexer = new BNGLexer(inputStream);
 

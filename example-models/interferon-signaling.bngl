@@ -30,7 +30,7 @@ begin reaction rules
     IFN(r!1).IFNAR(l!1,state~inactive) -> IFN(r!1).IFNAR(l!1,state~active) k_jak
     
     # 3. TYK2 Association/Activation
-    IFNAR(l,state~active) + TYK2(state~off) -> IFNAR(l,state~active) + TYK2(state~on) k_jak
+    IFNAR(l!+,state~active) + TYK2(state~off) -> IFNAR(l!+,state~active) + TYK2(state~on) k_jak
     
     # 4. STAT1 Phosphorylation
     TYK2(state~on) + STAT1(phos~U,loc~cyto) -> TYK2(state~on) + STAT1(phos~P,loc~cyto) k_stat

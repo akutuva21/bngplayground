@@ -25,7 +25,7 @@ end seed species
 begin reaction rules
     PDGF(r) + PDGFR(l,state~inactive) <-> PDGF(r!1).PDGFR(l!1,state~inactive) k_bind,k_unbind
     PDGF(r!1).PDGFR(l!1,state~inactive) -> PDGF(r!1).PDGFR(l!1,state~active) k_receptor
-    PDGFR(l,state~active) + STAT3(phos~U) -> PDGFR(l,state~active) + STAT3(phos~P) k_stat3
+    PDGFR(l!+,state~active) + STAT3(phos~U) -> PDGFR(l!+,state~active) + STAT3(phos~P) k_stat3
     STAT3(phos~P) + Fibroblast(state~resting) -> STAT3(phos~P) + Fibroblast(state~migratory) k_response
     Fibroblast(state~migratory) -> Fibroblast(state~resting) k_reset
     STAT3(phos~P) -> STAT3(phos~U) k_reset

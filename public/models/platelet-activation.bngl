@@ -24,8 +24,10 @@ end seed species
 
 begin reaction rules
     ADP(medium~low) -> ADP(medium~high) k_release
-    ADP(medium~high) + P2Y12(l,state~inactive) <-> ADP(medium~high!1).P2Y12(l!1,state~inactive) k_bind, k_unbind
+    ADP(medium~high) + P2Y12(l,state~inactive) <-> ADP(medium~high!1).P2Y12(l!1,state~inactive) k_bind,k_unbind
     ADP(medium~high!1).P2Y12(l!1,state~inactive) -> ADP(medium~high!1).P2Y12(l!1,state~active) k_integrin
+    # Bound active P2Y12 dissociates and releases active P2Y12 which activates integrins
+    ADP(medium~high!1).P2Y12(l!1,state~active) -> ADP(medium~high) + P2Y12(l,state~active) k_unbind*10
     P2Y12(l,state~active) + Integrin(state~closed) -> P2Y12(l,state~active) + Integrin(state~open) k_integrin
     Integrin(state~open) + Thromboxane(level~basal) -> Integrin(state~open) + Thromboxane(level~elevated) k_tx
     Integrin(state~open) -> Integrin(state~closed) k_reset
@@ -46,3 +48,4 @@ begin actions
     simulate({method=>"ode",t_start=>0,t_end=>70,n_steps=>140})
 end actions
 end model
+

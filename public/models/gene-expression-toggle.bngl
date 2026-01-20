@@ -1,11 +1,12 @@
 begin model
 begin parameters
-    k_activate 0.002
-    k_repress 0.001
-    k_transcription 1.0
-    k_translation 5.0
-    k_mrna_deg 0.2
-    k_protein_deg 0.05
+    # Kinetic Parameters
+    k_activate      0.002  # Basal activation rate
+    k_repress       0.001  # Repression rate
+    k_transcription 1.0    # mRNA synthesis rate
+    k_translation   5.0    # Protein synthesis rate
+    k_mrna_deg      0.2    # mRNA degradation
+    k_protein_deg   0.05   # Protein degradation
 end parameters
 
 begin molecule types
@@ -19,17 +20,24 @@ begin seed species
 end seed species
 
 begin observables
-    Molecules Promoter_on Gene(active~on)
-    Molecules Promoter_off Gene(active~off)
-    Molecules Transcripts mRNA()
-    Molecules Protein Protein()
+    Molecules Promoter_on   Gene(active~on)
+    Molecules Promoter_off  Gene(active~off)
+    Molecules Transcripts   mRNA()
+    Molecules Protein       Protein()
 end observables
 
 begin reaction rules
+    # 1. Gene Activation/Inactivation (Bursting)
     Gene(active~off) -> Gene(active~on) k_activate
     Gene(active~on) -> Gene(active~off) k_repress
+    
+    # 2. Transcription
     Gene(active~on) -> Gene(active~on) + mRNA() k_transcription
+    
+    # 3. Translation
     mRNA() -> mRNA() + Protein() k_translation
+    
+    # 4. Degradation
     mRNA() -> 0 k_mrna_deg
     Protein() -> 0 k_protein_deg
 end reaction rules
@@ -39,3 +47,4 @@ begin actions
     simulate({method=>"ode",t_end=>200,n_steps=>200})
 end actions
 end model
+

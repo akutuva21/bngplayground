@@ -40,7 +40,7 @@ end seed species
 
 begin observables
     # KEY BIOLOGICAL OUTPUTS
-    Molecules Hypoxia_Factor   HIF1a(loc~nuc!1).ARNT(b!1) # Functional TF dimer
+    Molecules Hypoxia_Factor   HIF1a(b!1,loc~nuc).ARNT(b!1) # Functional TF dimer
     Molecules Total_HIF        HIF1a()                   # Stabilization tracker
     Molecules OH_HIF_Mark     HIF1a(site~OH)            # Modification status
     Molecules VHL_Captured    HIF1a(b!1).VHL(b!1)       # Degradation intermediate

@@ -20,6 +20,10 @@ begin parameters
     # Regulation
     k_uhrf1_bind 5.0   # Recruiter for maintenance
     k_reset 0.01
+
+    # TET Regulation
+    k_tet_inact 0.1
+    k_tet_act 0.05
     
     # Initials
     CpG_sites 2000     # Genome sites proxy
@@ -56,7 +60,8 @@ begin functions
     v_maint() = k_maint_max * (Hemi_CpG / (Km_hemi + Hemi_CpG))
     
     # Michaelis-Menten for active erasure
-    v_erase() = k_tet_max * (Methyl_CpG / (Km_meth + Methyl_CpG))
+    # Michaelis-Menten for active erasure, scaled by TET activity
+    v_erase() = k_tet_max * (Methyl_CpG / (Km_meth + Methyl_CpG)) * (Active_Eraser / TET_tot)
 end functions
 
 begin reaction rules
@@ -85,6 +90,9 @@ begin reaction rules
     ## RESET
     CpG(s~U) -> CpG(s~U) k_reset
     CpG(s~H) -> CpG(s~U) k_reset
+
+    ## TET DYNAMICS
+    TET(s~on) <-> TET(s~off) k_tet_inact, k_tet_act
 end reaction rules
 
 begin actions

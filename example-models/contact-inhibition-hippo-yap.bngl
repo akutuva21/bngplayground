@@ -30,7 +30,7 @@ begin parameters
     YAP_tot 500
     TEAD_tot 150
     NF2_tot 100
-    k_contact_pulse 0  # High contact signal rate
+    k_contact_pulse 1.0      # Density-dependent activation triggernal rate
 end parameters
 
 begin molecule types
@@ -38,20 +38,20 @@ begin molecule types
     MST(s~U~A)
     LATS(s~U~P)
     YAP(b,s~U~P,loc~cyt~nuc)
-    TEAD(b)
+    TEAD(b,loc~nuc)
 end molecule types
 
 begin seed species
-    Contact(s~low) 1
+    Contact(s~low) 1000
     MST(s~U) MST_tot
     LATS(s~U) LATS_tot
     YAP(b,s~U,loc~cyt) YAP_tot
-    TEAD(b) TEAD_tot
+    TEAD(b,loc~nuc) TEAD_tot
 end seed species
 
 begin observables
     # KEY BIOLOGICAL OUTPUTS
-    Molecules Transcript_Active YAP(loc~nuc!1).TEAD(b!1) # Functional effector
+    Molecules Transcript_Active YAP(b!1).TEAD(b!1) # Functional effector
     Molecules YAP_Sequested    YAP(s~P,loc~cyt)        # Inhibited reservoir
     Molecules Active_LATS      LATS(s~P)                # Signaling relay status
     Molecules MST_Trigger      MST(s~A)                 # Top-level drive
@@ -77,17 +77,17 @@ begin reaction rules
     LATS(s~P) + YAP(loc~cyt,s~U) -> LATS(s~P) + YAP(loc~cyt,s~P) k_yap_phos
     
     # Unphosphorylated YAP translocates (MoveConnected: partner stays)
-    YAP(s~U,loc~cyt) <-> YAP(s~U,loc~nuc) k_nuclear,0.1 MoveConnected
+    YAP(s~U,loc~cyt) <-> YAP(s~U,loc~nuc) k_nuclear,0.1
     
     # Nuclear YAP binds TEAD
-    YAP(loc~nuc,s~U) + TEAD(b) <-> YAP(loc~nuc,s~U!1).TEAD(b!1) k_tead_bind,0.5
+    YAP(loc~nuc,s~U,b) + TEAD(b) <-> YAP(loc~nuc,s~U,b!1).TEAD(b!1) k_tead_bind,0.5
     
     # Phospho-YAP is excluded/exported
     YAP(s~P,loc~nuc) -> YAP(s~P,loc~cyt) 5.0
     
     ## DYNAMICS Stage
     # Density stimulus (Self-induction over time)
-    0 -> Contact(s~high) k_contact_pulse
+    Contact(s~low) -> Contact(s~high) k_contact_pulse
     
     # Reset
     YAP(s~P) -> YAP(s~U) k_reset
@@ -97,11 +97,6 @@ end reaction rules
 
 begin actions
     generate_network({overwrite=>1})
-    # Phase 1: Low Density (0-30)
-    simulate({method=>"ode",t_end=>30,n_steps=>60})
-    # Phase 2: High Density Stimulus (30-150)
-    setParameter("k_contact_pulse",1.0)
-    simulate({continue=>1,method=>"ode",t_end=>120,n_steps=>240,continue=>1})
+    simulate({method=>"ode",t_end=>150,n_steps=>300})
 end actions
 end model
-

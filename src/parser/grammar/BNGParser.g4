@@ -49,7 +49,6 @@ program_block
     | compartments_block
     | energy_patterns_block
     | population_maps_block
-    | anchors_block          // NEW: Support "begin anchors ... end anchors"
     | wrapped_actions_block
     | begin_actions_block  // NEW: Support "begin actions ... end actions"
     ;
@@ -72,9 +71,7 @@ param_name
 // Molecule types block - supports "molecule types", "molecules", "molecule_types", and "molecular types"
 molecule_types_block
     : BEGIN MOLECULE TYPES LB+ (molecule_type_def LB+)* END MOLECULE TYPES LB*
-    | BEGIN MOLECULES LB+ (molecule_type_def LB+)* END MOLECULES LB*
     | BEGIN MOLECULE_TYPES LB+ (molecule_type_def LB+)* END MOLECULE_TYPES LB*
-    | BEGIN MOLECULAR TYPES LB+ (molecule_type_def LB+)* END MOLECULAR TYPES LB*  // NEW: 'begin molecular types' variant
     ;
 
 molecule_type_def
@@ -83,7 +80,11 @@ molecule_type_def
 
 // Molecules can have optional parentheses (e.g., "dead" or "A()" are both valid)
 molecule_def
-    : STRING (LPAREN component_def_list? RPAREN)?
+    : STRING (LPAREN component_def_list? RPAREN)? molecule_attributes?
+    ;
+
+molecule_attributes
+    : LBRACKET action_arg_list? RBRACKET
     ;
 
 // Allow empty entries in component lists to handle double commas (,,)
@@ -139,7 +140,7 @@ molecule_compartment
 // Molecule tagging: pattern%1, pattern%2 for identifying molecules in reactions
 // Bond wildcards can appear after entire patterns: e.g., Smad1(loc~cyt)!+
 molecule_pattern
-    : STRING (LPAREN component_pattern_list? RPAREN)? pattern_bond_wildcard? molecule_tag?
+    : STRING (LPAREN component_pattern_list? RPAREN)? pattern_bond_wildcard? molecule_tag? molecule_attributes?
     ;
 
 // Bond wildcards that apply to entire molecule patterns
@@ -147,11 +148,10 @@ molecule_pattern
 pattern_bond_wildcard
     : EMARK PLUS      // !+ = molecule must have one or more bonds
     | EMARK QMARK     // !? = molecule may or may not have bonds  
-    | EMARK MINUS     // !- = molecule must be completely unbound
     ;
 
 molecule_tag
-    : MOD INT
+    : MOD (INT | STRING)
     ;
 
 // Allow empty entries in component pattern lists to handle double commas (,,)
@@ -174,7 +174,6 @@ bond_spec
     | EMARK bond_id
     | EMARK PLUS
     | EMARK QMARK
-    | EMARK MINUS  // !- means unbound (no bond)
     ;
 
 bond_id
@@ -192,7 +191,7 @@ observable_def
     ;
 
 observable_type
-    : MOLECULES | SPECIES | STRING  // Molecules, Species, or custom type
+    : MOLECULES | SPECIES | COUNTER | STRING  // Molecules, Species, Counter, or custom type
     ;
 
 // Support both comma-separated and space-separated patterns
@@ -203,7 +202,7 @@ observable_pattern_list
 
 // Observable pattern can be a species or a stoichiometry comparison (R==1, R>5, etc.)
 observable_pattern
-    : species_def
+    : species_def (GT INT)?  // Added option for count filter (>N)
     | STRING (EQUALS | GT | GTE | LT | LTE) INT  // Stoichiometry comparison: R==1, R>5
     ;
 
@@ -302,14 +301,7 @@ population_map_def
     : (STRING COLON)? species_def UNI_REACTION_SIGN STRING LPAREN param_list? RPAREN
     ;
 
-// Anchors block (visualization/compartment anchors for cBNGL)
-anchors_block
-    : BEGIN ANCHORS LB+ (anchor_def LB+)* END ANCHORS LB*
-    ;
 
-anchor_def
-    : molecule_pattern (LPAREN (STRING (COMMA STRING)*)? RPAREN)?
-    ;
 
 // Actions block (unwrapped - for loose commands)
 actions_block
@@ -363,7 +355,6 @@ other_action_cmd
 // Action arguments can be: {key=>val,...} or simple quoted string
 action_args
     : LBRACKET action_arg_list? RBRACKET
-    | DBQUOTES (~DBQUOTES)* DBQUOTES  // Simple quoted string like saveConcentrations("A20_KO")
     ;
 
 action_arg_list
@@ -440,15 +431,15 @@ expression
     ;
 
 conditional_expr
-    : or_expr (QMARK expression COLON expression)?
+    : or_expr
     ;
 
 or_expr
-    : and_expr ((PIPE PIPE | LOGICAL_OR) and_expr)*
+    : and_expr (LOGICAL_OR and_expr)*
     ;
 
 and_expr
-    : equality_expr ((AMPERSAND AMPERSAND | LOGICAL_AND) equality_expr)*
+    : equality_expr (LOGICAL_AND equality_expr)*
     ;
 
 equality_expr

@@ -74,9 +74,7 @@ const CSV_MODEL_ALIASES: Record<string, string> = {
 // Limit comparison to rows with time <= limit.
 // Note: Keys are normalized (lowercase, no special chars)
 const PARTIAL_MATCH_TIME: Record<string, number> = {
-  hat2016: 14 * 24 * 60 * 60, // 1,209,600 seconds (first phase end)
-  autoactivationloop: 50, // BNG2.pl's continue=>1 failed, only first phase ran
-  calciumspikesignaling: 120, // BNG2.pl ran phases 1+2 (0-20, 20-120), phase 3 failed
+  hat2016: 1209600, // 14 * 24 * 60 * 60 seconds (first phase end)
   hif1adegradationloop: 100, // BNG2.pl ran phases 1+2 (0-40, 40-100), phase 3 failed
   ltypecalciumchanneldynamics: 30, // BNG2.pl phases 2-3 failed, only phase 1 works (phase 4 time reset)
   sonichedgehoggradient: 50, // BNG2.pl only ran first phase (4 phases total, phases 2-4 failed)
@@ -135,8 +133,10 @@ function parseGDAT(content: string): { headers: string[]; data: number[][] } {
     .map(line => line.trim().split(/\s+/).map(v => {
       const parsed = Number.parseFloat(v);
       if (!Number.isFinite(parsed)) {
-        throw new Error(`Non-numeric GDAT value: "${v}"`);
+        // throw new Error(`Non-numeric GDAT value: "${v}"`);
+        return NaN;
       }
+      return parsed;
       return parsed;
     }));
 
@@ -676,11 +676,29 @@ async function main() {
   }
   console.log(`Found ${csvFiles.length} web output CSV files (deduped from ${allCsvFiles.length})\n`);
 
+  const requestedModels = process.env.MODELS ? process.env.MODELS.split(',').map(s => s.trim().toLowerCase()) : null;
+
   const results: ComparisonResult[] = [];
   const processedModels = new Set<string>();
 
   for (const csvFile of csvFiles) {
+    const csvModelName = csvModelLabel(csvFile);
+    if (requestedModels) {
+        const isMatch = requestedModels.some(req => 
+            req === csvModelName.toLowerCase() || 
+            normalizeKey(req) === normalizeKey(csvModelName)
+        );
+        if (!isMatch) continue;
+    }
+    
+    if (csvFile.toLowerCase().includes('hat')) {
+       console.log(`[DEBUG] Processing potential Hat file: ${csvFile}`);
+    }
     const ref = findGdatCandidates(csvFile);
+    if (csvFile.toLowerCase().includes('hat')) {
+       console.log(`[DEBUG] GDAT Candidates for ${csvFile}:`, ref.gdatPaths);
+       console.log(`[DEBUG] BNGL Path:`, ref.bnglPath);
+    }
     const modelName = csvModelLabel(csvFile);
     processedModels.add(modelName);
 

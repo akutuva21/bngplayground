@@ -62,6 +62,26 @@ function pickPhase(model: BNGLModel, method: SimulationOptions['method']): Simul
   return phases[0];
 }
 
+/**
+ * Resolves 'default' (Auto) method to the actual method specified in the model.
+ * If model has multiple phases, returns the method of the first phase.
+ * If no phases, defaults to 'ode'.
+ */
+export function resolveAutoMethod(model: BNGLModel, method: SimulationOptions['method']): 'ode' | 'ssa' | 'nf' {
+  if (method !== 'default') return method;
+
+  const phases = model.simulationPhases ?? [];
+  if (phases.length > 0) {
+    const firstMethod = phases[0].method;
+    if (firstMethod === 'nf' || firstMethod === 'ssa' || firstMethod === 'ode') {
+      return firstMethod;
+    }
+  }
+
+  // Default fallback
+  return 'ode';
+}
+
 export function getSimulationOptionsFromParsedModel(
   model: BNGLModel,
   method: SimulationOptions['method'],
@@ -89,6 +109,7 @@ export function getSimulationOptionsFromParsedModel(
     method,
     t_end,
     n_steps,
+    ...(overrides?.seed !== undefined ? { seed: overrides.seed } : {}),
     ...(atol !== undefined ? { atol } : {}),
     ...(rtol !== undefined ? { rtol } : {}),
     ...(overrides?.solver ? { solver: overrides.solver } : {}),

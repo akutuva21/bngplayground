@@ -8,7 +8,9 @@
  * - Auto-switching between methods based on stiffness detection
  */
 
-import createCVodeModule from './cvode_loader';
+// import createCVodeModule is removed to avoid ReferenceError in Node.js ESM. 
+// It is now dynamically imported in init() based on environment.
+
 
 export interface SolverOptions {
   atol: number;           // Absolute tolerance
@@ -1122,31 +1124,43 @@ export class CVODESolver {
 
     this.initPromise = (async () => {
       try {
-        this.module = await createCVodeModule({
+        const isNode = typeof process !== 'undefined' && process.versions && process.versions.node;
+        let loader;
+        if (isNode) {
+          console.log('[ODESolver] Loading CVODE via cvode_node');
+          // Use dynamic import with string template to avoid Vite static analysis
+          const modulePath = './cvode_node';
+          loader = (await import(/* @vite-ignore */ modulePath)).default;
+        } else {
+          console.log('[ODESolver] Loading CVODE via cvode_loader');
+          loader = (await import('./cvode_loader')).default;
+        }
+
+        this.module = await loader({
           locateFile: (path: string) => {
             if (path.endsWith('.wasm')) {
-              // Check if we're in Node.js or browser/worker
-              const isNode = typeof process !== 'undefined' && process.versions && process.versions.node;
               if (isNode) {
-                // In Node.js, use the public directory (same location as browser)
-                // __dirname is services/, so go up one level to project root, then to public/
                 const nodePath = require('path');
-                return nodePath.resolve(__dirname, '..', 'public', 'cvode.wasm');
+                const p = nodePath.resolve(__dirname, '..', '..', 'public', 'cvode.wasm');
+                return p;
               }
               // In browser/worker, detect base URL from self.location
               let baseUrl = '/';
+              // console.log('[CVODESolver.init] locateFile called for:', path);
+
               if (typeof self !== 'undefined' && self.location) {
-                // Extract base path from current URL (works in both window and worker)
                 const pathname = self.location.pathname;
-                // Check if we're in /bngplayground/
                 if (pathname.includes('/bngplayground/')) {
                   baseUrl = '/bngplayground/';
                 }
               }
-              return baseUrl + 'cvode.wasm';
+              const finalPath = baseUrl + 'cvode.wasm';
+              console.log(`[CVODESolver.init] Resolving ${path} -> ${finalPath}`);
+              return finalPath;
             }
             return path;
           }
+
         }) as unknown as CVodeModule;
       } catch (e) {
         console.error("Failed to load CVODE WASM:", e);

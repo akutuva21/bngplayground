@@ -11,6 +11,10 @@ begin parameters
     k_sgc_act 1.2      # NO-mediated sGC activation
     k_sgc_inact 0.3    # Deactivation
     
+    # sGC Turnover
+    k_syn_sgc 20.0
+    k_deg_sgc 0.1
+    
     # cGMP Metabolism
     k_cgmp_synth 15.0  # Peak cGMP production by active sGC
     Km_pde 400         # Half-saturation for PDE metabolism
@@ -35,7 +39,7 @@ end molecule types
 
 begin seed species
     NO() NO_init
-    sGC(s~inactive) sGC_tot
+    sGC(s~inactive) 0
     cGMP() cGMP_init
     PKG(s~inactive) PKG_tot
 end seed species
@@ -80,6 +84,10 @@ begin reaction rules
     ## RESET
     sGC(s~active) -> sGC(s~inactive) k_sgc_inact
     PKG(s~active) -> PKG(s~inactive) 0.1
+
+    ## sGC TURNOVER
+    0 -> sGC(s~inactive) k_syn_sgc
+    sGC() -> 0 k_deg_sgc
 end reaction rules
 
 begin actions

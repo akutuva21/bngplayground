@@ -16,6 +16,7 @@ import { Param_nameContext } from "./BNGParser";
 import { Molecule_types_blockContext } from "./BNGParser";
 import { Molecule_type_defContext } from "./BNGParser";
 import { Molecule_defContext } from "./BNGParser";
+import { Molecule_attributesContext } from "./BNGParser";
 import { Component_def_listContext } from "./BNGParser";
 import { Component_defContext } from "./BNGParser";
 import { Keyword_as_component_nameContext } from "./BNGParser";
@@ -56,8 +57,6 @@ import { Energy_patterns_blockContext } from "./BNGParser";
 import { Energy_pattern_defContext } from "./BNGParser";
 import { Population_maps_blockContext } from "./BNGParser";
 import { Population_map_defContext } from "./BNGParser";
-import { Anchors_blockContext } from "./BNGParser";
-import { Anchor_defContext } from "./BNGParser";
 import { Actions_blockContext } from "./BNGParser";
 import { Wrapped_actions_blockContext } from "./BNGParser";
 import { Begin_actions_blockContext } from "./BNGParser";
@@ -190,6 +189,13 @@ export interface BNGParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitMolecule_def?: (ctx: Molecule_defContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `BNGParser.molecule_attributes`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitMolecule_attributes?: (ctx: Molecule_attributesContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `BNGParser.component_def_list`.
@@ -470,20 +476,6 @@ export interface BNGParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitPopulation_map_def?: (ctx: Population_map_defContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `BNGParser.anchors_block`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitAnchors_block?: (ctx: Anchors_blockContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `BNGParser.anchor_def`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitAnchor_def?: (ctx: Anchor_defContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `BNGParser.actions_block`.

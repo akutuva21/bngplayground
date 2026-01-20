@@ -20,6 +20,7 @@ begin parameters
     # Anticoagulation (Neutralization)
     k_at_inh 1.5       # Antithrombin-III neutralizing factors
     k_tpi_inh 1.0      # TFPI inhibition
+    k_deg_complex 10.0 # Rapid removal of inhibited complexes
     
     # Initials
     Prothrom_tot 1200
@@ -53,7 +54,7 @@ begin observables
     # KEY BIOLOGICAL OUTPUTS
     Molecules Clot_Mass       Fibrinogen(s~F)          # Final functional output
     Molecules Active_Thrombin Thrombin(s~A)            # Feedback driver
-    Molecules Proth_Complex   FactorX(s~A!1).FactorV(s~A!1) # Assembly platform
+    Molecules Proth_Complex   FactorX(b!1).FactorV(b!1) # Assembly platform
     Molecules Feedback_Factors FactorV(s~A)            # Priming status
     Molecules Inhibitor_Work  AT(b!+)                  # Clearance efficiency
 end observables
@@ -67,8 +68,9 @@ begin reaction rules
     # Initial Xa produces some Thrombin
     FactorX(s~A) + Prothrombin(s~U) -> FactorX(s~A) + Thrombin(s~A) 0.5
     
-    # Thrombin activates Factor V
+    # Feedback: Thrombin activates Factor V and VIII (Amplification)
     Thrombin(s~A) + FactorV(s~U) -> Thrombin(s~A) + FactorV(s~A) k_v_act
+    FactorX(s~A) + FactorV(s~U) -> FactorX(s~A) + FactorV(s~A) k_v_act  # Added starter_act
     
     # Va and Xa form Prothrombinase complex
     FactorV(s~A,b) + FactorX(s~A,b) <-> FactorV(s~A,b!1).FactorX(s~A,b!1) k_complex_va_xa,0.5
@@ -83,8 +85,9 @@ begin reaction rules
     
     ## TERMINATION Phase (Inhibition)
     # Antithrombin neutralizing active Thrombin
-    # DeleteMolecules: Final removal of the active protease
-    Thrombin(s~A) + AT(b) -> 0 k_at_inh DeleteMolecules
+    # Replaced DeleteMolecules with complex formation to track Inhibitor_Work
+    Thrombin(s~A) + AT(b) -> Thrombin(s~A!1).AT(b!1) k_at_inh
+    Thrombin(s~A!1).AT(b!1) -> 0 k_deg_complex
     
     # Factor clearing
     FactorX(s~A) -> FactorX(s~U) 0.01

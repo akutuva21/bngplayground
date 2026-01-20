@@ -45,10 +45,11 @@ export interface BNGLSpecies {
 }
 
 export interface BNGLObservable {
-  type: 'molecules' | 'species' | string;
+  type: 'molecules' | 'species' | 'counter' | string;
   name: string;
   pattern: string;
   comment?: string;
+  countFilter?: number; // For NFsim species count filtering (>N)
 }
 
 export interface BNGLCompartment {
@@ -56,6 +57,10 @@ export interface BNGLCompartment {
   dimension: number;
   size: number;
   parent?: string;
+
+  // Enhanced fields (added by CompartmentResolver)
+  resolvedVolume?: number;
+  scalingFactor?: number;
 }
 
 export interface BNGLReaction {
@@ -87,11 +92,13 @@ export interface ReactionRule {
   isBidirectional: boolean;
   constraints?: string[];
   deleteMolecules?: boolean;
+  moveConnected?: boolean;
   allowsIntramolecular?: boolean;
   isFunctionalRate?: boolean;  // True if rate contains observables/functions
   propensityFactor?: number;  // Statistical factor for degeneracy
   comment?: string;
   reactionString?: string; // String representation of the rule
+  totalRate?: boolean; // TotalRate modifier
 }
 
 export interface BNGLAction {
@@ -150,6 +157,10 @@ export interface SimulationPhase {
   // Maps to BNGL `print_functions=>1` for including function values as output columns.
   // When true, BNG prints zero-arg function values alongside observables in the GDAT.
   print_functions?: boolean;
+  // NFsim-specific options
+  utl?: number;           // Universal traversal limit
+  gml?: number;           // Global molecule limit
+  equilibrate?: number;   // Equilibration time
 }
 
 // Represents a setConcentration() call between simulation phases
@@ -198,7 +209,7 @@ export interface SSAInfluenceTimeSeries {
 export interface SimulationOptions {
   // 'default' means "follow the model's authored method/phases".
   // 'ode'/'ssa' force all phases to that method.
-  method: 'default' | 'ode' | 'ssa';
+  method: 'default' | 'ode' | 'ssa' | 'nf';
   t_end: number;
   n_steps: number;
   // ODE solver options
@@ -215,6 +226,16 @@ export interface SimulationOptions {
   print_functions?: boolean;
   sparse?: boolean;
   recordFromPhase?: number;
+  seed?: number;  // For stochastic reproducibility (SSA and NFsim)
+  maxIterations?: number;  // For network expansion
+  maxSpecies?: number;  // For network expansion
+  // NFsim-specific options
+  utl?: number;           // Universal Traversal Limit (default: auto-calculated)
+  gml?: number;           // Global Molecule Limit (default: 1000000)
+  equilibrate?: number;   // Equilibration time before simulation
+  memoryLimit?: number;   // WASM heap limit in MB (default: 512)
+  verbose?: boolean;      // Enable detailed NFsim logging
+  includeInfluence?: boolean; // Enable Dynamic Influence Network tracking (SSA only)
 }
 
 

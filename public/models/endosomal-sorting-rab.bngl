@@ -40,7 +40,7 @@ begin observables
     # KEY BIOLOGICAL OUTPUTS
     Molecules Early_Endosome  Rab5(s~GTP,loc~mem)      # Early marker
     Molecules Late_Endosome   Rab7(s~GTP,loc~mem)      # Late marker
-    Molecules Conversion_Node Rab5(s!1).Effector(b!1)   # Active signaling node
+    Molecules Conversion_Node Rab5(b!1).Effector(b!1)   # Active signaling node
     Molecules Mem_Total       Rab5(loc~mem),Rab7(loc~mem) # Membrane density
     Molecules Cyto_Pool       Rab5(loc~cyt),Rab7(loc~cyt) # Recycling pool
     Molecules Rab5_GDP_Mem    Rab5(s~GDP,loc~mem)      # Substrate for GEF
@@ -82,7 +82,7 @@ end reaction rules
 
 begin actions
     generate_network({overwrite=>1})
-    simulate({method=>"ode",t_end=>150,n_steps=>300})
+    simulate({method=>"ode",t_end=>20,n_steps=>300})
 end actions
 end model
 

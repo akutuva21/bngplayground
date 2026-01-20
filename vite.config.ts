@@ -11,9 +11,16 @@ export default defineConfig(() => {
     server: {
       port: 3000,
       host: '0.0.0.0',
+      headers: {
+        // Required for SharedArrayBuffer and WASM threading
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp'
+      }
     },
     base: '/bngplayground/',
     plugins: [react()],
+    // Include WASM files as assets
+    assetsInclude: ['**/*.wasm'],
     optimizeDeps: {
       include: [
         'react',
@@ -49,6 +56,9 @@ export default defineConfig(() => {
         // Polyfill Node.js modules for ANTLR4 browser compatibility
         'util': 'util',
         'assert': 'assert',
+        // Exclude Node.js-only files from browser build
+        './cvode_node': false,
+        './cvode_node.ts': false,
       },
       // Avoid duplicate React copies in the bundle
       dedupe: ['react', 'react-dom']
@@ -62,6 +72,9 @@ export default defineConfig(() => {
       // Intentionally remove manualChunks to let Vite/Rollup decide chunking.
       // This prevents a brittle catch-all `vendor_misc` that can mix UMD wrappers
       // with ESM bundles and produce runtime `exports`/`n` undefined errors.
+      rollupOptions: {
+        external: ['module', 'fs', 'path'],
+      }
     },
     worker: {
       // Use ES module format for workers to support code-splitting

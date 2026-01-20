@@ -63,7 +63,7 @@ begin reaction rules
     FGF(b) + FGFR(l) <-> FGF(b!1).FGFR(l!1) k_bind_fgf,0.1
     
     # Dimerization (Active trans-phosphorylation)
-    FGF(b!1).FGFR(l!1,d) + FGF(b!2).FGFR(l!2,d) <-> FGF(b!1).FGFR(l!1,d!3).FGF(b!2).FGFR(l!2,d!3) k_dimer,0.2
+    FGF(b!1).FGFR(l!1,d,s~U) + FGF(b!2).FGFR(l!2,d,s~U) <-> FGF(b!1).FGFR(l!1,d!3,s~P).FGF(b!2).FGFR(l!2,d!3,s~P) k_dimer,0.2
     
     ## HUB RELAY Stage
     # FGFR dimer recruits FRS2
@@ -93,7 +93,7 @@ end reaction rules
 
 begin actions
     generate_network({overwrite=>1})
-    simulate({method=>"ode",t_end=>70,n_steps=>300})
+    simulate({method=>"ode",t_end=>40,n_steps=>300})
 end actions
 end model
 

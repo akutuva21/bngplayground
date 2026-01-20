@@ -8,6 +8,13 @@ This workflow generates a diff of all staged and unstaged changes against the la
 
 ## Steps
 
+1. (Optional) Track new files so they are included in the diff:
+// turbo
+
+```powershell
+git add -N .
+```
+
 1. Generate the patch:
 // turbo
 
@@ -19,5 +26,5 @@ git diff HEAD > latest_changes.patch
 // turbo
 
 ```powershell
-ls latest_changes.patch
+Get-Item latest_changes.patch
 ```

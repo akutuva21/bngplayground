@@ -56,8 +56,9 @@ begin reaction rules
     MKK3(s~inactive) -> MKK3(s~active) k_stress * v_thermal()
     
     # MKK3 recruits and phosphorylates p38
-    MKK3(s~active) + p38(s~U) <-> MKK3(s~active!1).p38(s~U!1) 1.0,0.5
-    MKK3(s!1).p38(s~U!1) -> MKK3(s) + p38(s~P) k_p38_phos
+    # MKK3 recruits and phosphorylates p38
+    MKK3(s~active,b) + p38(s~U,b) <-> MKK3(s~active,b!1).p38(s~U,b!1) 1.0,0.5
+    MKK3(s~active,b!1).p38(s~U,b!1) -> MKK3(s~active,b) + p38(s~P,b) k_p38_phos
     
     ## EFFECTOR RELAY
     # p-p38 activates MAPKAPK2 (Wildcard: any p-p38 can activate)

@@ -317,7 +317,7 @@ export class BNGXMLWriter {
         const labelAttr = mol.label ? ` label="${escapeXml(mol.label)}"` : '';
         const compAttr = mol.compartment ? ` compartment="${escapeXml(mol.compartment)}"` : '';
 
-        const innerXml = componentsXml 
+        const innerXml = componentsXml
           ? `<ListOfComponents>${componentsXml}</ListOfComponents>`
           : '<ListOfComponents/>';
 
@@ -576,6 +576,29 @@ export class BNGXMLWriter {
               }
             }
           });
+        });
+      });
+    }
+
+    // Detect compartment changes
+    if (hasAnyMapping) {
+      reactantPatterns.forEach((pattern, patternIdx) => {
+        pattern.graph.molecules.forEach((mol, molIdx) => {
+          const prodRef = reactantToProduct.get(`${patternIdx}.${molIdx}`);
+          if (!prodRef) return;
+          const prodPattern = productPatterns[prodRef.patternIdx];
+          const prodMol = prodPattern?.graph.molecules[prodRef.molIdx];
+          if (!prodMol) return;
+
+          const reactCompartment = mol.compartment ?? '';
+          const prodCompartment = prodMol.compartment ?? '';
+
+          if (reactCompartment !== prodCompartment && prodCompartment) {
+            const molId = pattern.moleculeIdMap.get(molIdx);
+            if (molId) {
+              operations.push(`<ChangeCompartment id="${molId}" destination="${escapeXml(prodCompartment)}"/>`);
+            }
+          }
         });
       });
     }

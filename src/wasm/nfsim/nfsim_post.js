@@ -47,6 +47,9 @@
     if (opts.seed !== undefined) {
       args.push('-seed', String(opts.seed));
     }
+    // Default UTL to -1 (unlimited) to match NFsim's default behavior
+    const utl = opts.utl !== undefined ? opts.utl : -1;
+    args.push('-utl', String(utl));
     if (opts.cb) {
       args.push('-cb');
     }

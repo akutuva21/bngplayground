@@ -11,6 +11,7 @@ An interactive, browser-based workspace for exploring BioNetGen (BNGL) models: e
 - **Primary Solver**: CVODE (SUNDIALS) for stiff ODEs, RK4/RK45 for non-stiff systems
 - **Large Network Support**: Symmetry reduction using **Nauty** WASM for fast canonical labeling
 - **Network-Free Simulation**: Integrated **NFsim** (WASM) for efficient simulation without network generation
+  - **Multi-Compartment Support (cBNGL)**: NFsim now supports compartmentalized models with molecule transport between compartments
 - **Visual Designer**: Construct models using a structured visual interface
 - Example gallery with keyword + semantic search
 - Interactive charts (series toggle / isolate, zoom, export)
@@ -129,20 +130,6 @@ Useful entry points:
 - `components/VisualizationPanel.tsx` (tabs)
 - `services/bnglService.ts` and worker code (parse/simulate)
 - `scripts/generateEmbeddings.mjs` (build-time embeddings)
-
-## Security & Feature Flags
-
-### Functional Rates (Disabled by Default)
-
-Support for functional rates (rate laws defined as arbitrary mathematical expressions) is **disabled by default** for security reasons, as it effectively requires a sandboxed expression evaluator in the browser.
-
-We use a custom AST-based evaluator (via `jsep`) with a strict allowlist of functions and constants. However, to enable this feature in a build, you must set the following environment variable:
-
-```bash
-VITE_ENABLE_FUNCTIONAL_RATES=true npm run build
-```
-
-The application detects this flag at runtime. If disabled, any model attempting to use functional rates will throw a clear error message.
 
 ## License
 

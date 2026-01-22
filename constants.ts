@@ -631,8 +631,9 @@ export const BNG2_EXCLUDED_MODELS = new Set([
   // ========================================================
   // NFsim-only models (require network-free simulation)
   // ========================================================
-  'polymer',        // Ambiguous bond patterns in _bound rules cause NFsim crashes
-  'polymer_draft',  // Ambiguous bond patterns in _bound rules cause NFsim crashes
+  // 'polymer',        // Re-enabled after NFsim compartment support fixes
+  // 'polymer_draft',  // Re-enabled after NFsim compartment support fixes
+
 
   // ========================================================
   // Models too slow for web benchmark (large network expansion)

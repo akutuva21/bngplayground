@@ -6,7 +6,7 @@ set SCRIPT_DIR=%~dp0
 if defined NFSIM_SRC (
   set NFSIM_SRC=%NFSIM_SRC%
 ) else (
-  set NFSIM_SRC=%SCRIPT_DIR%nfsim-src
+  set NFSIM_SRC=%SCRIPT_DIR%..\..\..\nfsim
 )
 
 if not exist "%NFSIM_SRC%\src\NFsim.cpp" (
@@ -34,7 +34,7 @@ REM Configure with emcmake
 emcmake cmake "%NFSIM_SRC%" -DCMAKE_BUILD_TYPE=Release ^
  -DCMAKE_CXX_FLAGS="-O3 -fexceptions -std=c++11" ^
  -DCMAKE_C_FLAGS="-O3" ^
- -DCMAKE_EXE_LINKER_FLAGS="-s MODULARIZE=1 -s EXPORT_NAME=createNFsimModule -s EXPORTED_FUNCTIONS=['_main','_malloc','_free'] -s EXPORTED_RUNTIME_METHODS=['callMain','FS','cwrap','UTF8ToString','stringToUTF8','lengthBytesUTF8'] -s ALLOW_MEMORY_GROWTH=1 -s ENVIRONMENT=web,worker -s FORCE_FILESYSTEM=1 -s DISABLE_EXCEPTION_CATCHING=0 --post-js \"%POST_JS%\""
+ -DCMAKE_EXE_LINKER_FLAGS="-s MODULARIZE=1 -s EXPORT_NAME=createNFsimModule -s EXPORTED_FUNCTIONS=['_main','_malloc','_free'] -s EXPORTED_RUNTIME_METHODS=['callMain','FS','cwrap','UTF8ToString','stringToUTF8','lengthBytesUTF8','print','printErr'] -s ALLOW_MEMORY_GROWTH=1 -s INITIAL_MEMORY=134217728 -s MAXIMUM_MEMORY=536870912 -s STACK_SIZE=5242880 -s ASSERTIONS=2 -s ENVIRONMENT=web,worker -s FORCE_FILESYSTEM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s INVOKE_RUN=0 --post-js \"%POST_JS%\""
 if errorlevel 1 exit /b 1
 
 REM Build

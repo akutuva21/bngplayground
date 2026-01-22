@@ -1,0 +1,41 @@
+CMakeFiles/NFsim.dir/src/NFinput/TinyXML/tinyxml.cpp.o: \
+  C:\Users\Achyudhan\OneDrive\ -\ University\ of\ Pittsburgh\Desktop\Achyudhan\School\PhD\Research\BioNetGen\bionetgen-web-simulator\nfsim\src\NFinput\TinyXML\tinyxml.cpp \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\c++\v1\ctype.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\c++\v1\__config \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\c++\v1\__config_site \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\c++\v1\__configuration\abi.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\c++\v1\__configuration\compiler.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\c++\v1\__configuration\platform.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\c++\v1\__configuration\availability.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\c++\v1\__configuration\language.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\ctype.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\features.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\bits\alltypes.h \
+  C:\Users\Achyudhan\OneDrive\ -\ University\ of\ Pittsburgh\Desktop\Achyudhan\School\PhD\Research\BioNetGen\bionetgen-web-simulator\nfsim\src\NFinput\TinyXML\tinyxml.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\c++\v1\stdio.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\stdio.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\wasi\api.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\c++\v1\stddef.h \
+  C:\Users\Achyudhan\emsdk\upstream\lib\clang\22\include\stddef.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\stddef.h \
+  C:\Users\Achyudhan\emsdk\upstream\lib\clang\22\include\__stddef_header_macro.h \
+  C:\Users\Achyudhan\emsdk\upstream\lib\clang\22\include\__stddef_ptrdiff_t.h \
+  C:\Users\Achyudhan\emsdk\upstream\lib\clang\22\include\__stddef_size_t.h \
+  C:\Users\Achyudhan\emsdk\upstream\lib\clang\22\include\__stddef_wchar_t.h \
+  C:\Users\Achyudhan\emsdk\upstream\lib\clang\22\include\__stddef_null.h \
+  C:\Users\Achyudhan\emsdk\upstream\lib\clang\22\include\__stddef_nullptr_t.h \
+  C:\Users\Achyudhan\emsdk\upstream\lib\clang\22\include\__stddef_max_align_t.h \
+  C:\Users\Achyudhan\emsdk\upstream\lib\clang\22\include\__stddef_offsetof.h \
+  C:\Users\Achyudhan\emsdk\upstream\lib\clang\22\include\stdint.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\stdint.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\bits\stdint.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\compat\stdlib.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\c++\v1\stdlib.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\stdlib.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\alloca.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\compat\string.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\c++\v1\string.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\string.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\strings.h \
+  C:\Users\Achyudhan\emsdk\upstream\emscripten\cache\sysroot\include\assert.h \
+  C:\Users\Achyudhan\OneDrive\ -\ University\ of\ Pittsburgh\Desktop\Achyudhan\School\PhD\Research\BioNetGen\bionetgen-web-simulator\nfsim\src\NFinput\TinyXML\tinystr.h

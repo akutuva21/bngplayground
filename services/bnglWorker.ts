@@ -541,7 +541,8 @@ if (typeof ctx.addEventListener === 'function') {
                 gml: options.gml,
                 equilibrate: options.equilibrate,
                 timeoutMs: 300000, // 5 minutes for NFsim simulations
-                requireRuntime: true
+                requireRuntime: true,
+                verbose: true
               };
 
               // Run via encapsulated runner

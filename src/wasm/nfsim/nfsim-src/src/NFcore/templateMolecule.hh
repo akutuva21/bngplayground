@@ -230,6 +230,10 @@ namespace NFcore
 		static vector <TemplateMolecule *>::iterator tmVecIter;
 		static list <TemplateMolecule *>::iterator tmIter;
 
+		// FIX: Iteration limit for disjoint pattern matching to prevent hangs
+		static int s_disjointIterCount;
+		static const int MAX_DISJOINT_ITER = 100000;
+
 		// For tracking the reactant or product that this TemplateMolecule is
 		// transformed into
 		TemplateMolecule * mappedTm;

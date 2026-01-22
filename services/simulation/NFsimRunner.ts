@@ -17,6 +17,7 @@ export interface NFsimSimulationOptions {
   cb?: boolean;
   timeoutMs?: number;
   requireRuntime?: boolean;
+  verbose?: boolean;
 }
 
 export const validateModelForNFsim = (model: BNGLModel): ValidationResult =>
@@ -66,6 +67,7 @@ export async function runNFsimSimulation(
 
   try {
     const xml = BNGXMLWriter.write(inputModel);
+    console.log('[NFsimRunner] Generated XML:\n', xml);
     const hasSpeciesObservables = (inputModel.observables || [])
       .some((obs) => String(obs.type ?? '').toLowerCase() === 'species');
     const runOptions = {

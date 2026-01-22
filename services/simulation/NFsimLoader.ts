@@ -9,6 +9,9 @@ export interface NFsimRunOptions {
   equilibrate?: number;
   cb?: boolean;
   timeoutMs?: number;
+  verbose?: boolean;
+  progressCallback?: (line: string) => void;
+  [key: string]: any;
 }
 
 type NFsimRuntime = {

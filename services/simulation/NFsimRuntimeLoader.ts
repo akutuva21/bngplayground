@@ -239,7 +239,9 @@ export async function ensureNFsimRuntime(): Promise<NFsimRuntime | null> {
 
       if (factory && typeof factory === 'function') {
         const moduleArg = {
-          locateFile: (p: string) => (p.endsWith('.wasm') ? resolvedWasmUrl : p)
+          locateFile: (p: string) => (p.endsWith('.wasm') ? resolvedWasmUrl : p),
+          print: (msg: string) => console.log(`[NFsim Out] ${msg}`),
+          printErr: (msg: string) => console.error(`[NFsim Err] ${msg}`)
         } as Record<string, unknown>;
         (globalThis as unknown as { Module?: Record<string, unknown> }).Module = moduleArg;
         const module = await factory(moduleArg);
@@ -257,7 +259,9 @@ export async function ensureNFsimRuntime(): Promise<NFsimRuntime | null> {
         const factoryFn = (mod?.default ?? mod?.createNFsimModule ?? mod?.NFsimModule) as NFsimModuleFactory | undefined;
         if (typeof factoryFn === 'function') {
           const moduleArg = {
-            locateFile: (p: string) => (p.endsWith('.wasm') ? resolvedWasmUrl : p)
+            locateFile: (p: string) => (p.endsWith('.wasm') ? resolvedWasmUrl : p),
+            print: (msg: string) => console.log(`[NFsim Out] ${msg}`),
+            printErr: (msg: string) => console.error(`[NFsim Err] ${msg}`)
           } as Record<string, unknown>;
           (globalThis as unknown as { Module?: Record<string, unknown> }).Module = moduleArg;
           const module = await factoryFn(moduleArg);

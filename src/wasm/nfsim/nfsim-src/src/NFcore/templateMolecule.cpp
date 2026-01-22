@@ -15,6 +15,9 @@ list <TemplateMolecule *>::iterator TemplateMolecule::tmIter;
 
 int TemplateMolecule::TotalTemplateMoleculeCount=0;
 
+// FIX: Iteration counter to prevent infinite loops in disjoint pattern matching
+int TemplateMolecule::s_disjointIterCount = 0;
+
 
 /*! Only constructor for TemplateMolecules */
 TemplateMolecule::TemplateMolecule(MoleculeType * moleculeType){
@@ -84,6 +87,7 @@ TemplateMolecule::TemplateMolecule(MoleculeType * moleculeType){
 	this->moleculeType->addTemplateMolecule(this);
 
 	this->mappedTm = NULL;
+	this->compartment = NULL;  // FIX: Initialize to prevent garbage pointer values
 }
 
 
@@ -1416,6 +1420,11 @@ bool TemplateMolecule::compare(Molecule *m, ReactantContainer *rc, MappingSet *m
 	//Check connected-to molecules
 	if(n_connectedTo>0) {
 
+		// FIX: Reset iteration counter at head of disjoint pattern
+		if(head) {
+			s_disjointIterCount = 0;
+		}
+
 		vector <MappingSet *> lastMappingSets;
 		lastMappingSets.push_back(ms);
 
@@ -1453,6 +1462,21 @@ bool TemplateMolecule::compare(Molecule *m, ReactantContainer *rc, MappingSet *m
 
 			bool canMatch=false;
 			for(molIter=molList.begin(); molIter!=molList.end(); molIter++) {
+
+				// FIX: Check iteration limit to prevent infinite loops
+				s_disjointIterCount++;
+				if(s_disjointIterCount > MAX_DISJOINT_ITER) {
+					// Pattern is too complex - bail out
+					if(head) {
+						list <Molecule *> clearList;
+						m->traverseBondedNeighborhood(clearList,ReactionClass::NO_LIMIT);
+						for(list<Molecule*>::iterator clrIt=clearList.begin(); clrIt!=clearList.end(); clrIt++) {
+							(*clrIt)->isMatchedTo=0;
+						}
+					}
+					clear();
+					return false;
+				}
 
 				//if(this->uniqueTemplateID==28) { cout<<"comparing connected to: "<<endl;(*molIter)->printDetails(cout);
 				//if((*molIter)->isMatchedTo!=0) {
@@ -2182,9 +2206,3 @@ bool TemplateMolecule::isMoleculeTypeAndComponentPresent(MoleculeType * mt, int 
 	
 	return false;
 }
-
-
-
-
-
-

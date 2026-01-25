@@ -74,7 +74,7 @@ export default defineConfig(() => {
       // This prevents a brittle catch-all `vendor_misc` that can mix UMD wrappers
       // with ESM bundles and produce runtime `exports`/`n` undefined errors.
       rollupOptions: {
-        external: ['module', 'fs', 'path', '@xenova/transformers'],
+        external: ['module', '@xenova/transformers'],
       },
       // Keep standard minifier; explicit minifier selection avoids surprises
       minify: 'esbuild' as const

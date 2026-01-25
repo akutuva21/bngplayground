@@ -18,15 +18,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
 // Model directories to scan
+// NOTE: include the whole 'published-models' tree so newly added subfolders (e.g., Mallela_2022, Ordyan_2020, PyBNG) are automatically discovered.
 const MODEL_DIRS = [
   'example-models',
-  'published-models/cell-regulation',
-  'published-models/complex-models',
-  'published-models/growth-factor-signaling',
-  'published-models/immune-signaling',
-  'published-models/tutorials',
-  'published-models/native-tutorials',
-  'published-models/literature',
+  'published-models',
 ];
 
 // Initialize the embedding model (runs locally, no API needed)
@@ -237,8 +232,54 @@ function scanModels() {
  */
 async function generateEmbeddings() {
   console.log('Scanning for BNGL models...');
-  const models = scanModels();
+  let models = scanModels();
   console.log(`Found ${models.length} models.`);
+
+  // Filter published models by BNG2 verification report: only embed published models that PASS and have GDAT
+  const reportPath = path.join(ROOT, 'temp_bng_output', 'bng2_verify_published_ode_outputs_report.json');
+  let verifiedSet = null;
+  if (fs.existsSync(reportPath)) {
+    try {
+      const report = JSON.parse(fs.readFileSync(reportPath, 'utf-8'));
+      verifiedSet = new Set();
+      for (const r of report.results || []) {
+        if (r.status === 'PASS' && r.hasGdat) {
+          // Normalize rel to a path without .bngl
+          const relNoExt = (r.rel || '').replace(/\\/g, '/').replace(/\.bngl$/i, '');
+          verifiedSet.add(relNoExt);
+          // Also add id-based entry for convenience
+          if (r.id) verifiedSet.add('published-models/' + r.id);
+        }
+      }
+      console.log(`Loaded BNG2 verification report. ${verifiedSet.size} published models passed with GDAT.`);
+    } catch (e) {
+      console.warn('Failed to read BNG2 verification report:', e.message);
+      verifiedSet = null;
+    }
+  } else {
+    console.warn('BNG2 verification report not found; embedding all models. Run the verification script to filter published models.');
+  }
+
+  if (verifiedSet) {
+    const before = models.length;
+    models = models.filter(m => {
+      // For published models, require membership in verifiedSet
+      if (m.path && m.path.startsWith('published-models/')) {
+        const idNoExt = m.path.replace(/\.bngl$/, '').replace(/\\/g, '/');
+        return verifiedSet.has(idNoExt) || verifiedSet.has(m.id);
+      }
+      return true; // keep example-models unfiltered
+    });
+    console.log(`Filtered published models: ${before} -> ${models.length} (only BNG2-PASS + GDAT)`);
+  }
+
+  // Support DRY_RUN for testing the filter without running the heavy embedding step
+  if (process.env.DRY_RUN) {
+    console.log('DRY_RUN=1: would embed the following models:');
+    models.forEach(m => console.log(' -', m.id, m.path));
+    console.log('Exiting due to DRY_RUN flag.');
+    process.exit(0);
+  }
 
   const embed = await getEmbedder();
   const results = [];

@@ -59,27 +59,8 @@ export class BNGLParser {
       }
     }
 
-    // Helper to split by dot outside parentheses
-    const splitMolecules = (str: string) => {
-      const parts: string[] = [];
-      let current = '';
-      let depth = 0;
-      for (let i = 0; i < str.length; i++) {
-        const char = str[i];
-        if (char === '(') depth++;
-        else if (char === ')') depth--;
-        else if (char === '.' && depth === 0) {
-          parts.push(current);
-          current = '';
-          continue;
-        }
-        current += char;
-      }
-      if (current) parts.push(current);
-      return parts;
-    };
-
-    const moleculeStrings = splitMolecules(content);
+    // Helper to split by dot outside parentheses (use static method)
+    const moleculeStrings = BNGLParser.splitMolecules(content);
 
     for (const molStr of moleculeStrings) {
       const molecule = this.parseMolecule(molStr.trim());
@@ -132,10 +113,163 @@ export class BNGLParser {
   }
 
   /**
-   * Parse a BNGL molecule string
-   * Example: "A(b!1,c~P)" -> Molecule with name A, components b (bonded) and c (phosphorylated)
-   * Also handles "@comp:Name", "Name@comp", and tags "Name%1"
+   * Validate a BNGL pattern string without parsing it
+   * Returns null if valid, error message if invalid
    */
+  static validatePattern(bnglString: string): string | null {
+    const trimmed = bnglString.trim();
+
+    if (!trimmed) {
+      return 'Observable pattern cannot be empty';
+    }
+
+    // Check for unmatched parentheses
+    let depth = 0;
+    for (let i = 0; i < trimmed.length; i++) {
+      if (trimmed[i] === '(') depth++;
+      else if (trimmed[i] === ')') {
+        depth--;
+        if (depth < 0) {
+          return `Unmatched closing parenthesis at position ${i + 1}`;
+        }
+      }
+    }
+    if (depth > 0) {
+      return `Unmatched opening parenthesis in pattern`;
+    }
+
+    // Extract content without compartment prefix/suffix for molecule validation
+    let content = trimmed;
+
+    // Handle global compartment prefix (@cell: or @cell::)
+    const prefixMatch = content.match(/^@([A-Za-z_][A-Za-z0-9_]*):(:?)(.+)$/);
+    if (prefixMatch) {
+      // Validate compartment name
+      if (!/^[A-Za-z_]/.test(prefixMatch[1])) {
+        return `Invalid compartment name "${prefixMatch[1]}": must start with a letter or underscore`;
+      }
+      content = prefixMatch[3];
+    }
+
+    // Handle suffix compartment notation (after closing paren)
+    const suffixMatch = content.match(/^(.+\))@([A-Za-z_][A-Za-z0-9_]+)$/);
+    if (suffixMatch) {
+      // Validate compartment name
+      if (!/^[A-Za-z_]/.test(suffixMatch[2])) {
+        return `Invalid compartment name "${suffixMatch[2]}": must start with a letter or underscore`;
+      }
+      content = suffixMatch[1];
+    }
+
+    // Handle bare suffix compartment (no parens, molecule@comp)
+    const bareSuffixMatch = content.match(/^([A-Za-z_][A-Za-z0-9_]*)@([A-Za-z_][A-Za-z0-9_]+)$/);
+    if (bareSuffixMatch) {
+      // Validate compartment name
+      if (!/^[A-Za-z_]/.test(bareSuffixMatch[2])) {
+        return `Invalid compartment name "${bareSuffixMatch[2]}": must start with a letter or underscore`;
+      }
+      content = `${bareSuffixMatch[1]}()`;
+    }
+
+    // Check for unhandled @ patterns that would indicate invalid compartment notation
+    // We need to check each molecule part after splitting by dots
+    const potentialMoleculeStrings = this.splitMolecules(content);
+    for (const molStr of potentialMoleculeStrings) {
+      const trimmedMol = molStr.trim();
+      if (!trimmedMol) continue;
+
+      // Check if this molecule has an unhandled @ (compartment suffix that wasn't parsed)
+      // This happens when the compartment name starts with a digit or invalid character
+      if (trimmedMol.includes('@')) {
+        // Check if it's NOT a valid suffix compartment pattern
+        // Valid patterns: molecule@comp, molecule(comp)@comp
+        const validCompartmentMatch = trimmedMol.match(/^([A-Za-z_][A-Za-z0-9_]*)(\([^)]*\))?@([A-Za-z_][A-Za-z0-9_]+)$/);
+        if (!validCompartmentMatch) {
+          // Extract the compartment name for the error message
+          const atMatch = trimmedMol.match(/@([A-Za-z0-9_]+)/);
+          if (atMatch) {
+            return `Invalid compartment name "${atMatch[1]}": must start with a letter or underscore`;
+          }
+          return `Invalid pattern: contains unhandled "@" notation`;
+        }
+      }
+    }
+
+    // Split by dots and validate each molecule string
+    const moleculeStrings = this.splitMolecules(content);
+
+    for (const molStr of moleculeStrings) {
+      const trimmedMol = molStr.trim();
+      if (!trimmedMol) {
+        return 'Empty molecule name in pattern';
+      }
+
+      // Check for molecule-level bonds (e.g., "A(b,c)!1") - not supported
+      if (trimmedMol.includes(')!')) {
+        return `Molecule-level bonds like "${trimmedMol}" are not supported`;
+      }
+
+      // Validate molecule name (must start with letter, underscore, or wildcard *)
+      const nameMatch = trimmedMol.match(/^([A-Za-z_][A-Za-z0-9_]*|\*)/);
+      if (!nameMatch) {
+        return `Invalid molecule name "${trimmedMol}": must start with a letter, underscore, or wildcard (*)`;
+      }
+
+      // Validate characters in molecule string
+      // Allow: letters, numbers, underscore, wildcard, tilde, comma, parentheses, exclamation, question, plus, percent, at sign, hyphen, brackets, space
+      for (let i = 0; i < trimmedMol.length; i++) {
+        const char = trimmedMol[i];
+        // Characters that are valid in BNGL patterns (including wildcard *)
+        const validChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_~!?,()+%@-[ ]*';
+        if (!validChars.includes(char)) {
+          return `Invalid character "${char}" in molecule "${trimmedMol}"`;
+        }
+      }
+
+      // Additional validation: check bond labels are positive integers
+      // Match patterns like "b!123" or "b!+", "b!?"
+      const componentMatch = trimmedMol.match(/\(([^)]*)\)/);
+      if (componentMatch) {
+        const components = componentMatch[1];
+        const bondMatches = components.matchAll(/!([^!,\s)]+)/g);
+        for (const bondMatch of bondMatches) {
+          const bondLabel = bondMatch[1];
+          // Skip wildcards
+          if (bondLabel === '+' || bondLabel === '?' || bondLabel === '-') continue;
+          // Check if it's a valid positive integer
+          const bondNum = parseInt(bondLabel);
+          if (isNaN(bondNum) || bondNum <= 0) {
+            return `Invalid bond label "${bondLabel}" in molecule "${trimmedMol}": must be a positive integer`;
+          }
+        }
+      }
+    }
+
+    return null; // Valid
+  }
+
+  /**
+   * Split a BNGL string by dots outside parentheses
+   * Static version for use in validation
+   */
+  static splitMolecules(str: string): string[] {
+    const parts: string[] = [];
+    let current = '';
+    let depth = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str[i];
+      if (char === '(') depth++;
+      else if (char === ')') depth--;
+      else if (char === '.' && depth === 0) {
+        parts.push(current);
+        current = '';
+        continue;
+      }
+      current += char;
+    }
+    parts.push(current);
+    return parts;
+  }
   static parseMolecule(molStr: string): Molecule {
     if (shouldLogParser && molStr.includes('!+')) console.log(`[BNGLParser] parseMolecule input: '${molStr}'`);
     // Check for prefix notation: @comp:Name...
@@ -155,9 +289,6 @@ export class BNGLParser {
     const suffixMatch = cleanStr.match(/^([^\(]+)@([A-Za-z0-9_]+)(\(.*\))?$/);
     if (suffixMatch) {
       // This regex is simplistic, might need robustness
-      // Actually, standard BNGL puts compartment after name before parens? Or after parens?
-      // "A@cyt(b)" or "A(b)@cyt"? BioNetGen usually "A@cyt(b)".
-      // Let's stick to the simpler regex for now:
     }
 
     // Extract molecule label (e.g., A(b)!1%2) outside parentheses
@@ -176,12 +307,26 @@ export class BNGLParser {
     }
 
     // Parse name and components
-    const match = baseStr.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?(?:@([A-Za-z0-9_]+))?\s*$/);
+    // FIX: Molecule name must start with letter or underscore (not number or wildcard)
+    // Allow '*' for wildcard molecule patterns
+    const match = baseStr.match(/^\s*([A-Za-z_*][A-Za-z0-9_*]*)\s*(?:\(([^)]*)\))?(?:@([A-Za-z0-9_]+))?\s*$/);
     if (!match) {
+      // Check if this is a wildcard-only molecule like "*"
+      if (baseStr.trim() === '*') {
+        const molecule = new Molecule('*', [], compartment);
+        if (label) molecule.label = label;
+        return molecule;
+      }
       // Molecule without components, e.g., "A"
-      const molecule = new Molecule(baseStr, [], compartment);
-      if (label) molecule.label = label;
-      return molecule;
+      // Validate name starts with letter or underscore (not number)
+      const simpleMatch = baseStr.trim().match(/^[A-Za-z_][A-Za-z0-9_]*$/);
+      if (simpleMatch) {
+        const molecule = new Molecule(baseStr, [], compartment);
+        if (label) molecule.label = label;
+        return molecule;
+      }
+      // Invalid molecule name
+      throw new Error(`Invalid molecule name: "${baseStr}". Must start with a letter or underscore.`);
     }
 
     const name = match[1];
@@ -227,14 +372,19 @@ export class BNGLParser {
     const states = stateParts.slice(1);
     const component = new Component(name, states);
     if (states.length > 0) component.state = states[0];
+    // FIX: Handle '?' or '*' as "any state" wildcard in BNGL
+    if (component.state === '*' || component.state === '?') {
+      component.state = '?';
+    }
 
     // Handle ALL bonds (for multi-site bonding like !1!2)
     for (const bondPart of bondParts) {
       if (bondPart === '+' || bondPart === '?' || bondPart === '-') {
         component.wildcard = bondPart;
       } else {
+        // FIX: Validate bond label is a positive integer
         const bond = parseInt(bondPart);
-        if (!isNaN(bond)) {
+        if (!isNaN(bond) && bond > 0) {
           component.edges.set(bond, -1);
         }
       }
@@ -421,25 +571,17 @@ export class BNGLParser {
       if (!line) continue;
 
       // Handle format: [index] [label:] species_pattern concentration_expression
-      // The species pattern is a BNGL molecule pattern (contains letters, digits, parens, dots, bangs, tildes, underscores)
-      // The concentration expression follows and can contain spaces (e.g., "a + b", "func(x)")
-
-      // First, skip optional leading index (pure digits)
       let remaining = line;
       const leadingMatch = remaining.match(/^(\d+)\s+/);
       if (leadingMatch) {
         remaining = remaining.slice(leadingMatch[0].length);
       }
 
-      // Skip optional label (ends with colon)
       const labelMatch = remaining.match(/^(\S+:)\s+/);
       if (labelMatch) {
         remaining = remaining.slice(labelMatch[0].length);
       }
 
-      // Now we have: species_pattern concentration_expression
-      // The species pattern is a contiguous BNGL pattern (no spaces)
-      // It ends at the first whitespace, then the rest is the concentration expression
       const firstSpace = remaining.search(/\s/);
       if (firstSpace === -1) continue;  // No concentration specified
 
@@ -452,6 +594,51 @@ export class BNGLParser {
       seed.set(speciesStr, amt);
     }
     return seed;
+  }
+
+  /**
+   * Extract parameter names used in the seed species block of a BNGL model
+   * @param bnglCode - The full BNGL source code
+   * @returns Array of parameter names used in seed species
+   */
+  static getSeedParameters(bnglCode: string): string[] {
+    if (!bnglCode) return [];
+
+    // Find the seed species block
+    const seedMatch = bnglCode.match(/begin\s+seed\s+species[\s\S]*?end\s+seed\s+species/i);
+    if (!seedMatch) return [];
+
+    const block = seedMatch[0];
+    const parameterNames = new Set<string>();
+
+    // Parse each line in the block
+    for (const raw of block.split('\n')) {
+      const line = raw.split('#')[0].trim();
+      if (!line || line.toLowerCase().startsWith('begin') || line.toLowerCase().startsWith('end')) continue;
+
+      // Handle format: [index] [label:] species_pattern concentration_expression
+      let remaining = line;
+      const leadingMatch = remaining.match(/^(\d+)\s+/);
+      if (leadingMatch) remaining = remaining.slice(leadingMatch[0].length);
+
+      const labelMatch = remaining.match(/^(\S+:)\s+/);
+      if (labelMatch) remaining = remaining.slice(labelMatch[0].length);
+
+      const firstSpace = remaining.search(/\s/);
+      if (firstSpace === -1) continue;
+
+      const concentrationStr = remaining.slice(firstSpace).trim();
+      if (!concentrationStr) continue;
+
+      // Extract all potential identifiers from the concentration expression
+      // BNGL identifiers start with a letter/underscore and contain letters/digits/underscores
+      const idMatches = concentrationStr.matchAll(/\b([A-Za-z_][A-Za-z0-9_]*)\b/g);
+      for (const match of idMatches) {
+        parameterNames.add(match[1]);
+      }
+    }
+
+    return Array.from(parameterNames);
   }
 
   /**
@@ -473,10 +660,8 @@ export class BNGLParser {
         return NaN;
       }
 
-      // Check if we need high-precision evaluation (e.g. for Repressilator parameters)
-      // Only use if extreme values are present to avoid overhead
+      // Check if we need high-precision evaluation
       if (needsHighPrecision(parameters)) {
-        // Construct combined parameter map including observables as 1.0
         let evalParams = parameters;
         if (observables) {
           evalParams = new Map(parameters);
@@ -493,42 +678,40 @@ export class BNGLParser {
         if (!isNaN(result)) {
           return result;
         }
-        // If high precision fails (e.g. unknown function), fall back to standard
       }
 
-      // Replace parameter names with values
+      // Replace entity names (parameters and observables) with values
       let evaluable = expr;
 
-      // Sort parameters by length (longest first) to avoid partial replacements
-      const sortedParams = Array.from(parameters.entries()).sort((a, b) => b[0].length - a[0].length);
-
-      for (const [name, value] of sortedParams) {
-        // Use word boundary but allow underscores - escape special regex chars
-        const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`\\b${escapedName}\\b`, 'g');
-        // Wrap negative numbers and NaN in parentheses to avoid syntax errors
-        // e.g., -a becomes -(-1000) not --1000, and NaN expressions fail gracefully
-        const valueStr = (value < 0 || isNaN(value)) ? `(${value})` : value.toString();
-        evaluable = evaluable.replace(regex, valueStr);
+      // 1. Collect all entities to replace
+      const entities = new Map<string, number>();
+      for (const [name, value] of parameters.entries()) entities.set(name, value);
+      if (observables) {
+        if (observables instanceof Set) {
+          for (const name of observables) if (!entities.has(name)) entities.set(name, 1.0);
+        } else {
+          for (const [name, value] of observables.entries()) if (!entities.has(name)) entities.set(name, value);
+        }
       }
 
-      // If observables are provided, replace observable names with placeholder values (1)
-      // This allows rate expressions with observables to validate syntactically
-      if (observables) {
-        const obsNames = observables instanceof Set
-          ? Array.from(observables)
-          : Array.from(observables.keys());
+      // 2. Sort entities by length (longest first) to avoid partial replacement issues
+      const sortedEntities = Array.from(entities.entries()).sort((a, b) => b[0].length - a[0].length);
 
-        // Sort by length (longest first)
-        obsNames.sort((a, b) => b.length - a.length);
+      // 3. Perform replacements (longest names first)
+      for (const [name, value] of sortedEntities) {
+        const valueStr = (value < 0 || isNaN(value)) ? `(${value})` : value.toString();
 
-        for (const name of obsNames) {
-          const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          // Match observable name, optionally followed by ()
-          const regex = new RegExp(`\\b${escapedName}\\b(?:\\s*\\(\\s*\\))?`, 'g');
-          // Use 1 as placeholder to avoid division by zero issues
-          evaluable = evaluable.replace(regex, '1');
-        }
+        // Escape name for use in regex
+        const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        // Match name with word boundaries if it's a simple identifier, 
+        // otherwise match it literally.
+        const isSimpleName = /^[A-Za-z_][A-Za-z0-9_]*$/.test(name);
+        const regex = isSimpleName
+          ? new RegExp(`\\b${escapedName}\\b`, 'g')
+          : new RegExp(escapedName, 'g');
+
+        evaluable = evaluable.replace(regex, valueStr);
       }
 
       // Convert BNGL operators to JavaScript
@@ -570,18 +753,15 @@ export class BNGLParser {
       // Also check if any custom function is used
       if (functions) {
         for (const fname of functions.keys()) {
-           // Regex to check if fname( is in expression
-           // Escape fname
-           const escaped = fname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-           if (new RegExp(`\\b${escaped}\\s*\\(`, 'g').test(evaluable)) {
-             needsHP = true;
-             break;
-           }
+          const escaped = fname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          if (new RegExp(`\\b${escaped}\\s*\\(`, 'g').test(evaluable)) {
+            needsHP = true;
+            break;
+          }
         }
       }
 
       if (needsHP) {
-        // Force high precision evaluator (ANTLR-based) for these complex functions
         let evalParams = parameters;
         if (observables) {
           evalParams = new Map(parameters);

@@ -12,7 +12,7 @@ import { SimulationResults } from '../../types';
 
 export interface DynamicObservableDefinition {
   name: string;
-  pattern: string;  // BNGL pattern like "A(b!+)" or "A.B"
+  pattern: string;  // BNGL expression like "2 * A(b!+) + B_total"
   type: 'molecules' | 'species';  // molecules counts with multiplicity, species counts once
 }
 
@@ -21,6 +21,16 @@ export interface ComputedObservableResult {
   values: number[];  // one value per time point
   matchingSpeciesCount: number;
 }
+
+/**
+ * Robust regex for identifying potential BNGL patterns and parameters in an expression.
+ * This regex is designed to avoid capturing standalone mathematical operators like '*' as molecules.
+ * - Captures identifiers starting with letters or underscores.
+ * - Allows molecule wildcards '*' ONLY IF followed by '(', '.', or '@' (to distinguish from multiplication).
+ * - Captures complex dot-separated patterns whole.
+ * - Captures scientific notation numbers.
+ */
+const TOKEN_CANDIDATE_REGEX = /(?:[A-Za-z_][A-Za-z0-9_*]*|\*(?=\()|\*(?=\.)|\*(?=@))(?:\([^)]*\))?(?:@[A-Za-z0-9_]+)?(?:\s*\.\s*[A-Za-z_*][A-Za-z0-9_*]*(?:\([^)]*\))?(?:@[A-Za-z0-9_]+)?)*|[-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?/g;
 
 /**
  * Parse and validate a BNGL observable pattern
@@ -63,29 +73,26 @@ export function computeObservableValue(
     const speciesName = speciesNames[i];
     const conc = concentrations[i];
     
-    // Get or parse the species graph
+    if (conc === 0) continue; 
+    
     let speciesGraph = speciesGraphs.get(speciesName);
     if (!speciesGraph) {
       try {
         speciesGraph = BNGLParser.parseSpeciesGraph(speciesName);
         speciesGraphs.set(speciesName, speciesGraph);
       } catch (e: any) {
-        // BUG FIX: Log warning for unparseable species (don't silently skip)
         console.warn(`[computeObservableValue] Failed to parse species '${speciesName}': ${e.message}`);
         continue;
       }
     }
     
-    // Find matches
     const matches = GraphMatcher.findAllMaps(pattern, speciesGraph);
     
     if (matches.length > 0) {
       matchCount++;
       if (type === 'molecules') {
-        // Count with multiplicity (number of matches)
         value += conc * matches.length;
       } else {
-        // Count species once
         value += conc;
       }
     }
@@ -96,72 +103,138 @@ export function computeObservableValue(
 
 /**
  * Compute a dynamic observable across all time points in simulation results
- * 
- * @param definition - The observable definition (name and pattern)
- * @param results - Simulation results with species concentrations
- * @param speciesNames - Ordered list of species names (matching column order in results)
- * @returns Computed values for each time point
+ * Supports mixed math expressions and BNGL patterns
  */
 export function computeDynamicObservable(
   definition: DynamicObservableDefinition,
   results: SimulationResults,
-  speciesNames: string[]
+  speciesNames: string[],
+  parameters: Map<string, number> = new Map()
 ): ComputedObservableResult {
-  // Parse the pattern once
-  const pattern = parseObservablePattern(definition.pattern);
+  const expression = definition.pattern;
   
-  // Cache for parsed species graphs
+  interface TokenHit {
+    text: string;
+    index: number;
+    values?: number[];
+  }
+  
+  const hits: TokenHit[] = [];
+  let match;
+  // Reset regex index for safety
+  TOKEN_CANDIDATE_REGEX.lastIndex = 0;
+  while ((match = TOKEN_CANDIDATE_REGEX.exec(expression)) !== null) {
+      const text = match[0].trim();
+      // Only keep hits that are not numbers (parameters or BNGL patterns)
+      if (text && isNaN(Number(text))) {
+          hits.push({ text: match[0], index: match.index });
+      }
+  }
+
   const speciesGraphCache = new Map<string, SpeciesGraph>();
-  
-  const values: number[] = [];
-  let totalMatches = 0;
-  
-  // CRITICAL: Use speciesData, not data (data has observable values, speciesData has species concentrations)
-  const speciesDataPoints = results.speciesData;
-  if (!speciesDataPoints || speciesDataPoints.length === 0) {
-    console.warn('[computeDynamicObservable] No speciesData available in results');
-    // Return zeros if no species data
-    return {
-      name: definition.name,
-      values: new Array(results.data.length).fill(0),
-      matchingSpeciesCount: 0
-    };
-  }
-  
-  // Process each time point
-  for (const dataPoint of speciesDataPoints) {
-    // Extract concentrations in species order
-    const concentrations = speciesNames.map(name => {
-      const val = dataPoint[name];
-      return typeof val === 'number' ? val : 0;
-    });
+  const mathFuncs = new Set(['exp', 'log', 'log10', 'sqrt', 'abs', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'min', 'max', 'floor', 'ceil']);
+  const uniqueTokenValues = new Map<string, number[]>();
+
+  for (const hit of hits) {
+    const token = hit.text.trim();
+    if (uniqueTokenValues.has(token)) {
+        hit.values = uniqueTokenValues.get(token);
+        continue;
+    }
     
-    const { value, matchCount } = computeObservableValue(
-      pattern,
-      speciesNames,
-      speciesGraphCache,
-      concentrations,
-      definition.type
-    );
+    if (parameters.has(token)) continue;
+    if (mathFuncs.has(token.toLowerCase())) continue;
     
-    values.push(value);
-    totalMatches = Math.max(totalMatches, matchCount);
+    if (results.headers && results.headers.includes(token)) {
+      const values = results.data.map(p => (p[token] as number) || 0);
+      uniqueTokenValues.set(token, values);
+      hit.values = values;
+      continue;
+    }
+
+    try {
+      const pattern = parseObservablePattern(token);
+      const values: number[] = new Array(results.data.length).fill(0);
+      const speciesData = results.speciesData;
+      
+      if (speciesData && speciesData.length > 0) {
+        for (let t = 0; t < speciesData.length; t++) {
+          const concentrations = speciesNames.map(name => (speciesData[t][name] as number) || 0);
+          const { value } = computeObservableValue(pattern, speciesNames, speciesGraphCache, concentrations, definition.type);
+          values[t] = value;
+        }
+      }
+      
+      uniqueTokenValues.set(token, values);
+      hit.values = values;
+    } catch (e) {
+      // Not a valid pattern, let it pass through to evaluateExpression as a possible parameter
+    }
   }
+
+  const tCount = results.data.length;
+  const finalValues: number[] = new Array(tCount);
   
+  for (let t = 0; t < tCount; t++) {
+    let evalStr = expression;
+    const sortedHits = [...hits].sort((a,b) => b.index - a.index);
+    
+    for (const hit of sortedHits) {
+        if (hit.values) {
+            const val = hit.values[t];
+            const valStr = val < 0 ? `(${val})` : val.toString();
+            evalStr = evalStr.slice(0, hit.index) + valStr + evalStr.slice(hit.index + hit.text.length);
+        }
+    }
+
+    const result = BNGLParser.evaluateExpression(evalStr, parameters);
+    finalValues[t] = isNaN(result) ? 0 : result;
+  }
+
   return {
     name: definition.name,
-    values,
-    matchingSpeciesCount: totalMatches
+    values: finalValues,
+    matchingSpeciesCount: uniqueTokenValues.size
   };
 }
 
 /**
- * Check if a pattern is valid BNGL syntax
+ * Check if a pattern/expression is valid
  * Returns null if valid, error message if invalid
  */
 export function validateObservablePattern(pattern: string): string | null {
+  if (!pattern || !pattern.trim()) return 'Expression cannot be empty';
+  
   try {
-    parseObservablePattern(pattern);
+    let lastIndex = 0;
+    let match;
+    const mathFuncs = new Set(['exp', 'log', 'log10', 'sqrt', 'abs', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'min', 'max', 'floor', 'ceil']);
+
+    TOKEN_CANDIDATE_REGEX.lastIndex = 0;
+    while ((match = TOKEN_CANDIDATE_REGEX.exec(pattern)) !== null) {
+      // Check for undiscovered characters between matches (must be math operators or spaces)
+      const skipped = pattern.slice(lastIndex, match.index).trim();
+      if (skipped && !/^[+\-*/^(),\s]+$/.test(skipped)) {
+          return `Invalid syntax: unexpected characters "${skipped}" between components`;
+      }
+      lastIndex = match.index + match[0].length;
+
+      const token = match[0].trim();
+      if (!token || !isNaN(Number(token))) continue;
+      if (mathFuncs.has(token.toLowerCase())) continue;
+      
+      if (/[().!~@*]/.test(token)) {
+        const error = BNGLParser.validatePattern(token);
+        if (error) return `Invalid BNGL pattern "${token}": ${error}`;
+      }
+    }
+    
+    // Check remainder for trailing invalid syntax
+    const remainder = pattern.slice(lastIndex).trim();
+    if (remainder && !/^[+\-*/^(),\s]+$/.test(remainder)) {
+        return `Invalid syntax: unexpected characters "${remainder}" at end of expression`;
+    }
+
     return null;
   } catch (e: any) {
     return e.message;

@@ -67,7 +67,8 @@ export async function runNFsimSimulation(
 
   try {
     const xml = BNGXMLWriter.write(inputModel);
-    console.log('[NFsimRunner] Generated XML:\n', xml);
+    const VERBOSE_NFSIM_DEBUG = false; // set true to enable NFsim runner debug
+    if (VERBOSE_NFSIM_DEBUG) console.log('[NFsimRunner] Generated XML:\n', xml);
     const hasSpeciesObservables = (inputModel.observables || [])
       .some((obs) => String(obs.type ?? '').toLowerCase() === 'species');
     const runOptions = {
@@ -96,7 +97,7 @@ export async function runNFsimSimulation(
         
         // Log to worker console so we can see it in dev tools
         if (payload.simulationTime !== undefined) {
-           console.log(`[NF Progress] t=${payload.simulationTime.toFixed(4)}`);
+           if (VERBOSE_NFSIM_DEBUG) console.log(`[NF Progress] t=${payload.simulationTime.toFixed(4)}`);
         }
 
         (self as any).postMessage({ id: jobId ?? -1, type: 'progress', payload });

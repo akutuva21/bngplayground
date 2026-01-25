@@ -26,7 +26,10 @@ export class Molecule {
    * Format: Name(comp1,comp2~state!1)@compartment
    */
   toString(): string {
-    const compStr = this.components.map(c => c.toString()).join(',');
+    // Sort components by name for a more stable string representation
+    // BUT only if they aren't already sorted by some other logic
+    const sortedComps = [...this.components].sort((a, b) => a.name.localeCompare(b.name));
+    const compStr = sortedComps.map(c => c.toString()).join(',');
     const compSuffix = compStr ? `(${compStr})` : (this.hasExplicitEmptyComponentList ? '()' : '');
     const compartmentSuffix = this.compartment ? `@${this.compartment}` : '';
     if (compStr || this.hasExplicitEmptyComponentList) {

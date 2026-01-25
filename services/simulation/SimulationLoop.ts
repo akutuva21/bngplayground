@@ -6,6 +6,7 @@
  */
 
 import { BNGLModel, SimulationOptions, SimulationResults, SimulationPhase, SSAInfluenceData, SSAInfluenceTimeSeries } from '../../types.js';
+import { BNGLParser } from '../../src/services/graph/core/BNGLParser.js';
 import { toBngGridTime } from '../parity/ParityService.js';
 import { countPatternMatches, isSpeciesMatch, isFunctionalRateExpr } from '../parity/PatternMatcher.js';
 import { evaluateFunctionalRate, evaluateExpressionOrParse, loadEvaluator } from './ExpressionEvaluator.js';
@@ -69,12 +70,13 @@ export async function simulate(
     postMessage: (msg: any) => void
   }
 ): Promise<SimulationResults> {
-  console.log('[DEBUG_TRACE] Entering simulate function');
+  const VERBOSE_SIM_DEBUG = false; // set true to enable verbose simulation debug
+  if (VERBOSE_SIM_DEBUG) console.log('[DEBUG_TRACE] Entering simulate function');
   const simulationStartTime = performance.now();
   // ... using simulationStartTime later ...
   callbacks.checkCancelled();
-  console.log('[NetworkGen] ⏱️ TIMING: Network generation took 0ms (pre-generated)'); // Placeholder for parity, network gen happens before simulate
-  console.log('[Worker] Starting simulation with', inputModel.species.length, 'species,', inputModel.reactions?.length, 'reactions, and', inputModel.reactionRules?.length ?? 0, 'rules');
+  if (VERBOSE_SIM_DEBUG) console.log('[NetworkGen] ⏱️ TIMING: Network generation took 0ms (pre-generated)'); // Placeholder for parity, network gen happens before simulate
+  if (VERBOSE_SIM_DEBUG) console.log('[Worker] Starting simulation with', inputModel.species.length, 'species,', inputModel.reactions?.length, 'reactions, and', inputModel.reactionRules?.length ?? 0, 'rules');
 
   // STRICT PARITY: Output time grid management
   // ... (Managed by toBngGridTime)
@@ -156,6 +158,21 @@ export async function simulate(
     }
 
     let rate = typeof r.rateConstant === 'number' ? r.rateConstant : parseFloat(String(r.rateConstant));
+
+    // If rate couldn't be parsed to a number but isn't a functional rate, try to evaluate
+    // it as a static expression using model parameters (BNGL-style expression evaluation).
+    if ((isNaN(rate) || !isFinite(rate)) && !isFunctionalRate && typeof rateExpr === 'string') {
+      try {
+        const paramMap = new Map(Object.entries(model.parameters || {}));
+        const evalVal = BNGLParser.evaluateExpression(rateExpr, paramMap, new Set());
+        if (!Number.isNaN(evalVal) && Number.isFinite(evalVal)) {
+          rate = evalVal;
+        }
+      } catch (e) {
+        // ignore and fallback
+      }
+    }
+
     if (isNaN(rate) || !isFinite(rate)) {
       if (!isFunctionalRate) {
         console.warn('[Worker] Invalid rate constant for reaction:', r.rate, '- using 0');
@@ -195,7 +212,7 @@ export async function simulate(
 
   const functionalRateCount = concreteReactions.filter(r => r.isFunctionalRate).length;
   if (functionalRateCount > 0 || shouldPrintFunctions) {
-    console.log(`[Worker] Functional rates/functions enabled (Reactions: ${functionalRateCount}, Printing Functions: ${shouldPrintFunctions})`);
+    if (VERBOSE_SIM_DEBUG) console.log(`[Worker] Functional rates/functions enabled (Reactions: ${functionalRateCount}, Printing Functions: ${shouldPrintFunctions})`);
     if (!getFeatureFlags().functionalRatesEnabled) {
       console.error('[Worker] Functional rates temporarily disabled pending security review');
       throw new Error('Functional rates temporarily disabled pending security review');
@@ -210,7 +227,9 @@ export async function simulate(
   }
 
   // 3. Pre-process Observables
-  const concreteObservables = model.observables.map(obs => {
+  // Prefer concrete observables attached to the model (produced earlier by NetworkExpansion). If not present,
+  // fall back to dynamic matching here (legacy behavior).
+  const concreteObservables = (model as any).concreteObservables ? (model as any).concreteObservables : model.observables.map(obs => {
     const splitPatternsSafe = (patternStr: string): string[] => {
       const commaChunks: string[] = [];
       let current = '';
@@ -276,12 +295,6 @@ export async function simulate(
           }
         } else {
           const matchCount = countPatternMatches(s.name, pat);
-          if (obs.name.includes('Active_RIGI') || obs.name.includes('Active_MAVS')) {
-            // if (matchCount > 0) console.log(`[SimDebug2] Matched: ${s.name} for ${obs.name} (Count: ${matchCount})`);
-            // // Only log failure if it looks like it SHOULD match (to reduce spam)
-            // else if (s.name.includes('RIGI') && pat.includes('RIGI')) console.log(`[SimDebug2] Failed: ${s.name} vs ${pat}`);
-            // else if (s.name.includes('MAVS') && pat.includes('MAVS')) console.log(`[SimDebug2] Failed: ${s.name} vs ${pat}`);
-          }
           count += matchCount;
         }
       }
@@ -340,6 +353,13 @@ export async function simulate(
     }
   });
 
+  // Minimal runtime debug to avoid noisy console output
+  try {
+    if (VERBOSE_SIM_DEBUG) console.log('[Worker] Model name:', model.name);
+  } catch (e) {
+    /* ignore */
+  }
+
   // DEBUG: Check for corrupted parameters
   if (model.parameters) {
     const debugParams = ['h2', 'q0_bax', 'h1', 's1', 'DNA_DSB_max'];
@@ -350,7 +370,17 @@ export async function simulate(
     if (corrupted.length > 0) {
       console.error(`[Worker] CORRUPTED PARAMETERS DETECTED at start: ${corrupted.map(p => `${p}=${model.parameters[p]}`).join(', ')}`);
     } else {
-      console.log(`[Worker] Key parameters check passed: h2=${model.parameters['h2']}, h1=${model.parameters['h1']}`);
+      if (VERBOSE_SIM_DEBUG) console.log(`[Worker] Key parameters check passed: h2=${model.parameters['h2']}, h1=${model.parameters['h1']}`);
+
+    // Additional debug for stat3: show k_phos_max and Km_phos
+    if (model.name && model.name.toLowerCase().includes('stat3')) {
+      console.log('[Worker] stat3 params:', {
+        k_phos_max: model.parameters['k_phos_max'],
+        Km_phos: model.parameters['Km_phos'],
+        k_trans_max: model.parameters['k_trans_max']
+      });
+      console.log('[Worker] stat3 paramExpressions:', model.paramExpressions);
+      console.log('[Worker] stat3 parameters keys:', Object.keys(model.parameters || {}).length, Object.keys(model.paramExpressions || {}).length);
     }
   }
 
@@ -665,10 +695,27 @@ export async function simulate(
           callbacks.checkCancelled();
           if (recordThisPhase) {
             const outT = toBngGridTime(globalTime, phaseTEnd, phaseNSteps, nextOutIdx);
-            const obsValues = evaluateObservablesFast(state);
+            const obsValues = evaluateObservablesFast(y);
+            // Debug: log early outputs (capture t<=0.6 to inspect early dynamics)
+            try {
+              if (outT <= 0.6) {
+                if (VERBOSE_SIM_DEBUG) {
+                  if (obsValues['Total_pSTAT3'] === undefined) console.log('[Worker Debug] Output obs at t=', outT, 'Total_pSTAT3 is MISSING from obsValues, keys:', Object.keys(obsValues));
+                  else console.log('[Worker Debug] Output obs at t=', outT, 'Total_pSTAT3=', obsValues['Total_pSTAT3'], 'Active_Dimer=', obsValues['Active_Dimer']);
+                }
+                // Also list species with nonzero pSTAT3 concentrations
+                const nonzeroP = [] as any[];
+                for (let si = 0; si < model.species.length; si++) {
+                  if (y[si] > 0 && model.species[si].name.includes('s~P')) nonzeroP.push({ name: model.species[si].name, state: y[si] });
+                }
+                if (VERBOSE_SIM_DEBUG) console.log('[Worker Debug] Nonzero pSTAT3 species at t=', outT, nonzeroP.slice(0,10));
+              }
+            } catch (e) {
+              console.warn('[Worker Debug] Failed to log early output obs:', e?.message ?? e);
+            }
             data.push({ time: outT, ...obsValues, ...evaluateFunctionsForOutput(obsValues) });
             const sp: Record<string, number> = { time: outT };
-            for (let k = 0; k < numSpecies; k++) sp[speciesHeaders[k]] = state[k];
+            for (let k = 0; k < numSpecies; k++) sp[speciesHeaders[k]] = y[k];
             speciesData.push(sp);
           }
           nextOutIdx += 1;
@@ -679,10 +726,10 @@ export async function simulate(
       while (nextTOut <= phaseTEnd + 1e-12) {
         if (recordThisPhase) {
           const outT = toBngGridTime(globalTime, phaseTEnd, phaseNSteps, nextOutIdx);
-          const obsValues = evaluateObservablesFast(state);
+          const obsValues = evaluateObservablesFast(y);
           data.push({ time: outT, ...obsValues, ...evaluateFunctionsForOutput(obsValues) });
           const sp: Record<string, number> = { time: outT };
-          for (let k = 0; k < numSpecies; k++) sp[speciesHeaders[k]] = state[k];
+          for (let k = 0; k < numSpecies; k++) sp[speciesHeaders[k]] = y[k];
           speciesData.push(sp);
         }
         nextOutIdx += 1;
@@ -711,17 +758,17 @@ export async function simulate(
 
 
   // Debug: trace ODESolver loading
-  console.log('[Worker Debug] SimulationLoop: About to import ODESolver');
+  if (VERBOSE_SIM_DEBUG) console.log('[Worker Debug] SimulationLoop: About to import ODESolver');
   let createSolver: any;
   try {
     const mod = await import('../../services/ODESolver.js');
     createSolver = mod.createSolver;
-    console.log('[Worker Debug] SimulationLoop: Successfully imported ODESolver');
+    if (VERBOSE_SIM_DEBUG) console.log('[Worker Debug] SimulationLoop: Successfully imported ODESolver');
   } catch (err) {
     console.error('[Worker Debug] SimulationLoop: Failed to import ODESolver', err);
     throw err;
   }
-  const debugDerivs = (globalThis as any).debugDerivs || false;
+  const debugDerivs = VERBOSE_SIM_DEBUG || (globalThis as any).debugDerivs || false;
   const canJIT = typeof Function !== 'undefined';
 
   let derivatives: (y: Float64Array, dydt: Float64Array) => void;
@@ -760,6 +807,118 @@ export async function simulate(
 
     reactionReactingVolumes[i] = minVol;
   });
+
+  // Debug: compute initial production rates for nuc pSTAT3 species once reaction volumes are available
+  try {
+    const pstatIndices: number[] = [];
+    model.species.forEach((s, idx) => {
+      if (s.name.includes('s~P') && s.name.includes('loc~nuc')) pstatIndices.push(idx);
+    });
+    if (pstatIndices.length > 0) {
+      const prodRates: Record<string, number> = {};
+      for (const idx of pstatIndices) prodRates[model.species[idx].name] = 0;
+      for (let i = 0; i < concreteReactions.length; i++) {
+        const rxn = concreteReactions[i];
+        let rate = rxn.rateConstant;
+        if (rxn.isFunctionalRate && rxn.rateExpression) {
+          try {
+            rate = evaluateFunctionalRate(rxn.rateExpression, model.parameters || {}, {}, model.functions, undefined, undefined);
+          } catch {
+            rate = rxn.rateConstant;
+          }
+        }
+        const velocityBase = rate * rxn.propensityFactor * reactionReactingVolumes[i];
+        let multiplicative = 1;
+        for (let j = 0; j < rxn.reactants.length; j++) multiplicative *= state[rxn.reactants[j]];
+        const velocity = velocityBase * multiplicative;
+        if (velocity !== 0) {
+          for (let j = 0; j < rxn.products.length; j++) {
+            const prodIdx = rxn.products[j];
+            if (pstatIndices.includes(prodIdx)) {
+              prodRates[model.species[prodIdx].name] += velocity * (rxn.productStoichiometries ? rxn.productStoichiometries[j] : 1);
+            }
+          }
+        }
+      }
+      if (VERBOSE_SIM_DEBUG) console.log('[Worker Debug] Initial production rates for nuc pSTAT3 species (post-vol calc):', JSON.stringify(prodRates, null, 2));
+
+      // Also list reactions that produce pSTAT3 (k, expr, reactants, reactant initial values)
+      const producingReactions: any[] = [];
+      for (let i = 0; i < concreteReactions.length; i++) {
+        const rxn = concreteReactions[i];
+        for (let j = 0; j < rxn.products.length; j++) {
+          const pIdx = rxn.products[j];
+          if (model.species[pIdx].name.includes('s~P') && model.species[pIdx].name.includes('loc~nuc')) {
+            // Compute numeric rate for functional/static rates (using minimal context)
+            let rateNum = rxn.rateConstant;
+            if (rxn.isFunctionalRate && rxn.rateExpression) {
+              try {
+                // provide basic observable and parameter context (no rxnContext) for initial probe
+                rateNum = evaluateFunctionalRate(rxn.rateExpression, model.parameters || {}, {}, model.functions, undefined, undefined);
+              } catch {
+                rateNum = rxn.rateConstant;
+              }
+            }
+
+            const reactantIndices = Array.from(rxn.reactants);
+            const reactantNames = reactantIndices.map(r => model.species[r].name);
+            const reactantValues = reactantIndices.map(r => state[r]);
+            const multiplicative = reactantValues.reduce((acc, v) => acc * v, 1);
+            const velocityBase = rateNum * rxn.propensityFactor * reactionReactingVolumes[i];
+            const velocity = velocityBase * multiplicative;
+
+            producingReactions.push({
+              idx: i,
+              k: rxn.rateConstant,
+              rateNum,
+              expr: rxn.rateExpression,
+              isFunctional: rxn.isFunctionalRate,
+              reactants: reactantNames,
+              reactantValues,
+              multiplicative,
+              velocityBase,
+              velocity
+            });
+            break;
+          }
+        }
+      }
+      if (VERBOSE_SIM_DEBUG) console.log('[Worker Debug] Reactions producing nuc pSTAT3 (sample):', JSON.stringify(producingReactions.slice(0, 20), null, 2));
+
+      // Also probe initial velocities for phosphorylation reactions (cytosolic U -> P)
+      try {
+        const phosReactions: any[] = [];
+        for (let i = 0; i < concreteReactions.length; i++) {
+          const rxn = concreteReactions[i];
+          const reactantNames = Array.from(rxn.reactants).map(r => model.species[r].name);
+          const productNames = Array.from(rxn.products).map(p => model.species[p].name);
+          const reactantHasUcyt = reactantNames.some(n => n.includes('s~U') && n.includes('loc~cyt'));
+          const productHasPcyt = productNames.some(n => n.includes('s~P') && n.includes('loc~cyt'));
+          if (reactantHasUcyt && productHasPcyt) {
+            let rateNum = rxn.rateConstant;
+            if (rxn.isFunctionalRate && rxn.rateExpression) {
+              try {
+                rateNum = evaluateFunctionalRate(rxn.rateExpression, model.parameters || {}, {}, model.functions, undefined, undefined);
+              } catch {
+                rateNum = rxn.rateConstant;
+              }
+            }
+            const reactantIndices = Array.from(rxn.reactants);
+            const reactantValues = reactantIndices.map(r => state[r]);
+            const multiplicative = reactantValues.reduce((acc, v) => acc * v, 1);
+            const velocityBase = rateNum * rxn.propensityFactor * reactionReactingVolumes[i];
+            const velocity = velocityBase * multiplicative;
+            phosReactions.push({ idx: i, k: rxn.rateConstant, rateNum, reactantNames, reactantValues, multiplicative, velocityBase, velocity });
+          }
+        }
+        if (VERBOSE_SIM_DEBUG) console.log('[Worker Debug] Cytosolic phosphorylation reactions (sample):', JSON.stringify(phosReactions.slice(0,20), null, 2));
+      } catch (err) {
+        console.warn('[Worker Debug] Failed to probe phosphorylation reactions:', err?.message ?? err);
+      }
+    }
+  } catch (e) {
+    if (VERBOSE_SIM_DEBUG) console.warn('[Worker Debug] Failed post-vol pSTAT3 prod rates:', e?.message ?? e);
+  }
 
   const buildDerivativesFunction = () => {
     if (functionalRateCount > 0) {
@@ -826,8 +985,21 @@ export async function simulate(
           // Do NOT multiply by rxn.rateConstant again.
           // Scale velocity to "Amount" units for mass conservation across compartments
           // Rate in nM/s * Vol_Reacting = Amount_Rate in counts/s or moles/s
-          let velocity = rate * rxn.propensityFactor * reactionReactingVolumes[i];
-          for (let j = 0; j < rxn.reactants.length; j++) velocity *= yIn[rxn.reactants[j]];
+          const velocityBase = rate * rxn.propensityFactor * reactionReactingVolumes[i];
+          let multiplicative = 1;
+          const reactantDetails = [] as { idx: number; name: string; val: number }[];
+          for (let j = 0; j < rxn.reactants.length; j++) {
+            const ridx = rxn.reactants[j];
+            const val = yIn[ridx];
+            multiplicative *= val;
+            reactantDetails.push({ idx: ridx, name: speciesHeaders[ridx], val });
+          }
+          const velocity = velocityBase * multiplicative;
+
+          // Minimal per-reaction debug (commented out to reduce noise)
+          if (debugDerivs) {
+            // console.log('[Worker] Rxn', i, 'v=', velocity, '(k=' + rxn.rateConstant + ', vol=' + reactionReactingVolumes[i] + ', prop=' + rxn.propensityFactor + ')', { reactants: reactantDetails, products: rxn.products.map(p => ({ idx: p, name: speciesHeaders[p], state: yIn[p] })), multiplicative, velocityBase });
+          }
 
           for (let j = 0; j < rxn.reactants.length; j++) {
             const reactantIdx = rxn.reactants[j];
@@ -842,7 +1014,11 @@ export async function simulate(
             if (!model.species[productIdx].isConstant) {
               const stoich = rxn.productStoichiometries ? rxn.productStoichiometries[j] : 1;
               // d[C]/dt = Rate_Amount / Vol_Species
-              dydt[productIdx] += (velocity * stoich) / speciesVolumes[productIdx];
+              const contrib = (velocity * stoich) / speciesVolumes[productIdx];
+              const prevDydt = dydt[productIdx];
+              dydt[productIdx] += contrib;
+
+
             }
           }
         }
@@ -875,7 +1051,11 @@ export async function simulate(
             const stoich = rxn.productStoichiometries ? rxn.productStoichiometries[j] : 1;
             if (!model.species[productIdx].isConstant) {
               // d[C]/dt = Rate_Amount / Vol_Species
-              lines.push(`dydt[${productIdx}] += (v * ${stoich}) / ${speciesVolumes[productIdx]};`);
+              // Instrument product dydt contribution for debug
+              lines.push(`var prev = dydt[${productIdx}];`);
+              lines.push(`var contrib = (v * ${stoich}) / ${speciesVolumes[productIdx]};`);
+              lines.push(`dydt[${productIdx}] += contrib;`);
+
             }
           }
         }
@@ -902,11 +1082,42 @@ export async function simulate(
 
       for (let i = 0; i < concreteReactions.length; i++) {
         const rxn = concreteReactions[i];
-        let velocity = rxn.rateConstant * rxn.propensityFactor * reactionReactingVolumes[i];
-        for (let j = 0; j < rxn.reactants.length; j++) velocity *= yIn[rxn.reactants[j]];
+        const velocityBase = rxn.rateConstant * rxn.propensityFactor * reactionReactingVolumes[i];
+        let multiplicative = 1;
+        const reactantDetails: { idx: number; name: string; val: number }[] = [];
+        for (let j = 0; j < rxn.reactants.length; j++) {
+          const rIdx = rxn.reactants[j];
+          const rval = yIn[rIdx];
+          multiplicative *= rval;
+          reactantDetails.push({ idx: rIdx, name: speciesHeaders[rIdx], val: rval });
+        }
+        const velocity = velocityBase * multiplicative;
 
-        if (debugDerivs && i < 5) {
-          console.log(`[Worker] Rxn ${i} v=${velocity} (k=${rxn.rateConstant}, vol=${reactionReactingVolumes[i]}, prop=${rxn.propensityFactor})`);
+        const modelIsStat3 = String(model.name || '').toLowerCase().includes('stat3');
+        const involvesSTAT3 = reactantDetails.some(r => /STAT3/i.test(r.name)) || rxn.products.some(p => /STAT3/i.test(String(speciesHeaders[p] || '')));
+        const producesNuc = rxn.products.some(p => String(speciesHeaders[p] || '').toLowerCase().includes('nuc'));
+        if (debugDerivs || i < 5 || modelIsStat3 || involvesSTAT3 || producesNuc) {
+          // Per-reaction trace commented out to reduce log volume
+          // console.log(`[Worker] Rxn ${i} v=${velocity} (k=${rxn.rateConstant}, vol=${reactionReactingVolumes[i]}, prop=${rxn.propensityFactor})`, {
+          //   reactants: reactantDetails,
+          //   products: rxn.products.map(p => ({ idx: p, name: speciesHeaders[p], state: yIn[p] })),
+          //   multiplicative, velocityBase
+          // });
+        }
+
+        // Focused trace for reactions that produce nuclear species
+        if (producesNuc) {
+          try {
+            console.log('[Worker] [STAT3_NUC] Rxn', i, rxn.ruleName || rxn.rateExpression || rxn.rate, {
+              reactants: reactantDetails,
+              products: rxn.products.map(p => ({ idx: p, name: speciesHeaders[p], state: yIn[p] })),
+              multiplicative,
+              velocityBase,
+              velocity
+            });
+          } catch (e) {
+            /* ignore */
+          }
         }
 
         for (let j = 0; j < rxn.reactants.length; j++) {
@@ -919,7 +1130,20 @@ export async function simulate(
           const productIdx = rxn.products[j];
           if (!model.species[productIdx].isConstant) {
             const stoich = rxn.productStoichiometries ? rxn.productStoichiometries[j] : 1;
-            dydt[productIdx] += (velocity * stoich) / speciesVolumes[productIdx];
+            const contrib = (velocity * stoich) / speciesVolumes[productIdx];
+            const prev = dydt[productIdx];
+            dydt[productIdx] += contrib;
+
+            try {
+              const modelIsStat3 = String(model.name || '').toLowerCase().includes('stat3');
+              const involvesSTAT3 = reactantDetails.some(r => /STAT3/i.test(r.name)) || rxn.products.some(p => /STAT3/i.test(String(speciesHeaders[p] || '')));
+              const producesNuc = rxn.products.some(p => String(speciesHeaders[p] || '').toLowerCase().includes('nuc'));
+              if ((modelIsStat3 || involvesSTAT3 || producesNuc) && velocity !== 0) {
+                if (VERBOSE_SIM_DEBUG) console.log('[Worker] [PRODUCT_DYDT] Rxn', i, 'productIdx=', productIdx, 'name=', speciesHeaders[productIdx], 'prev_dydt=', prev, 'contrib=', contrib, 'new_dydt=', dydt[productIdx]);
+              }
+            } catch (e) {
+              /* ignore */
+            }
           }
         }
       }
@@ -1179,6 +1403,17 @@ export async function simulate(
       for (let k = 0; k < dydt0.length; k++) if (isNaN(dydt0[k]) || !isFinite(dydt0[k])) nanDerivs.push(speciesHeaders[k]);
       if (nanDerivs.length > 0) console.error('[DEBUG_Propensities] NaN/Inf Derivs for:', nanDerivs.join(', '));
       else console.log('[DEBUG_Propensities] All derivs finite.');
+
+      try {
+        // Inspect dydt for STAT3 species to confirm production rates
+        const matches: any[] = [];
+        for (let si = 0; si < speciesHeaders.length; si++) {
+          if (speciesHeaders[si].includes('STAT3')) matches.push({ name: speciesHeaders[si], dydt: dydt0[si], state: y0[si] });
+        }
+        console.log('[DEBUG_Propensities] STAT3 species dydt/state sample:', JSON.stringify(matches.slice(0, 20), null, 2));
+      } catch (err) {
+        console.warn('[DEBUG_Propensities] Failed to inspect dydt sample:', err?.message ?? err);
+      }
     }
     // Debug: Log LPS species value in y array to verify state transfer
     const lpsIdx = speciesHeaders.findIndex(h => h.toLowerCase().includes('lps('));
@@ -1406,13 +1641,13 @@ export async function simulate(
     }
 
     try {
-      console.log(`[DEBUG_TRACE] Starting loop for Phase ${phaseIdx}, steps=${phase_n_steps}, record=${recordThisPhase}`);
+      if (VERBOSE_SIM_DEBUG) console.log(`[DEBUG_TRACE] Starting loop for Phase ${phaseIdx}, steps=${phase_n_steps}, record=${recordThisPhase}`);
       for (let i = 1; i <= phase_n_steps && !shouldStop; i++) {
         callbacks.checkCancelled();
         const tTarget = (phaseDuration * i) / phase_n_steps;
         const result = solver.integrate(y, t, tTarget, callbacks.checkCancelled);
 
-        console.log(`[DEBUG_TRACE] Step ${i} done. t=${result.t}, success=${result.success}`);
+        if (VERBOSE_SIM_DEBUG) console.log(`[DEBUG_TRACE] Step ${i} done. t=${result.t}, success=${result.success}`);
 
         if (!result.success) {
           const msg = result.errorMessage || 'Unknown error';
@@ -1485,9 +1720,10 @@ export async function simulate(
 
   const odeTime = performance.now() - odeStart;
   const totalTime = performance.now() - simulationStartTime;
-  console.log('[Worker] ⏱️ TIMING: ODE integration took', odeTime.toFixed(0), 'ms');
-  console.log('[Worker] ⏱️ TIMING: Total simulation time', totalTime.toFixed(0), 'ms');
+  if (VERBOSE_SIM_DEBUG) console.log('[Worker] ⏱️ TIMING: ODE integration took', odeTime.toFixed(0), 'ms');
+  if (VERBOSE_SIM_DEBUG) console.log('[Worker] ⏱️ TIMING: Total simulation time', totalTime.toFixed(0), 'ms');
   return { headers, data, speciesHeaders, speciesData, expandedReactions: model.reactions, expandedSpecies: model.species } satisfies SimulationResults;
+}
 }
 
 

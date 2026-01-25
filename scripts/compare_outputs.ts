@@ -10,6 +10,22 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Load the excluded models list from constants.ts by parsing the source
+// This avoids importing constants.ts which pulls in many large raw imports
+const NORMALIZED_BNG2_EXCLUDED = (() => {
+  const constantsPath = path.join(__dirname, '..', 'constants.ts');
+  try {
+    const txt = fs.readFileSync(constantsPath, 'utf8');
+    const m = txt.match(/export\s+const\s+BNG2_EXCLUDED_MODELS\s*=\s*new\s+Set\(\[([\s\S]*?)\]\)/m);
+    if (!m) return new Set<string>();
+    const listBody = m[1];
+    const items = listBody.split(',').map(s => s.replace(/["'`\s]/g, '').trim()).filter(Boolean);
+    return new Set(items.map(k => k.toLowerCase().replace(/[^a-z0-9]+/g, '')));
+  } catch (e) {
+    return new Set<string>();
+  }
+})();
+
 interface ComparisonResult {
   model: string;
   status: 'match' | 'mismatch' | 'missing_reference' | 'error' | 'skipped' | 'bng_failed' | 'source_missing';
@@ -701,6 +717,21 @@ async function main() {
     }
     const modelName = csvModelLabel(csvFile);
     processedModels.add(modelName);
+
+    // Skip models known to fail in canonical BNG2.pl (explicit exclusion list in constants.ts)
+    const normalizedModelKey = normalizeKey(modelName);
+    if (NORMALIZED_BNG2_EXCLUDED.has(normalizedModelKey)) {
+      console.log(`Skipping ${modelName} (excluded: fails BNG2.pl)`);
+      results.push({
+        model: modelName,
+        status: 'skipped',
+        referenceFile: undefined,
+        referenceInferred: false,
+        details: null,
+        error: 'Excluded: fails BNG2.pl',
+      });
+      continue;
+    }
 
     if (!ref.gdatPaths || ref.gdatPaths.length === 0) {
       // Check for BNG failure marker

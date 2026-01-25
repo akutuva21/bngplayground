@@ -31,7 +31,7 @@ const LEGEND_THRESHOLD = 8;
 
 // External legend component for when there are many series
 const ExternalLegend: React.FC<{
-  series: string[];
+  series: Array<{ name: string; color: string }>;
   visibleSpecies: Set<string>;
   onToggle: (name: string) => void;
   onHighlight: (name: string) => void;
@@ -40,16 +40,16 @@ const ExternalLegend: React.FC<{
   return (
     <div className="mt-4 max-h-48 overflow-y-auto border-t border-slate-200 dark:border-slate-700 pt-4">
       <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 px-4">
-        {series.map((name, index) => {
-          const isVisible = visibleSpecies.has(name);
-          const isHighlighted = highlightedSeries.size === 0 || highlightedSeries.has(name);
+        {series.map((item) => {
+          const isVisible = visibleSpecies.has(item.name);
+          const isHighlighted = highlightedSeries.size === 0 || highlightedSeries.has(item.name);
           return (
             <div
-              key={name}
-              onClick={() => onToggle(name)}
+              key={item.name}
+              onClick={() => onToggle(item.name)}
               onDoubleClick={(e) => {
                 e.preventDefault();
-                onHighlight(name);
+                onHighlight(item.name);
               }}
               title="Double-click to isolate"
               className={`flex items-center cursor-pointer transition-opacity ${!isVisible ? 'opacity-40' : isHighlighted ? 'opacity-100' : 'opacity-60'} hover:bg-slate-50 dark:hover:bg-slate-800 rounded px-1 -ml-1`}
@@ -58,12 +58,12 @@ const ExternalLegend: React.FC<{
                 style={{
                   width: 12,
                   height: 12,
-                  backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
+                  backgroundColor: item.color,
                   marginRight: 6,
                   borderRadius: '2px'
                 }}
               />
-              <span className="text-xs text-slate-700 dark:text-slate-300">{name}</span>
+              <span className="text-xs text-slate-700 dark:text-slate-300">{item.name}</span>
             </div>
           );
         })}
@@ -233,13 +233,28 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, model, isNF
     const bnglExpressionValues: Map<string, number[]> = new Map();
     const bnglExpressions = expressions.filter(e => e.type === 'bngl');
 
+    // 1. Prepare parameters map (filtering by seed species if bnglCode is available)
+    const paramsMap = new Map<string, number>();
+    if (model) {
+      // Find seed parameters if we have access to the BNGL code
+      // We'll prioritize the ones the user expects to see
+      // Note: VisualizationPanel already computes this for autocomplete, 
+      // but we re-derive here for the computation logic.
+      const seedParams = model.parameters ? Object.keys(model.parameters) : [];
+      
+      for (const pName of seedParams) {
+        paramsMap.set(pName, model.parameters[pName]);
+      }
+    }
+
     if (bnglExpressions.length > 0 && results.speciesData && results.speciesHeaders) {
       for (const expr of bnglExpressions) {
         try {
           const computed = computeDynamicObservable(
             { name: expr.name, pattern: expr.expression, type: 'molecules' },
             results,
-            results.speciesHeaders
+            results.speciesHeaders,
+            paramsMap
           );
           bnglExpressionValues.set(expr.name, computed.values);
         } catch (e) {
@@ -256,12 +271,25 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, model, isNF
       const newPoint: Record<string, any> = { ...point };
 
       // Build variables for math expression evaluation
-      const variables: Record<string, number> = { time: point.time ?? 0 };
+      const variables: Record<string, number> = { 
+        time: point.time ?? 0,
+        ...(model?.parameters ?? {})
+      };
+
+      // Add observable data
       Object.keys(point).forEach((key) => {
         if (key !== 'time' && typeof point[key] === 'number') {
           variables[key] = point[key];
         }
       });
+
+      // Add species concentration data if available
+      const speciesPoint = results.speciesData?.[index];
+      if (speciesPoint) {
+        Object.keys(speciesPoint).forEach(sName => {
+          variables[sName] = speciesPoint[sName];
+        });
+      }
 
       // Evaluate each expression
       expressions.forEach((expr) => {
@@ -270,7 +298,7 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, model, isNF
           const values = bnglExpressionValues.get(expr.name);
           newPoint[expr.name] = values ? values[index] : 0;
         } else {
-          // Math expression: evaluate using observable variables
+          // Math expression: evaluate using all variables (observables, params, species)
           const value = evaluateExpression(expr.expression, variables);
           newPoint[expr.name] = value ?? 0;
         }
@@ -610,7 +638,10 @@ export const ResultsChart: React.FC<ResultsChartProps> = ({ results, model, isNF
       {/* External legend */}
       {useExternalLegend && (
         <ExternalLegend
-          series={speciesToPlot.filter(filterVisibleSpecies)}
+          series={[
+            ...speciesToPlot.filter(filterVisibleSpecies).map((name, i) => ({ name, color: CHART_COLORS[i % CHART_COLORS.length] })),
+            ...expressions.filter(expr => filterVisibleSpecies(expr.name)).map(expr => ({ name: expr.name, color: expr.color }))
+          ]}
           visibleSpecies={visibleSpecies}
           onToggle={handleToggleSeries}
           onHighlight={handleLegendHighlight}

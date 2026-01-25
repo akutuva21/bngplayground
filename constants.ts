@@ -1,7 +1,4 @@
-import { Example } from './types';
-
-// Published BNGL models from RulesRailRoad repository
-// Source: https://github.com/RulesRailRoad/RulesRailRoad.github.io/tree/gh-pages/models
+import { Example } from './types.ts';
 
 // Cell Regulation & Transport
 import barua2013 from './published-models/cell-regulation/Barua_2013.bngl?raw';
@@ -61,6 +58,12 @@ import jaruszewiczBlonska2023 from './published-models/immune-signaling/Jaruszew
 import modelZap from './published-models/immune-signaling/Model_ZAP.bngl?raw';
 import mukhopadhyay2013 from './published-models/immune-signaling/Mukhopadhyay_2013.bngl?raw';
 import tlbr from './published-models/immune-signaling/tlbr.bngl?raw';
+import Alabama from './published-models/Mallela_2022/Alabama.bngl?raw';
+import camkiiHolo from './published-models/Ordyan_2020/CaMKII_holo.bngl?raw';
+import extraCaMKII from './published-models/Ordyan_2020/extra_CaMKII_Holo.bngl?raw';
+import mCaMKII from './published-models/Ordyan_2020/mCaMKII_Ca_Spike.bngl?raw';
+import degranulationModel from './published-models/PyBNG/degranulation_model.bngl?raw';
+import egfrOde from './published-models/PyBNG/egfr_ode.bngl?raw';
 
 // Tutorials & Simple Examples
 import chemistry from './published-models/tutorials/chemistry.bngl?raw';
@@ -631,8 +634,12 @@ export const BNG2_EXCLUDED_MODELS = new Set([
   // ========================================================
   // NFsim-only models (require network-free simulation)
   // ========================================================
-  // 'polymer',        // Re-enabled after NFsim compartment support fixes
-  // 'polymer_draft',  // Re-enabled after NFsim compartment support fixes
+  'polymer',        // NFsim: missing .species / produces no GDAT rows
+  'polymer_draft',  // NFsim: missing .species / produces no GDAT rows
+  'cheemalavagu_2024', // NOREF: no GDAT produced by BNG2.pl
+  'mallela_2022__alabama', // NOREF: no GDAT produced by BNG2.pl
+  'pybng__degranulation_model', // NOREF / custom pyBNG wrapper
+  'pybng__egfr_ode', // NOREF / custom pyBNG wrapper
 
 
   // ========================================================
@@ -1114,10 +1121,62 @@ const IMMUNE_SIGNALING: Example[] = [
   },
   {
     id: 'Cheemalavagu_JAK_STAT',
-    name: 'Cheemalavagu 2014',
+    name: 'Cheemalavagu 2024',
     description: 'JAK-STAT signaling',
     code: cheemalavaguJakStat,
     tags: ['published', 'literature', 'signaling'],
+  },
+];
+
+// New published-models categories added from published-models/ directory
+const ORDYAN_2020: Example[] = [
+  {
+    id: 'Ordyan_2020_CaMKII_holo',
+    name: 'Ordyan 2020: CaMKII holo',
+    description: 'CaMKII holo model (Ordyan et al. 2020)',
+    code: camkiiHolo,
+    tags: ['published', 'neuroscience'],
+  },
+  {
+    id: 'Ordyan_2020_extra_CaMKII_Holo',
+    name: 'Ordyan 2020: extra CaMKII holo',
+    description: 'Extra CaMKII holo (supplement)',
+    code: extraCaMKII,
+    tags: ['published', 'neuroscience'],
+  },
+  {
+    id: 'Ordyan_2020_mCaMKII_Ca_Spike',
+    name: 'Ordyan 2020: mCaMKII Ca Spike',
+    description: 'mCaMKII Ca Spike model',
+    code: mCaMKII,
+    tags: ['published', 'neuroscience'],
+  },
+];
+
+const MALLELA_2022: Example[] = [
+  {
+    id: 'Mallela_2022_Alabama',
+    name: 'Mallela 2022: Alabama',
+    description: 'Epidemiological model for Alabama (Mallela 2022)',
+    code: Alabama,
+    tags: ['published', 'epidemiology'],
+  },
+];
+
+const PYBNG_MODELS: Example[] = [
+  {
+    id: 'PyBNG_degranulation_model',
+    name: 'PyBNG: Degranulation model',
+    description: 'Degranulation model (lanl/PyBNF)',
+    code: degranulationModel,
+    tags: ['published', 'PyBNG'],
+  },
+  {
+    id: 'PyBNG_egfr_ode',
+    name: 'PyBNG: EGFR ODE',
+    description: 'EGFR ODE example (lanl/PyBNF)',
+    code: egfrOde,
+    tags: ['published', 'PyBNG'],
   },
 ];
 
@@ -2349,6 +2408,7 @@ const NEUROSCIENCE_MODELS: Example[] = [
   ...TEST_MODELS.filter(m => ["ampk-signaling", "calcineurin-nfat-pathway", "calcium-spike-signaling", "inositol-phosphate-metabolism", "l-type-calcium-channel-dynamics", "mtor-signaling", "neurotransmitter-release", "synaptic-plasticity-ltp", "beta-adrenergic-response"].includes(m.id)),
   ...COMPLEX_MODELS.filter(m => ["Chattaraj_2021"].includes(m.id)),
   ...NATIVE_TUTORIALS.filter(m => ["Lisman", "Lisman_bifurcate"].includes(m.id)),
+  ...ORDYAN_2020,
 ];
 
 const CELL_CYCLE_MODELS: Example[] = [
@@ -2409,6 +2469,12 @@ const RAW_MODEL_CATEGORIES: ModelCategory[] = [
     models: DEVELOPMENTAL_MODELS,
   },
   {
+    id: 'epidemiology',
+    name: 'Epidemiology',
+    description: 'Epidemiological and population models',
+    models: MALLELA_2022,
+  },
+  {
     id: 'multistage',
     name: 'Multistage',
     description: 'Models with multiple simulation phases (e.g., equilibration followed by stimulation) ensuring continuity.',
@@ -2423,6 +2489,12 @@ const RAW_MODEL_CATEGORIES: ModelCategory[] = [
         "mapk-signaling-cascade", "nfkb-feedback", "sonic-hedgehog-gradient", "synaptic-plasticity-ltp"
       ].includes(m.id)),
     ],
+  },
+  {
+    id: 'pybng',
+    name: 'PyBNG Examples',
+    description: 'Mirror of selected examples from lanl/PyBNF (PyBNG)',
+    models: PYBNG_MODELS,
   },
   {
     id: 'tutorials',

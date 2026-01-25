@@ -13,9 +13,11 @@ import { ParameterEstimationTab } from './tabs/ParameterEstimationTab';
 import { FluxAnalysisTab } from './tabs/FluxAnalysisTab';
 import { ModelExplorerTab } from './tabs/ModelExplorerTab';
 import { TrajectoryExplorerTab } from './tabs/TrajectoryExplorerTab';
+import { BNGLParser } from '../src/services/graph/core/BNGLParser';
 import { ExpressionInputPanel, CustomExpression } from './ExpressionInputPanel';
 import { ComparisonPanel } from './ComparisonPanel';
 import { DynamicsViewer } from './DynamicsViewer';
+import { JupyterExportTab } from './tabs/JupyterExportTab';
 import { Dropdown, DropdownItem } from './ui/Dropdown';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import { EmptyState } from './ui/EmptyState';
@@ -30,7 +32,7 @@ interface VisualizationPanelProps {
   simulationMethod?: 'ode' | 'ssa' | 'nf';
   activeTabIndex?: number;
   onActiveTabIndexChange?: (idx: number) => void;
-
+  bnglCode?: string;
 }
 
 const TabButton: React.FC<{
@@ -71,7 +73,7 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
   simulationMethod,
   activeTabIndex,
   onActiveTabIndexChange,
-
+  bnglCode,
 }) => {
   const [visibleSpecies, setVisibleSpecies] = useState<Set<string>>(new Set());
   const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
@@ -155,9 +157,16 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
   // 9: Rule Cartoons
   // 10: Model Explorer
   // 11: Trajectory Explorer
+  // 12: Jupyter Export
 
   // Map activeTab to a group for UI highlighting
   const isAnalysisTab = activeTab >= 2 && activeTab <= 11;
+
+  // Filter parameter names to only those used in seed species (as requested by user)
+  const seedParameterNames = React.useMemo(() => {
+    if (!bnglCode) return [];
+    return BNGLParser.getSeedParameters(bnglCode);
+  }, [bnglCode]);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-0 border rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm relative">
@@ -201,6 +210,7 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
               <DropdownItem onClick={() => setActiveTab(7)}>✅ Verification</DropdownItem>
               <div className="border-t border-slate-50 dark:border-slate-800/50 my-0.5" />
               <DropdownItem onClick={() => setActiveTab(10)}>🌎 Model Explorer</DropdownItem>
+              <DropdownItem onClick={() => setActiveTab(12)}>📓 Jupyter Export</DropdownItem>
             </Dropdown>
           </div>
 
@@ -273,6 +283,8 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
                 expressions={expressions}
                 onExpressionsChange={handleExpressionsChange}
                 observableNames={model?.observables?.map((o) => o.name) ?? []}
+                parameterNames={seedParameterNames}
+                speciesNames={results?.speciesHeaders ?? []}
                 hasSpeciesData={!!results?.speciesData && results.speciesData.length > 0}
               />
             </div>
@@ -327,7 +339,8 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
                       onClick: () => onSimulate({
                         method: 'ssa',
                         t_end: 100, // Default sensible values
-                        n_steps: 100
+                        n_steps: 100,
+                        includeInfluence: true
                       }),
                       icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     }}
@@ -462,6 +475,16 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
               description="Inspect trajectories and compare simulation runs"
             />
             <TrajectoryExplorerTab model={model} />
+          </div>
+        )}
+
+        {activeTab === 12 && (
+          <div className="h-full flex flex-col">
+            <TabHeader
+              title="Jupyter Export"
+              description="Export analysis notebook using pybionetgen"
+            />
+            <JupyterExportTab model={model} bnglCode={bnglCode} />
           </div>
         )}
 

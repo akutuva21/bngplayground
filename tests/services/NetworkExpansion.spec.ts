@@ -33,7 +33,9 @@ vi.mock('../../src/services/graph/core/Canonical', () => ({
 }));
 
 vi.mock('../../services/simulation/ExpressionEvaluator', () => ({
-    evaluateFunctionalRate: vi.fn((expr) => parseFloat(expr) || 1)
+    evaluateFunctionalRate: vi.fn((expr) => parseFloat(expr) || 1),
+    expandRateLawMacros: vi.fn((expr, _substr) => expr),
+    containsRateLawMacro: vi.fn(() => false)
 }));
 
 import { evaluateFunctionalRate } from '../../services/simulation/ExpressionEvaluator';

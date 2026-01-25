@@ -474,7 +474,8 @@ export class SpeciesGraph {
     const moleculesStr = this.molecules.map(m => m.toString()).join('.');
     let str = moleculesStr;
     if (this.compartment) {
-      str = `@${this.compartment}::${str}`;
+      // Use single colon for web-compatible serialization
+      str = `@${this.compartment}:${str}`;
     }
     this._stringExact = str;
     return this._stringExact;

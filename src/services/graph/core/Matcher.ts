@@ -303,13 +303,20 @@ export class GraphMatcher {
     }
 
     // Check that target has enough of each type
+    let targetTotal = target.molecules.length;
+    let patternTotal = pattern.molecules.length;
+
     for (const [molType, count] of patternCounts) {
+      if (molType === '*') {
+        // '*' matches anything, don't check name-based counts for these
+        continue;
+      }
       if ((targetCounts.get(molType) || 0) < count) {
         return false;
       }
     }
 
-    return true;
+    return targetTotal >= patternTotal;
   }
 
   /**
@@ -603,7 +610,8 @@ class VF2State {
     const patternMol = this.pattern.molecules[pMol];
     const targetMol = this.target.molecules[tMol];
 
-    if (patternMol.name !== targetMol.name) {
+    // FIX: Support '*' molecule name wildcard
+    if (patternMol.name !== '*' && patternMol.name !== targetMol.name) {
       return false;
     }
 
@@ -662,14 +670,15 @@ class VF2State {
           continue;
         }
         const mol = this.pattern.molecules[neighbor];
-        if (mol.compartment) {
+        if (mol.name !== '*' && mol.compartment) {
           // Pattern specifies compartment - must match exactly
           const key = `${mol.name}|${mol.compartment}`;
           patternCounts.set(key, (patternCounts.get(key) ?? 0) + 1);
-        } else {
+        } else if (mol.name !== '*') {
           // Pattern doesn't specify compartment - track by name only (wildcard)
           patternNameOnlyCounts.set(mol.name, (patternNameOnlyCounts.get(mol.name) ?? 0) + 1);
         }
+        // If mol.name is '*', we don't count it for label-based pruning (too expensive/broad)
       }
     };
 
@@ -736,11 +745,11 @@ class VF2State {
         continue;
       }
       const mol = this.pattern.molecules[neighbor];
-      if (mol.compartment) {
+      if (mol.name !== '*' && mol.compartment) {
         // Pattern specifies compartment - must match exactly
         const key = `${mol.name}|${mol.compartment}`;
         patternCounts.set(key, (patternCounts.get(key) ?? 0) + 1);
-      } else {
+      } else if (mol.name !== '*') {
         // Pattern doesn't specify compartment - wildcard match by name
         patternNameOnlyCounts.set(mol.name, (patternNameOnlyCounts.get(mol.name) ?? 0) + 1);
       }
@@ -1333,13 +1342,12 @@ class VF2State {
       return true;
     } else {
       // Pattern specifies NO edges and NO wildcard.
-      // This implies the component must be explicitly UNBOUND.
-      // STRICT CHECK:
-      if (targetBound) {
-        if (shouldLogGraphMatcher) console.log(`[GraphMatcher] Strict unbound check failed: P${pMolIdx}.${pCompIdx}(${pComp.name}) expects unbound`);
-        return false;
-      }
-      return true;
+      // Conservative semantics: treat an explicitly specified component (e.g., "s")
+      // as an explicit unbound requirement. That is, "A(s)" should NOT match
+      // "A(s!1)". This aligns with tests that expect explicit unbound matching.
+      // If downstream code needs the looser semantics (match any bond state), it
+      // should use '?' wildcard in the pattern (e.g., "s~?" or explicit wildcard syntax).
+      return !targetBound;
     }
 
   }

@@ -13,7 +13,7 @@ import { NetworkGenerator } from '../../src/services/graph/NetworkGenerator';
 import { GraphCanonicalizer } from '../../src/services/graph/core/Canonical';
 import { containsRateLawMacro, evaluateFunctionalRate, expandRateLawMacros } from './ExpressionEvaluator';
 import { formatSpeciesList } from '../parity/ParityService';
-import { isFunctionalRateExpr } from '../parity/PatternMatcher';
+import { isFunctionalRateExpr, countPatternMatches, isSpeciesMatch } from '../parity/PatternMatcher';
 
 export async function generateExpandedNetwork(
     inputModel: BNGLModel,
@@ -91,10 +91,12 @@ export async function generateExpandedNetwork(
             rate = 1; // Base rate for functional rules (NetworkGenerator needs a numeric rate)
         } else {
             try {
-                rate = evaluateFunctionalRate(expandedRate, inputModel.parameters, {}, inputModel.functions);
+                // Evaluate parameter-only expressions using BNGLParser evaluator for parity
+                const paramMap = new Map(Object.entries(inputModel.parameters || {}));
+                rate = BNGLParser.evaluateExpression(expandedRate, paramMap, new Set(), new Map((inputModel.functions || []).map(f => [f.name, { args: f.args, expr: f.expression } as any])));
                 if (isNaN(rate)) rate = 0;
             } catch (e) {
-                console.warn('[NetworkExpansion] Could not evaluate rate expression:', expandedRate, '- available parameters:', Object.keys(inputModel.parameters), '- using 0');
+                console.warn('[NetworkExpansion] Could not evaluate rate expression:', expandedRate, '- available parameters:', Object.keys(inputModel.parameters || {}), '- using 0');
                 rate = 0;
             }
         }
@@ -120,10 +122,11 @@ export async function generateExpandedNetwork(
                 reverseRate = 1;
             } else {
                 try {
-                    reverseRate = evaluateFunctionalRate(revExpanded, inputModel.parameters, {}, inputModel.functions);
+                    const paramMap = new Map(Object.entries(inputModel.parameters || {}));
+                    reverseRate = BNGLParser.evaluateExpression(revExpanded, paramMap, new Set(), new Map((inputModel.functions || []).map(f => [f.name, { args: f.args, expr: f.expression } as any])));
                     if (isNaN(reverseRate)) reverseRate = 0;
                 } catch (e) {
-                    console.warn('[NetworkExpansion] Could not evaluate reverse rate expression:', revExpanded, '- available parameters:', Object.keys(inputModel.parameters), '- using 0');
+                    console.warn('[NetworkExpansion] Could not evaluate reverse rate expression:', revExpanded, '- available parameters:', Object.keys(inputModel.parameters || {}), '- using 0');
                     reverseRate = 0;
                 }
             }
@@ -160,15 +163,17 @@ export async function generateExpandedNetwork(
         return [forwardRule];
     });
 
-    // Debug: print prepared rules (name, numeric rate or rateExpression, isFunctional flag)
-    try {
-        console.log('[NetworkExpansion] Prepared rules:', rules.map(r => ({
-            name: (r as any).name,
-            rate: (r as any).rate ?? (r as any).rateExpression ?? null,
-            isFunctional: !!(r as any).isFunctionalRate
-        })));
-    } catch (e) {
-        console.warn('[NetworkExpansion] Failed to stringify prepared rules for debug:', e);
+    const VERBOSE_NETEXP_DEBUG = false; // set true to enable network expansion debug
+    if (VERBOSE_NETEXP_DEBUG) {
+        try {
+            console.log('[NetworkExpansion] Prepared rules:', rules.map(r => ({
+                name: (r as any).name,
+                rate: (r as any).rate ?? (r as any).rateExpression ?? null,
+                isFunctional: !!(r as any).isFunctionalRate
+            })));
+        } catch (e) {
+            console.warn('[NetworkExpansion] Failed to stringify prepared rules for debug:', e);
+        }
     }
 
     // Use network options from BNGL file if available, with reasonable defaults
@@ -204,7 +209,7 @@ export async function generateExpandedNetwork(
     let result: { species: Species[]; reactions: Rxn[] };
     try {
         result = await generator.generate(__seedSpecies, rules, throttledProgressCallback);
-        console.log(`[NetExpDebug] Generated ${result.reactions.length} reactions from ${rules.length} rules.`);
+        if (VERBOSE_NETEXP_DEBUG) console.log(`[NetExpDebug] Generated ${result.reactions.length} reactions from ${rules.length} rules.`);
         // Final progress update
         onProgress({
             iteration: networkOpts.maxIter ?? 5000,
@@ -227,7 +232,7 @@ export async function generateExpandedNetwork(
             const seedG = BNGLParser.parseSpeciesGraph(sp.name);
             const canon = GraphCanonicalizer.canonicalize(seedG);
             seedMap.set(canon, { isConstant: !!sp.isConstant });
-            console.error(`[NetworkExpansion] Seed: '${sp.name}' -> Canonical: '${canon}', Constant: ${sp.isConstant}`);
+            if (VERBOSE_NETEXP_DEBUG) console.log(`[NetworkExpansion] Seed: '${sp.name}' -> Canonical: '${canon}', Constant: ${sp.isConstant}`);
         } catch (e) {
             console.warn(`[NetworkExpansion] Could not parse seed species '${sp.name}':`, e);
         }
@@ -241,7 +246,7 @@ export async function generateExpandedNetwork(
         const seedInfo = seedMap.get(canonicalName);
         const isConstant = seedInfo?.isConstant || false;
 
-        console.error(`[NetworkExpansion] Expanded Species: '${canonicalName}', Constant: ${isConstant}`);
+        if (VERBOSE_NETEXP_DEBUG) console.log(`[NetworkExpansion] Expanded Species: '${canonicalName}', Constant: ${isConstant}`);
 
         return { name: canonicalName, initialConcentration: concentration, isConstant };
     });
@@ -276,6 +281,117 @@ export async function generateExpandedNetwork(
         species: generatedSpecies,
         reactions: generatedReactions,
     };
+
+    // Pre-compute concrete observables using expanded species list so downstream
+    // code (SimulationLoop) can directly consume pre-resolved observable indices.
+    try {
+        (generatedModel as any).concreteObservables = inputModel.observables.map(obs => {
+            // Use the same top-level comma splitting as above to preserve BNGL semantics
+            const patterns = splitByTopLevelCommas(String(obs.pattern || ''));
+
+            // Use a map from species index -> coefficient to avoid duplicate indices when
+            // multiple top-level comma chunks match the same species. This ensures a single
+            // entry per species with summed coefficient.
+            const coeffMap = new Map<number, number>();
+
+            const matchesCountConstraint = (speciesStr: string, constraint: string): boolean | null => {
+                const m = constraint.trim().match(/^([A-Za-z0-9_]+)\s*(==|<=|>=|<|>)\s*(\d+)$/);
+                if (!m) return null;
+                const mol = m[1];
+                const op = m[2];
+                const n = Number.parseInt(m[3], 10);
+                const c = countPatternMatches(speciesStr, mol);
+                switch (op) {
+                    case '==': return c === n;
+                    case '<=': return c <= n;
+                    case '>=': return c >= n;
+                    case '<': return c < n;
+                    case '>': return c > n;
+                    default: return null;
+                }
+            };
+
+            const obsType = (obs.type ?? '').toLowerCase();
+            generatedSpecies.forEach((s, i) => {
+                let count = 0;
+                for (const pat of patterns) {
+                    const trimmedPat = pat.trim();
+                    if (!trimmedPat) continue;
+
+                    if (obsType === 'species') {
+                        // Species observables are boolean membership checks (including constraints)
+                        // Support simple constraints joined by '.' like "A==2.B==1" or plain species patterns
+                        const subparts = trimmedPat.split('.').map(x => x.trim()).filter(Boolean);
+                        let ok = true;
+
+                        for (const sp of subparts) {
+                            const cMatch = matchesCountConstraint(s.name, sp);
+                            if (cMatch === false) { ok = false; break; }
+                            if (cMatch === true) { continue; }
+
+                            // If not a numeric constraint, treat as a full species pattern
+                            if (!isSpeciesMatch(s.name, sp)) { ok = false; break; }
+                        }
+
+                        if (ok) {
+                            // If pattern included only numeric constraints, ensure all are true
+                            if (subparts.length > 0 && subparts.every(p => !!p.match(/==|<=|>=|<|>/))) {
+                                const allTrue = subparts.every(p => matchesCountConstraint(s.name, p) === true);
+                                if (allTrue) count = 1;
+                            } else {
+                                count = 1;
+                            }
+
+                            if (count === 1) break;
+                        }
+                    } else {
+                        // Molecules or Molecule observables: count embeddings/matches
+                        const matchCount = countPatternMatches(s.name, trimmedPat);
+                        count += matchCount;
+                    }
+                }
+
+                if (count > 0) {
+                    coeffMap.set(i, (coeffMap.get(i) ?? 0) + count);
+                }
+            });
+
+            // Convert map to parallel arrays preserving species order
+            const matchingIndices: number[] = [];
+            const coefficients: number[] = [];
+            for (let idx = 0; idx < generatedSpecies.length; idx++) {
+                const v = coeffMap.get(idx);
+                if (v && v > 0) {
+                    matchingIndices.push(idx);
+                    coefficients.push(v);
+                }
+            }
+
+            const volumes: number[] = [];
+            matchingIndices.forEach(idx => {
+                const s = generatedSpecies[idx];
+                const match = s.name.match(/@([^:@:]+)/);
+                if (match) {
+                    const compName = match[1];
+                    const comp = inputModel.compartments?.find(c => c.name === compName);
+                    const resolvedVol = (comp as any)?.resolvedVolume ?? comp?.size ?? 1.0;
+                    volumes.push(resolvedVol);
+                } else {
+                    volumes.push(1.0);
+                }
+            });
+
+            return {
+                name: obs.name,
+                type: obs.type,
+                indices: new Int32Array(matchingIndices),
+                coefficients: new Float64Array(coefficients),
+                volumes: new Float64Array(volumes)
+            };
+        });
+    } catch (e) {
+        console.warn('[NetworkExpansion] Failed to pre-compute concrete observables:', e?.message ?? e);
+    }
 
     return generatedModel;
 }

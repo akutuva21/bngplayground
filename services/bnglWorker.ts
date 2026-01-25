@@ -467,7 +467,8 @@ if (typeof ctx.addEventListener === 'function') {
           const hasMixedMethods = phases.length > 1 &&
             phases.some(p => p.method !== phases[0].method);
 
-          console.log(`[Worker Debug] Resolved method: ${effectiveMethod}, isNF=${isNF}, hasMixedMethods=${hasMixedMethods}`);
+          const VERBOSE_BNGL_WORKER_DEBUG = false; // enable for extra bngl worker debug
+          if (VERBOSE_BNGL_WORKER_DEBUG) console.log(`[Worker Debug] Resolved method: ${effectiveMethod}, isNF=${isNF}, hasMixedMethods=${hasMixedMethods}`);
 
           if (hasRules && !hasReactions && !isNF) {
             console.log('[Worker] Auto-generating network from reaction rules...');

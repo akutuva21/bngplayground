@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { dirname, resolve, basename, extname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mkdtempSync, rmSync, copyFileSync, mkdirSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { mkdtempSync, rmSync, copyFileSync, mkdirSync, existsSync, readdirSync, statSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { DEFAULT_BNG2_PATH, DEFAULT_PERL_CMD } from './bngDefaults.js';
@@ -112,6 +112,42 @@ function runBngModel(perlCmd, bng2Path, sourcePath, outDir, verbose) {
   const modelCopy = join(tempDir, modelName);
   copyFileSync(sourcePath, modelCopy);
 
+  // If this BNGL requests NFsim simulation, generate an NFsim-compatible
+  // `.species` file from the BNGL `begin seed species` block so NFsim
+  // can read initial species (prevents "Couldn't read from file" aborts).
+  try {
+    const modelTxt = readFileSync(modelCopy, 'utf8');
+    if (/simulate_nf\s*\(/i.test(modelTxt)) {
+      const m = modelTxt.match(/begin\s+seed\s+species([\s\S]*?)end\s+seed\s+species/i);
+      if (m) {
+        const body = m[1];
+        const lines = body.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        const speciesLines = [];
+        for (const l of lines) {
+          // Match lines like: '1 @c0:A(b1,b2,c) 300.0' or 'A(b) 10'
+          // Capture optional compartment prefix (e.g. @c0:)
+          const sm = l.match(/^(?:\d+\s+)?(@[^:]+:)?(.+?)\s+([0-9.+\-eE]+)/);
+          if (sm) {
+            const comp = (sm[1] || '').trim();
+            const species = sm[2].trim();
+            const count = Math.round(Number(sm[3]));
+            // Preserve compartment prefix if present — NFsim requires it for compartmental models
+            speciesLines.push(`${comp}${species}  ${count}`);
+          }
+        }
+        if (speciesLines.length > 0) {
+          const baseName = basename(sourcePath, extname(sourcePath));
+          const speciesPath = join(tempDir, `${baseName}.species`);
+          writeFileSync(speciesPath, '# species file generated from BNGL seed species\n' + speciesLines.join('\n') + '\n', 'utf8');
+          console.log(`  ✓ Wrote species file: ${relative(projectRoot, speciesPath)}`);
+        }
+      }
+    }
+  } catch (e) {
+    // Non-fatal: if parsing fails, continue and let BNG2.pl run as before
+    if (process.env.DEBUG) console.warn('Failed to auto-generate species file:', e.message);
+  }
+
   const result = spawnSync(perlCmd, [bng2Path, modelName], {
     cwd: tempDir,
     stdio: ['ignore', 'pipe', 'pipe']
@@ -144,17 +180,29 @@ function runBngModel(perlCmd, bng2Path, sourcePath, outDir, verbose) {
     throw new Error(`No GDAT produced for ${modelName}.`);
   }
 
-  if (gdatFiles.length > 1) {
-    console.warn(`Multiple GDAT files produced for ${modelName}; copying the first: ${gdatFiles[0]}`);
+  // Copy all produced GDAT files to the output directory. Preserve their original
+  // filenames (including any phase/suffix) so downstream tools can locate phases.
+  const copiedPaths = [];
+  for (const gf of gdatFiles) {
+    const sourceGdat = join(tempDir, gf);
+    const destName = gf; // preserve original filename
+    const destPath = join(outDir, destName);
+
+    if (existsSync(destPath)) {
+      // If a file with this name already exists, append the new data but skip
+      // header/comment lines (those starting with '#') to avoid duplicate headers.
+      const content = readFileSync(sourceGdat, 'utf8').split(/\r?\n/).filter(Boolean);
+      const toAppend = content.filter(line => !line.startsWith('#')).join('\n') + '\n';
+      appendFileSync(destPath, toAppend);
+      console.log(`  ✔ ${relative(projectRoot, sourcePath)} -> ${relative(projectRoot, destPath)}`);
+    }
+
+    copiedPaths.push(destPath);
   }
 
-  const sourceGdat = join(tempDir, gdatFiles[0]);
-  const destName = `${basename(modelName, extname(modelName))}.gdat`;
-  const destPath = join(outDir, destName);
-  copyFileSync(sourceGdat, destPath);
-
   rmSync(tempDir, { recursive: true, force: true });
-  return destPath;
+  // Return the first copied path for backward compatibility with callers
+  return copiedPaths[0];
 }
 
 function main() {

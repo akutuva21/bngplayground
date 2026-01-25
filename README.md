@@ -102,15 +102,30 @@ The UI exposes a small set of core tabs by default, with additional analysis tab
 - **Flux Analysis**: compute and visualize reaction flux contributions from the expanded reaction network.
 - **Verification**: define constraints over observables (inequalities, equality, conservation) and check against simulation results.
 
-### Additional tabs in the codebase
+## Architecture
 
-The repository also contains additional tab implementations that may not be currently wired into the main tab strip:
+```mermaid
+graph TD
+    UI["React UI (App.tsx)"]
+    Service["BNGL Service"]
+    Worker["Web Worker (bnglWorker)"]
+    Parser["ANTLR4 Parser"]
+    Expand["Network Expansion"]
+    ODE["CVODE (WASM)"]
+    SSA["SSA Solver"]
+    NFsim["NFsim (WASM)"]
+    Nauty["Nauty (WASM)"]
 
-- **Debugger**: developer tooling to trace rule firing and network generation.
-- **Robustness Analysis**: Monte Carlo parameter-noise sensitivity with a confidence “cloud” chart.
-- **Structure Analysis**: connectivity + conservation-law style summaries based on the expanded reaction network.
-- **Expression Evaluator**: define custom expressions over observables and plot expression results.
-- **Parameters**: edit parameter values in a table and apply them back to the model.
+    UI --> Service
+    Service --> Worker
+    Worker --> Parser
+    Worker --> Expand
+    Worker --> ODE
+    Worker --> SSA
+    Worker --> NFsim
+    Expand --> Nauty
+    Parser --> Expand
+```
 
 ## Architecture (high-level)
 

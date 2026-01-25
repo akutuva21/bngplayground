@@ -5,6 +5,9 @@ import { getSimulationOptionsFromParsedModel } from './simulationOptions';
 import { downloadCsv } from './download';
 import { SafeExpressionEvaluator } from '../../services/safeExpressionEvaluator';
 
+// If you need extra verbosity for batch runner, flip this to true locally
+const VERBOSE_BATCH_RUNNER = false;
+
 function normalizeFilterNames(names?: string[]) {
     if (!names || names.length === 0) return null;
     const normalized = names
@@ -421,9 +424,9 @@ export async function runModels(modelNames?: string[]) {
         console.group(`Processing: ${modelDef.name}`);
         try {
             // 1. Parse
-            console.time('Parse');
+            if (VERBOSE_BATCH_RUNNER) console.time('Parse');
             const model: BNGLModel = await bnglService.parse(modelDef.code, { description: `Batch Parse: ${modelDef.name}` });
-            console.timeEnd('Parse');
+            if (VERBOSE_BATCH_RUNNER) console.timeEnd('Parse');
 
             // 1b. Network Generation (Fix for rule-based models)
             const actions = model.actions || [];
@@ -434,7 +437,7 @@ export async function runModels(modelNames?: string[]) {
             );
 
             if (needsNetGen) {
-                console.time('NetGen');
+                if (VERBOSE_BATCH_RUNNER) console.time('NetGen');
                 console.log('Generating network...');
                 // Updating model with expanded network
                 const expanded = await bnglService.generateNetwork(model, { maxSpecies: 2000, maxReactions: 5000 });
@@ -442,18 +445,18 @@ export async function runModels(modelNames?: string[]) {
                 if (expanded.reactions) model.reactions = expanded.reactions;
                 if (expanded.species) model.species = expanded.species;
 
-                console.timeEnd('NetGen');
+                if (VERBOSE_BATCH_RUNNER) console.timeEnd('NetGen');
             }
 
             // 2. Simulate (with multi-phase support)
-            console.time('Simulate');
+            if (VERBOSE_BATCH_RUNNER) console.time('Simulate');
             // Auto-inject simulate action if none exist (for models that only define network)
             if (model.simulationPhases.length === 0) {
                 console.log(`[Batch] Auto-injecting default simulate action for ${model.name}`);
                 model.simulationPhases.push({ method: 'ode', t_end: 100, n_steps: 100 });
             }
             const results: SimulationResults = await executeMultiPhaseSimulation(model, batchSeed);
-            console.timeEnd('Simulate');
+            if (VERBOSE_BATCH_RUNNER) console.timeEnd('Simulate');
 
             if (modelDef.id === 'Lang_2024' || modelDef.name.includes('Lang')) {
                 console.log(`[Lang_2024 Debug] Model Loaded: ${model.name}`);

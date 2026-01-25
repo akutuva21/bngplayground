@@ -141,7 +141,7 @@ export interface BNGLModel {
 
 // Represents a single simulate_* action
 export interface SimulationPhase {
-  method: 'ode' | 'ssa' | 'nf';
+  method: 'ode' | 'ssa' | 'nf' | 'nfsim';
   // BNGL supports absolute start/end times with optional continuation between phases.
   // If t_start is omitted, BNG defaults to 0 (or current model time if continuing).
   t_start?: number;
@@ -210,7 +210,7 @@ export interface SSAInfluenceTimeSeries {
 export interface SimulationOptions {
   // 'default' means "follow the model's authored method/phases".
   // 'ode'/'ssa' force all phases to that method.
-  method: 'default' | 'ode' | 'ssa' | 'nf';
+  method: 'default' | 'ode' | 'ssa' | 'nf' | 'nfsim';
   t_end: number;
   n_steps: number;
   // ODE solver options

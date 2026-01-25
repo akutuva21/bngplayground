@@ -572,7 +572,7 @@ return (
               simulationMethod={currentMethod}
               activeTabIndex={activeVizTab}
               onActiveTabIndexChange={setActiveVizTab}
-
+              bnglCode={code}
             />
           </div>
         </div>

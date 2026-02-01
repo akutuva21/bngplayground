@@ -26,13 +26,18 @@ export class Component {
   constructor(name: string, idx: string = '', bonds: (string | number)[] = [], states: string[] = []) {
     this.name = name;
     this.idx = idx || `${name}_${randInt(0, 100000)}`;
-    this.states = [];
-    this.bonds = [];
+    this.states = states || [];
+    this.bonds = bonds || [];
     this.activeState = '';
   }
 
   copy(): Component {
-    const component = new Component(this.name, this.idx, deepCopy(this.bonds), deepCopy(this.states));
+    const component = new Component(
+      this.name,
+      this.idx,
+      deepCopy(this.bonds),
+      deepCopy(this.states)
+    );
     component.activeState = this.activeState;
     return component;
   }
@@ -353,7 +358,7 @@ export class Molecule {
   distance(other: Molecule): number {
     let distance = 0;
     distance += this.name !== other.name ? 10000 : 0;
-    
+
     const maxLen = Math.max(this.components.length, other.components.length);
     for (let i = 0; i < maxLen; i++) {
       const c1 = this.components[i];
@@ -374,11 +379,11 @@ export class Molecule {
   compare(other: Molecule): void {
     this.components.sort((a, b) => a.name.localeCompare(b.name));
     other.components.sort((a, b) => a.name.localeCompare(b.name));
-    
+
     for (let i = 0; i < Math.min(this.components.length, other.components.length); i++) {
       const c1 = this.components[i];
       const c2 = other.components[i];
-      
+
       if (c1.activeState !== c2.activeState) {
         c1.activeState = '';
       }
@@ -390,10 +395,7 @@ export class Molecule {
    */
   toString(): string {
     this.components.sort((a, b) => a.name.localeCompare(b.name));
-    let finalStr = this.name;
-    if (this.components.length > 0) {
-      finalStr += '(' + this.components.map(x => x.toString()).join(',') + ')';
-    }
+    let finalStr = this.name + '(' + this.components.map(x => x.toString()).join(',') + ')';
     if (this.compartment !== '') {
       finalStr += '@' + this.compartment;
     }
@@ -514,13 +516,13 @@ export class Species {
   deleteMolecule(moleculeName: string): void {
     const deadMolecule = this.molecules.find(m => m.name === moleculeName);
     if (!deadMolecule) return;
-    
+
     const bondNumbers = deadMolecule.getBondNumbers();
     const idx = this.molecules.indexOf(deadMolecule);
     if (idx !== -1) {
       this.molecules.splice(idx, 1);
     }
-    
+
     // Remove bonds from other molecules
     for (const element of this.molecules) {
       for (const component of element.components) {
@@ -574,10 +576,10 @@ export class Species {
    */
   extend(species: Species, update: boolean = true): void {
     if (this.molecules.length === species.molecules.length) {
-      const list1 = [...this.molecules].sort((a, b) => 
+      const list1 = [...this.molecules].sort((a, b) =>
         a.components.length - b.components.length || a.name.localeCompare(b.name)
       );
-      const list2 = [...species.molecules].sort((a, b) => 
+      const list2 = [...species.molecules].sort((a, b) =>
         a.components.length - b.components.length || a.name.localeCompare(b.name)
       );
 
@@ -585,7 +587,7 @@ export class Species {
         const selement = list1[i];
         const oelement = list2[i];
         const cocomponents = new Counter(oelement.components.map(x => x.name));
-        
+
         for (const component of oelement.components) {
           const refcomponents = new Counter(selement.components.map(x => x.name));
           if ((refcomponents.get(component.name) || 0) < (cocomponents.get(component.name) || 0)) {
@@ -607,7 +609,7 @@ export class Species {
           let bestMatch: Molecule | null = null;
           let bestScore = -1;
           const elementBonds = element.components.flatMap(c => c.bonds);
-          
+
           for (const mol of this.molecules.filter(m => m.name === element.name)) {
             const molBonds = mol.components.flatMap(c => c.bonds);
             const score = this.sequenceMatchRatio(molBonds, elementBonds);
@@ -616,7 +618,7 @@ export class Species {
               bestMatch = mol;
             }
           }
-          
+
           if (bestMatch) {
             for (const component of element.components) {
               const existing = bestMatch.components.find(x => x.name === component.name);
@@ -640,17 +642,17 @@ export class Species {
   private sequenceMatchRatio(seq1: (string | number)[], seq2: (string | number)[]): number {
     if (seq1.length === 0 && seq2.length === 0) return 1;
     if (seq1.length === 0 || seq2.length === 0) return 0;
-    
+
     const s1 = seq1.map(String);
     const s2 = seq2.map(String);
     let matches = 0;
-    
+
     for (const item of s1) {
       if (s2.includes(item)) {
         matches++;
       }
     }
-    
+
     return (2 * matches) / (s1.length + s2.length);
   }
 
@@ -681,7 +683,7 @@ export class Species {
         const pairCopy = [...moleculePair];
         const idx = pairCopy.indexOf(molecule.name);
         if (idx !== -1) pairCopy.splice(idx, 1);
-        
+
         for (const component of molecule.components) {
           if (pairCopy.some(p => p.toLowerCase() === component.name.toLowerCase())) {
             component.bonds = [];
@@ -697,7 +699,7 @@ export class Species {
   append(species: Species): void {
     const newSpecies = deepCopy(species);
     newSpecies.updateBonds(this.getBondNumbers());
-    
+
     for (const element of newSpecies.molecules) {
       this.molecules.push(deepCopy(element));
     }
@@ -721,7 +723,7 @@ export class Species {
           .filter(n => !isNaN(n));
         return nums.length > 0 ? Math.min(...nums) : 999;
       };
-      
+
       const aMinBond = getMinBond(a);
       const bMinBond = getMinBond(b);
       if (aMinBond !== bMinBond) return aMinBond - bMinBond;
@@ -737,7 +739,7 @@ export class Species {
       const aStr = a.toString();
       const bStr = b.toString();
       if (aStr.length !== bStr.length) return aStr.length - bStr.length;
-      
+
       return aStr.localeCompare(bStr);
     });
   }
@@ -798,13 +800,13 @@ export class Species {
         if (component.activeState !== '') {
           const speciesStructure = new Species();
           speciesStructure.bonds = [...this.bonds];
-          
-          const molName = differentiateDimers 
-            ? `${molecule.name}%${moleculeCounter}` 
+
+          const molName = differentiateDimers
+            ? `${molecule.name}%${moleculeCounter}`
             : molecule.name;
           const moleculeStructure = new Molecule(molName, molecule.idx);
           const componentStructure = new Component(component.name, component.idx);
-          
+
           componentStructure.addState(component.activeState);
           componentStructure.activeState = component.activeState;
           moleculeStructure.addComponent(componentStructure);
@@ -821,9 +823,9 @@ export class Species {
         // One atomic pattern for the bonds
         const speciesStructure = new Species();
         speciesStructure.bonds = [...this.bonds];
-        
-        const molName = differentiateDimers 
-          ? `${molecule.name}%${moleculeCounter}` 
+
+        const molName = differentiateDimers
+          ? `${molecule.name}%${moleculeCounter}`
           : molecule.name;
         const moleculeStructure = new Molecule(molName, molecule.idx);
         const componentStructure = new Component(component.name, component.idx);
@@ -839,7 +841,7 @@ export class Species {
           } else {
             componentStructure.addBond('+');
           }
-          
+
           if (!bondedPatterns.has(bondKey)) {
             bondedPatterns.set(bondKey, speciesStructure);
           } else if (bondKey !== '+' || bondedPatterns.get(bondKey)!.molecules.length === 0) {
@@ -874,27 +876,27 @@ export class Species {
    */
   listOfBonds(nameDict: Map<string, string>): Map<string, Map<string, [string, string][]>> {
     const listofbonds = new Map<string, Map<string, [string, string][]>>();
-    
+
     for (const bond of this.bonds) {
       const mol1 = bond[0].replace(/_C[^_]*$/, '');
       const mol2 = bond[1].replace(/_C[^_]*$/, '');
-      
+
       const mol1Name = nameDict.get(mol1) || mol1;
       const mol2Name = nameDict.get(mol2) || mol2;
       const bond0Name = nameDict.get(bond[0]) || bond[0];
       const bond1Name = nameDict.get(bond[1]) || bond[1];
-      
+
       if (!listofbonds.has(mol1Name)) {
         listofbonds.set(mol1Name, new Map());
       }
       listofbonds.get(mol1Name)!.set(bond0Name, [[mol2Name, bond1Name]]);
-      
+
       if (!listofbonds.has(mol2Name)) {
         listofbonds.set(mol2Name, new Map());
       }
       listofbonds.get(mol2Name)!.set(bond1Name, [[mol1Name, bond0Name]]);
     }
-    
+
     return listofbonds;
   }
 }
@@ -1070,16 +1072,16 @@ export class States {
  */
 export function readFromString(patternStr: string): Species {
   const sp = new Species();
-  
+
   // Simple regex-based parser for BNGL patterns
   const moleculePattern = /([A-Za-z_][A-Za-z0-9_]*)\(([^)]*)\)/g;
   let match;
-  
+
   while ((match = moleculePattern.exec(patternStr)) !== null) {
     const molName = match[1];
     const compStr = match[2];
     const mol = new Molecule(molName, '');
-    
+
     if (compStr.trim() !== '') {
       // Parse components
       const components = compStr.split(',');
@@ -1097,9 +1099,9 @@ export function readFromString(patternStr: string): Species {
         }
       }
     }
-    
+
     sp.addMolecule(mol);
   }
-  
+
   return sp;
 }

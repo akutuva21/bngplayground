@@ -209,5 +209,11 @@ src/wasm/nauty/*.rsp
 
 # atomizer
 atomizer-ts
+tests/parity_check/atomized/*.bngl
+tests/parity_check/sbml/**/*.bngl
+tests/parity_check/*.bngl
+tests/*.bngl
+test_*.bngl
+manual_*.bngl
 
 # End of .gitignore

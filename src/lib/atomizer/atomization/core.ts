@@ -154,7 +154,7 @@ export function defineEditDistanceMatrix(
     const s1 = speciesNames[i];
     for (let j = i + 1; j < n; j++) {
       const s2 = speciesNames[j];
-      
+
       // Optimization: If length difference > threshold, distance must be > threshold
       if (Math.abs(s1.length - s2.length) > similarityThreshold) {
         continue;
@@ -181,7 +181,7 @@ export function defineEditDistanceMatrix(
 export function getDifferences(shorter: string, longer: string): string[] {
   const differences: string[] = [];
   let i = 0, j = 0;
-  
+
   while (i < shorter.length && j < longer.length) {
     if (shorter[i] === longer[j]) {
       i++;
@@ -198,13 +198,13 @@ export function getDifferences(shorter: string, longer: string): string[] {
       }
     }
   }
-  
+
   // Remaining characters in longer string
   while (j < longer.length) {
     differences.push(`+ ${longer[j]}`);
     j++;
   }
-  
+
   return differences;
 }
 
@@ -228,7 +228,7 @@ export function analyzeNamingConventions(
   patterns: Map<string, string>;
 } {
   const { pairs, differences } = defineEditDistanceMatrix(speciesNames, similarityThreshold);
-  
+
   const pairClassification = new Map<string, [string, string][]>();
   const differenceCounter = new Counter<string>();
 
@@ -253,7 +253,7 @@ export function analyzeNamingConventions(
 
   const keys = Array.from(differenceCounter.keys());
 
-  logger.info('NAM001', 
+  logger.info('NAM001',
     `Naming analysis: ${pairs.length} similar pairs, ${pairClassification.size} classifications`);
 
   return { pairClassification, keys, patterns: conventions.patterns };
@@ -268,7 +268,7 @@ export function inferModification(
   conventions: NamingConventions = DEFAULT_NAMING_CONVENTIONS
 ): { base: string | null; modification: string | null; confidence: number } {
   const candidates = baseSpecies.filter(s => s.length < speciesName.length);
-  
+
   if (candidates.length === 0) {
     return { base: null, modification: null, confidence: 0 };
   }
@@ -296,7 +296,7 @@ export function inferModification(
   for (const candidate of candidates) {
     const lcs = longestCommonSubstring(candidate, speciesName);
     const sim = lcs.length / Math.max(candidate.length, speciesName.length);
-    
+
     if (sim > bestMatch.confidence && sim > 0.5) {
       // Try to infer modification from suffix
       const suffix = speciesName.slice(candidate.length);
@@ -318,8 +318,8 @@ export function inferModification(
     }
   }
 
-  return bestMatch.confidence > 0 
-    ? bestMatch 
+  return bestMatch.confidence > 0
+    ? bestMatch
     : { base: null, modification: null, confidence: 0 };
 }
 
@@ -463,7 +463,7 @@ export function analyzeReactions(model: SBMLModel): {
         if (pattern.products.length === 1) {
           const product = pattern.products[0];
           bindingReactions.set(product, pattern.reactants);
-          
+
           if (!dependencies.has(product)) {
             dependencies.set(product, new Set());
           }
@@ -493,10 +493,10 @@ export function analyzeReactions(model: SBMLModel): {
         if (pattern.reactants.length >= 1 && pattern.products.length >= 1) {
           const baseSpecies = pattern.reactants[0];
           const modifiedSpecies = pattern.products[0];
-          
+
           const baseName = model.species.get(baseSpecies)?.name || baseSpecies;
           const modifiedName = model.species.get(modifiedSpecies)?.name || modifiedSpecies;
-          
+
           // Check if names suggest modification relationship
           if (modifiedName.includes(baseName) || modifiedName.length > baseName.length) {
             modificationReactions.set(modifiedSpecies, baseSpecies);
@@ -510,7 +510,7 @@ export function analyzeReactions(model: SBMLModel): {
     }
   }
 
-  logger.info('RXN001', 
+  logger.info('RXN001',
     `Reaction analysis: ${bindingReactions.size} binding, ${modificationReactions.size} modification`);
 
   return { bindingReactions, modificationReactions, dependencies, patterns };
@@ -525,6 +525,7 @@ export interface SCTBuilderOptions {
   useAnnotations: boolean;
   namingConventions: NamingConventions;
   memoizedResolver: boolean;
+  atomize: boolean;
 }
 
 const DEFAULT_SCT_OPTIONS: SCTBuilderOptions = {
@@ -532,6 +533,7 @@ const DEFAULT_SCT_OPTIONS: SCTBuilderOptions = {
   useAnnotations: true,
   namingConventions: DEFAULT_NAMING_CONVENTIONS,
   memoizedResolver: false,
+  atomize: false,
 };
 
 /**
@@ -543,10 +545,10 @@ function createElementalSpecies(
 ): Species {
   const species = new Species();
   const name = useId ? sbmlSpecies.id : standardizeName(sbmlSpecies.name || sbmlSpecies.id);
-  
+
   const molecule = new Molecule(name, sbmlSpecies.id);
   species.addMolecule(molecule);
-  
+
   return species;
 }
 
@@ -561,20 +563,20 @@ function createComplexSpecies(
   useId: boolean = false
 ): Species {
   const species = new Species();
-  
+
   for (let i = 0; i < componentSpeciesIds.length; i++) {
     const compId = componentSpeciesIds[i];
     const compEntry = sctEntries.get(compId);
-    
+
     if (compEntry && compEntry.structure) {
       const compCopy = compEntry.structure.copy();
-      
+
       // Add binding component
       for (const mol of compCopy.molecules) {
         const bindingSite = new Component(`b${i + 1}`, `${mol.idx}_b${i + 1}`);
         mol.addComponent(bindingSite);
       }
-      
+
       for (const mol of compCopy.molecules) {
         species.addMolecule(mol);
       }
@@ -592,17 +594,17 @@ function createComplexSpecies(
     const bondNum = bondIndex.current++;
     const mol1 = species.molecules[0];
     const mol2 = species.molecules[1];
-    
+
     const site1 = mol1.components.find(c => c.name.startsWith('b'));
     const site2 = mol2.components.find(c => c.name.startsWith('b'));
-    
+
     if (site1 && site2) {
       site1.addBond(bondNum);
       site2.addBond(bondNum);
       species.bonds.push([site1.idx, site2.idx]);
     }
   }
-  
+
   return species;
 }
 
@@ -617,7 +619,7 @@ function createModifiedSpecies(
   useId: boolean = false
 ): Species {
   const baseEntry = sctEntries.get(baseSpeciesId);
-  
+
   if (!baseEntry || !baseEntry.structure) {
     return createElementalSpecies(sbmlSpecies, useId);
   }
@@ -625,10 +627,10 @@ function createModifiedSpecies(
   const species = baseEntry.structure.copy();
   const modType = modificationInfo.type;
   const molecule = species.molecules[0];
-  
+
   if (molecule) {
     const existingMod = molecule.getComponent(modType.toLowerCase());
-    
+
     if (existingMod) {
       existingMod.setActiveState(getModificationState(modType));
     } else {
@@ -642,7 +644,7 @@ function createModifiedSpecies(
       molecule.addComponent(modComponent);
     }
   }
-  
+
   return species;
 }
 
@@ -679,7 +681,7 @@ export function buildSpeciesCompositionTable(
   options: Partial<SCTBuilderOptions> = {}
 ): SpeciesCompositionTable {
   const opts = { ...DEFAULT_SCT_OPTIONS, ...options };
-  
+
   const sct: SpeciesCompositionTable = {
     entries: new Map(),
     dependencies: new Map(),
@@ -690,10 +692,10 @@ export function buildSpeciesCompositionTable(
 
   const speciesIds = Array.from(model.species.keys());
   const speciesNames = speciesIds.map(id => model.species.get(id)!.name || id);
-  
+
   // Analyze reactions
   const { bindingReactions, modificationReactions, dependencies } = analyzeReactions(model);
-  
+
   // Analyze naming conventions
   const namingAnalysis = analyzeNamingConventions(speciesNames, opts.namingConventions);
 
@@ -718,7 +720,7 @@ export function buildSpeciesCompositionTable(
         const sp = model.species.get(id);
         return sp?.name === baseName || id === baseName;
       });
-      
+
       if (derivedId && baseId && derivedId !== baseId) {
         if (!sct.dependencies.has(derivedId)) {
           sct.dependencies.set(derivedId, new Set());
@@ -753,49 +755,49 @@ export function buildSpeciesCompositionTable(
     const sbmlSpecies = model.species.get(speciesId)!;
     const speciesName = sbmlSpecies.name || speciesId;
     const deps = sct.dependencies.get(speciesId);
-    
+
     let structure: Species;
     let components: string[] = [];
     let isElemental = true;
     const modifications = new Map<string, string>();
 
     // Check if this is a complex (from binding reactions)
-    if (bindingReactions.has(speciesId)) {
+    if (opts.atomize && bindingReactions.has(speciesId)) {
       components = bindingReactions.get(speciesId)!;
       isElemental = false;
       structure = createComplexSpecies(sbmlSpecies, components, sct.entries, bondIndex, opts.useId);
     }
     // Check if modified species
-    else if (modificationReactions.has(speciesId)) {
+    else if (opts.atomize && modificationReactions.has(speciesId)) {
       const baseId = modificationReactions.get(speciesId)!;
       components = [baseId];
       isElemental = false;
-      
+
       const baseSp = model.species.get(baseId);
       const baseName = baseSp?.name || baseId;
       const modInfo = inferModification(speciesName, [baseName], opts.namingConventions);
-      
+
       if (modInfo.modification) {
         modifications.set('state', modInfo.modification);
       }
-      
+
       structure = createModifiedSpecies(sbmlSpecies, baseId, {
         type: modInfo.modification || 'Modification',
         confidence: modInfo.confidence,
       }, sct.entries, opts.useId);
     }
     // Check naming relationships
-    else if (deps && deps.size > 0) {
+    else if (opts.atomize && deps && deps.size > 0) {
       const depArray = Array.from(deps);
       components = depArray;
       isElemental = false;
-      
+
       if (depArray.length === 1) {
         const baseId = depArray[0];
         const baseSp = model.species.get(baseId);
         const baseName = baseSp?.name || baseId;
         const modInfo = inferModification(speciesName, [baseName], opts.namingConventions);
-        
+
         if (modInfo.modification) {
           modifications.set('state', modInfo.modification);
           structure = createModifiedSpecies(sbmlSpecies, baseId, {
@@ -829,8 +831,8 @@ export function buildSpeciesCompositionTable(
 
   const elementalCount = Array.from(sct.entries.values()).filter(e => e.isElemental).length;
   const complexCount = sct.entries.size - elementalCount;
-  
-  logger.info('SCT001', 
+
+  logger.info('SCT001',
     `Built SCT: ${sct.entries.size} species (${elementalCount} elemental, ${complexCount} complex)`);
 
   return sct;
@@ -843,21 +845,21 @@ export function getMoleculeTypes(sct: SpeciesCompositionTable): Molecule[] {
   const moleculeTypes = new Map<string, Molecule>();
 
   for (const [_, entry] of sct.entries) {
-    if (entry.isElemental) {
-      for (const mol of entry.structure.molecules) {
-        if (!moleculeTypes.has(mol.name)) {
-          moleculeTypes.set(mol.name, mol.copy());
-        } else {
-          const existing = moleculeTypes.get(mol.name)!;
-          for (const comp of mol.components) {
-            if (!existing.contains(comp.name)) {
-              existing.addComponent(comp.copy());
-            } else {
-              const existingComp = existing.getComponent(comp.name)!;
-              for (const state of comp.states) {
-                if (!existingComp.states.includes(state)) {
-                  existingComp.addState(state, false);
-                }
+    // If not atomizing, every species is its own molecule type (or composed of them)
+    // If atomizing, only elemental entries define molecule types
+    for (const mol of entry.structure.molecules) {
+      if (!moleculeTypes.has(mol.name)) {
+        moleculeTypes.set(mol.name, mol.copy());
+      } else {
+        const existing = moleculeTypes.get(mol.name)!;
+        for (const comp of mol.components) {
+          if (!existing.contains(comp.name)) {
+            existing.addComponent(comp.copy());
+          } else {
+            const existingComp = existing.getComponent(comp.name)!;
+            for (const state of comp.states) {
+              if (!existingComp.states.includes(state)) {
+                existingComp.addState(state, false);
               }
             }
           }
@@ -880,12 +882,6 @@ export function getSeedSpecies(
 
   for (const [speciesId, entry] of sct.entries) {
     const sbmlSpecies = model.species.get(speciesId)!;
-    
-    // Skip constant species with 0 initial value
-    if (sbmlSpecies.constant && sbmlSpecies.boundaryCondition && 
-        sbmlSpecies.initialConcentration === 0 && sbmlSpecies.initialAmount === 0) {
-      continue;
-    }
 
     const concentration = sbmlSpecies.initialConcentration > 0
       ? sbmlSpecies.initialConcentration.toString()
@@ -893,13 +889,11 @@ export function getSeedSpecies(
         ? sbmlSpecies.initialAmount.toString()
         : '0';
 
-    if (parseFloat(concentration) > 0) {
-      seedSpecies.push({
-        species: entry.structure.copy(),
-        concentration,
-        compartment: sbmlSpecies.compartment,
-      });
-    }
+    seedSpecies.push({
+      species: entry.structure.copy(),
+      concentration,
+      compartment: sbmlSpecies.compartment,
+    });
   }
 
   return seedSpecies;

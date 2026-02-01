@@ -41,9 +41,16 @@ export function bnglFunction(
   compartments: string[] = [],
   parameterDict: Map<string, number> = new Map(),
   reactionDict: Map<string, string> = new Map(),
-  assignmentRuleVariables: Set<string> = new Set()
+  assignmentRuleVariables: Set<string> = new Set(),
+  observableIds: Set<string> = new Set()
 ): string {
   let result = rule;
+
+  // Replace species IDs (observables)
+  for (const obsId of observableIds) {
+    const regex = new RegExp(`\\b${obsId}\\b`, 'g');
+    result = result.replace(regex, standardizeName(obsId));
+  }
 
   // Convert comparison operators
   result = convertComparisonOperators(result);
@@ -94,15 +101,78 @@ function convertComparisonOperators(expr: string): string {
     'leq': '<=',
     'eq': '==',
     'neq': '!=',
+    'and': '&&',
+    'or': '||',
   };
 
   let result = expr;
   for (const [func, op] of Object.entries(operators)) {
-    const regex = new RegExp(`${func}\\s*\\(\\s*([^,]+)\\s*,\\s*([^)]+)\\s*\\)`, 'g');
-    result = result.replace(regex, `($1 ${op} $2)`);
+    // Match func(a, b)
+    result = replaceNestedFunc(result, func, (args) => {
+      if (args.length === 2) {
+        return `(${args[0]} ${op} ${args[1]})`;
+      }
+      return `${func}(${args.join(',')})`;
+    });
   }
 
+  // Handle 'not(a)'
+  result = replaceNestedFunc(result, 'not', (args) => {
+    if (args.length === 1) {
+      return `(!${args[0]})`;
+    }
+    return `not(${args.join(',')})`;
+  });
+
   return result;
+}
+
+/**
+ * Helper to replace nested functions correctly
+ */
+function replaceNestedFunc(expr: string, funcName: string, replacer: (args: string[]) => string): string {
+  let result = expr;
+  let startIndex = result.indexOf(funcName + '(');
+  while (startIndex !== -1) {
+    let parenCount = 1;
+    let i = startIndex + funcName.length + 1;
+    while (parenCount > 0 && i < result.length) {
+      if (result[i] === '(') parenCount++;
+      else if (result[i] === ')') parenCount--;
+      i++;
+    }
+
+    if (parenCount === 0) {
+      const inner = result.substring(startIndex + funcName.length + 1, i - 1);
+      const args = splitArguments(inner);
+      const replacement = replacer(args);
+      result = result.substring(0, startIndex) + replacement + result.substring(i);
+      startIndex = result.indexOf(funcName + '(', startIndex + replacement.length);
+    } else {
+      break;
+    }
+  }
+  return result;
+}
+
+function splitArguments(inner: string): string[] {
+  const args: string[] = [];
+  let current = '';
+  let parenCount = 0;
+  for (let i = 0; i < inner.length; i++) {
+    const char = inner[i];
+    if (char === '(') parenCount++;
+    else if (char === ')') parenCount--;
+
+    if (char === ',' && parenCount === 0) {
+      args.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  args.push(current.trim());
+  return args;
 }
 
 /**
@@ -112,76 +182,57 @@ function convertMathFunctions(expr: string): string {
   let result = expr;
 
   // Power function: pow(a, b) -> (a)^(b)
-  result = result.replace(/pow\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)/g, '(($1)^($2))');
+  result = replaceNestedFunc(result, 'pow', (args) => `((${args[0]})^(${args[1]}))`);
 
   // Square root: sqrt(x) -> (x)^(1/2)
-  result = result.replace(/sqrt\s*\(\s*([^)]+)\s*\)/g, '(($1)^(1/2))');
+  result = replaceNestedFunc(result, 'sqrt', (args) => `((${args[0]})^(1/2))`);
 
   // Square: sqr(x) -> (x)^2
-  result = result.replace(/sqr\s*\(\s*([^)]+)\s*\)/g, '(($1)^2)');
-
-  // Root: root(n, x) -> (x)^(1/n)
-  result = result.replace(/root\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)/g, '(($2)^(1/($1)))');
+  result = replaceNestedFunc(result, 'sqr', (args) => `((${args[0]})^2)`);
 
   // Exponential: exp(x) -> e^(x)
-  result = result.replace(/\bexp\s*\(\s*([^)]+)\s*\)/g, '(2.71828182845905^($1))');
+  result = replaceNestedFunc(result, 'exp', (args) => `(2.71828182845905^(${args[0]}))`);
 
-  // Ceiling and floor
-  result = result.replace(
-    /\bceil\s*\(\s*([^)]+)\s*\)/g,
-    'min(rint(($1)+0.5),rint(($1)+1))'
-  );
-  result = result.replace(
-    /\bfloor\s*\(\s*([^)]+)\s*\)/g,
-    'min(rint(($1)-0.5),rint(($1)+0.5))'
-  );
+  // Absolute value: abs(x) -> if(x>=0,x,-x)
+  result = replaceNestedFunc(result, 'abs', (args) => `if(${args[0]}>=0,${args[0]},-(${args[0]}))`);
 
   // Logarithm: log(x) -> ln(x)
   result = result.replace(/\blog\s*\(/g, 'ln(');
 
   // Log base 10: log10(x) -> (ln(x)/ln(10))
-  result = result.replace(/log10\s*\(\s*([^)]+)\s*\)/g, '(ln($1)/2.302585093)');
+  result = replaceNestedFunc(result, 'log10', (args) => `(ln(${args[0]})/2.302585093)`);
 
-  // Absolute value
-  result = result.replace(/\babs\s*\(\s*([^)]+)\s*\)/g, 'if($1>=0,$1,-($1))');
-
-  // Boolean operators
-  result = result.replace(/\band\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)/g, '($1 && $2)');
-  result = result.replace(/\bor\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)/g, '($1 || $2)');
-  result = result.replace(/\bnot\s*\(\s*([^)]+)\s*\)/g, '(!$1)');
-
-  // Replace special constants
+  // Special constants
   result = result.replace(/\bpi\b/g, '3.14159265358979');
   result = result.replace(/\bexponentiale\b/gi, '2.71828182845905');
-
-  // Handle infinity
-  while (/\binf\b/i.test(result)) {
-    result = result.replace(/\binf\b/gi, '1e20');
-  }
 
   return result;
 }
 
 /**
- * Convert piecewise functions to if statements
+ * Convert piecewise functions to nested if statements
  */
 function convertPiecewise(expr: string): string {
-  let result = expr;
-
-  // Simple piecewise: piecewise(value1, condition1, otherwise)
-  const piecewiseRegex = /piecewise\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)/g;
-
-  let match;
-  while ((match = piecewiseRegex.exec(result)) !== null) {
-    const value1 = match[1].trim();
-    const condition = match[2].trim();
-    const otherwise = match[3].trim();
-
-    const replacement = `if(${condition}, ${value1}, ${otherwise})`;
-    result = result.replace(match[0], replacement);
-  }
-
-  return result;
+  return replaceNestedFunc(expr, 'piecewise', (args) => {
+    if (args.length === 1) return args[0];
+    if (args.length === 2) return `if(${args[1]}, ${args[0]}, 0)`; // Default otherwise to 0
+    
+    let result = args[args.length - 1]; // Start with the "otherwise" value
+    // If odd number of args, the last one is 'otherwise'
+    // piecewise(v1, c1, v2, c2, ..., otherwise)
+    if (args.length % 2 === 1) {
+      for (let i = args.length - 3; i >= 0; i -= 2) {
+        result = `if(${args[i+1]}, ${args[i]}, ${result})`;
+      }
+    } else {
+      // piecewise(v1, c1, v2, c2, ...) -> assume 0 for final otherwise
+      result = '0';
+      for (let i = args.length - 2; i >= 0; i -= 2) {
+        result = `if(${args[i+1]}, ${args[i]}, ${result})`;
+      }
+    }
+    return result;
+  });
 }
 
 /**
@@ -296,7 +347,8 @@ function sectionTemplate(
  */
 export function writeParameters(
   parameters: Map<string, SBMLParameter>,
-  compartments: Map<string, SBMLCompartment>
+  compartments: Map<string, SBMLCompartment>,
+  assignmentRuleVariables: Set<string> = new Set()
 ): string {
   const lines: string[] = [];
 
@@ -311,6 +363,12 @@ export function writeParameters(
   for (const [id, param] of parameters) {
     if (param.scope === 'global') {
       const name = standardizeName(id);
+
+      // Skip parameters that are targets of assignment rules (they become functions)
+      if (assignmentRuleVariables.has(name)) {
+        continue;
+      }
+
       let value = String(param.value);
       value = cleanParameterValue(value);
       lines.push(`${name} ${value}`);
@@ -395,18 +453,49 @@ export function writeSeedSpecies(
  */
 export function writeObservables(
   sbmlSpecies: Map<string, SBMLSpecies>,
-  sct: SpeciesCompositionTable
+  sct: SpeciesCompositionTable,
+  assignmentRules: Array<{ variable: string; math: string }> = []
 ): string {
   const lines: string[] = [];
 
   for (const [id, sp] of sbmlSpecies) {
     const entry = sct.entries.get(id);
     if (entry && entry.structure) {
-      // Use id effectively (standardized) to match math formulas which use IDs
-      // ignoring sp.name to prevent mismatch with rate laws
       const name = standardizeName(id);
       const pattern = entry.structure.toString();
       lines.push(`Molecules ${name} ${pattern}`);
+    }
+  }
+
+  // Handle assignment rules mapping back to observables
+  for (const rule of assignmentRules) {
+    const name = standardizeName(rule.variable);
+
+    // Only map to observables if it's a simple sum (observable-compatible)
+    if (/[*/^()]/.test(rule.math)) continue;
+
+    // Find all species identifiers (S1, S2, etc.) in the math expression
+    const speciesMatches = rule.math.match(/\bS\d+\b/g);
+
+    if (speciesMatches) {
+      const patterns: string[] = [];
+      const seenPatterns = new Set<string>();
+
+      for (const spId of speciesMatches) {
+        const entry = sct.entries.get(spId);
+        const pattern = entry && entry.structure
+          ? entry.structure.toString()
+          : `${spId}()`;
+
+        if (!seenPatterns.has(pattern)) {
+          patterns.push(pattern);
+          seenPatterns.add(pattern);
+        }
+      }
+
+      if (patterns.length > 0) {
+        lines.push(`Molecules ${name} ${patterns.join(' ')}`);
+      }
     }
   }
 
@@ -432,23 +521,28 @@ export function writeFunctions(
     const name = standardizeName(id);
     const args = func.arguments.map(a => standardizeName(a)).join(', ');
     let body = func.math;
-    
+
     body = convertMathFunctions(body);
     body = convertComparisonOperators(body);
-    
+    body = convertPiecewise(body);
+
     lines.push(`${name}(${args}) = ${body}`);
   }
 
   // Write Assignment Rules as Functions (variable() = math)
-  // We use standardized names for the variable
+  // We skip rules that were already written as observables
   for (const rule of assignmentRules) {
     if (!rule.variable) continue;
     const name = standardizeName(rule.variable);
+
+    // If it's observable-compatible, it was already handled in writeObservables
+    // and BioNetGen doesn't allow it to be both.
+    if (!/[*/^()]/.test(rule.math) && /\bS\d+\b/.test(rule.math)) continue;
+
     let body = rule.math;
-    
     body = convertMathFunctions(body);
     body = convertComparisonOperators(body);
-    
+    body = convertPiecewise(body);
     lines.push(`${name}() = ${body}`);
   }
 
@@ -477,7 +571,7 @@ export function writeReactionRulesFlat(
     for (const ref of rxn.reactants) {
       if (ref.species === 'EmptySet') continue;
       const sp = sbmlSpecies.get(ref.species);
-      const name = standardizeName(sp?.name || ref.species);
+      const name = options.useId ? standardizeName(ref.species) : standardizeName(sp?.name || ref.species);
       let speciesStr = `${name}()`;
 
       if (useCompartments && sp?.compartment) {
@@ -493,7 +587,7 @@ export function writeReactionRulesFlat(
     for (const ref of rxn.products) {
       if (ref.species === 'EmptySet') continue;
       const sp = sbmlSpecies.get(ref.species);
-      const name = standardizeName(sp?.name || ref.species);
+      const name = options.useId ? standardizeName(ref.species) : standardizeName(sp?.name || ref.species);
       let speciesStr = `${name}()`;
 
       if (useCompartments && sp?.compartment) {
@@ -528,17 +622,35 @@ export function writeReactionRulesFlat(
         Array.from(compartments.keys()),
         new Map(Array.from(parameterDict.entries()).map(([k, v]) => [k, Number(v)])),
         new Map(),
-        options.assignmentRuleVariables // Pass set of assignment variables
+        options.assignmentRuleVariables,
+        new Set(sbmlSpecies.keys())
       );
     }
 
-    // Build rule string
+    // Build divisor for absolute rate laws to achieve parity with SBML KineticLaw
+    const reactantCounts = new Map<string, number>();
+    for (const ref of rxn.reactants) {
+      if (ref.species === 'EmptySet') continue;
+      reactantCounts.set(ref.species, (reactantCounts.get(ref.species) || 0) + (ref.stoichiometry || 1));
+    }
+    const divisorParts: string[] = [];
+    for (const [spId, totalStoich] of reactantCounts) {
+      const name = standardizeName(spId);
+      if (totalStoich === 1) {
+        divisorParts.push(name);
+      } else {
+        divisorParts.push(`((${name}^${totalStoich})/${getFactorial(totalStoich)})`);
+      }
+    }
+    const divisor = divisorParts.length > 0 ? divisorParts.join('*') : '1';
+    const finalRate = rate === '0' ? '0' : `((${rate})/(${divisor}+1e-60))`;
+
     const reactants = reactantStrs.length > 0 ? reactantStrs.join(' + ') : '0';
     const products = productStrs.length > 0 ? productStrs.join(' + ') : '0';
     const arrow = rxn.reversible ? '<->' : '->';
 
     const ruleName = standardizeName(rxn.name || rxnId);
-    lines.push(`${ruleName}: ${reactants} ${arrow} ${products} ${rate}`);
+    lines.push(`${ruleName}: ${reactants} ${arrow} ${products} ${finalRate}`);
   }
 
   return sectionTemplate('reaction rules', lines);
@@ -632,17 +744,35 @@ export function writeReactionRulesAtomized(
         Array.from(compartments.keys()),
         new Map(Array.from(parameterDict.entries()).map(([k, v]) => [k, Number(v)])),
         new Map(),
-        options.assignmentRuleVariables // Pass set of assignment variables
+        options.assignmentRuleVariables,
+        new Set(sct.entries.keys())
       );
     }
 
-    // Build rule string
+    // Build divisor for absolute rate laws to achieve parity with SBML KineticLaw
+    const reactantCounts = new Map<string, number>();
+    for (const ref of rxn.reactants) {
+      if (ref.species === 'EmptySet') continue;
+      reactantCounts.set(ref.species, (reactantCounts.get(ref.species) || 0) + (ref.stoichiometry || 1));
+    }
+    const divisorParts: string[] = [];
+    for (const [spId, totalStoich] of reactantCounts) {
+      const name = standardizeName(spId);
+      if (totalStoich === 1) {
+        divisorParts.push(name);
+      } else {
+        divisorParts.push(`((${name}^${totalStoich})/${getFactorial(totalStoich)})`);
+      }
+    }
+    const divisor = divisorParts.length > 0 ? divisorParts.join('*') : '1';
+    const finalRate = rate === '0' ? '0' : `((${rate})/(${divisor}+1e-60))`;
+
     const reactants = reactantStrs.length > 0 ? reactantStrs.join(' + ') : '0';
     const products = productStrs.length > 0 ? productStrs.join(' + ') : '0';
     const arrow = rxn.reversible ? '<->' : '->';
 
     const ruleName = standardizeName(rxn.name || rxnId);
-    lines.push(`${ruleName}: ${reactants} ${arrow} ${products} ${rate}`);
+    lines.push(`${ruleName}: ${reactants} ${arrow} ${products} ${finalRate}`);
   }
 
   return sectionTemplate('reaction rules', lines);
@@ -673,6 +803,34 @@ export function generateBNGL(
 
   const sections: string[] = [];
 
+  // Collect assignment rules for processing
+  const assignmentRules: Array<{ variable: string; math: string }> = [];
+  const assignmentRuleVariables = new Set<string>();
+
+  if (model.rules) {
+    for (const rule of model.rules) {
+      if (rule.type === 'assignment' && rule.variable) {
+        assignmentRules.push({ variable: rule.variable, math: rule.math });
+        assignmentRuleVariables.add(standardizeName(rule.variable));
+      }
+    }
+  }
+
+  // Handle Initial Assignments
+  if (model.initialAssignments) {
+    for (const ia of model.initialAssignments) {
+      const name = standardizeName(ia.symbol);
+      // Promote non-species initial assignments to functions/rules if they have math
+      if (!model.species.has(ia.symbol) && !assignmentRuleVariables.has(name)) {
+        assignmentRules.push({ variable: ia.symbol, math: ia.math });
+        assignmentRuleVariables.add(name);
+      }
+    }
+  }
+
+  // Add assignment variables to options for lower-level writers to use
+  options = { ...options, assignmentRuleVariables };
+
   // Header comment
   sections.push(`# BNGL model generated from SBML`);
   sections.push(`# Model: ${model.name}`);
@@ -682,7 +840,7 @@ export function generateBNGL(
   sections.push('');
 
   // Parameters
-  sections.push(writeParameters(model.parameters, model.compartments));
+  sections.push(writeParameters(model.parameters, model.compartments, assignmentRuleVariables));
 
   // Compartments (if more than one)
   if (model.compartments.size > 1) {
@@ -705,28 +863,13 @@ export function generateBNGL(
   sections.push(writeSeedSpecies(seedSpecies, model.compartments));
 
   // Observables
-  sections.push(writeObservables(model.species, sct));
+  sections.push(writeObservables(model.species, sct, assignmentRules));
 
   for (const [id, sp] of model.species) {
     const name = standardizeName(id);
     observableMap.set(id, name);
   }
 
-  // Collect assignment rules for processing
-  const assignmentRules: Array<{ variable: string; math: string }> = [];
-  const assignmentRuleVariables = new Set<string>();
-
-  if (model.rules) {
-    for (const rule of model.rules) {
-      if (rule.type === 'assignment' && rule.variable) {
-        assignmentRules.push({ variable: rule.variable, math: rule.math });
-        assignmentRuleVariables.add(standardizeName(rule.variable));
-      }
-    }
-  }
-
-  // Add assignment variables to options for lower-level writers to use
-  options = { ...options, assignmentRuleVariables };
 
   // Functions (and Assignment Rules)
   if (model.functionDefinitions.size > 0 || assignmentRules.length > 0) {
@@ -734,7 +877,7 @@ export function generateBNGL(
     for (const [id, param] of model.parameters) {
       paramDict.set(id, param.value);
     }
-    
+
     sections.push(writeFunctions(model.functionDefinitions, assignmentRules, paramDict));
   }
 
@@ -776,8 +919,48 @@ export function generateBNGL(
 
   // Add simulation commands
   sections.push('# Simulation commands');
-  sections.push('generate_network({overwrite=>1})');
-  sections.push('simulate({method=>"ode",t_end=>100,n_steps=>1000})');
+  if (options.actions) {
+    let actions = options.actions.trim();
+
+    // Translate species references in actions to standardized BNGL names
+    // This handles cases where simulation commands (e.g., setConcentration)
+    // refer to original names like "Epi(r)" that were renamed to "S1()".
+    const translationMap = new Map<string, string>();
+    for (const [id, sp] of model.species) {
+      const bnglName = standardizeName(id);
+      translationMap.set(id, bnglName);
+      if (sp.name && sp.name !== id) {
+        translationMap.set(sp.name, bnglName);
+      }
+    }
+
+    // Sort keys by length descending to prioritize longer matches (e.g., "RTK_P" over "RTK")
+    const sortedKeys = Array.from(translationMap.keys()).sort((a, b) => b.length - a.length);
+
+    for (const key of sortedKeys) {
+      const bnglName = translationMap.get(key)!;
+      const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Use boundary check only if key ends with a word character
+      const endBoundary = /\w$/.test(key) ? '\\b' : '';
+      // Allow for optional parens/states only if key doesn't already have them
+      const optionalPattern = key.includes('(') ? '' : '(?:\\([^)]*\\))?';
+      const regex = new RegExp(`\\b${escaped}${endBoundary}${optionalPattern}`, 'g');
+      actions = actions.replace(regex, `${bnglName}()`);
+    }
+
+    if (actions.startsWith('begin actions')) {
+      sections.push(actions);
+    } else {
+      sections.push('begin actions');
+      sections.push(actions);
+      sections.push('end actions');
+    }
+  } else {
+    sections.push('generate_network({overwrite=>1})');
+    const tEnd = options.tEnd ?? 10;
+    const nSteps = options.nSteps ?? 100;
+    sections.push(`simulate({method=>"ode",t_end=>${tEnd},n_steps=>${nSteps}})`);
+  }
 
   const bngl = sections.join('\n');
 
@@ -879,4 +1062,14 @@ function printTranslate(
   }
 
   return tmp.join(' + ');
+}
+
+/**
+ * Combinatorial factor (factorial) for rate law correction
+ */
+function getFactorial(n: number): number {
+  if (n <= 1) return 1;
+  let res = 1;
+  for (let i = 2; i <= n; i++) res *= i;
+  return res;
 }

@@ -352,6 +352,12 @@ export interface AtomizerOptions {
   obsMapFile?: string;
   /** Variables defined by assignment rules (internal use) */
   assignmentRuleVariables?: Set<string>;
+  /** Simulation end time */
+  tEnd?: number;
+  /** Number of simulation steps */
+  nSteps?: number;
+  /** Custom actions block text */
+  actions?: string;
 }
 
 /**
@@ -370,6 +376,8 @@ export const DEFAULT_ATOMIZER_OPTIONS: AtomizerOptions = {
   replaceLocParams: true,
   quietMode: false,
   logLevel: 'INFO',
+  tEnd: 10,
+  nSteps: 100,
 };
 
 // =============================================================================

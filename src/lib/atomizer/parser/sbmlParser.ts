@@ -22,6 +22,11 @@ import {
 } from '../config/types';
 import { standardizeName, logger, factorial, comb } from '../utils/helpers';
 
+// Polyfill self for Node.js compatibility (libsbmljs uses it)
+if (typeof self === 'undefined') {
+  (global as any).self = global;
+}
+
 // =============================================================================
 // LibSBML Type Declarations
 // =============================================================================

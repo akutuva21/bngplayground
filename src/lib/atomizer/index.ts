@@ -55,7 +55,7 @@ export class Atomizer {
     this.options = { ...DEFAULT_ATOMIZER_OPTIONS, ...options };
     this.parser = new SBMLParser();
     this.databases = new Databases();
-    
+
     // Configure logger
     logger.setLevel(this.options.logLevel);
     logger.setQuietMode(this.options.quietMode);
@@ -130,8 +130,8 @@ export class Atomizer {
       // Parse SBML
       logger.info('ATM003', 'Parsing SBML model...');
       this.model = await this.parser.parse(sbmlString);
-      
-      logger.info('ATM004', 
+
+      logger.info('ATM004',
         `Model "${this.model.name}": ${this.model.species.size} species, ${this.model.reactions.size} reactions`
       );
 
@@ -142,6 +142,7 @@ export class Atomizer {
         useAnnotations: this.options.annotation,
         namingConventions: this.options.namingConventions || DEFAULT_NAMING_CONVENTIONS,
         memoizedResolver: this.options.memoizedResolver,
+        atomize: this.options.atomize,
       });
 
       // Get molecule types
@@ -181,7 +182,7 @@ export class Atomizer {
 
     } catch (error) {
       logger.error('ATM010', `Atomization failed: ${error}`);
-      
+
       return {
         bngl: '',
         database: this.databases,
@@ -200,7 +201,7 @@ export class Atomizer {
   async flatTranslation(sbmlString: string): Promise<AtomizerResult> {
     const savedAtomize = this.options.atomize;
     this.options.atomize = false;
-    
+
     try {
       return await this.atomize(sbmlString);
     } finally {
@@ -214,7 +215,7 @@ export class Atomizer {
   async fullAtomization(sbmlString: string): Promise<AtomizerResult> {
     const savedAtomize = this.options.atomize;
     this.options.atomize = true;
-    
+
     try {
       return await this.atomize(sbmlString);
     } finally {

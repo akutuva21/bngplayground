@@ -17,9 +17,6 @@ const TOLERANCE = 1e-3;
 const BNG2_INCOMPATIBLE_MODELS = new Set([
     'test_MM',
     'mCaMKII_Ca_Spike',
-    'Cheemalavagu_JAK_STAT', // writeMexfile() has nothing to do
-    'cBNGL_simple',          // writeMfile() has nothing to do
-    'localfunc',            // writeMfile() has nothing to do
     'Blinov_2006',          // Too slow / hangs
     'Lin_ERK_2019',
     'Lin_TCR_2019',
@@ -56,7 +53,7 @@ function ensureDirs() {
 }
 
 // Helper to run BNG2.pl
-function runBNG2(args: string[], timeoutMs = 600_000) {
+function runBNG2(args: string[], timeoutMs = 600_000): string {
     const cmd = `perl "${normalizePath(BNG2_PATH)}" ${args.map(arg => {
         if (arg.startsWith('"') && arg.endsWith('"')) {
             return `"${normalizePath(arg.slice(1, -1))}"`;
@@ -64,11 +61,12 @@ function runBNG2(args: string[], timeoutMs = 600_000) {
         return arg;
     }).join(' ')}`;
     try {
-        execSync(cmd, { stdio: 'pipe', timeout: timeoutMs });
+        const out = execSync(cmd, { stdio: 'pipe', timeout: timeoutMs });
+        return out.toString();
     } catch (e: any) {
         const stderr = e.stderr?.toString() || '';
         const stdout = e.stdout?.toString() || '';
-        throw new Error(`BNG2 Failure: ${stderr || e.message}\nSTDOUT: ${stdout.slice(-500)}`);
+        throw new Error(`BNG2 Failure: ${stderr || e.message}\nSTDOUT: ${stdout.slice(-1000)}`);
     }
 }
 
@@ -139,22 +137,26 @@ async function verifyModel(modelPath: string) {
     try {
         const originalContent = fs.readFileSync(modelPath, 'utf-8');
         let actionsMatch = originalContent.match(/begin actions([\s\S]*?)end actions/i);
-        
+
         let originalActions = '';
         const foundActions: string[] = [];
-        
+
         // Force ODE usage for verification to ensure deterministic comparison
         // distinct from stochastic noise or seed differences
         if (actionsMatch) {
-            originalActions = actionsMatch[0].replace(/method\s*=>\s*["']ssa["']/, 'method=>"ode"');
+            originalActions = actionsMatch[0]
+                .replace(/method\s*=>\s*["']ssa["']/, 'method=>"ode"')
+                .split('\n')
+                .filter(line => !line.match(/write(Mex|M)file/i))
+                .join('\n');
             foundActions.push(originalActions);
         } else {
             // Strip comments first
             const contentNoComments = originalContent.split('\n')
                 .map(line => line.split('#')[0])
                 .join('\n');
-            
-            const actionCommands = ['generate_network', 'simulate', 'simulate_ode', 'simulate_ssa', 'simulate_nf', 'saveState', 'setParameter', 'setConcentration', 'addParameter', 'readFile', 'quit', 'writeSBML', 'writeMfile', 'writeMexfile', 'writeMEXfile', 'writeFile', 'print', 'echo'];
+
+            const actionCommands = ['generate_network', 'simulate', 'simulate_ode', 'simulate_ssa', 'simulate_nf', 'saveState', 'setParameter', 'setConcentration', 'addParameter', 'readFile', 'quit', 'writeSBML', 'writeFile', 'print', 'echo'];
             let pos = 0;
             while (pos < contentNoComments.length) {
                 let foundCmd = false;
@@ -218,31 +220,37 @@ async function verifyModel(modelPath: string) {
         const modifiedContent = strippedContent + '\nbegin actions\ngenerate_network({overwrite=>1})\nwriteSBML({})\nend actions\n';
         fs.writeFileSync(tempBnglPath, modifiedContent);
 
+        console.log(`[Parser] Generating SBML...`);
         runBNG2(['--outdir', `"${sbmlOutDir}"`, `"${tempBnglPath}"`]);
 
         let sbmlFile = path.join(sbmlOutDir, 'model_sbml.xml');
-        if (!fs.existsSync(sbmlFile)) throw new Error(`SBML generation failed`);
+        if (!fs.existsSync(sbmlFile)) {
+            console.error(`[ERROR] SBML file not found at ${sbmlFile}`);
+            throw new Error(`SBML generation failed`);
+        }
 
-        if (!fs.existsSync(sbmlFile)) throw new Error(`SBML generation failed`);
-        
-        // Enabling full atomization to verify proper structure inference and fixes
+        console.log(`[Atomizer] Atomizing...`);
         const atomizer = new Atomizer({ atomize: true, quietMode: true, useId: true, actions: originalActions });
         await atomizer.initialize();
-        await atomizer.initialize();
         const result = await atomizer.atomize(fs.readFileSync(sbmlFile, 'utf-8'));
-        if (!result.success) throw new Error(`Atomization failed: ${result.error}`);
+        if (!result.success) {
+            console.error(`[ERROR] Atomization failed for ${modelName}: ${result.error}`);
+            throw new Error(`Atomization failed: ${result.error}`);
+        }
 
         const atomizedBnglPath = path.join(OUTPUT_BASE, 'atomized', `${modelName}.bngl`);
         fs.writeFileSync(atomizedBnglPath, result.bngl);
+        console.log(`[Atomizer] Done.`);
 
         const refSimDir = path.join(OUTPUT_BASE, 'reference_sim', modelName);
-        if (!fs.existsSync(refSimDir)) fs.mkdirSync(refSimDir, { recursive: true });
-        
+        if (fs.existsSync(refSimDir)) fs.rmSync(refSimDir, { recursive: true, force: true });
+        fs.mkdirSync(refSimDir, { recursive: true });
+
         // Create a temp reference file with the FORCED ODE actions
         const tempRefPath = path.join(refSimDir, 'ref_model.bngl');
         let refContent = strippedContent;
         if (!refContent.includes('begin model')) {
-             refContent = 'begin model\n' + refContent + '\nend model\n';
+            refContent = 'begin model\n' + refContent + '\nend model\n';
         }
         refContent = refContent + '\n' + originalActions + '\n';
         fs.writeFileSync(tempRefPath, refContent);
@@ -250,12 +258,12 @@ async function verifyModel(modelPath: string) {
         runBNG2(['--outdir', `"${refSimDir}"`, `"${tempRefPath}"`]);
 
         const atomSimDir = path.join(OUTPUT_BASE, 'atomized_sim', modelName);
-        if (!fs.existsSync(atomSimDir)) fs.mkdirSync(atomSimDir, { recursive: true });
+        if (fs.existsSync(atomSimDir)) fs.rmSync(atomSimDir, { recursive: true, force: true });
+        fs.mkdirSync(atomSimDir, { recursive: true });
         runBNG2(['--outdir', `"${atomSimDir}"`, `"${atomizedBnglPath}"`]);
 
-        const findsGdat = (dir: string, prefix: string) => {
-            const files = fs.readdirSync(dir).filter(f => (f.startsWith(prefix) || f.startsWith('model')) && (f.endsWith('.gdat') || f.endsWith('.cdat')));
-            // Prefer .gdat if both exist
+        const findsGdat = (dir: string) => {
+            const files = fs.readdirSync(dir).filter(f => f.endsWith('.gdat') || f.endsWith('.cdat'));
             const gdat = files.find(f => f.endsWith('.gdat'));
             if (gdat) return path.join(dir, gdat);
             const cdat = files.find(f => f.endsWith('.cdat'));
@@ -263,8 +271,8 @@ async function verifyModel(modelPath: string) {
             return null;
         };
 
-        const refGdat = findsGdat(refSimDir, modelName);
-        const atomGdat = findsGdat(atomSimDir, modelName);
+        const refGdat = findsGdat(refSimDir);
+        const atomGdat = findsGdat(atomSimDir);
 
         if (!refGdat || !atomGdat) throw new Error(`Missing GDAT output (ref=${!!refGdat}, atom=${!!atomGdat})`);
 
@@ -299,6 +307,7 @@ async function main() {
 
     const modelsArg = process.argv.find(a => a.startsWith('--models='));
     const modelsFilter = modelsArg ? modelsArg.split('=')[1].split(',') : process.argv.slice(2).filter(a => !a.startsWith('--'));
+    console.log('Models Filter:', modelsFilter);
 
     // Load existing results if available
     const reportPath = 'public_atomizer_report.json';
@@ -316,11 +325,11 @@ async function main() {
 
     for (const modelId of passModels) {
         if (modelsFilter.length > 0 && !modelsFilter.includes(modelId)) continue;
-        if (BNG2_INCOMPATIBLE_MODELS.has(modelId)) {
+        if (BNG2_INCOMPATIBLE_MODELS.has(modelId) && (modelsFilter.length === 0 || !modelsFilter.includes(modelId))) {
             console.log(`> Skipping ${modelId} (known incompatible)`);
             continue;
         }
-        if (allResults.find(r => r.model === modelId && r.status === 'PASS')) {
+        if (allResults.find(r => r.model === modelId && r.status === 'PASS') && modelsFilter.length === 0) {
             console.log(`> Skipping ${modelId} (already passed)`);
             continue;
         }

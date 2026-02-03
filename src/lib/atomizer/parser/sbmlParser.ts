@@ -722,8 +722,10 @@ export class SBMLParser {
                 // Node environment: load from local node_modules if available
                 if (typeof process !== 'undefined' && process.versions && process.versions.node) {
                   try {
-                    // Construct candidate path relative to process.cwd()
-                    return `${process.cwd().replace(/\\/g,'/')}/node_modules/libsbmljs_stable/${file}`;
+                    // Construct candidate path relative                    // Construct candidate path relative to process.cwd()
+                    // User requested to use public/libsbml.wasm explicitly
+                    const wasmPath = `${process.cwd().replace(/\\/g, '/')}/public/libsbml.wasm`;
+                    return `${wasmPath}`;
                   } catch (e) {
                     // fall back to bundled path
                     return '/bngplayground/libsbml.wasm';
@@ -1007,7 +1009,7 @@ export class SBMLParser {
       const func = this.extractFunctionDefinition(model.getFunctionDefinition(i));
       result.functionDefinitions.set(func.id, func);
     }
-    
+
     // Extract rules
     for (let i = 0; i < model.getNumRules(); i++) {
       const rule = this.extractRule(model.getRule(i));
@@ -1015,7 +1017,7 @@ export class SBMLParser {
         result.rules.push(rule);
       }
     }
-    
+
     for (let i = 0; i < model.getNumEvents(); i++) {
       const event = this.extractEvent(model.getEvent(i));
       if (event) result.events.push(event);

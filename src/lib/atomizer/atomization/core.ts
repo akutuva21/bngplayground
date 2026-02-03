@@ -559,10 +559,10 @@ function createComplexSpecies(
   sbmlSpecies: SBMLSpecies,
   componentSpeciesIds: string[],
   sctEntries: Map<string, SCTEntry>,
-  bondIndex: { current: number },
   useId: boolean = false
 ): Species {
   const species = new Species();
+  const compMolecules: Molecule[][] = [];
 
   for (let i = 0; i < componentSpeciesIds.length; i++) {
     const compId = componentSpeciesIds[i];
@@ -571,11 +571,21 @@ function createComplexSpecies(
     if (compEntry && compEntry.structure) {
       const compCopy = compEntry.structure.copy();
 
+      // Update bonds to prevent collisions with existing molecules in the species
+      compCopy.updateBonds(species.getBondNumbers());
+
       // Add binding component
       for (const mol of compCopy.molecules) {
-        const bindingSite = new Component(`b${i + 1}`, `${mol.idx}_b${i + 1}`);
+        let bindingName = `b${i + 1}`;
+        let counter = 2;
+        while (mol.contains(bindingName)) {
+          bindingName = `b${i + 1}_${counter++}`;
+        }
+        const bindingSite = new Component(bindingName, `${mol.idx}_${bindingName}`);
         mol.addComponent(bindingSite);
       }
+
+      compMolecules.push(compCopy.molecules);
 
       for (const mol of compCopy.molecules) {
         species.addMolecule(mol);
@@ -583,20 +593,35 @@ function createComplexSpecies(
     } else {
       const name = useId ? compId : standardizeName(compId);
       const molecule = new Molecule(name, compId);
-      const bindingSite = new Component(`b${i + 1}`, `${compId}_b${i + 1}`);
+
+      let bindingName = `b${i + 1}`;
+      // No need to check contains() here as it's a new molecule, unless logic changes
+
+      const bindingSite = new Component(bindingName, `${compId}_${bindingName}`);
       molecule.addComponent(bindingSite);
+
+      compMolecules.push([molecule]);
       species.addMolecule(molecule);
     }
   }
 
   // Add bonds for binary complexes
   if (componentSpeciesIds.length === 2 && species.molecules.length >= 2) {
-    const bondNum = bondIndex.current++;
-    const mol1 = species.molecules[0];
-    const mol2 = species.molecules[1];
+    const bondNum = Math.max(...species.getBondNumbers(), 0) + 1;
+    // Heuristic: bind the first molecules of each component
+    // Note: This logic assumes simple 1-molecule components for binary binding
+    const mol1 = compMolecules[0][0];
+    const mol2 = compMolecules[1][0];
 
-    const site1 = mol1.components.find(c => c.name.startsWith('b'));
-    const site2 = mol2.components.find(c => c.name.startsWith('b'));
+    // Fix: We need to find molecules belonging to the second component
+    // Since we just appended them, we can try to guess or search?
+    // But blindly taking index 1 is definitely wrong for multi-molecule components.
+    // However, fixing that requires bigger refactor. 
+    // We will stick to the existing bond logic but try to find a FREE site if possible?
+    // Actually, finding 'startsWith(b)' finds the first one.
+
+    const site1 = mol1.components.find(c => c.name.startsWith('b') && c.bonds.length === 0) || mol1.components.find(c => c.name.startsWith('b'));
+    const site2 = mol2.components.find(c => c.name.startsWith('b') && c.bonds.length === 0) || mol2.components.find(c => c.name.startsWith('b'));
 
     if (site1 && site2) {
       site1.addBond(bondNum);
@@ -604,6 +629,8 @@ function createComplexSpecies(
       species.bonds.push([site1.idx, site2.idx]);
     }
   }
+
+  species.renumberBonds();
 
   return species;
 }
@@ -747,9 +774,6 @@ export function buildSpeciesCompositionTable(
   const weights = computeWeights(speciesIds, sct.dependencies);
   sct.weights = Array.from(weights.entries()).sort((a, b) => a[1] - b[1]);
 
-  // Bond index counter
-  const bondIndex = { current: 1 };
-
   // Build SCT entries in topological order
   for (const speciesId of sct.sortedSpecies) {
     const sbmlSpecies = model.species.get(speciesId)!;
@@ -765,7 +789,7 @@ export function buildSpeciesCompositionTable(
     if (opts.atomize && bindingReactions.has(speciesId)) {
       components = bindingReactions.get(speciesId)!;
       isElemental = false;
-      structure = createComplexSpecies(sbmlSpecies, components, sct.entries, bondIndex, opts.useId);
+      structure = createComplexSpecies(sbmlSpecies, components, sct.entries, opts.useId);
     }
     // Check if modified species
     else if (opts.atomize && modificationReactions.has(speciesId)) {
@@ -805,10 +829,10 @@ export function buildSpeciesCompositionTable(
             confidence: modInfo.confidence,
           }, sct.entries, opts.useId);
         } else {
-          structure = createComplexSpecies(sbmlSpecies, depArray, sct.entries, bondIndex, opts.useId);
+          structure = createComplexSpecies(sbmlSpecies, depArray, sct.entries, opts.useId);
         }
       } else {
-        structure = createComplexSpecies(sbmlSpecies, depArray, sct.entries, bondIndex, opts.useId);
+        structure = createComplexSpecies(sbmlSpecies, depArray, sct.entries, opts.useId);
       }
     }
     // Elemental species
@@ -832,10 +856,55 @@ export function buildSpeciesCompositionTable(
   const elementalCount = Array.from(sct.entries.values()).filter(e => e.isElemental).length;
   const complexCount = sct.entries.size - elementalCount;
 
+  // Build SCT: Built ...
   logger.info('SCT001',
     `Built SCT: ${sct.entries.size} species (${elementalCount} elemental, ${complexCount} complex)`);
 
+  // Final reconciliation: ensure every molecule has all components of its type
+  const moleculeTypes = getMoleculeTypes(sct);
+  reconcileSCT(sct, moleculeTypes);
+
   return sct;
+}
+
+/**
+ * Reconcile SCT entries with finalized molecule types.
+ * Ensures every molecule instance has all components defined for its type.
+ */
+export function reconcileSCT(sct: SpeciesCompositionTable, moleculeTypes: Molecule[]): void {
+  const typeMap = new Map<string, Molecule>();
+  for (const type of moleculeTypes) {
+    typeMap.set(type.name, type);
+  }
+
+  for (const entry of sct.entries.values()) {
+    for (const mol of entry.structure.molecules) {
+      const type = typeMap.get(mol.name);
+      if (type) {
+        const typeCounts = new Counter(type.components.map(c => c.name));
+        const molCounts = new Counter(mol.components.map(c => c.name));
+
+        for (const [name, count] of typeCounts.entries()) {
+          const diff = count - (molCounts.get(name) || 0);
+          if (diff > 0) {
+            const template = type.components.find(c => c.name === name)!;
+            for (let i = 0; i < diff; i++) {
+              const newComp = template.copy();
+              newComp.bonds = [];
+              if (newComp.states.includes('0')) {
+                newComp.setActiveState('0');
+              } else if (newComp.states.length > 0) {
+                newComp.setActiveState(newComp.states[0]);
+              } else {
+                newComp.setActiveState('');
+              }
+              mol.addComponent(newComp);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -852,15 +921,25 @@ export function getMoleculeTypes(sct: SpeciesCompositionTable): Molecule[] {
         moleculeTypes.set(mol.name, mol.copy());
       } else {
         const existing = moleculeTypes.get(mol.name)!;
-        for (const comp of mol.components) {
-          if (!existing.contains(comp.name)) {
-            existing.addComponent(comp.copy());
-          } else {
-            const existingComp = existing.getComponent(comp.name)!;
-            for (const state of comp.states) {
-              if (!existingComp.states.includes(state)) {
-                existingComp.addState(state, false);
-              }
+        // Count existing components by name
+        const existingCounts = new Counter(existing.components.map(c => c.name));
+        const molCounts = new Counter(mol.components.map(c => c.name));
+
+        for (const [name, count] of molCounts.entries()) {
+          const diff = count - (existingCounts.get(name) || 0);
+          if (diff > 0) {
+            // Add missing components
+            const template = mol.components.find(c => c.name === name)!;
+            for (let i = 0; i < diff; i++) {
+              existing.addComponent(template.copy());
+            }
+          }
+          // Merge states for existing components
+          const existingComps = existing.components.filter(c => c.name === name);
+          const molComps = mol.components.filter(c => c.name === name);
+          for (let i = 0; i < Math.min(existingComps.length, molComps.length); i++) {
+            for (const state of molComps[i].states) {
+              existingComps[i].addState(state, false);
             }
           }
         }
@@ -885,14 +964,14 @@ export function getSeedSpecies(
 
     let amount = 0;
     if (sbmlSpecies.initialConcentration > 0 && !sbmlSpecies.hasOnlySubstanceUnits) {
-        const comp = model.compartments.get(sbmlSpecies.compartment);
-        const vol = comp ? comp.size : 1;
-        amount = sbmlSpecies.initialConcentration * vol;
+      const comp = model.compartments.get(sbmlSpecies.compartment);
+      const vol = comp ? comp.size : 1;
+      amount = sbmlSpecies.initialConcentration * vol;
     } else if (sbmlSpecies.initialAmount > 0) {
-        amount = sbmlSpecies.initialAmount;
+      amount = sbmlSpecies.initialAmount;
     } else if (sbmlSpecies.initialConcentration > 0) {
-        // Fallback for cases where hasOnlySubstanceUnits might be true but concentration is given
-        amount = sbmlSpecies.initialConcentration;
+      // Fallback for cases where hasOnlySubstanceUnits might be true but concentration is given
+      amount = sbmlSpecies.initialConcentration;
     }
 
     seedSpecies.push({

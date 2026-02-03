@@ -73,7 +73,8 @@ export class Component {
    */
   addBond(bondName: string | number): void {
     const bondStr = String(bondName);
-    if (!this.bonds.includes(bondStr) && !this.bonds.includes(bondName)) {
+    // Prevent duplicates and multi-bond syntax like !1!2
+    if (!this.bonds.some(b => String(b) === bondStr)) {
       this.bonds.push(bondName);
     }
   }
@@ -82,10 +83,14 @@ export class Component {
    * Set the active state of this component
    */
   setActiveState(state: string): boolean {
-    if (state !== '' && !this.states.includes(state)) {
-      return false;
+    if (state !== '') {
+      if (!this.states.includes(state)) {
+        this.states.push(state);
+      }
+      this.activeState = state;
+      return true;
     }
-    this.activeState = state;
+    this.activeState = '';
     return true;
   }
 
@@ -506,7 +511,9 @@ export class Species {
    */
   addCompartment(tags: string): void {
     for (const molecule of this.molecules) {
-      molecule.setCompartment(tags);
+      if (!molecule.compartment) {
+        molecule.setCompartment(tags);
+      }
     }
   }
 
@@ -745,6 +752,29 @@ export class Species {
   }
 
   /**
+   * Renumber bonds sequentially to canonicalize the pattern
+   */
+  renumberBonds(): void {
+    const bondMap = new Map<string, number>();
+    let nextBond = 1;
+
+    for (const mol of this.molecules) {
+      for (const comp of mol.components) {
+        for (let i = 0; i < comp.bonds.length; i++) {
+          const b = comp.bonds[i];
+          if (b === '+' || b === '?') continue;
+
+          const bStr = String(b);
+          if (!bondMap.has(bStr)) {
+            bondMap.set(bStr, nextBond++);
+          }
+          comp.bonds[i] = bondMap.get(bStr)!;
+        }
+      }
+    }
+  }
+
+  /**
    * String representation (BNGL pattern)
    */
   toString(): string {
@@ -769,58 +799,35 @@ export class Species {
     }
   }
 
-  /**
-   * Extract atomic patterns from this species for rule analysis
-   */
-  extractAtomicPatterns(
-    action: string,
-    site1: string,
-    site2: string,
-    differentiateDimers: boolean = false
-  ): {
-    atomicPatterns: Map<string, Species>;
-    reactionCenter: string[];
-    context: string[];
-  } {
-    const atomicPatterns = new Map<string, Species>();
-    const bondedPatterns = new Map<string, Species>();
-    const reactionCenter: Species[] = [];
-    const context: Species[] = [];
+/**
+ * Extract atomic patterns from this species for rule analysis
+ */
+extractAtomicPatterns(
+  action: string,
+  site1: string,
+  site2: string,
+  differentiateDimers: boolean = false
+): {
+  atomicPatterns: Map<string, Species>;
+  reactionCenter: string[];
+  context: string[];
+} {
+  const atomicPatterns = new Map<string, Species>();
+  const bondedPatterns = new Map<string, Species>();
+  const reactionCenter: Species[] = [];
+  const context: Species[] = [];
 
-    const nameCounter = new Counter(this.molecules.map(x => x.name));
-    const nameCounterCopy = new Counter(this.molecules.map(x => x.name));
-    this.sort();
+  const nameCounter = new Counter(this.molecules.map(x => x.name));
+  const nameCounterCopy = new Counter(this.molecules.map(x => x.name));
+  this.sort();
 
-    for (const molecule of this.molecules) {
-      const moleculeCounter = (nameCounter.get(molecule.name) || 0) - (nameCounterCopy.get(molecule.name) || 0);
-      nameCounterCopy.set(molecule.name, (nameCounterCopy.get(molecule.name) || 0) - 1);
+  for (const molecule of this.molecules) {
+    const moleculeCounter = (nameCounter.get(molecule.name) || 0) - (nameCounterCopy.get(molecule.name) || 0);
+    nameCounterCopy.set(molecule.name, (nameCounterCopy.get(molecule.name) || 0) - 1);
 
-      for (const component of molecule.components) {
-        // One atomic pattern for the states
-        if (component.activeState !== '') {
-          const speciesStructure = new Species();
-          speciesStructure.bonds = [...this.bonds];
-
-          const molName = differentiateDimers
-            ? `${molecule.name}%${moleculeCounter}`
-            : molecule.name;
-          const moleculeStructure = new Molecule(molName, molecule.idx);
-          const componentStructure = new Component(component.name, component.idx);
-
-          componentStructure.addState(component.activeState);
-          componentStructure.activeState = component.activeState;
-          moleculeStructure.addComponent(componentStructure);
-          speciesStructure.addMolecule(moleculeStructure);
-
-          if ([site1, site2].includes(componentStructure.idx) && action === 'StateChange') {
-            reactionCenter.push(speciesStructure);
-          } else {
-            context.push(speciesStructure);
-          }
-          atomicPatterns.set(speciesStructure.toString(), speciesStructure);
-        }
-
-        // One atomic pattern for the bonds
+    for (const component of molecule.components) {
+      // One atomic pattern for the states
+      if (component.activeState !== '') {
         const speciesStructure = new Species();
         speciesStructure.bonds = [...this.bonds];
 
@@ -829,75 +836,98 @@ export class Species {
           : molecule.name;
         const moleculeStructure = new Molecule(molName, molecule.idx);
         const componentStructure = new Component(component.name, component.idx);
+
+        componentStructure.addState(component.activeState);
+        componentStructure.activeState = component.activeState;
         moleculeStructure.addComponent(componentStructure);
         speciesStructure.addMolecule(moleculeStructure);
 
-        if (component.bonds.length === 0) {
-          atomicPatterns.set(speciesStructure.toString(), speciesStructure);
-        } else {
-          const bondKey = String(component.bonds[0]);
-          if (bondKey !== '+') {
-            componentStructure.addBond(1);
-          } else {
-            componentStructure.addBond('+');
-          }
-
-          if (!bondedPatterns.has(bondKey)) {
-            bondedPatterns.set(bondKey, speciesStructure);
-          } else if (bondKey !== '+' || bondedPatterns.get(bondKey)!.molecules.length === 0) {
-            bondedPatterns.get(bondKey)!.addMolecule(moleculeStructure);
-          }
-        }
-
-        if ([site1, site2].includes(componentStructure.idx) && action !== 'StateChange') {
+        if ([site1, site2].includes(componentStructure.idx) && action === 'StateChange') {
           reactionCenter.push(speciesStructure);
-        } else if (component.bonds.length > 0 || component.activeState === '') {
+        } else {
           context.push(speciesStructure);
         }
+        atomicPatterns.set(speciesStructure.toString(), speciesStructure);
+      }
+
+      // One atomic pattern for the bonds
+      const speciesStructure = new Species();
+      speciesStructure.bonds = [...this.bonds];
+
+      const molName = differentiateDimers
+        ? `${molecule.name}%${moleculeCounter}`
+        : molecule.name;
+      const moleculeStructure = new Molecule(molName, molecule.idx);
+      const componentStructure = new Component(component.name, component.idx);
+      moleculeStructure.addComponent(componentStructure);
+      speciesStructure.addMolecule(moleculeStructure);
+
+      if (component.bonds.length === 0) {
+        atomicPatterns.set(speciesStructure.toString(), speciesStructure);
+      } else {
+        const bondKey = String(component.bonds[0]);
+        if (bondKey !== '+') {
+          componentStructure.addBond(1);
+        } else {
+          componentStructure.addBond('+');
+        }
+
+        if (!bondedPatterns.has(bondKey)) {
+          bondedPatterns.set(bondKey, speciesStructure);
+        } else if (bondKey !== '+' || bondedPatterns.get(bondKey)!.molecules.length === 0) {
+          bondedPatterns.get(bondKey)!.addMolecule(moleculeStructure);
+        }
+      }
+
+      if ([site1, site2].includes(componentStructure.idx) && action !== 'StateChange') {
+        reactionCenter.push(speciesStructure);
+      } else if (component.bonds.length > 0 || component.activeState === '') {
+        context.push(speciesStructure);
       }
     }
-
-    for (const [key, value] of bondedPatterns) {
-      atomicPatterns.set(value.toString(), value);
-    }
-
-    const reactionCenterStrs = reactionCenter
-      .map(x => x.toString())
-      .filter(x => atomicPatterns.has(x));
-    const contextStrs = context
-      .map(x => x.toString())
-      .filter(x => atomicPatterns.has(x));
-
-    return { atomicPatterns, reactionCenter: reactionCenterStrs, context: contextStrs };
   }
 
-  /**
-   * Get list of bonds as molecule-component pairs
-   */
-  listOfBonds(nameDict: Map<string, string>): Map<string, Map<string, [string, string][]>> {
-    const listofbonds = new Map<string, Map<string, [string, string][]>>();
+  for (const [key, value] of bondedPatterns) {
+    atomicPatterns.set(value.toString(), value);
+  }
 
-    for (const bond of this.bonds) {
-      const mol1 = bond[0].replace(/_C[^_]*$/, '');
-      const mol2 = bond[1].replace(/_C[^_]*$/, '');
+  const reactionCenterStrs = reactionCenter
+    .map(x => x.toString())
+    .filter(x => atomicPatterns.has(x));
+  const contextStrs = context
+    .map(x => x.toString())
+    .filter(x => atomicPatterns.has(x));
 
-      const mol1Name = nameDict.get(mol1) || mol1;
-      const mol2Name = nameDict.get(mol2) || mol2;
-      const bond0Name = nameDict.get(bond[0]) || bond[0];
-      const bond1Name = nameDict.get(bond[1]) || bond[1];
+  return { atomicPatterns, reactionCenter: reactionCenterStrs, context: contextStrs };
+}
 
-      if (!listofbonds.has(mol1Name)) {
-        listofbonds.set(mol1Name, new Map());
-      }
-      listofbonds.get(mol1Name)!.set(bond0Name, [[mol2Name, bond1Name]]);
+/**
+ * Get list of bonds as molecule-component pairs
+ */
+listOfBonds(nameDict: Map<string, string>): Map < string, Map < string, [string, string][] >> {
+  const listofbonds = new Map<string, Map<string, [string, string][]>>();
 
-      if (!listofbonds.has(mol2Name)) {
-        listofbonds.set(mol2Name, new Map());
-      }
-      listofbonds.get(mol2Name)!.set(bond1Name, [[mol1Name, bond0Name]]);
-    }
+  for(const bond of this.bonds) {
+  const mol1 = bond[0].replace(/_C[^_]*$/, '');
+  const mol2 = bond[1].replace(/_C[^_]*$/, '');
 
-    return listofbonds;
+  const mol1Name = nameDict.get(mol1) || mol1;
+  const mol2Name = nameDict.get(mol2) || mol2;
+  const bond0Name = nameDict.get(bond[0]) || bond[0];
+  const bond1Name = nameDict.get(bond[1]) || bond[1];
+
+  if (!listofbonds.has(mol1Name)) {
+    listofbonds.set(mol1Name, new Map());
+  }
+  listofbonds.get(mol1Name)!.set(bond0Name, [[mol2Name, bond1Name]]);
+
+  if (!listofbonds.has(mol2Name)) {
+    listofbonds.set(mol2Name, new Map());
+  }
+  listofbonds.get(mol2Name)!.set(bond1Name, [[mol1Name, bond0Name]]);
+}
+
+return listofbonds;
   }
 }
 

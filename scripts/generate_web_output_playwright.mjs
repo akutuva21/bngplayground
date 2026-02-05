@@ -34,7 +34,7 @@ function normalizeBasePath(p) {
 }
 
 const BASE_PATH = normalizeBasePath(readViteBasePath());
-const BASE_URL = `http://localhost:${PORT}${BASE_PATH}`;
+const BASE_URL = `http://localhost:${PORT}${BASE_PATH}?batch=true`;
 const WEB_OUTPUT_SEED = Number(process.env.WEB_OUTPUT_SEED || '12345');
 
 function ensureDir(dirPath) {

@@ -1115,33 +1115,54 @@ export class States {
 export function readFromString(patternStr: string): Species {
   const sp = new Species();
 
-  // Simple regex-based parser for BNGL patterns
-  const moleculePattern = /([A-Za-z_][A-Za-z0-9_]*)\(([^)]*)\)/g;
-  let match;
+  // Handle species-level compartment (if any)
+  let speciesComp = '';
+  let workingStr = patternStr;
+  
+  // Remove @PM:: prefix if exists
+  const prefixMatch = workingStr.match(/^@([^:]+)::/);
+  if (prefixMatch) {
+    speciesComp = prefixMatch[1];
+    workingStr = workingStr.substring(prefixMatch[0].length);
+  }
 
-  while ((match = moleculePattern.exec(patternStr)) !== null) {
-    const molName = match[1];
-    const compStr = match[2];
+  // Split into molecules by '.'
+  const moleculeStrs = workingStr.split(/\.(?![^(]*\))/); // Split by '.' not inside ()
+  
+  for (const molStr of moleculeStrs) {
+    if (molStr.trim() === '') continue;
+    
+    // Parse molecule name, components, and compartment
+    const molMatch = molStr.match(/^([A-Za-z_][A-Za-z0-9_]*)(?:\(([^)]*)\))?(?:@([A-Za-z_][A-Za-z0-9_]*))?/);
+    if (!molMatch) continue;
+    
+    const molName = molMatch[1];
+    const compStr = molMatch[2] || '';
+    const molComp = molMatch[3] || speciesComp;
+    
     const mol = new Molecule(molName, '');
-
+    if (molComp) mol.setCompartment(molComp);
+    
     if (compStr.trim() !== '') {
-      // Parse components
       const components = compStr.split(',');
       for (const compDef of components) {
-        const compMatch = compDef.match(/([A-Za-z_][A-Za-z0-9_]*)(?:~([^!]*))?(?:!(.+))?/);
-        if (compMatch) {
-          const comp = new Component(compMatch[1], '');
-          if (compMatch[2]) {
-            comp.addState(compMatch[2]);
+        // Handle name~state!bond1!bond2
+        const parts = compDef.split(/([~!])/);
+        const name = parts[0];
+        const comp = new Component(name, '');
+        
+        for (let i = 1; i < parts.length; i += 2) {
+          const sep = parts[i];
+          const val = parts[i+1];
+          if (sep === '~') {
+            comp.addState(val);
+          } else if (sep === '!') {
+            comp.addBond(val);
           }
-          if (compMatch[3]) {
-            comp.addBond(compMatch[3]);
-          }
-          mol.addComponent(comp);
         }
+        mol.addComponent(comp);
       }
     }
-
     sp.addMolecule(mol);
   }
 

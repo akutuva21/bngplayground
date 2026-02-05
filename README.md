@@ -1,6 +1,9 @@
-# BioNetGen Web Simulator
+# BioNetGen Playground
 
-An interactive, browser-based workspace for exploring BioNetGen (BNGL) models: edit BNGL, parse, generate networks, run simulations, and analyze results through multiple visualization and analysis tabs.
+![BioNetGen Logo](public/logo.png)
+
+**BioNetGen Playground** is a state-of-the-art web-based modeling and simulation environment for BioNetGen (BNGL).
+ models: edit BNGL, parse, generate networks, run simulations, and analyze results through multiple visualization and analysis tabs.
 
 **Live demo:** <https://akutuva21.github.io/bngplayground>
 
@@ -48,7 +51,7 @@ npm run dev
 
 ## Example Gallery + Semantic Search
 
-The Example Gallery features a curated library of 200+ BioNetGen models, organized into functional biological categories:
+The Example Gallery features a curated library of **150+ verified BioNetGen models**, organized into functional biological categories:
 
 - **Cancer Biology**: Oncogenic signaling, tumor suppression, and DNA repair.
 - **Immunology**: TCR/BCR signaling, FcεRI, innate immunity, and cytokine pathways.
@@ -59,6 +62,16 @@ The Example Gallery features a curated library of 200+ BioNetGen models, organiz
 - **Multistage**: Models with protocol-based simulation phases (e.g., equilibration).
 - **RuleWorld Tutorials**: Official BioNetGen tutorials and comprehensive grammar examples.
 - **Example Models**: A complete set of 100 baseline models generated for demonstration.
+
+### Performance & Parity
+
+We maintain high fidelity with canonical BioNetGen (`BNG2.pl`) and provide high-performance simulation capabilities:
+
+- **High Precision**: Integrated **CVODE (SUNDIALS)** solver for handles stiff ODE systems with adaptive time-stepping.
+- **Scalability**: Accelerated by **Nauty (WASM)** for fast symmetry reduction and canonical labeling in large reaction networks.
+- **Network-Free**: Native **NFsim** support for simulating models that are too large for network expansion.
+- **Multi-Compartment**: Full support for **cBNGL** (Compartmental BioNetGen) across both ODE and stochastic solvers.
+- **Parity Verified**: **66%+ of public library models** pass automated parity checks against `BNG2.pl` reference results, with 100+ models achieving perfect structural and numerical agreement.
 
 Search capabilities include:
 

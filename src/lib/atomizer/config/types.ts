@@ -157,37 +157,37 @@ export const DEFAULT_NAMING_CONVENTIONS: NamingConventions = {
     [JSON.stringify(['+ _', '+ P']), 'Phosphorylation'],
     [JSON.stringify(['+ p', '+ h', '+ o', '+ s']), 'Phosphorylation'],
     [JSON.stringify(['+ p', '+ h', '+ o', '+ s', '+ p', '+ h', '+ o']), 'Phosphorylation'],
-    
+
     // Double phosphorylation patterns
     [JSON.stringify(['+ p', '+ p']), 'Double-Phosphorylation'],
     [JSON.stringify(['+ P', '+ P']), 'Double-Phosphorylation'],
     [JSON.stringify(['+ _', '+ P', '+ P']), 'Double-Phosphorylation'],
     [JSON.stringify(['+ P', '+ P', '+ _']), 'Double-Phosphorylation'],
     [JSON.stringify(['+ _', '+ p', '+ p']), 'Double-Phosphorylation'],
-    
+
     // Triple phosphorylation
     [JSON.stringify(['+ p', '+ p', '+ p']), 'Triple-Phosphorylation'],
     [JSON.stringify(['+ P', '+ P', '+ P']), 'Triple-Phosphorylation'],
-    
+
     // Ubiquitination
     [JSON.stringify(['+ u', '+ b']), 'Ubiquitination'],
     [JSON.stringify(['+ U', '+ b']), 'Ubiquitination'],
     [JSON.stringify(['+ _', '+ u', '+ b']), 'Ubiquitination'],
     [JSON.stringify(['+ _', '+ U', '+ b']), 'Ubiquitination'],
     [JSON.stringify(['+ u', '+ b', '+ i', '+ q']), 'Ubiquitination'],
-    
+
     // Acetylation
     [JSON.stringify(['+ a', '+ c']), 'Acetylation'],
     [JSON.stringify(['+ A', '+ c']), 'Acetylation'],
     [JSON.stringify(['+ _', '+ a', '+ c']), 'Acetylation'],
     [JSON.stringify(['+ a', '+ c', '+ e', '+ t']), 'Acetylation'],
-    
+
     // Methylation
     [JSON.stringify(['+ m', '+ e']), 'Methylation'],
     [JSON.stringify(['+ M', '+ e']), 'Methylation'],
     [JSON.stringify(['+ _', '+ m', '+ e']), 'Methylation'],
     [JSON.stringify(['+ m', '+ e', '+ t', '+ h']), 'Methylation'],
-    
+
     // Activation
     [JSON.stringify(['+ a']), 'Activation'],
     [JSON.stringify(['+ A']), 'Activation'],
@@ -196,30 +196,30 @@ export const DEFAULT_NAMING_CONVENTIONS: NamingConventions = {
     [JSON.stringify(['+ _', '+ A']), 'Activation'],
     [JSON.stringify(['+ _', '+ a', '+ c', '+ t']), 'Activation'],
     [JSON.stringify(['+ a', '+ c', '+ t', '+ i', '+ v', '+ e']), 'Activation'],
-    
+
     // Inactivation
     [JSON.stringify(['+ i']), 'Inactivation'],
     [JSON.stringify(['+ I']), 'Inactivation'],
     [JSON.stringify(['+ _', '+ i']), 'Inactivation'],
     [JSON.stringify(['+ _', '+ I']), 'Inactivation'],
     [JSON.stringify(['+ i', '+ n', '+ a', '+ c', '+ t']), 'Inactivation'],
-    
+
     // Binding (complex formation)
     [JSON.stringify(['+ _']), 'Binding'],
     [JSON.stringify(['+ _', '+ b', '+ o', '+ u', '+ n', '+ d']), 'Binding'],
-    
+
     // Localization
     [JSON.stringify(['+ _', '+ c', '+ y', '+ t']), 'Localization'],
     [JSON.stringify(['+ _', '+ n', '+ u', '+ c']), 'Localization'],
     [JSON.stringify(['+ _', '+ m', '+ e', '+ m']), 'Localization'],
     [JSON.stringify(['+ _', '+ p', '+ m']), 'Localization'],
     [JSON.stringify(['+ _', '+ e', '+ r']), 'Localization'],
-    
+
     // Dimerization
     [JSON.stringify(['+ 2']), 'Dimerization'],
     [JSON.stringify(['+ _', '+ d', '+ i', '+ m']), 'Dimerization'],
     [JSON.stringify(['+ _', '+ d', '+ i', '+ m', '+ e', '+ r']), 'Dimerization'],
-    
+
     // Trimerization
     [JSON.stringify(['+ 3']), 'Trimerization'],
     [JSON.stringify(['+ _', '+ t', '+ r', '+ i', '+ m']), 'Trimerization'],
@@ -277,7 +277,7 @@ export const DEFAULT_REACTION_DEFINITIONS: ReactionDefinitions = {
   ],
   reactionsNames: [
     'Binding',
-    'Unbinding', 
+    'Unbinding',
     'Synthesis',
     'Degradation',
     'Binding',
@@ -370,6 +370,8 @@ export interface AtomizerOptions {
   observableConvertedRules?: Set<string>;
   /** Species that have amount-based observables (internal use) */
   speciesAmts?: Set<string>;
+  /** Detected name for Avogadro's Constant (e.g. 'Na', 'NA') */
+  avogadroName?: string;
 }
 
 /**

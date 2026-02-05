@@ -47,12 +47,12 @@ export const Header: React.FC<HeaderProps> = ({
     <>
       <header className="bg-white dark:bg-slate-800 border-b border-stone-200 dark:border-slate-700 shadow-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-2">
+          <div className="flex justify-between items-center py-3.5">
             {/* Logo + Title */}
             <div className="flex items-center gap-3">
-              <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-700 dark:ring-slate-600">
+              <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-700 dark:ring-slate-600">
                 <img
-                  src="/bngplayground/logo.jpg"
+                  src="/bngplayground/logo.png"
                   alt="BioNetGen Visualizer logo"
                   className="h-full w-full object-contain object-center"
                   loading="lazy"
@@ -60,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               <div className="flex flex-col md:flex-row md:items-baseline md:gap-3">
-                <h1 className="text-lg font-semibold leading-tight text-slate-800 dark:text-slate-100">
+                <h1 className="text-2xl font-semibold leading-tight text-slate-800 dark:text-slate-100">
                   BNG Playground
                 </h1>
 
@@ -68,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="flex border border-slate-200 dark:border-slate-700 rounded overflow-hidden">
                   <button
                     onClick={() => onViewModeChange('code')}
-                    className={`px-2 py-0.5 text-xs font-medium transition-colors ${viewMode === 'code'
+                    className={`px-4 py-1.5 text-sm font-medium transition-colors ${viewMode === 'code'
                       ? 'bg-slate-100 dark:bg-slate-700 text-teal-700 dark:text-teal-400'
                       : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                       }`}
@@ -78,12 +78,12 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="w-px bg-slate-200 dark:bg-slate-700" />
                   <button
                     onClick={() => onViewModeChange('design')}
-                    className={`px-2 py-0.5 text-xs font-medium transition-colors ${viewMode === 'design'
+                    className={`px-4 py-1.5 text-sm font-medium transition-colors ${viewMode === 'design'
                       ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400'
                       : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                       }`}
                   >
-                    ✨ AI
+                    Designer Mode
                   </button>
                 </div>
               </div>

@@ -106,8 +106,11 @@ export class Atomizer {
     }
 
     try {
+      /*
       // If this SBML was produced by BioNetGen (BNG-style SBML), use the fast-path converter
       if (/ListOfMoleculeTypes\b/i.test(sbmlString) || /ListOfReactionRules\b/i.test(sbmlString)) {
+*/
+if (false) {
         // Try conversion to BNGL directly from the BNG-exported SBML XML
         try {
           const { convertBNGXmlToBNGL } = await import('./parser/bngXmlParser');

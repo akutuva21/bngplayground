@@ -26,7 +26,7 @@ const findExampleById = (id?: string | null) => {
 };
 
 function App() {
-  const PANEL_MAX_HEIGHT = 'calc(100vh - 100px)';
+  const PANEL_MAX_HEIGHT = 'calc(100vh - 120px)';
   const [code, setCode] = useState<string>(INITIAL_BNGL_CODE);
   // Refs for editor/code diffing and debounce timer for parameter-only edits
   const codeRef = useRef<string>(INITIAL_BNGL_CODE);
@@ -312,9 +312,11 @@ function App() {
   useEffect(() => {
     const hasVisited = localStorage.getItem('bng-has-visited');
     const urlModel = getSharedModelFromUrl();
+    const params = new URLSearchParams(window.location.search);
+    const isBatchMode = params.has('batch');
 
-    // Only auto-run if: first visit, no URL model, and code matches default
-    if (!hasVisited && !urlModel && code === INITIAL_BNGL_CODE) {
+    // Only auto-run if: first visit, no URL model, code matches default, and NOT in batch mode
+    if (!hasVisited && !urlModel && code === INITIAL_BNGL_CODE && !isBatchMode) {
       localStorage.setItem('bng-has-visited', 'true');
 
       // Delay slightly to let UI render first

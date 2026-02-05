@@ -223,8 +223,8 @@ export class BNGLParser {
           if (bondLabel === '+' || bondLabel === '?' || bondLabel === '-') continue;
           // Check if it's a valid positive integer
           const bondNum = parseInt(bondLabel);
-          if (isNaN(bondNum) || bondNum <= 0) {
-            return `Invalid bond label "${bondLabel}" in molecule "${trimmedMol}": must be a positive integer`;
+          if (isNaN(bondNum) || bondNum < 0) {
+            return `Invalid bond label "${bondLabel}" in molecule "${trimmedMol}": must be a non-negative integer`;
           }
         }
       }
@@ -366,13 +366,10 @@ export class BNGLParser {
     for (const bondPart of bondParts) {
       if (bondPart === '+' || bondPart === '?' || bondPart === '-') {
         component.wildcard = bondPart;
-      } else if (bondPart === '0') {
-        // BioNetGen: !0 explicitly denotes an unbound site
-        component.wildcard = '-';
       } else {
-        // FIX: Validate bond label is a positive integer
+        // FIX: Allow '0' as a valid bond label (common in BNG2)
         const bond = parseInt(bondPart);
-        if (!isNaN(bond) && bond > 0) {
+        if (!isNaN(bond) && bond >= 0) {
           component.edges.set(bond, -1);
         }
       }

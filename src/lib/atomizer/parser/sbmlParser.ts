@@ -323,11 +323,9 @@ export class SBML2JSON {
         for (const factor of factors) {
           parameterSpecs.value *= Math.pow(10, factor[1] * factor[2]);
           parameterSpecs.unit = `${parameterSpecs.unit}*1e${factor[1] * factor[2]}`;
-          // Apply Avogadro scaling if Molar/mole
-          const lowerUnit = (parameter.getUnits() || '').toLowerCase();
-          if (factor[1] === 1 && lowerUnit.includes('mole') && !lowerUnit.includes('per_mole')) {
-            parameterSpecs.value *= 6.02214076e23;
-          }
+          // Naive Avogadro scaling removed here. 
+          // Proper scaling is now handled unified in the BNGL writer using (Na * V)
+          // to convert from concentration math to propensity math.
         }
       }
 
@@ -419,25 +417,23 @@ export class SBML2JSON {
       };
 
       let initialConcentration = species.getInitialConcentration();
-      if (initialConcentration === 0) {
-        initialConcentration = species.getInitialAmount();
-      }
+      let initialAmount = species.getInitialAmount();
 
-      // Apply unit conversions
+
+      // Apply unit conversions (scaling factors like 1e-3 for milli, etc.)
       const substanceUnits = species.getSubstanceUnits();
       if (this.unitDictionary.has(substanceUnits)) {
         const factors = this.unitDictionary.get(substanceUnits)!;
         for (const factor of factors) {
-          initialConcentration *= Math.pow(10, factor[1] * factor[2]);
-          // Apply Avogadro scaling if Molar/mole
-          const lowerUnit = (substanceUnits || '').toLowerCase();
-          if (factor[1] === 1 && lowerUnit.includes('mole')) {
-            initialConcentration *= 6.02214076e23;
-          }
+          const multiplier = Math.pow(10, factor[1] * factor[2]);
+          initialConcentration *= multiplier;
+          initialAmount *= multiplier;
+          // Note: Avogadro scaling is NOT done here anymore.
+          // It's handled in getSeedSpecies inside core.ts usingexpressions.
         }
       }
 
-      if (initialConcentration !== 0 && compData) {
+      if ((initialConcentration !== 0 || initialAmount !== 0) && compData) {
         let objectExpr: string;
         if (compData[0] === 2) {
           const [outside, inside] = this.getOutsideInsideCompartment(compartmentList, compartment);
@@ -691,6 +687,7 @@ export class SBML2JSON {
  */
 export class SBMLParser {
   private initialized: boolean = false;
+  private currentSbml: string = '';
 
   /**
    * Initialize the parser by loading libsbmljs
@@ -839,6 +836,7 @@ export class SBMLParser {
     }
 
     console.log(`!!! [SBMLParser] _parseInternal: Length: ${sbmlString.length}`);
+    this.currentSbml = sbmlString;
     console.log(`!!! [SBMLParser] SBML Snippet: ${sbmlString.substring(0, 200)}`);
     let document: any;
     let reader: any;
@@ -1026,6 +1024,23 @@ export class SBMLParser {
       const ia = this.extractInitialAssignment(model.getInitialAssignment(i));
       if (ia) result.initialAssignments.push(ia);
     }
+
+    // Extract Unit Definitions
+    for (let i = 0; i < model.getNumUnitDefinitions(); i++) {
+      const ud = model.getUnitDefinition(i);
+      const units: Array<[number, number, number, number]> = [];
+      for (let j = 0; j < ud.getNumUnits(); j++) {
+        const u = ud.getUnit(j);
+        if (u) {
+          const kind = typeof u.getKind === 'function' ? u.getKind() : 0;
+          const scale = typeof u.getScale === 'function' ? u.getScale() : 0;
+          const exponent = typeof u.getExponent === 'function' ? u.getExponent() : 1;
+          const multiplier = typeof u.getMultiplier === 'function' ? u.getMultiplier() : 1;
+          units.push([kind, scale, exponent, multiplier]);
+        }
+      }
+      result.unitDefinitions.set(ud.getId(), units);
+    }
     const otherTime = performance.now() - t;
 
     console.log(`[SBMLParser] extractModel breakdown:
@@ -1043,7 +1058,22 @@ export class SBMLParser {
   }
 
   private extractCompartment(comp: any): SBMLCompartment {
-    console.log(`!!! [SBMLParser] extractCompartment: ${comp.getId ? comp.getId() : 'unknown'}`);
+    const id = comp.getId ? comp.getId() : 'c';
+    
+    // Fallback: search for outside="X" in the raw SBML string for this compartment ID
+    let outside: string | undefined = undefined;
+    if (this.currentSbml) {
+      const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const compRegex = new RegExp(`<compartment[^>]+id=["']${escapedId}["'][^>]*outside=["']([^"']+)["']`, 'i');
+      const match = this.currentSbml.match(compRegex);
+      if (match) {
+        outside = match[1];
+      }
+    }
+
+    const isSetO = typeof comp.isSetOutside === 'function' && comp.isSetOutside();
+    const getAttrO = typeof comp.getAttributeValue === 'function' ? comp.getAttributeValue('outside') : undefined;
+
     return {
       id: comp.getId(),
       name: comp.getName() || comp.getId(),
@@ -1051,7 +1081,7 @@ export class SBMLParser {
       size: typeof comp.getSize === 'function' ? comp.getSize() : 1,
       units: typeof comp.getUnits === 'function' ? comp.getUnits() : '',
       constant: typeof comp.getConstant === 'function' ? comp.getConstant() : true,
-      outside: typeof comp.getOutside === 'function' ? (comp.getOutside() || undefined) : undefined,
+      outside: outside || (isSetO ? comp.getOutside() : (getAttrO || (typeof comp.getOutside === 'function' ? (comp.getOutside() || undefined) : undefined))),
     };
   }
 

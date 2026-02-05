@@ -337,7 +337,36 @@ export interface ReactionPattern {
 }
 
 /**
- * Classify a reaction based on stoichiometry
+ * Check if a kinetic law uses saturation kinetics (Sat/MM/Hill)
+ * Looks for patterns like: (k * S * E) / (K + E) or (kmax * S) / (Km + S)
+ */
+function hasSatRateLaw(reaction: SBMLReaction): boolean {
+  if (!reaction.kineticLaw || !reaction.kineticLaw.math) {
+    return false;
+  }
+
+  const mathLower = reaction.kineticLaw.math.toLowerCase();
+
+  if (mathLower.includes('sat') || mathLower.includes('mm') || mathLower.includes('hill')) {
+    return true;
+  }
+
+  const dividePattern = mathLower.match(/\//g);
+  if (dividePattern && dividePattern.length >= 1) {
+    const plusPattern = mathLower.match(/\+/g);
+    if (plusPattern && plusPattern.length >= 1) {
+      const timesPattern = mathLower.match(/\*/g);
+      if (timesPattern && timesPattern.length >= 2) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Classify a reaction based on stoichiometry and rate law
  */
 export function classifyReaction(reaction: SBMLReaction): ReactionPattern {
   const reactantIds = reaction.reactants.map(r => r.species).filter(s => s !== 'EmptySet');
@@ -367,6 +396,23 @@ export function classifyReaction(reaction: SBMLReaction): ReactionPattern {
     };
   }
 
+  // Catalysis (Sat/MM/Hill): A + B -> B where A catalyzes B production/consumption
+  // Pattern: A + B -> B with Sat(k, K) rate law (B is unchanged catalyst/substrate)
+  if (numReactants === 2 && numProducts === 1) {
+    const commonSpecies = reactantIds.filter(r => productIds.includes(r));
+    if (commonSpecies.length === 1 && hasSatRateLaw(reaction)) {
+      const catalyst = commonSpecies[0];
+      const substrate = reactantIds.find(r => r !== catalyst)!;
+      return {
+        type: 'catalysis',
+        reactants: [substrate],
+        products: [substrate],
+        modifiers: [catalyst, ...modifierIds],
+        catalyst: catalyst,
+      };
+    }
+  }
+
   // Binding: A + B → C
   if (numReactants === 2 && numProducts === 1) {
     return {
@@ -385,6 +431,21 @@ export function classifyReaction(reaction: SBMLReaction): ReactionPattern {
       products: productIds,
       modifiers: modifierIds,
     };
+  }
+
+  // Catalysis / Synthesis: E -> E + P (enzyme catalyzes its own production)
+  // Pattern: 1 reactant, 2+ products where reactant is also a product
+  if (numReactants === 1 && numProducts >= 2) {
+    const commonSpecies = reactantIds.filter(r => productIds.includes(r));
+    if (commonSpecies.length === 1) {
+      return {
+        type: 'synthesis',
+        reactants: [],
+        products: productIds.filter(p => !commonSpecies.includes(p)),
+        modifiers: [commonSpecies[0], ...modifierIds],
+        catalyst: commonSpecies[0],
+      };
+    }
   }
 
   // Unbinding: C → A + B
@@ -425,6 +486,20 @@ export function classifyReaction(reaction: SBMLReaction): ReactionPattern {
       return {
         type: 'catalysis',
         reactants: reactantIds.filter(r => !commonSpecies.includes(r)),
+        products: productIds.filter(p => !commonSpecies.includes(p)),
+        modifiers: modifierIds,
+        catalyst: commonSpecies[0],
+      };
+    }
+  }
+
+  // Catalysis / Synthesis: E -> E + P
+  if (numReactants === 1 && numProducts === 2) {
+    const commonSpecies = reactantIds.filter(r => productIds.includes(r));
+    if (commonSpecies.length === 1) {
+      return {
+        type: 'synthesis',
+        reactants: [],
         products: productIds.filter(p => !commonSpecies.includes(p)),
         modifiers: modifierIds,
         catalyst: commonSpecies[0],
@@ -477,14 +552,24 @@ export function analyzeReactions(model: SBMLModel): {
       case 'unbinding':
         if (pattern.reactants.length === 1) {
           const complex = pattern.reactants[0];
-          if (!bindingReactions.has(complex)) {
-            bindingReactions.set(complex, pattern.products);
-          }
-          if (!dependencies.has(complex)) {
-            dependencies.set(complex, new Set());
-          }
-          for (const prod of pattern.products) {
-            dependencies.get(complex)!.add(prod);
+          const complexName = model.species.get(complex)?.name || complex;
+          
+          // Heuristic: only treat as binding/unbinding if the names suggest it
+          const allProductsInName = pattern.products.every(p => {
+              const pName = model.species.get(p)?.name || p;
+              return complexName.includes(pName) || pName.includes(complexName);
+          });
+
+          if (allProductsInName) {
+            if (!bindingReactions.has(complex)) {
+              bindingReactions.set(complex, pattern.products);
+            }
+            if (!dependencies.has(complex)) {
+              dependencies.set(complex, new Set());
+            }
+            for (const prod of pattern.products) {
+              dependencies.get(complex)!.add(prod);
+            }
           }
         }
         break;
@@ -538,15 +623,86 @@ const DEFAULT_SCT_OPTIONS: SCTBuilderOptions = {
 };
 
 /**
- * Create elemental species structure
+ * Parse compartment information from species name and apply to molecules.
+ * BNG2.pl exports SBML with species names like "@PM::L(r!1,r)@EC.R(l!1)" where:
+ * - @PM:: prefix indicates species compartment
+ * - @EC, @PM suffixes on molecules indicate molecule compartments
+ * 
+ * Returns the species compartment (if any) and sets molecule compartments.
  */
+function parseAndApplyCompartments(
+  speciesName: string,
+  species: Species
+): string | undefined {
+  if (!speciesName) return undefined;
+
+  // Check for prefix notation: @Comp::Species
+  const prefixMatch = speciesName.match(/^@([^:]+)::/);
+  const speciesCompartment = prefixMatch ? prefixMatch[1] : undefined;
+
+  // Parse molecule compartments from the pattern part (after prefix)
+  const patternPart = prefixMatch ? speciesName.slice(prefixMatch[0].length) : speciesName;
+
+  // Split by '.' to get individual molecules
+  const moleculeStrs = patternPart.split('.');
+
+  // Check if any molecule has a compartment suffix
+  let hasSuffixCompartments = false;
+  const moleculeComps: (string | undefined)[] = [];
+  
+  for (const molStr of moleculeStrs) {
+    // Extract compartment suffix: Molecule@Comp
+    const suffixMatch = molStr.match(/@([^@.]+)$/);
+    if (suffixMatch) {
+      hasSuffixCompartments = true;
+      moleculeComps.push(suffixMatch[1]);
+    } else {
+      moleculeComps.push(undefined);
+    }
+  }
+
+  // Apply compartments to molecules
+  for (let i = 0; i < Math.min(moleculeStrs.length, species.molecules.length); i++) {
+    if (moleculeComps[i]) {
+      // Molecule has its own compartment suffix
+      species.molecules[i].setCompartment(moleculeComps[i]!);
+    } else if (speciesCompartment) {
+      // Molecule inherits species-level compartment
+      species.molecules[i].setCompartment(speciesCompartment);
+    }
+  }
+
+  return speciesCompartment;
+}
+
+/**
+  * Create elemental species structure
+   */
 function createElementalSpecies(
   sbmlSpecies: SBMLSpecies,
   useId: boolean = false
 ): Species {
+  // Strip compartment prefix from species name (e.g., "@EC::L(r,r)" -> "L(r,r)")
+  const speciesName = sbmlSpecies.name || sbmlSpecies.id;
+  const nameWithoutCompartment = speciesName.replace(/^@[^:]+::/, '');
+  
+  // Try to parse the pattern using readFromString
+  try {
+    const parsedSpecies = readFromString(nameWithoutCompartment);
+    if (parsedSpecies.molecules.length > 0) {
+      // Update molecule IDs to use SBML species ID
+      for (const mol of parsedSpecies.molecules) {
+        mol.idx = sbmlSpecies.id;
+      }
+      return parsedSpecies;
+    }
+  } catch (e) {
+    // Fall back to simple molecule creation
+  }
+  
+  // Fallback: create simple molecule without components
   const species = new Species();
-  const name = useId ? sbmlSpecies.id : standardizeName(sbmlSpecies.name || sbmlSpecies.id);
-
+  const name = useId ? sbmlSpecies.id : standardizeName(nameWithoutCompartment);
   const molecule = new Molecule(name, sbmlSpecies.id);
   species.addMolecule(molecule);
 
@@ -796,8 +952,17 @@ export function buildSpeciesCompositionTable(
     let isElemental = true;
     const modifications = new Map<string, string>();
 
+    // Check if this is a pre-structured BNGL name
+    const bnglStructure = (speciesName.includes('.') || speciesName.includes('(')) && speciesName.includes('!');
+    
     // Check if this is a complex (from binding reactions)
-    if (opts.atomize && bindingReactions.has(speciesId)) {
+    if (opts.atomize && bnglStructure) {
+      isElemental = false;
+      structure = readFromString(speciesName);
+      // Infer components from molecules in the structure
+      components = structure.getMoleculeNames();
+    }
+    else if (opts.atomize && bindingReactions.has(speciesId)) {
       components = bindingReactions.get(speciesId)!;
       isElemental = false;
       structure = createComplexSpecies(sbmlSpecies, components, sct.entries, opts.useId);
@@ -850,6 +1015,9 @@ export function buildSpeciesCompositionTable(
     else {
       structure = createElementalSpecies(sbmlSpecies, opts.useId);
     }
+
+    // Parse and apply compartment info from species name
+    parseAndApplyCompartments(speciesName, structure);
 
     const entry: SCTEntry = {
       structure,
@@ -973,21 +1141,23 @@ export function getSeedSpecies(
   for (const [speciesId, entry] of sct.entries) {
     const sbmlSpecies = model.species.get(speciesId)!;
 
-    let amount = 0;
-    if (sbmlSpecies.initialConcentration > 0 && !sbmlSpecies.hasOnlySubstanceUnits) {
-      const comp = model.compartments.get(sbmlSpecies.compartment);
-      const vol = comp ? comp.size : 1;
-      amount = sbmlSpecies.initialConcentration * vol;
-    } else if (sbmlSpecies.initialAmount > 0) {
-      amount = sbmlSpecies.initialAmount;
+    let amountExpr: string;
+    if (sbmlSpecies.initialAmount > 0) {
+      // Amount takes precedence. We assume it is the entity count (molecules)
+      // for BioNetGen purposes, as most SBML discrete models use amounts for counts.
+      amountExpr = sbmlSpecies.initialAmount.toString();
     } else if (sbmlSpecies.initialConcentration > 0) {
-      // Fallback for cases where hasOnlySubstanceUnits might be true but concentration is given
-      amount = sbmlSpecies.initialConcentration;
+      // Concentration based: scale by Na * Vol
+      const compId = standardizeName(sbmlSpecies.compartment);
+      const volParam = `__compartment_${compId}__`;
+      amountExpr = `(${sbmlSpecies.initialConcentration} * Na * ${volParam})`;
+    } else {
+      amountExpr = '0';
     }
 
     seedSpecies.push({
       species: entry.structure.copy(),
-      concentration: amount.toString(),
+      concentration: amountExpr,
       compartment: sbmlSpecies.compartment,
       sbmlId: speciesId,
     });

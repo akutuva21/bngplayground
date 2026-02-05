@@ -710,7 +710,7 @@ const CELL_REGULATION: Example[] = [
   {
     id: 'Barua_2013',
     name: 'Barua 2013',
-    description: 'ÃŽÂ²-catenin destruction',
+    description: 'Beta-catenin destruction',
     code: barua2013,
     tags: ['published'],
   },
@@ -787,7 +787,7 @@ const CELL_REGULATION: Example[] = [
   {
     id: 'wnt',
     name: 'Wnt Signaling',
-    description: 'Wnt pathway model',
+    description: 'Wnt signaling',
     code: wnt,
     tags: ['published'],
   },
@@ -975,14 +975,14 @@ const GROWTH_FACTOR_SIGNALING: Example[] = [
   {
     id: 'Rule_based_egfr_tutorial',
     name: 'Faeder 2009',
-    description: 'EGFR signaling tutorial',
+    description: 'EGFR signaling',
     code: ruleBasedEgfrTutorial,
     tags: ['published'],
   },
   {
     id: 'Dolan_2015',
     name: 'Dolan 2015',
-    description: 'Model of Insulin Signaling (Dolan et al. 2015)',
+    description: 'Insulin signaling',
     code: dolan2015,
     tags: ['published', 'literature', 'signaling'],
   },
@@ -997,7 +997,7 @@ const GROWTH_FACTOR_SIGNALING: Example[] = [
   {
     id: 'egfr_ode',
     name: 'PyBNG: EGFR ODE',
-    description: 'EGFR ODE example (lanl/PyBNF)',
+    description: 'EGFR ODE',
     code: egfrOde,
     tags: ['published', 'PyBNG'],
   },
@@ -1007,7 +1007,7 @@ const IMMUNE_SIGNALING: Example[] = [
   {
     id: 'An_2009',
     name: 'An 2009',
-    description: 'TLR4 NFkB signaling',
+    description: 'TLR4 signaling',
     code: an2009,
     tags: ['published', 'immunology'],
   },
@@ -1055,16 +1055,9 @@ const IMMUNE_SIGNALING: Example[] = [
     tags: ['published', 'immunology'],
   },
   {
-    id: 'fceri_2003',
-    name: 'Faeder 2003',
-    description: 'FceRI signaling',
-    code: fceri2003,
-    tags: ['published', 'immunology'],
-  },
-  {
     id: 'innate_immunity',
     name: 'Korwek 2023',
-    description: 'Innate immune response',
+    description: 'Immune response',
     code: innateImmunity,
     tags: ['published', 'immunology'],
   },
@@ -1086,14 +1079,14 @@ const IMMUNE_SIGNALING: Example[] = [
   {
     id: 'Mukhopadhyay_2013',
     name: 'Mukhopadhyay 2013',
-    description: 'FcÃŽÂµRI pathway model',
+    description: 'FceRI signaling',
     code: mukhopadhyay2013,
     tags: ['published', 'immunology'],
   },
   {
     id: 'fceri_fyn',
     name: 'FceRI Fyn',
-    description: 'FcÃŽÂµRI Fyn signaling',
+    description: 'FceRI signaling',
     code: fceri_fyn,
     tags: ['published', 'immunology'],
   },
@@ -1122,7 +1115,7 @@ const IMMUNE_SIGNALING: Example[] = [
   {
     id: 'degranulation_model',
     name: 'PyBNG: Degranulation model',
-    description: 'Degranulation model (lanl/PyBNF)',
+    description: 'Degranulation model',
     code: degranulationModel,
     tags: ['published', 'PyBNG'],
   },
@@ -1133,7 +1126,7 @@ const ORDYAN_2020: Example[] = [
   {
     id: 'CaMKII_holo',
     name: 'Ordyan 2020: CaMKII holo',
-    description: 'CaMKII holo model (Ordyan et al. 2020)',
+    description: 'CaMKII holo',
     code: camkiiHolo,
     tags: ['published', 'neuroscience'],
   },
@@ -1233,7 +1226,7 @@ const TEST_MODELS: Example[] = [
   }, {
     id: 'ampk-signaling',
     name: 'ampk signaling',
-    description: 'AMPK pathway',
+    description: 'AMPK signaling',
     code: ampkSignaling,
     tags: ['example model'],
   }, {
@@ -1263,7 +1256,7 @@ const TEST_MODELS: Example[] = [
   }, {
     id: 'beta-adrenergic-response',
     name: 'beta adrenergic response',
-    description: 'ÃŽÂ²-adrenergic signaling',
+    description: 'Beta-adrenergic signaling',
     code: betaAdrenergicResponse,
     tags: ['example model'],
   }, {
@@ -1491,7 +1484,7 @@ const TEST_MODELS: Example[] = [
   }, {
     id: 'il1b-signaling',
     name: 'il1b signaling',
-    description: 'IL-1ÃŽÂ² pathway',
+    description: 'IL-1 Beta',
     code: il1bSignaling,
     tags: ['example model'],
   }, {
@@ -1617,7 +1610,7 @@ const TEST_MODELS: Example[] = [
   }, {
     id: 'nfkb-feedback',
     name: 'nfkb feedback',
-    description: 'NF-ÃŽÂºB signaling',
+    description: 'NF-kB signaling',
     code: nfkbFeedback,
     tags: ['example model'],
   }, {
@@ -1737,7 +1730,7 @@ const TEST_MODELS: Example[] = [
   }, {
     id: 'smad-tgf-beta-signaling',
     name: 'smad tgf beta signaling',
-    description: 'TGF-ÃŽÂ²/Smad signaling',
+    description: 'TGF-Beta signaling',
     code: smadTgfBetaSignaling,
     tags: ['example model'],
   }, {
@@ -1803,7 +1796,7 @@ const TEST_MODELS: Example[] = [
   }, {
     id: 'wnt-beta-catenin-signaling',
     name: 'wnt beta catenin signaling',
-    description: 'Wnt/ÃŽÂ²-catenin pathway',
+    description: 'Wnt signaling',
     code: wntBetaCateninSignaling,
     tags: ['example model'],
   }, {
@@ -2463,10 +2456,11 @@ const RAW_MODEL_CATEGORIES: ModelCategory[] = [
     description: 'Models of morphogens, differentiation, and tissue patterning',
     models: DEVELOPMENTAL_MODELS,
   },
-  
+
   {
     id: 'multistage',
     name: 'Multistage',
+    description: 'Models with distinct simulation phases or protocol shifts',
     models: [
       ...CELL_REGULATION.filter(m => ["Hat_2016"].includes(m.id)),
       ...GROWTH_FACTOR_SIGNALING.filter(m => ["Lang_2024"].includes(m.id)),
@@ -2479,7 +2473,7 @@ const RAW_MODEL_CATEGORIES: ModelCategory[] = [
       ].includes(m.id)),
     ],
   },
-  
+
   {
     id: 'tutorials',
     name: 'Tutorials & Simple Examples',

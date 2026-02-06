@@ -19,6 +19,7 @@ import type {
   SimulationPhase,
   ConcentrationChange,
   ParameterChange,
+  BNGLEnergyPattern,
   BNGLAction
 } from '../../types';
 
@@ -39,6 +40,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
   private parameterChanges: ParameterChange[] = [];
   private actions: BNGLAction[] = [];
   private speciesExpressions: string[] = [];
+  private energyPatterns: BNGLEnergyPattern[] = [];
 
   protected defaultResult(): BNGLModel {
     return {
@@ -57,6 +59,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       parameterChanges: this.parameterChanges,
       actions: this.actions,
       paramExpressions: { ...this.paramExpressions },  // Export for setParameter recalculation
+      energyPatterns: this.energyPatterns,
     };
   }
 
@@ -227,7 +230,12 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       return;
     }
 
-    // energy_patterns_block and population_maps_block are less common, skip for now
+    // energy_patterns_block and population_maps_block
+    const energyPatternsBlock = ctx.energy_patterns_block();
+    if (energyPatternsBlock) {
+      this.visitEnergy_patterns_block(energyPatternsBlock);
+      return;
+    }
   }
 
   // Parameters block
@@ -491,8 +499,25 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
     // Get rate(s)
     const rateExpressions = rateLawCtx.expression();
-    const rate = rateExpressions.length > 0 ? this.getExpressionText(rateExpressions[0]) : '0';
+    let rate = rateExpressions.length > 0 ? this.getExpressionText(rateExpressions[0]) : '0';
     const reverseRate = rateExpressions.length > 1 ? this.getExpressionText(rateExpressions[1]) : undefined;
+
+    let isArrhenius = false;
+    let arrheniusPhi: string | undefined;
+    let arrheniusEact: string | undefined;
+
+    if (rateExpressions.length > 0) {
+      if (rate.toLowerCase().startsWith('arrhenius(')) {
+        isArrhenius = true;
+        const match = rate.match(/arrhenius\s*\(\s*([^,]+)\s*,\s*(.+)\s*\)/i);
+        if (match) {
+          arrheniusPhi = match[1].trim();
+          arrheniusEact = match[2].trim();
+          // For Arrhenius rules, we might want to evaluate expressions later.
+          // In the visitor, we just store the raw sub-expressions.
+        }
+      }
+    }
 
     const isBidirectional = !!reactionSignCtx.BI_REACTION_SIGN();
 
@@ -560,6 +585,9 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       moveConnected,
       constraints,
       totalRate,
+      isArrhenius,
+      arrheniusPhi,
+      arrheniusEact,
     });
   }
 
@@ -617,6 +645,36 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       : undefined;
 
     this.compartments.push({ name, dimension, size, parent });
+  }
+
+  // Energy patterns block
+  visitEnergy_patterns_block(ctx: Parser.Energy_patterns_blockContext): void {
+    for (const def of ctx.energy_pattern_def()) {
+      this.visitEnergy_pattern_def(def);
+    }
+  }
+
+  visitEnergy_pattern_def(ctx: Parser.Energy_pattern_defContext): void {
+    const speciesDef = ctx.species_def();
+    const expr = ctx.expression();
+    if (!speciesDef || !expr) return;
+
+    const pattern = this.getSpeciesString(speciesDef);
+    const expression = expr.text;
+
+    // Optional label
+    const labelNode = ctx.STRING();
+    const label = (ctx.COLON() && labelNode) ? labelNode.text : undefined;
+
+    // Initial value evaluation
+    const value = this.evaluateExpression(expr);
+
+    this.energyPatterns.push({
+      name: label,
+      pattern,
+      expression,
+      value
+    });
   }
 
   visitGenerate_network_cmd(ctx: Parser.Generate_network_cmdContext): void {

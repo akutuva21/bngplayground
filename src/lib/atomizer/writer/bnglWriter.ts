@@ -1099,28 +1099,143 @@ export function writeReactionRulesFlat(
       const numReactants = Array.from(reactantCounts.keys()).length;
       const reactantIds = Array.from(reactantCounts.keys());
 
+      // Detect catalyst species (appear on both reactant and product sides)
+      const catalystSpecies = new Set<string>();
+      for (const ref of rxn.reactants) {
+        if (ref.species === 'EmptySet') continue;
+        for (const prodRef of rxn.products) {
+          if (prodRef.species === 'EmptySet') continue;
+          if (ref.species === prodRef.species) {
+            catalystSpecies.add(ref.species);
+          }
+        }
+      }
+
       // For saturation-style kinetics in the SBML expression (not using Sat macro),
-      // identify which species is the substrate by looking at the denominator (K + substrate)
+      // identify which species is the substrate by looking for denominator pattern (K + substrate)
       let satSubstrate: string | null = null;
+      let satCatalyst: string | null = null;
+      
+      // Check for Sat/MM pattern: contains "/" followed by "(...)" with "+" inside
+      // Handle nested parentheses by finding matching closing paren
+      let denominatorContent = '';
+      const divMatch = rate.match(/\/\s*\(/);
+      if (divMatch) {
+        const divIdx = divMatch.index!;
+        let parenDepth = 0;
+        for (let i = divIdx; i < rate.length; i++) {
+          if (rate[i] === '(') parenDepth++;
+          else if (rate[i] === ')') {
+            parenDepth--;
+            if (parenDepth === 0) {
+              denominatorContent = rate.substring(divIdx + 1, i);
+              break;
+            }
+          }
+        }
+      }
+      // For Sat/MM detection, we need:
+      // 1. A denominator with "+" (indicating K + substrate form)
+      // 2. At least one reactant species appearing in that denominator
+      let hasDenominator = false;
+      if (denominatorContent.includes('+')) {
+        // Check if any reactant appears in the denominator
+        for (const spId of reactantIds) {
+          const spName = standardizeName(spId);
+          if (denominatorContent.includes(`${spName}_amt`) || 
+              denominatorContent.includes(`_c_${spName}()`)) {
+            hasDenominator = true;
+            break;
+          }
+        }
+      }
+      
+      // First pass: identify potential substrates (in denominator) and catalysts (in numerator AND products)
+      const potentialSubstrates = new Set<string>();
+      const potentialCatalysts = new Set<string>();
+      
       for (const spId of reactantIds) {
-        const substratePattern = new RegExp(`/\\s*\\([^)]*\\+[^)]*${standardizeName(spId)}_amt`, 'i');
-        if (substratePattern.test(rate)) {
+        const spName = standardizeName(spId);
+        const hasSpeciesAmt = denominatorContent.includes(`${spName}_amt`);
+        const hasSpeciesConc = denominatorContent.includes(`_c_${spName}()`);
+        
+        if (hasDenominator && (hasSpeciesAmt || hasSpeciesConc)) {
+          potentialSubstrates.add(spId);
+        }
+        if (catalystSpecies.has(spId)) {
+          potentialCatalysts.add(spId);
+        }
+      }
+      
+      // If a potential substrate is also a catalyst, it's likely misidentified (buggy SBML)
+      // Use the other reactant as the substrate
+      for (const spId of potentialSubstrates) {
+        if (!potentialCatalysts.has(spId)) {
           satSubstrate = spId;
           break;
         }
       }
+      
+      // If all potential substrates are also catalysts (buggy SBML case), 
+      // pick the first non-catalyst reactant as substrate
+      if (!satSubstrate) {
+        for (const spId of reactantIds) {
+          if (!potentialCatalysts.has(spId)) {
+            satSubstrate = spId;
+            break;
+          }
+        }
+      }
+      
+      // Identify the actual catalyst (non-substrate that appears in products)
+      if (satSubstrate) {
+        for (const spId of reactantIds) {
+          if (spId !== satSubstrate && catalystSpecies.has(spId)) {
+            satCatalyst = spId;
+            break;
+          }
+        }
+      }
+      
+      // If we have a substrate and there's another reactant that's a catalyst,
+      // this is a saturation rate law with catalyst (buggy BNG SBML export)
+      let modifiedRate = rate;
+      if (hasDenominator && satSubstrate && numReactants > 1) {
+        // Check for catalyst in numerator (buggy pattern: k * substrate * catalyst / (K + substrate))
+        for (const spId of reactantIds) {
+          if (spId === satSubstrate) continue;
+          const catName = standardizeName(spId);
+          // Check for both _amt and _c_SX() formats
+          const catAmtPattern = new RegExp(`${catName}_amt`, 'i');
+          const catConcPattern = new RegExp(`_c_${catName}\\(\\)`, 'i');
+          if (catAmtPattern.test(modifiedRate) || catConcPattern.test(modifiedRate)) {
+            // Remove catalyst from numerator - handle both _amt and _c_SX() formats
+            const catAmtPatternGlobal = new RegExp(`\\s*\\*\\s*${catName}_amt\\s*`, 'g');
+            const catConcPatternGlobal = new RegExp(`\\s*\\*\\s*_c_${catName}\\(\\)\\s*`, 'g');
+            modifiedRate = modifiedRate.replace(catAmtPatternGlobal, ' ');
+            modifiedRate = modifiedRate.replace(catConcPatternGlobal, ' ');
+            satCatalyst = spId;
+            break;
+          }
+        }
+      }
 
-      if (satSubstrate && numReactants > 1) {
-        // Saturation kinetics: divide by substrate once, other reactants twice
+      if (hasDenominator && satSubstrate && numReactants > 1) {
+        // Saturation kinetics: divide by substrate once, other reactants appropriately
         for (const [spId, totalStoich] of reactantCounts) {
           const name = standardizeName(spId);
           if (spId === satSubstrate) {
             // Substrate (in Sat denominator): divide once
             divisorParts.push(`${name}_amt`);
+          } else if (catalystSpecies.has(spId)) {
+            // Catalyst (buggy BNG SBML export): do NOT divide
+            // The catalyst was erroneously added to numerator, we removed it above
+            // so we shouldn't divide by it either
+            totalStoichiometry -= totalStoich;
           } else {
-            // Other reactant (erroneously added by SBML): divide TWICE
+            // Other reactant (not substrate, not catalyst): divide TWICE (buggy SBML pattern)
             divisorParts.push(`(${name}_amt * ${name}_amt)`);
-            totalStoichiometry -= totalStoich;  // Adjust volume scaling
+            totalStoichiometry -= totalStoich;
           }
         }
       } else {
@@ -1152,7 +1267,8 @@ export function writeReactionRulesFlat(
           }
         }
       }
-      const cleanedRate = extractStatisticalFactors(rate, reactantSpeciesMap);
+      // Use modified rate (with catalyst removed from numerator if applicable)
+      const cleanedRate = extractStatisticalFactors(modifiedRate, reactantSpeciesMap);
 
       const ruleCompId = rxn.compartment || (rxn.reactants[0]?.species ? sbmlSpecies.get(rxn.reactants[0].species)?.compartment : rxn.products[0]?.species ? sbmlSpecies.get(rxn.products[0].species)?.compartment : '');
 
@@ -1164,7 +1280,11 @@ export function writeReactionRulesFlat(
         }
       }
 
-      finalRate = `(((${cleanedRate}) * ${vScale}) / (${divisor} + 1e-60))`;
+      // After stripping compartment from SBML rate, we need to DIVIDE by vScale
+      // SBML: k * [S1] * [S2] * C = k * (S1_amt/C) * (S2_amt/C) * C = k * S1_amt * S2_amt / C
+      // After stripping C: k * S1_amt * S2_amt / C
+      // We divide by vScale = C^(n-1) to get proper propensity
+      finalRate = `(((${cleanedRate}) / ${vScale}) / (${divisor} + 1e-60))`;
     }
 
     const reactants = reactantStrs.length > 0 ? reactantStrs.join(' + ') : '0';
@@ -1283,8 +1403,17 @@ export function writeReactionRulesAtomized(
         }
       }
 
-      // NOTE: We no longer strip compartment volume terms here.
-      // They are preserved to ensure correct scaling in propensities.
+      // Strip compartment volume terms from SBML kinetic law
+      // BNG2.pl exports SBML with "* C" for reactions in compartment C
+      // We strip this because we're using molecule-based rates (not concentration-based)
+      if (useCompartments) {
+        for (const compId of compartments.keys()) {
+          const compPattern = new RegExp(`\\s*\\*\\s*__compartment_${compId}__\\s*`, 'g');
+          rate = rate.replace(compPattern, '');
+          const compPattern2 = new RegExp(`\\s*\\*\\s*${compId}\\s*`, 'g');
+          rate = rate.replace(compPattern2, '');
+        }
+      }
 
       rate = bnglFunction(
         rate,
@@ -1311,6 +1440,125 @@ export function writeReactionRulesAtomized(
       }
     }
 
+    // Identify catalysts (species appearing on both sides)
+    const catalysts = new Set<string>();
+    for (const ref of rxn.reactants) {
+      if (ref.species === 'EmptySet') continue;
+      for (const prodRef of rxn.products) {
+        if (prodRef.species === 'EmptySet') continue;
+        if (ref.species === prodRef.species) {
+          catalysts.add(ref.species);
+        }
+      }
+    }
+
+    // For saturation-style kinetics in the SBML expression (not using Sat macro),
+    // identify which species is the substrate by looking for denominator pattern (K + substrate)
+    let satSubstrate: string | null = null;
+    let satCatalyst: string | null = null;
+    
+    // Check for Sat/MM pattern: contains "/" followed by "(...)" with "+" inside
+    // Handle nested parentheses by finding matching closing paren
+    let denominatorContent = '';
+    const divMatch = rate.match(/\/\s*\(/);
+    if (divMatch) {
+      const divIdx = divMatch.index!;
+      let parenDepth = 0;
+      for (let i = divIdx; i < rate.length; i++) {
+        if (rate[i] === '(') parenDepth++;
+        else if (rate[i] === ')') {
+          parenDepth--;
+          if (parenDepth === 0) {
+            denominatorContent = rate.substring(divIdx + 1, i);
+            break;
+          }
+        }
+      }
+    }
+    
+    // For Sat/MM detection, we need:
+    // 1. A denominator with "+" (indicating K + substrate form)
+    // 2. At least one reactant species appearing in that denominator
+    let hasDenominator = false;
+    let potentialSubstrate: string | null = null;
+    if (denominatorContent.includes('+')) {
+      // Check if any reactant appears in the denominator
+      for (const ref of rxn.reactants) {
+        if (ref.species === 'EmptySet') continue;
+        const spName = standardizeName(ref.species);
+        if (denominatorContent.includes(`${spName}_amt`) || 
+            denominatorContent.includes(`_c_${spName}()`)) {
+          hasDenominator = true;
+          potentialSubstrate = ref.species;
+          break;
+        }
+      }
+    }
+    
+    // Determine true substrate and catalyst
+    // Case 1: Normal Sat/MM - substrate NOT a catalyst, other reactant IS catalyst
+    // Case 2: Buggy BNG SBML - substrate IN denominator IS a catalyst, other reactant is true substrate
+    satSubstrate = null;
+    satCatalyst = null;
+    
+    if (hasDenominator && potentialSubstrate) {
+      if (catalysts.has(potentialSubstrate)) {
+        // Buggy SBML: the species in denominator is actually a catalyst
+        // Find the true substrate (the other reactant)
+        for (const ref of rxn.reactants) {
+          if (ref.species === 'EmptySet' || ref.species === potentialSubstrate) continue;
+          satSubstrate = ref.species;
+          satCatalyst = potentialSubstrate;
+          break;
+        }
+      } else {
+        // Normal case: potentialSubstrate is the true substrate
+        satSubstrate = potentialSubstrate;
+        // Find catalyst (other reactant that appears in products)
+        for (const ref of rxn.reactants) {
+          if (ref.species === 'EmptySet' || ref.species === satSubstrate) continue;
+          if (catalysts.has(ref.species)) {
+            satCatalyst = ref.species;
+            break;
+          }
+        }
+      }
+    }
+    
+    let modifiedRate = rate;
+    const numReactants = rxn.reactants.filter(r => r.species !== 'EmptySet').length;
+    
+    // If we have a substrate and there's another reactant that's a catalyst,
+    // this is a saturation rate law with catalyst (buggy BNG SBML export)
+    if (hasDenominator && satSubstrate && satCatalyst && numReactants > 1) {
+      // Remove catalyst from numerator
+      const catName = standardizeName(satCatalyst);
+      const catAmtPatternGlobal = new RegExp(`\\s*\\*\\s*${catName}_amt\\s*`, 'g');
+      const catConcPatternGlobal = new RegExp(`\\s*\\*\\s*_c_${catName}\\(\\)\\s*`, 'g');
+      modifiedRate = modifiedRate.replace(catAmtPatternGlobal, ' ');
+      modifiedRate = modifiedRate.replace(catConcPatternGlobal, ' ');
+      
+      // Fix denominator: replace catalyst with true substrate
+      // When satSubstrate is the catalyst (buggy SBML), find the true substrate
+      let trueSubstrateName = null;
+      if (catalysts.has(satSubstrate)) {
+        // satSubstrate is actually a catalyst, find the other reactant as true substrate
+        const trueSub = rxn.reactants.find(r => r.species !== 'EmptySet' && !catalysts.has(r.species));
+        if (trueSub) {
+          trueSubstrateName = standardizeName(trueSub.species);
+        }
+      } else {
+        // satSubstrate is already the true substrate
+        trueSubstrateName = standardizeName(satSubstrate);
+      }
+      
+      // Replace catalyst in denominator with true substrate
+      if (trueSubstrateName && trueSubstrateName !== catName) {
+        const denomCatPatternGlobal = new RegExp(`\\+\\s*${catName}_amt`, 'g');
+        modifiedRate = modifiedRate.replace(denomCatPatternGlobal, `+ ${trueSubstrateName}_amt`);
+      }
+    }
+
     // Unified kinetics: build divisor based on reactant amounts to extract specific rate constant
     const reactantCounts = new Map<string, number>();
     for (const ref of rxn.reactants) {
@@ -1320,14 +1568,22 @@ export function writeReactionRulesAtomized(
     }
 
     const divisorParts: string[] = [];
-    for (const [species, count] of reactantCounts) {
-      const spName = standardizeName(species);
-      const amtName = `${spName}_amt`;
-      for (let i = 0; i < count; i++) {
-        divisorParts.push(amtName);
+    if (hasDenominator && satSubstrate && numReactants > 1) {
+      // Saturation kinetics: the rate already has substrate/(K+substrate)
+      // We should NOT add extra divisors - the Sat macro handles it correctly
+      // Just identify components but don't add divisors
+    } else {
+      // Normal mass-action: divide by all reactants once
+      for (const [spId, totalStoich] of reactantCounts) {
+        const name = standardizeName(spId);
+        if (totalStoich === 1) {
+          divisorParts.push(`${name}_amt`);
+        } else {
+          divisorParts.push(`((${name}_amt^${totalStoich})/${getFactorial(totalStoich)})`);
+        }
       }
     }
-    const divisor = divisorParts.length > 0 ? divisorParts.join(' * ') : '1';
+    const divisor = divisorParts.length > 0 ? divisorParts.join('*') : '1';
     const vScale = '1';
 
     // Remove statistical factors from rate (BNGL handles these through pattern matching)
@@ -1339,13 +1595,15 @@ export function writeReactionRulesAtomized(
         reactantSpeciesMap.set(ref.species, entry.structure);
       }
     }
-    const cleanedRate = extractStatisticalFactors(rate, reactantSpeciesMap);
+    // Use modifiedRate (with catalyst removed if applicable)
+    const rateToUse = modifiedRate || rate;
+    const cleanedRate = extractStatisticalFactors(rateToUse, reactantSpeciesMap);
 
     let finalRate = `(((${cleanedRate}) * ${vScale}) / (${divisor} + 1e-20))`;
 
     // Attempt to detect Mass Action to simplify
     const massActionK = checkMassAction(
-      rate,
+      rateToUse,
       divisor,
       vScale,
       parameterDict,
@@ -1434,6 +1692,10 @@ export function generateBNGL(
   sections.push(`# BNGL model generated from SBML`);
   sections.push(`# Model: ${model.name}`);
   sections.push(`# Species: ${model.species.size}, Reactions: ${model.reactions.size}`);
+  sections.push('');
+  
+  // Add NumberPerQuantityUnit option for proper energy-based kinetics
+  sections.push('setOption("NumberPerQuantityUnit", 6.0221e23)');
   sections.push('');
 
   // Issue 4: Ensure all structures in seedSpecies are canonicalized

@@ -1143,8 +1143,8 @@ export function getSeedSpecies(
 
     let amountExpr: string;
     if (sbmlSpecies.initialAmount > 0) {
-      // Amount takes precedence. We assume it is the entity count (molecules)
-      // for BioNetGen purposes, as most SBML discrete models use amounts for counts.
+      // BNG exports SBML with molecule counts in initialAmount
+      // We use the value directly regardless of hasOnlySubstanceUnits
       amountExpr = sbmlSpecies.initialAmount.toString();
     } else if (sbmlSpecies.initialConcentration > 0) {
       // Concentration based: scale by Na * Vol

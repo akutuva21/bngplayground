@@ -191,8 +191,15 @@ export async function generateExpandedNetwork(
         (forwardRule as unknown as { rateExpression?: string; isFunctionalRate?: boolean; propensityFactor?: number }).rateExpression = expandedRate;
 
         if (isForwardFunctional) {
-            (forwardRule as unknown as { rateExpression?: string; isFunctionalRate?: boolean; propensityFactor?: number }).isFunctionalRate = true;
-            (forwardRule as unknown as { rateExpression?: string; isFunctionalRate?: boolean; propensityFactor?: number }).propensityFactor = 1;
+            (forwardRule as any).isFunctionalRate = true;
+            (forwardRule as any).propensityFactor = 1;
+        }
+
+        // Propagate Arrhenius fields
+        if (r.isArrhenius) {
+            (forwardRule as any).isArrhenius = true;
+            (forwardRule as any).arrheniusPhi = r.arrheniusPhi;
+            (forwardRule as any).arrheniusEact = r.arrheniusEact;
         }
 
         // Apply Constraints (if any)
@@ -206,11 +213,20 @@ export async function generateExpandedNetwork(
             const reverseRule = BNGLParser.parseRxnRule(reverseRuleStr, isReverseFunctional ? 1 : reverseRate);
             reverseRule.name = r.name + '_rev';
             (reverseRule as any).originalRate = expandedReverseRate;
-            (reverseRule as unknown as { rateExpression?: string; isFunctionalRate?: boolean }).rateExpression = expandedReverseRate;
+            (reverseRule as any).rateExpression = expandedReverseRate;
 
             if (isReverseFunctional && expandedReverseRate) {
-                (reverseRule as unknown as { rateExpression?: string; isFunctionalRate?: boolean }).isFunctionalRate = true;
+                (reverseRule as any).isFunctionalRate = true;
             }
+
+            // Propagate Arrhenius fields for reverse rule
+            if (r.isArrhenius) {
+                (reverseRule as any).isArrhenius = true;
+                // Reverse Arrhenius symmetry factor: 1 - phi
+                (reverseRule as any).arrheniusPhi = r.arrheniusPhi ? `1 - (${r.arrheniusPhi})` : "1";
+                (reverseRule as any).arrheniusEact = r.arrheniusEact;
+            }
+
             return [forwardRule, reverseRule];
         }
 
@@ -255,7 +271,9 @@ export async function generateExpandedNetwork(
             size: c.size,
             parent: c.parent
         })),
-        seedConcentrationMap
+        seedConcentrationMap,
+        energyPatterns: inputModel.energyPatterns,
+        parameters: new Map(Object.entries(inputModel.parameters || {}))
     });
 
     // ... (rest of generation code same) ... 

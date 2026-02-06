@@ -10,6 +10,9 @@ export class RxnRule {
   rateExpression?: string;
   allowsIntramolecular: boolean;
   totalRate: boolean;
+  isArrhenius: boolean;
+  arrheniusPhi?: string;
+  arrheniusEact?: string;
 
   // Transformation operations
   deleteBonds: Array<[number, number, number, number]>; // [mol1, comp1, mol2, comp2]
@@ -46,6 +49,7 @@ export class RxnRule {
     this.rateExpression = options.rateExpression;
     this.isMoveConnected = options.isMoveConnected ?? false;
     this.totalRate = options.totalRate ?? false;
+    this.isArrhenius = false;
     this.deleteBonds = [];
     this.addBonds = [];
     this.changeStates = [];

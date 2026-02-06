@@ -6,8 +6,11 @@ import { Rxn } from './core/Rxn';
 import { GraphCanonicalizer } from './core/Canonical';
 import { GraphMatcher, MatchMap, clearMatchCache } from './core/Matcher';
 import { countEmbeddingDegeneracy } from './core/degeneracy';
-import { Molecule } from './core/Molecule';
 import { Component } from './core/Component';
+import { EnergyService } from './core/EnergyService';
+import { BNGLEnergyPattern } from '../../../types';
+import { Molecule } from './core/Molecule';
+import { BNGLParser } from './core/BNGLParser';
 
 function factorial(n: number): number {
   if (n <= 1) return 1;
@@ -196,6 +199,8 @@ export interface GeneratorOptions {
   checkInterval: number;
   memoryLimit: number;
   compartments?: CompartmentInfo[];  // Compartment definitions for volume scaling
+  energyPatterns?: BNGLEnergyPattern[]; // NEW: Energy patterns for Arrhenius rate laws
+  parameters?: Map<string, number>; // For evaluating Arrhenius expressions
 }
 
 export interface GeneratorProgress {
@@ -223,6 +228,7 @@ export class NetworkGenerator {
   private aggLimitWarnings = 0;
   private speciesLimitWarnings = 0;
   private currentRuleName: string | null = null;
+  private energyService?: EnergyService;
 
   constructor(options: Partial<GeneratorOptions> & { seedConcentrationMap?: Map<string, number> } = {}) {
     this.options = {
@@ -242,7 +248,30 @@ export class NetworkGenerator {
         this.compartmentVolumes.set(c.name, c.size);
       }
     }
+    if (this.options.energyPatterns) {
+      this.energyService = new EnergyService(this.options.energyPatterns);
+    }
     this.currentRuleName = null;
+  }
+
+  /**
+   * Helper: Evaluate a parameter expression safely.
+   */
+  private evaluateArrheniusParam(expr: string | undefined): number {
+    if (!expr) return 0;
+    // Use Number() for strict check (parseFloat parses "1 - phi" as 1)
+    const val = Number(expr);
+    if (!isNaN(val)) return val;
+    
+    if (this.options.parameters) {
+      try {
+        return BNGLParser.evaluateExpression(expr, this.options.parameters);
+      } catch (e) {
+        console.warn(`[NetworkGenerator] Failed to evaluate Arrhenius param expression: ${expr}`, e);
+        return this.options.parameters.get(expr) ?? 0;
+      }
+    }
+    return 0;
   }
 
 
@@ -724,7 +753,6 @@ export class NetworkGenerator {
                 reactionsList,
                 reactionKeys,
                 reactionIndexByKey,
-                processedPairs,
                 signal
               );
             }
@@ -1216,7 +1244,20 @@ export class NetworkGenerator {
       //   to avoid overcounting symmetric molecule permutations.
       const useDegeneracy = matchCount === 1 && shouldApplyDegeneracyStatFactor(pattern, reactantSpecies.graph, match);
       const statFactor = useDegeneracy ? degeneracy : (matchCount === 1 ? collapsedRuleStatFactor : 1);
-      const effectiveRate = baseRateConstant * statFactor;
+      let effectiveRate = baseRateConstant * statFactor;
+
+      // Arrhenius rate law calculation
+      if (rule.isArrhenius && this.energyService) {
+        const deltaG = this.energyService.calculateDeltaG(reactantSpecies.graph, products);
+        
+        const phi = this.evaluateArrheniusParam(rule.arrheniusPhi);
+        const Eact = this.evaluateArrheniusParam(rule.arrheniusEact);
+        
+        // k = baseRate * exp(-(Eact + phi * deltaG))
+        // Note: BNG assumes energies are in units of RT
+        const baseRate = rule.rateExpression && rule.rateConstant === 0 ? 1 : rule.rateConstant;
+        effectiveRate = baseRate * Math.exp(-(Eact + phi * deltaG)) * statFactor;
+      }
 
       // Preserve the BNGL expression without embedding degeneracy/volume scaling.
       // The solver/evaluator layer is responsible for multiplying: effectiveRate * eval(rateExpression).
@@ -1456,20 +1497,30 @@ export class NetworkGenerator {
     // 5. Volume Scaling
     const { scalingVolume } = this.getVolumeScalingInfo(reactantSpeciesList, productIndices.map(idx => allSpecies[idx]));
 
-    const finalRate = rule.rateConstant * multiplicity;
+    let effectiveRate = rule.rateConstant * multiplicity;
+
+    // Arrhenius rate law calculation for N-ary rule
+    if (rule.isArrhenius && this.energyService) {
+      const deltaG = this.energyService.calculateDeltaG(reactantSpeciesList.map(s => s.graph), products);
+      
+      const phi = this.evaluateArrheniusParam(rule.arrheniusPhi);
+      const Eact = this.evaluateArrheniusParam(rule.arrheniusEact);
+      
+      const baseRateConstant = rule.rateExpression && rule.rateConstant === 0 ? 1 : rule.rateConstant;
+      effectiveRate = baseRateConstant * Math.exp(-(Eact + phi * deltaG)) * multiplicity;
+    }
 
     // 6. Record Reaction
     const rxn = new Rxn(
       currentSpeciesIndices,
       productIndices,
-      finalRate,
+      effectiveRate,
       rule.name,
       {
         degeneracy: multiplicity,
         rateExpression: rule.rateExpression,
         scalingVolume: scalingVolume,
-        totalRate: rule.totalRate,
-        ruleName: rule.name
+        totalRate: rule.totalRate
       }
     );
 
@@ -1489,7 +1540,7 @@ export class NetworkGenerator {
     }
 
     if (shouldLogNetworkGenerator) {
-      debugNetworkLog(`[applyNaryRule] Added reaction: [${currentSpeciesIndices.join(', ')}] -> [${productIndices.join(', ')}] rate=${finalRate}`);
+      debugNetworkLog(`[applyNaryRule] Added reaction: [${currentSpeciesIndices.join(', ')}] -> [${productIndices.join(', ')}] rate=${effectiveRate}`);
     }
   }
 

@@ -356,7 +356,6 @@ export const BNG2_COMPATIBLE_MODELS = new Set([
   'competitive-enzyme-inhibition',
   'complement-activation-cascade',
   'contact-inhibition-hippo-yap',
-  'continue',
   'cooperative-binding',
   'degranulation_model',
   'dna-damage-repair',
@@ -1805,6 +1804,12 @@ const TEST_MODELS: Example[] = [
     description: 'PDGF signaling',
     code: woundHealingPdgfSignaling,
     tags: ['example model'],
+  }, {
+    id: 'sir-epidemic-model',
+    name: 'sir epidemic model',
+    description: 'SIR epidemic model',
+    code: sirEpidemicModel,
+    tags: ['published', 'epidemiology'],
   },
 ];
 

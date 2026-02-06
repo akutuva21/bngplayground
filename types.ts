@@ -64,6 +64,13 @@ export interface BNGLCompartment {
   resolvedVolume?: number;
   scalingFactor?: number;
 }
+  
+export interface BNGLEnergyPattern {
+  name?: string;
+  pattern: string;
+  expression: string;
+  value?: number;
+}
 
 export interface BNGLReaction {
   reactants: string[];
@@ -76,6 +83,9 @@ export interface BNGLReaction {
   propensityFactor?: number;  // Statistical factor for degeneracy
   productStoichiometries?: number[]; // Volume scaling factors for products
   scalingVolume?: number;    // NEW: Proper volume/surface for concentration-to-amount flux scaling
+  isArrhenius?: boolean;
+  arrheniusPhi?: string;
+  arrheniusEact?: string;
 }
 
 // BNG function definition (e.g., gene_Wip1_activity())
@@ -102,6 +112,9 @@ export interface ReactionRule {
   comment?: string;
   reactionString?: string; // String representation of the rule
   totalRate?: boolean; // TotalRate modifier
+  isArrhenius?: boolean;
+  arrheniusPhi?: string;
+  arrheniusEact?: string;
 }
 
 export interface BNGLAction {
@@ -139,6 +152,7 @@ export interface BNGLModel {
   parameterChanges?: ParameterChange[];
   // Original parameter expressions for recalculating derived parameters after setParameter
   paramExpressions?: Record<string, string>;
+  energyPatterns?: BNGLEnergyPattern[];
 }
 
 // Represents a single simulate_* action

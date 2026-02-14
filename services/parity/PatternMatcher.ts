@@ -32,6 +32,10 @@ export const removeCompartment = (s: string) => {
     });
 };
 
+const normalizeBareMoleculePattern = (s: string): string => {
+    return /^[A-Za-z0-9_]+$/.test(s) ? `${s}()` : s;
+};
+
 // -------------------------------------------------------------------------
 // Graph Caching (Performance Optimization)
 // -------------------------------------------------------------------------
@@ -63,6 +67,7 @@ export function parseGraphCached(str: string) {
     return parsed;
 }
 
+
 registerCacheClearCallback(() => {
     parsedGraphCache.clear();
     PARSED_GRAPH_CACHE_VERSION = '1.0.1'; // Bump version just in case
@@ -74,7 +79,7 @@ function countMoleculeEmbeddings(patMol: string, specMol: string): number {
     try {
         // FIX: BNG2 treats "mRNA" and "mRNA()" as equivalent for matching.
         // Normalize bare molecule names by adding empty parentheses.
-        const normalizedPat = /^[A-Za-z0-9_]+$/.test(patMol) ? patMol + '()' : patMol;
+        const normalizedPat = normalizeBareMoleculePattern(patMol);
 
         // Clone the cached graph to avoid accidental mutation.
         const cachedPat = parseGraphCached(normalizedPat);
@@ -103,7 +108,7 @@ export function isSpeciesMatch(speciesStr: string, pattern: string): boolean {
 
     if (patComp && patComp !== specComp) return false;
 
-    const cleanPat = removeCompartment(pattern);
+    const cleanPat = normalizeBareMoleculePattern(removeCompartment(pattern));
     const cleanSpec = removeCompartment(speciesStr);
 
     try {
@@ -131,7 +136,7 @@ export function countMultiMoleculePatternMatches(speciesStr: string, pattern: st
 
     if (patComp && patComp !== specComp) return 0;
 
-    const cleanPat = removeCompartment(pattern);
+    const cleanPat = normalizeBareMoleculePattern(removeCompartment(pattern));
     const cleanSpec = removeCompartment(speciesStr);
 
     try {
@@ -140,14 +145,16 @@ export function countMultiMoleculePatternMatches(speciesStr: string, pattern: st
 
         const specGraph = parseGraphCached(cleanSpec);
 
-        // BNG2 semantics for Molecules observables (multi-molecule patterns):
-        // Count ALL embeddings of the pattern into the species, divided by pattern automorphisms.
+        // For Molecules observables, count unique target molecules that can serve as
+        // the anchor (pattern molecule index 0). This avoids over-counting equivalent
+        // embeddings caused by wildcard/symmetric components (e.g., duplicated "c!?" sites).
         const maps = GraphMatcher.findAllMaps(patGraph, specGraph);
-        let total = 0;
+        const anchorTargets = new Set<number>();
         for (const map of maps) {
-            total += countEmbeddingDegeneracy(patGraph, specGraph, map);
+            const targetIdx = map.moleculeMap.get(0);
+            if (targetIdx !== undefined) anchorTargets.add(targetIdx);
         }
-        return total;
+        return anchorTargets.size;
     } catch {
         return 0;
     }
@@ -158,7 +165,7 @@ export function countPatternMatches(speciesStr: string, patternStr: string): num
     const patComp = getCompartment(patternStr);
     const specComp = getCompartment(speciesStr);
 
-    const cleanPat = removeCompartment(patternStr);
+    const cleanPat = normalizeBareMoleculePattern(removeCompartment(patternStr));
     const cleanSpec = removeCompartment(speciesStr);
 
     if (patComp && patComp !== specComp) return 0;
@@ -167,20 +174,20 @@ export function countPatternMatches(speciesStr: string, patternStr: string): num
         // Multi-molecule pattern: stricter species-level compartment check for now
         return countMultiMoleculePatternMatches(speciesStr, patternStr);
     } else {
-        // Single-molecule pattern: use findAllMaps on the whole species graph.
-        // This is robust to complexes (no splitting) and correctly handles BNG2 Molecules semantics.
+        // Single-molecule Molecules observable: count unique target molecules that
+        // match the pattern, not all equivalent component embeddings.
         try {
             const cachedPat = parseGraphCached(cleanPat);
             const patGraph = cachedPat.clone();
 
             const specGraph = parseGraphCached(cleanSpec);
             const maps = GraphMatcher.findAllMaps(patGraph, specGraph);
-            let total = 0;
+            const anchorTargets = new Set<number>();
             for (const map of maps) {
-                total += countEmbeddingDegeneracy(patGraph, specGraph, map);
+                const targetIdx = map.moleculeMap.get(0);
+                if (targetIdx !== undefined) anchorTargets.add(targetIdx);
             }
-
-            return total;
+            return anchorTargets.size;
         } catch {
             return 0;
         }

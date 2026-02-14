@@ -1414,17 +1414,16 @@ class VF2State {
     }
     const tComp = this.target.molecules[tMolIdx].components[tCompIdx];
 
-    // BioNetGen semantics: If a binding site is named, its bond state is constrained.
-    // - Named but with no bond label and no wildcard (e.g., "A(b)"): must be UNBOUND.
-    // - Explicitly unbound "A(b!-)": must be UNBOUND (same as above).
-    // - wildcard "+": must be BOUND.
-    // - wildcard "?": matches ANY.
+    // BioNetGen semantics:
+    // - "!+": must be BOUND.
+    // - "!?": matches ANY.
+    // - "!-" or "!." (parsed as '-') : must be UNBOUND.
+    // - No bond label/wildcard (e.g., "A(b)"): implicitly UNBOUND.
     if (pComp.wildcard === '+') return tComp.edges.size > 0;
     if (pComp.wildcard === '-') return tComp.edges.size === 0;
     if (pComp.wildcard === '?') return true;
 
-    // Default case: if no wildcard and no specific bonds are defined in the pattern,
-    // it MUST be free.
+    // Default case: no wildcard and no specific bonds means site must be unbound.
     if (pComp.edges.size === 0) {
       return tComp.edges.size === 0;
     }

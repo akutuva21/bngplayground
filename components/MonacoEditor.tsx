@@ -14,6 +14,7 @@ interface MonacoEditorProps {
     startColumn?: number;
     endColumn?: number;
   };
+  lastResized?: number;
 }
 
 declare const window: any;
@@ -54,6 +55,7 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
   theme = 'light',
   markers = [],
   selection,
+  lastResized,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const monacoRef = useRef<any>(null);
@@ -90,6 +92,14 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
       endColumn: selection.endColumn ?? 1,
     });
   }, [selection]);
+
+  // Effect 5: Explicit layout call on container resize
+  useEffect(() => {
+    const editor = editorInstanceRef.current;
+    if (editor && lastResized) {
+      editor.layout();
+    }
+  }, [lastResized]);
 
   // Effect 1: Create editor on mount and dispose on unmount
   useEffect(() => {

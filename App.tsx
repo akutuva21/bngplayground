@@ -60,6 +60,19 @@ function App() {
   const simulateAbortRef = useRef<AbortController | null>(null);
   const simOptionsRef = useRef<SimulationOptions | null>(null);
 
+  // Editor resizing support
+  const [lastResized, setLastResized] = useState<number>(Date.now());
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!editorContainerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      setLastResized(Date.now());
+    });
+    observer.observe(editorContainerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     simOptionsRef.current = simOptions;
   }, [simOptions]);
@@ -819,9 +832,10 @@ function App() {
           </div>
 
           <div className="grid flex-1 min-h-0 grid-cols-1 gap-6 items-start lg:grid-cols-2">
-            <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden" style={{ maxHeight: PANEL_MAX_HEIGHT }}>
+            <div ref={editorContainerRef} className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden" style={{ maxHeight: PANEL_MAX_HEIGHT }}>
               {viewMode === 'code' ? (
                 <EditorPanel
+                  lastResized={lastResized}
                   code={code}
                   onCodeChange={handleEditorCodeChange}
                   onParse={handleParse}

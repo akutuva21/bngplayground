@@ -92,6 +92,7 @@ interface EditorPanelProps {
   onImportSBML?: (file: File) => void;
   onExportSBML?: () => void;
   onExportBNGL?: () => void;
+  lastResized?: number;
 }
 
 export const EditorPanel: React.FC<EditorPanelProps> = ({
@@ -112,6 +113,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   onImportSBML,
   onExportSBML,
   onExportBNGL,
+  lastResized,
 }) => {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   // removed first-time-open example gallery state
@@ -220,6 +222,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
             onChange={(value) => onCodeChange(value || '')}
             markers={editorMarkers}
             selection={selection}
+            lastResized={lastResized}
           />
         </div>
 

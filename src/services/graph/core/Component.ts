@@ -50,7 +50,7 @@ export class Component {
     // - '!+' means the site must be bound (one or more bonds)
     // - '!?' means the site may or may not be bound (zero or one bond)
     // - '!-' means the site must be unbound (zero bonds)
-    // - absence of any '!<...>' is handled elsewhere (explicit component presence implies unbound)
+    // - absence of any '!<...>' is handled elsewhere (bond state unconstrained)
     if (this.wildcard === '+' && other.edges.size === 0) return false;
     if (this.wildcard === '-' && other.edges.size !== 0) return false;
     if (this.wildcard === '?' && other.edges.size > 1) return false;

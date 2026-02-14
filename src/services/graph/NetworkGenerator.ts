@@ -169,9 +169,44 @@ function shouldApplyDegeneracyStatFactor(pattern: SpeciesGraph, target: SpeciesG
         return true;
       }
     }
+
   }
 
   return false;
+}
+
+function computeWildcardBoundStatFactor(pattern: SpeciesGraph, target: SpeciesGraph, match: MatchMap): number {
+  let factor = 1;
+
+  for (const [pMolIdx, tMolIdx] of match.moleculeMap.entries()) {
+    const pMol = pattern.molecules[pMolIdx];
+    const tMol = target.molecules[tMolIdx];
+    if (!pMol || !tMol) continue;
+
+    const wildcardByName = new Map<string, number>();
+    for (const comp of pMol.components) {
+      if (comp.wildcard === '+') {
+        wildcardByName.set(comp.name, (wildcardByName.get(comp.name) ?? 0) + 1);
+      }
+    }
+
+    for (const [compName, wildcardCount] of wildcardByName.entries()) {
+      if (wildcardCount <= 0) continue;
+
+      let targetBoundCount = 0;
+      for (const comp of tMol.components) {
+        if (comp.name === compName && comp.edges.size > 0) {
+          targetBoundCount++;
+        }
+      }
+
+      if (targetBoundCount > 1) {
+        factor = Math.max(factor, targetBoundCount);
+      }
+    }
+  }
+
+  return factor;
 }
 
 
@@ -435,6 +470,9 @@ export class NetworkGenerator {
 
     const react = summarize(rule.reactants);
     const prod = summarize(rule.products);
+    const reactantMolTypeCount = new Set(
+      rule.reactants.flatMap((graph) => graph.molecules.map((mol) => mol.name))
+    ).size;
 
     const addCandidates: number[] = [];
     const delCandidates: number[] = [];
@@ -469,11 +507,15 @@ export class NetworkGenerator {
         // (e.g., TLR4(TLR4!1).TLR4(TLR4!1) -> TLR4 + TLR4), rBound=2 but the number of
         // distinct bonds to break is 1, and BNG2's stat_factor is 1 (not 2).
         //
-        // Approximate the number of equivalent deletable bonds as rBound/2 for same-site
-        // bond types. This prevents the common 2x overcount while still allowing >1 when
-        // multiple equivalent bonds exist.
+        // Approximate the number of equivalent deletable bonds as rBound/2 only when
+        // the reactant side is a single molecule type (typical symmetric homodimer case).
+        // For multi-type complexes (e.g., gene-protein), each bound endpoint can represent
+        // a distinct deletable bond and should keep full multiplicity.
         if (pBound === rBound - 1 && rBound > 1) {
-          delCandidates.push(Math.max(1, Math.floor(rBound / 2)));
+          const deleteFactor = reactantMolTypeCount === 1
+            ? Math.max(1, Math.floor(rBound / 2))
+            : rBound;
+          delCandidates.push(deleteFactor);
         }
       }
     }
@@ -566,6 +608,7 @@ export class NetworkGenerator {
     clearMatchCache();
 
     const speciesMap = new Map<string, Species>();
+  const speciesByFingerprint = new Map<string, Species[]>();
     const speciesList: Species[] = [];
     const reactionsList: Rxn[] = [];
     const reactionKeys = new Set<string>();  // Fast duplicate detection for reactions
@@ -581,22 +624,7 @@ export class NetworkGenerator {
 
     // Initialize with seed species
     for (const sg of seedSpecies) {
-      const canonical = profiledCanonicalize(sg);
-      if (!speciesMap.has(canonical)) {
-        const species = new Species(sg, speciesList.length);
-
-        // Populate initial concentration from map (evaluated params)
-        const seedConc = this.seedConcentrationMap?.get(canonical) ?? 0;
-        species.initialConcentration = seedConc;
-        if (canonical.includes('FB') && canonical.includes('s~U')) {
-          console.log(`[NetworkGen] Helper Loop Creating Species '${canonical}': init=${seedConc}`);
-        }
-
-        speciesMap.set(canonical, species);
-        speciesList.push(species);
-        this.indexSpecies(species);
-        queue.push(sg);
-      }
+      this.addOrGetSpecies(sg, speciesMap, speciesByFingerprint, speciesList, queue, signal);
     }
 
     // Handle synthesis rules (0 -> X) - add products directly
@@ -607,16 +635,7 @@ export class NetworkGenerator {
 
         // Add each product species if not already present
         for (const productGraph of rule.products) {
-
-
-          const productCanonical = profiledCanonicalize(productGraph);
-          if (!speciesMap.has(productCanonical)) {
-            const productSpecies = new Species(productGraph, speciesList.length);
-            speciesMap.set(productCanonical, productSpecies);
-            speciesList.push(productSpecies);
-            this.indexSpecies(productSpecies);
-            queue.push(productGraph);
-          }
+          this.addOrGetSpecies(productGraph, speciesMap, speciesByFingerprint, speciesList, queue, signal);
         }
 
         // Create the synthesis reaction (no reactants -> products)
@@ -703,23 +722,19 @@ export class NetworkGenerator {
             this.currentRuleName = rule.name;
             // Debug: Print rule dispatch info (reactant count and types)
             if (shouldLogNetworkGenerator) {
-              try {
-                const reactantInfo = (rule.reactants || [])
-                  .map((r: any, i: number) => {
-                    try {
-                      return `${i}:${r?.toString?.() ?? String(r)}[${r && typeof r === 'object' && r.constructor ? r.constructor.name : typeof r
-                        }]`;
-                    } catch (e) {
-                      return `${i}:<unserializable>`;
-                    }
-                  })
-                  .join(' | ');
-                debugNetworkLog(
-                  `[NetworkGenerator] Dispatching rule ${ruleIdx}: ${rule.name}, Reactants count: ${rule.reactants?.length ?? 0} -> ${reactantInfo}`
-                );
-              } catch (e) {
-                debugNetworkLog('[NetworkGenerator] Dispatching rule: <error reading rule>');
-              }
+              const reactantInfo = (rule.reactants || [])
+                .map((reactant: any, index: number) => {
+                  const reactantType =
+                    reactant && typeof reactant === 'object' && reactant.constructor
+                      ? reactant.constructor.name
+                      : typeof reactant;
+                  const reactantText = reactant?.toString?.() ?? String(reactant);
+                  return `${index}:${reactantText}[${reactantType}]`;
+                })
+                .join(' | ');
+              debugNetworkLog(
+                `[NetworkGenerator] Rule dispatch idx=${ruleIdx} name=${rule.name ?? '<unnamed>'} reactants=${rule.reactants.length} :: ${reactantInfo}`
+              );
             }
 
             // Skip if already processed this (species, rule) pair
@@ -748,6 +763,7 @@ export class NetworkGenerator {
                 rule,
                 currentSpeciesObj,
                 speciesMap,
+                speciesByFingerprint,
                 speciesList,
                 queue,
                 reactionsList,
@@ -765,6 +781,7 @@ export class NetworkGenerator {
                 currentSpeciesObj,
                 speciesList, // allSpecies
                 speciesMap,
+                speciesByFingerprint,
                 speciesList,
                 queue,
                 reactionsList,
@@ -919,6 +936,7 @@ export class NetworkGenerator {
     rule: RxnRule,
     reactantSpecies: Species,
     speciesMap: Map<string, Species>,
+    speciesByFingerprint: Map<string, Species[]>,
     speciesList: Species[],
     queue: SpeciesGraph[],
     reactionsList: Rxn[],
@@ -1086,7 +1104,22 @@ export class NetworkGenerator {
         }
       }
 
-      if (ops.length === 0) return null;
+      if (ops.length === 0) {
+        const addedCounts = new Map<string, number>();
+        for (const product of products) {
+          for (const mol of product.molecules) {
+            const sourceKey = (mol as any)._sourceKey as string | undefined;
+            if (sourceKey) continue;
+            addedCounts.set(mol.name, (addedCounts.get(mol.name) ?? 0) + 1);
+          }
+        }
+        if (addedCounts.size === 0) return null;
+        const addedSig = Array.from(addedCounts.entries())
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([name, count]) => `${name}${count > 1 ? `(${count})` : ''}`)
+          .join('+');
+        return `addMol:${addedSig}`;
+      }
       ops.sort();
       return ops.join(';');
     };
@@ -1150,8 +1183,36 @@ export class NetworkGenerator {
 
     const matchCount = matches.length;
 
+    const hasWildcardBoundPattern = pattern.molecules.some((mol) =>
+      mol.components.some((comp) => comp.wildcard === '+')
+    );
+
     // Recover stat_factor for collapsed symmetric embeddings (e.g., repeated identical sites).
     const collapsedRuleStatFactor = matchCount === 1 ? this.computeCollapsedRuleStatFactor(rule) : 1;
+
+    const signatureMultiplicityByOutcome = new Map<string, number>();
+    if (hasWildcardBoundPattern) {
+      for (const candidateMatch of matches) {
+        const candidateProducts = this.applyRuleTransformation(
+          rule,
+          [rule.reactants[0]],
+          [reactantSpecies.graph],
+          [candidateMatch]
+        );
+        if (candidateProducts === null || !this.validateProducts(candidateProducts)) {
+          continue;
+        }
+        const expectedProductCount = rule.products.length;
+        if (candidateProducts.length < expectedProductCount) {
+          continue;
+        }
+        const sig =
+          buildUnimolecularEventSignatureFromRuleOps(candidateMatch) ??
+          buildUnimolecularEventSignatureFromProducts(candidateProducts);
+        if (!sig) continue;
+        signatureMultiplicityByOutcome.set(sig, (signatureMultiplicityByOutcome.get(sig) ?? 0) + 1);
+      }
+    }
 
 
     for (const match of matches) {
@@ -1204,6 +1265,8 @@ export class NetworkGenerator {
       const signature =
         buildUnimolecularEventSignatureFromRuleOps(match) ??
         buildUnimolecularEventSignatureFromProducts(products);
+      const signatureMultiplicity = signature ? (signatureMultiplicityByOutcome.get(signature) ?? 1) : 1;
+      const hasTopologyChangingSignature = !!signature && !signature.startsWith('addMol:');
 
       if (debugSignatureForThisRule && debugPrinted < 10) {
         debugPrinted += 1;
@@ -1220,10 +1283,12 @@ export class NetworkGenerator {
         );
       }
 
+      const skipSignatureDedup = hasWildcardBoundPattern && rule.deleteBonds.length > 0 && rule.addBonds.length === 0;
+
       // Deduplicate symmetry-equivalent embeddings (same physical event).
       // This avoids 2x overcounting for cases like symmetric dimer unbinding where
       // multiple automorphism-related embeddings map to the same bond endpoints.
-      if (signature) {
+      if (signature && !skipSignatureDedup) {
         if (seenSignatures.has(signature)) {
           if (debugSignatureForThisRule && debugPrinted < 10) {
             console.log('  -> DUPLICATE signature, skipping (symmetry-equivalent)');
@@ -1236,7 +1301,7 @@ export class NetworkGenerator {
       // Add all products to network
       const productSpeciesIndices: number[] = [];
       for (const product of products) {
-        const productSpecies = this.addOrGetSpecies(product, speciesMap, speciesList, queue, signal);
+        const productSpecies = this.addOrGetSpecies(product, speciesMap, speciesByFingerprint, speciesList, queue, signal);
         productSpeciesIndices.push(productSpecies.index);
       }
       if (rule.name === 'DeCe1' && products.length > 0) {
@@ -1250,7 +1315,7 @@ export class NetworkGenerator {
       // Create reaction (each match contributes additively; duplicates are aggregated by key)
       // Semantics: effective rate = (numeric scaling) * (evaluated symbolic expression, if present).
       // Therefore, degeneracy/volume scaling must live ONLY in the numeric factor.
-      const baseRateConstant = rule.rateExpression && rule.rateConstant === 0 ? 1 : rule.rateConstant;
+      const baseRateConstant = (rule as any).isFunctionalRate && rule.rateConstant === 0 ? 1 : rule.rateConstant;
       // BioNetGen-style statistical factors:
       // - When multiple embeddings are returned, multiplicity is recovered by summing reactions.
       // - When only a single embedding is returned but the matched subgraph has automorphisms
@@ -1262,10 +1327,90 @@ export class NetworkGenerator {
       //   since it correctly counts the equivalent component assignments.
       // - For other cases (like LRR dimer), use collapsedRuleStatFactor from pattern analysis
       //   to avoid overcounting symmetric molecule permutations.
-      const useDegeneracy = matchCount === 1 && shouldApplyDegeneracyStatFactor(pattern, reactantSpecies.graph, match);
-      const statFactor = useDegeneracy ? degeneracy : (matchCount === 1 ? collapsedRuleStatFactor : 1);
+      const countGraphBonds = (graph: SpeciesGraph): number => {
+        let edgeEndpoints = 0;
+        for (const mol of graph.molecules) {
+          for (const comp of mol.components) {
+            edgeEndpoints += comp.edges.size;
+          }
+        }
+        return Math.floor(edgeEndpoints / 2);
+      };
+
+      const reactantBondCount = countGraphBonds(reactantSpecies.graph);
+      const productBondCount = products.reduce((sum, productGraph) => sum + countGraphBonds(productGraph), 0);
+      const hasConcreteBondChange = reactantBondCount !== productBondCount;
+
+      const hasTopologyChangingOps =
+        rule.addBonds.length > 0 ||
+        rule.deleteBonds.length > 0 ||
+        rule.changeStates.length > 0 ||
+        rule.deleteMolecules.length > 0 ||
+        hasTopologyChangingSignature ||
+        hasConcreteBondChange;
+
+      const isSymmetricHomodimerUnbind =
+        (
+          rule.deleteBonds.length > 0 &&
+          rule.addBonds.length === 0 &&
+          rule.changeStates.length === 0 &&
+          rule.deleteMolecules.length === 0 &&
+          pattern.molecules.length === 2 &&
+          pattern.molecules.every((mol) => mol.name === pattern.molecules[0].name)
+        ) || (
+          rule.reactants.length === 1 &&
+          rule.products.length === 2 &&
+          pattern.molecules.length === 2 &&
+          pattern.molecules.every((mol) => mol.name === pattern.molecules[0].name) &&
+          rule.products.every((pg) =>
+            pg.molecules.length === 1 &&
+            pg.molecules[0].name === pattern.molecules[0].name
+          )
+        );
+
+      const wildcardDegeneracyAllowed =
+        hasWildcardBoundPattern &&
+        degeneracy > 1 &&
+        !isSymmetricHomodimerUnbind;
+
+      const useDegeneracy =
+        matchCount === 1 &&
+        hasTopologyChangingOps &&
+        !isSymmetricHomodimerUnbind &&
+        (
+          shouldApplyDegeneracyStatFactor(pattern, reactantSpecies.graph, match) ||
+          wildcardDegeneracyAllowed
+        );
+
+      let statFactor = useDegeneracy ? degeneracy : (matchCount === 1 ? collapsedRuleStatFactor : 1);
+
+      if (isSymmetricHomodimerUnbind) {
+        statFactor = 1;
+      }
+
+      if (!isSymmetricHomodimerUnbind && matchCount === 1 && hasTopologyChangingOps && hasWildcardBoundPattern) {
+        const wildcardStatFactor = computeWildcardBoundStatFactor(pattern, reactantSpecies.graph, match);
+        if (wildcardStatFactor > 1) {
+          statFactor = Math.max(statFactor, wildcardStatFactor);
+        }
+      }
+
+      if (!isSymmetricHomodimerUnbind && hasTopologyChangingOps && hasWildcardBoundPattern && signatureMultiplicity > 1) {
+        statFactor = Math.max(statFactor, signatureMultiplicity);
+      }
+
+      if (hasTopologyChangingOps && hasWildcardBoundPattern && statFactor === 1 && collapsedRuleStatFactor > 1) {
+        statFactor = collapsedRuleStatFactor;
+      }
+
+      // Do not apply a match-degeneracy stat_factor to pure side-effect rules that
+      // do not change the matched graph (e.g., transcription from gX(site!+)).
+      // BNG2 counts the event once for these rules.
+      if (!hasTopologyChangingOps) {
+        statFactor = 1;
+      }
       const hasRateExpression = !!rule.rateExpression;
-      let effectiveRate = hasRateExpression ? baseRateConstant : baseRateConstant * statFactor;
+      let effectiveRate = baseRateConstant * statFactor;
 
       // Arrhenius rate law calculation
       if (rule.isArrhenius && this.energyService) {
@@ -1278,7 +1423,7 @@ export class NetworkGenerator {
 
         // k = A * exp(-(Eact + phi * deltaG) / RT)
         // Reference: Sekar, Hogg & Faeder, "Energy-based Modeling in BioNetGen", IEEE BIBM 2016
-        effectiveRate = A * Math.exp(-(Eact + phi * deltaG) / RT) * (hasRateExpression ? 1 : statFactor);
+        effectiveRate = A * Math.exp(-(Eact + phi * deltaG) / RT) * statFactor;
       }
 
       // Preserve the BNGL expression without embedding degeneracy/volume scaling.
@@ -1304,7 +1449,7 @@ export class NetworkGenerator {
         productSpeciesIndices,
         effectiveRate,
         rule.name,
-        { degeneracy, rateExpression, propensityFactor, productStoichiometries, scalingVolume }
+        { degeneracy: 1, rateExpression, propensityFactor, productStoichiometries, scalingVolume }
       );
 
       // Fast O(1) duplicate detection using Set
@@ -1364,6 +1509,7 @@ export class NetworkGenerator {
     currentSpecies: Species,
     allSpecies: Species[],
     speciesMap: Map<string, Species>,
+    speciesByFingerprint: Map<string, Species[]>,
     speciesList: Species[],
     queue: SpeciesGraph[],
     reactionsList: Rxn[],
@@ -1376,9 +1522,19 @@ export class NetworkGenerator {
     const n = patterns.length;
     if (n < 2) return; // Unimolecular handled separately
 
+    const identicalPatternGroups = new Map<string, number[]>();
+    for (let idx = 0; idx < n; idx++) {
+      const key = patterns[idx].toString();
+      const group = identicalPatternGroups.get(key);
+      if (group) group.push(idx);
+      else identicalPatternGroups.set(key, [idx]);
+    }
+
     // Try matching currentSpecies against EVERY pattern position i
     for (let i = 0; i < n; i++) {
-      const matches = profiledFindAllMaps(patterns[i], currentSpecies.graph, { symmetryBreaking: true });
+      const matches = profiledFindAllMaps(patterns[i], currentSpecies.graph, { symmetryBreaking: true }).filter((match) =>
+        this.matchRespectsExplicitComponentBondCounts(patterns[i], currentSpecies.graph, match)
+      );
       if (matches.length === 0) continue;
 
       if (shouldLogNetworkGenerator) {
@@ -1420,6 +1576,17 @@ export class NetworkGenerator {
 
           if (i !== kFirst) return; // We are matching against pattern i, but kFirst is the anchor.
 
+          // Canonicalize assignments for identical reactant patterns (e.g., A + A) so
+          // permutations of the same species tuple are counted once.
+          for (const group of identicalPatternGroups.values()) {
+            if (group.length < 2) continue;
+            for (let gi = 1; gi < group.length; gi++) {
+              const prev = currentIndices[group[gi - 1]];
+              const next = currentIndices[group[gi]];
+              if (prev > next) return;
+            }
+          }
+
           // Proceed with reaction generation
           const reactantSpeciesList = currentIndices.map(idx => allSpecies[idx]);
 
@@ -1432,8 +1599,8 @@ export class NetworkGenerator {
           }
 
           // EVENT SIGNATURE DEDUPLICATION
-          // Similar to unimolecular, if a species has internal symmetries, we can get multiple match
-          // maps that represent the same physical event. Deduplicate by mapped transformation.
+          // If a species has internal symmetries, multiple match maps can represent
+          // the same physical event. Deduplicate by mapped transformation signature.
           const signature = this.buildNaryEventSignature(rule, currentMatches, reactantSpeciesList);
           if (signature) {
             if (seenSignaturesForThisSpeciesSet.has(signature)) return;
@@ -1448,6 +1615,7 @@ export class NetworkGenerator {
             currentMatches,
             allSpecies,
             speciesMap,
+            speciesByFingerprint,
             speciesList,
             queue,
             reactionsList,
@@ -1479,7 +1647,9 @@ export class NetworkGenerator {
         for (const candidateIdx of candidates) {
           // BNG2 Rule: For N-ary, partners can be ANY species in the network so far.
           const candidateSpecies = allSpecies[candidateIdx];
-          const candMaps = profiledFindAllMaps(nextPattern, candidateSpecies.graph, { symmetryBreaking: true });
+          const candMaps = profiledFindAllMaps(nextPattern, candidateSpecies.graph, { symmetryBreaking: true }).filter((candMatch) =>
+            this.matchRespectsExplicitComponentBondCounts(nextPattern, candidateSpecies.graph, candMatch)
+          );
 
           for (const candMatch of candMaps) {
             const nextIndices = [...currentIndices];
@@ -1517,6 +1687,7 @@ export class NetworkGenerator {
     currentMatches: MatchMap[],
     allSpecies: Species[],
     speciesMap: Map<string, Species>,
+    speciesByFingerprint: Map<string, Species[]>,
     speciesList: Species[],
     queue: SpeciesGraph[],
     reactionsList: Rxn[],
@@ -1548,7 +1719,67 @@ export class NetworkGenerator {
     for (let k = 0; k < n; k++) {
       totalDegeneracy *= countEmbeddingDegeneracy(patterns[k], reactantSpeciesList[k].graph, currentMatches[k]);
     }
-    const multiplicity = totalDegeneracy / ruleSymmetryFactor;
+    const hasWildcardBoundPattern = patterns.some((pat) =>
+      pat.molecules.some((mol) => mol.components.some((comp) => comp.wildcard === '+'))
+    );
+    const hasBondTopologyOps =
+      rule.addBonds.length > 0 ||
+      rule.deleteBonds.length > 0;
+    const useEmbeddingDegeneracy =
+      hasBondTopologyOps &&
+      (
+        rule.addBonds.length > 0 ||
+        hasWildcardBoundPattern ||
+        currentMatches.some((match, k) =>
+          shouldApplyDegeneracyStatFactor(patterns[k], reactantSpeciesList[k].graph, match)
+        )
+      );
+
+    // Default n-ary multiplicity should not include full embedding automorphisms,
+    // since event-signature deduplication already collapses symmetry-equivalent mappings.
+    // Only re-introduce embedding degeneracy when the reaction center genuinely has
+    // multiple equivalent choices (BAB-like or wildcard-bound cases).
+    let multiplicity = (useEmbeddingDegeneracy ? totalDegeneracy : 1) / ruleSymmetryFactor;
+
+    const collapsedRuleStatFactor = this.computeCollapsedRuleStatFactor(rule);
+    if (
+      hasBondTopologyOps &&
+      multiplicity === 1 &&
+      collapsedRuleStatFactor > 1 &&
+      rulePatternCounts.size > 1
+    ) {
+      multiplicity = collapsedRuleStatFactor;
+    }
+
+    // Tuple-aware correction for identical reactant patterns.
+    // `ruleSymmetryFactor` divides by factorial(groupSize) for each identical-pattern group,
+    // but for a concrete species tuple we should divide only by repeats of the SAME species
+    // within that group (e.g., A+A distinct pair: no 1/2; A+A same species: 1/2 applies).
+    const identicalPatternGroups = new Map<string, number[]>();
+    for (let idx = 0; idx < n; idx++) {
+      const key = patterns[idx].toString();
+      const group = identicalPatternGroups.get(key);
+      if (group) group.push(idx);
+      else identicalPatternGroups.set(key, [idx]);
+    }
+
+    for (const group of identicalPatternGroups.values()) {
+      if (group.length < 2) continue;
+
+      const speciesCountInGroup = new Map<number, number>();
+      for (const patternIdx of group) {
+        const speciesIdx = currentSpeciesIndices[patternIdx];
+        speciesCountInGroup.set(speciesIdx, (speciesCountInGroup.get(speciesIdx) || 0) + 1);
+      }
+
+      let denom = 1;
+      for (const count of speciesCountInGroup.values()) {
+        denom *= factorial(count);
+      }
+
+      const correction = factorial(group.length) / denom;
+      multiplicity *= correction;
+    }
 
     // 3. Apply Transformation
     const products = this.applyRuleTransformation(
@@ -1561,15 +1792,42 @@ export class NetworkGenerator {
     if (!products) return;
     if (!this.validateProducts(products)) return;
 
+    const countGraphBonds = (graph: SpeciesGraph): number => {
+      let edgeEndpoints = 0;
+      for (const mol of graph.molecules) {
+        for (const comp of mol.components) {
+          edgeEndpoints += comp.edges.size;
+        }
+      }
+      return Math.floor(edgeEndpoints / 2);
+    };
+
+    const reactantBondCount = reactantSpeciesList.reduce((sum, s) => sum + countGraphBonds(s.graph), 0);
+    const productBondCount = products.reduce((sum, g) => sum + countGraphBonds(g), 0);
+    const hasConcreteBondChange = reactantBondCount !== productBondCount;
+
+    if (
+      hasConcreteBondChange &&
+      hasWildcardBoundPattern &&
+      collapsedRuleStatFactor > 1 &&
+      rulePatternCounts.size > 1
+    ) {
+      const concreteMultiplicity = totalDegeneracy / ruleSymmetryFactor;
+      if (concreteMultiplicity > multiplicity) {
+        multiplicity = concreteMultiplicity;
+      }
+    }
+
     // 4. Resolve Product Species
-    const productIndices = products.map(p => this.addOrGetSpecies(p, speciesMap, speciesList, queue, signal).index);
+    const productIndices = products.map(p => this.addOrGetSpecies(p, speciesMap, speciesByFingerprint, speciesList, queue, signal).index);
+    const hasCarryThroughReactant = currentSpeciesIndices.some((reactantIdx) => productIndices.includes(reactantIdx));
 
     // 5. Volume Scaling
     const { scalingVolume } = this.getVolumeScalingInfo(reactantSpeciesList, productIndices.map(idx => allSpecies[idx]));
 
     const hasRateExpression = !!rule.rateExpression;
-    const baseRateConstant = rule.rateExpression && rule.rateConstant === 0 ? 1 : rule.rateConstant;
-    let effectiveRate = hasRateExpression ? baseRateConstant : baseRateConstant * multiplicity;
+    const baseRateConstant = (rule as any).isFunctionalRate && rule.rateConstant === 0 ? 1 : rule.rateConstant;
+    let effectiveRate = baseRateConstant * multiplicity;
 
     // Arrhenius rate law calculation for N-ary rule
     if (rule.isArrhenius && this.energyService) {
@@ -1580,7 +1838,7 @@ export class NetworkGenerator {
       const A = this.evaluateArrheniusParam(rule.arrheniusA, rule.rateConstant === 0 ? 1 : rule.rateConstant);
       const RT = this.evaluateArrheniusParam(this.options.parameters?.get('RT')?.toString(), 1.0);
 
-      effectiveRate = A * Math.exp(-(Eact + phi * deltaG) / RT) * (hasRateExpression ? 1 : multiplicity);
+      effectiveRate = A * Math.exp(-(Eact + phi * deltaG) / RT) * multiplicity;
     }
 
     // BIO-NETGEN PARITY: Pattern Automorphism Correction
@@ -1599,11 +1857,10 @@ export class NetworkGenerator {
     let finalRateExpr = rule.rateExpression;
     let exprScaleFactor = multiplicity;
 
-    if (patternAutomorphismFactor > 1) {
+    if (patternAutomorphismFactor > 1 && !useEmbeddingDegeneracy) {
+      effectiveRate /= patternAutomorphismFactor;
       if (hasRateExpression) {
         exprScaleFactor /= patternAutomorphismFactor;
-      } else {
-        effectiveRate /= patternAutomorphismFactor;
       }
     }
 
@@ -1656,20 +1913,17 @@ export class NetworkGenerator {
       reactionIndexByKey.set(rxnKey, reactionsList.length);
       reactionsList.push(rxn);
     } else {
+      if (hasCarryThroughReactant && multiplicity === 1) {
+        if (products.length === reactantSpeciesList.length) {
+          return;
+        }
+      }
+
       reactionsList[existingIdx].rate += rxn.rate;
-      // Sum multiplicities for symbolic JIT evaluation
+      // Keep degeneracy fixed for n-ary merged reactions: multiplicity is already
+      // accumulated in `rate`, and ODE/SSA kernels apply `degeneracy` multiplicatively.
       if (reactionsList[existingIdx].degeneracy !== undefined) {
-        reactionsList[existingIdx].degeneracy += multiplicity; // Note: this might be tricky if we use degeneracy=1.
-        // If we merge reactions, we usually sum rates. 
-        // But for symbolic rates, we can't sum strings easily.
-        // However, standard BNG usually generates unique reactions for unique reactant sets.
-        // If multiple rules produce same reaction, their rates add up.
-        // Simulator merges them. 
-        // For mass action, rxn.rate adds up.
-        // For functional, we arguably need to sum the expressions: "expr1 + expr2".
-        // But the simulator logic for merging (lines 1537+) only handles 'rate' (number) and 'degeneracy'.
-        // It does NOT update rateExpression. This is a potential bug for multiple rules producing same reaction with functional rates.
-        // But for this task (homodimerization), it's a single rule, so it's fine.
+        reactionsList[existingIdx].degeneracy = 1;
       }
     }
 
@@ -1881,7 +2135,7 @@ export class NetworkGenerator {
         // RECURSIVE DELETION FIX:
         // BioNetGen semantics: If rule is a degradation rule (products.length === 0),
         // then ANY connected component that was not explicitly matched/preserved is DELETED.
-        const isDegradationRule = rule.products.length === 0;
+        const isDegradationRule = rule.products.length === 0 && rule.deleteMolecules.length === 0;
 
         if (isAnchoredToSurvivor && anchorGraphIdx !== -1) {
           // Harvest this cluster into the target graph (MERGE)
@@ -2333,7 +2587,12 @@ export class NetworkGenerator {
       for (const name of pCompNames) {
         if (rpCompNames.has(name)) sharedCompNames++;
       }
-      if (!sameName && sharedCompNames === 0) return -Infinity;
+      if (!sameName) {
+        if (rpCompNames.size !== pCompNames.size) return -Infinity;
+        for (const name of pCompNames) {
+          if (!rpCompNames.has(name)) return -Infinity;
+        }
+      }
       score += sharedCompNames * 25;
 
       // Reward overlap of the *bonded sites* (component names that carry an explicit bond
@@ -2426,17 +2685,7 @@ export class NetworkGenerator {
         }
       }
 
-      // If no score-based match found, fall back to first available
-      if (bestMatchIdx === -1) {
-        for (let i = 0; i < allReactantPatternMols.length; i++) {
-          const rpmKey = `${allReactantPatternMols[i].reactantIdx}:${allReactantPatternMols[i].patternMolIdx}`;
-          if (usedReactantPatternMols.has(rpmKey)) continue;
-          bestMatchIdx = i;
-          break;
-        }
-      }
-
-      if (bestMatchIdx !== -1) {
+      if (bestMatchIdx !== -1 && Number.isFinite(bestScore)) {
         const rpm = allReactantPatternMols[bestMatchIdx];
         const rpmKey = `${rpm.reactantIdx}:${rpm.patternMolIdx}`;
         usedReactantPatternMols.add(rpmKey);
@@ -3505,6 +3754,7 @@ export class NetworkGenerator {
   private addOrGetSpecies(
     graph: SpeciesGraph,
     speciesMap: Map<string, Species>,
+    speciesByFingerprint: Map<string, Species[]>,
     speciesList: Species[],
     queue: SpeciesGraph[],
     signal?: AbortSignal
@@ -3513,6 +3763,12 @@ export class NetworkGenerator {
 
     if (speciesMap.has(canonical)) {
       return speciesMap.get(canonical)!;
+    }
+
+    const isomorphic = this.findIsomorphicSpecies(graph, speciesByFingerprint);
+    if (isomorphic) {
+      speciesMap.set(canonical, isomorphic);
+      return isomorphic;
     }
 
     if (speciesList.length >= this.options.maxSpecies) {
@@ -3536,6 +3792,7 @@ export class NetworkGenerator {
     speciesMap.set(canonical, species);
     speciesList.push(species);
     this.indexSpecies(species);
+    this.indexFingerprint(species, speciesByFingerprint);
     queue.push(graph);
 
     if (signal?.aborted) {
@@ -3543,6 +3800,62 @@ export class NetworkGenerator {
     }
 
     return species;
+  }
+
+  private indexFingerprint(species: Species, speciesByFingerprint: Map<string, Species[]>): void {
+    const fingerprint = this.buildSpeciesFingerprint(species.graph);
+    const bucket = speciesByFingerprint.get(fingerprint);
+    if (bucket) {
+      bucket.push(species);
+      return;
+    }
+    speciesByFingerprint.set(fingerprint, [species]);
+  }
+
+  private findIsomorphicSpecies(graph: SpeciesGraph, speciesByFingerprint: Map<string, Species[]>): Species | undefined {
+    const fingerprint = this.buildSpeciesFingerprint(graph);
+    const candidates = speciesByFingerprint.get(fingerprint);
+    if (!candidates || candidates.length === 0) {
+      return undefined;
+    }
+
+    for (const candidate of candidates) {
+      const maps = profiledFindAllMaps(graph, candidate.graph, { symmetryBreaking: true });
+      if (maps.some(match => match.moleculeMap.size === graph.molecules.length)) {
+        return candidate;
+      }
+    }
+
+    return undefined;
+  }
+
+  private buildSpeciesFingerprint(graph: SpeciesGraph): string {
+    const moleculeSignatures = graph.molecules
+      .map((molecule) => {
+        const componentSignature = molecule.components
+          .map(component => `${component.name}~${component.state ?? ''}!${component.wildcard ?? ''}`)
+          .sort()
+          .join(',');
+        return `${molecule.name}@${molecule.compartment ?? ''}(${componentSignature})`;
+      })
+      .sort()
+      .join('|');
+
+    const adjacencyDegreeSignature = graph.molecules
+      .map((molecule, molIdx) => {
+        const componentDegrees = molecule.components
+          .map((_component, compIdx) => {
+            const key = `${molIdx}.${compIdx}`;
+            return graph.adjacency.get(key)?.length ?? 0;
+          })
+          .sort((a, b) => a - b)
+          .join(',');
+        return `${molecule.name}:${componentDegrees}`;
+      })
+      .sort()
+      .join('|');
+
+    return `${graph.compartment ?? ''}::${moleculeSignatures}::${adjacencyDegreeSignature}`;
   }
 
   /**
@@ -3632,7 +3945,11 @@ export class NetworkGenerator {
     this.speciesLimitWarnings++;
   }
 
-  private buildNaryEventSignature(rule: RxnRule, matches: MatchMap[], reactantSpeciesList: Species[]): string | null {
+  private buildNaryEventSignature(
+    rule: RxnRule,
+    matches: MatchMap[],
+    reactantSpeciesList: Species[]
+  ): string | null {
     const ops: string[] = [];
 
     const getTargetComponentDescriptor = (globalMolIdx: number, compIdx: number): string | null => {
@@ -3716,4 +4033,5 @@ export class NetworkGenerator {
     err.name = 'NetworkGenerationLimitError';
     return err;
   }
+
 }

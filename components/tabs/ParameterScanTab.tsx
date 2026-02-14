@@ -139,7 +139,12 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
   const previousParameter1 = useRef<string | null>(null);
   const previousParameter2 = useRef<string | null>(null);
 
-  const parameterNames = useMemo(() => (model ? Object.keys(model.parameters) : []), [model]);
+  const parameterNames = useMemo(() => {
+    if (!model) return [];
+    const params = Object.keys(model.parameters);
+    const species = model.species.map((s) => s.name);
+    return [...params, ...species];
+  }, [model]);
   const observableNames = useMemo(() => (model ? model.observables.map((obs) => obs.name) : []), [model]);
 
   useEffect(() => {
@@ -543,8 +548,17 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
 
   // Do not early-return here; use `guardMessage` in the JSX so hook order stays stable across renders.
 
-  const baseParam1 = parameter1 && model ? model.parameters[parameter1] : undefined;
-  const baseParam2 = parameter2 && model ? model.parameters[parameter2] : undefined;
+  const baseParam1 = useMemo(() => {
+    if (!parameter1 || !model) return undefined;
+    if (parameter1 in model.parameters) return model.parameters[parameter1];
+    return model.species.find(s => s.name === parameter1)?.initialConcentration;
+  }, [parameter1, model]);
+
+  const baseParam2 = useMemo(() => {
+    if (!parameter2 || !model) return undefined;
+    if (parameter2 in model.parameters) return model.parameters[parameter2];
+    return model.species.find(s => s.name === parameter2)?.initialConcentration;
+  }, [parameter2, model]);
 
   const [defaultParam1Lower, defaultParam1Upper] = useMemo(() => {
     if (baseParam1 === undefined) return [0, 0];

@@ -379,6 +379,12 @@ if (typeof ctx.addEventListener === 'function') {
               const nextModel: BNGLModel = {
                 ...cached,
                 parameters: { ...(cached.parameters || {}), ...overrides },
+                species: (cached.species || []).map(s => {
+                  if (overrides[s.name] !== undefined) {
+                    return { ...s, initialConcentration: overrides[s.name] };
+                  }
+                  return s;
+                }),
                 reactions: [],
               } as BNGLModel;
 
@@ -429,9 +435,11 @@ if (typeof ctx.addEventListener === 'function') {
           activeSimulationJobId = id;
           activeSimulationMethod = effectiveMethod;
 
-          // Check for model-defined simulation parameters to override defaults
-          // This ensures that "simulate_nf({t_end=>1, n_steps=>20})" in the file is respected
-          if (model.actions) {
+          // Check for model-defined simulation parameters to override defaults.
+          // IMPORTANT: only do this when explicit phase data is absent.
+          // If simulationPhases exist, per-phase settings must remain authoritative;
+          // overriding from the last action can corrupt multi-phase runs.
+          if (model.actions && phases.length === 0) {
             // Find the relevant action for the effective method
             // We search for `simulate_{method}` or generic `simulate` with matching method arg
             const simAction = model.actions.slice().reverse().find(a =>

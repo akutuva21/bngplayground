@@ -197,8 +197,8 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 6.09584942321618e-7,
-      "maxAbsoluteError": 0.000006151419256639201,
+      "maxRelativeError": 3.7489841930142126e-7,
+      "maxAbsoluteError": 0.0000036850858577963663,
       "absTolDominated": false,
       "overlapMatch": false,
       "errorAtTime": 16820,
@@ -307,11 +307,11 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 7.752781277008015e-7,
-      "maxAbsoluteError": 0.0000025666439888993864,
+      "maxRelativeError": 1.0631155033016836e-10,
+      "maxAbsoluteError": 7.524647571699461e-11,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 4816.666666667,
+      "errorAtTime": 4866.666666667,
       "errorColumn": "Free_Enzyme",
       "samples": []
     }
@@ -360,7 +360,7 @@
   },
   {
     "model": "an_2009",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "An_2009.gdat",
     "referenceInferred": false,
     "details": {
@@ -415,84 +415,13 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1,
-      "maxAbsoluteError": 4558.25880840924,
-      "absTolDominated": true,
+      "maxRelativeError": 7.180089590444738e-10,
+      "maxAbsoluteError": 1.6837674365888233e-8,
+      "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 39400,
-      "errorColumn": "Activated_TAK1",
-      "samples": [
-        {
-          "time": 200,
-          "column": "TNF",
-          "web": 243.8505234046038,
-          "ref": 316.3184044048,
-          "relError": 0.22909789626865143
-        },
-        {
-          "time": 200,
-          "column": "Activated_TAK1",
-          "web": 0.7254942475777453,
-          "ref": 86.04556974898,
-          "relError": 0.9915684880733056
-        },
-        {
-          "time": 200,
-          "column": "Activated_Ikk_complex",
-          "web": 0.002874340045639516,
-          "ref": 0.2627729540999,
-          "relError": 0.9890615072792204
-        },
-        {
-          "time": 200,
-          "column": "A20",
-          "web": 252.30583865269293,
-          "ref": 327.4456282295,
-          "relError": 0.22947256918068587
-        },
-        {
-          "time": 200,
-          "column": "NFkB_Active_Cyto",
-          "web": 638.1495651847672,
-          "ref": 2172.549585685,
-          "relError": 0.7062669734262659
-        },
-        {
-          "time": 200,
-          "column": "NFkB_Active_Nucleus",
-          "web": 602.5874243275065,
-          "ref": 2179.630426299,
-          "relError": 0.7235368817315069
-        },
-        {
-          "time": 200,
-          "column": "IkB_Degraded",
-          "web": 2033.2704234524665,
-          "ref": 4825.912682269,
-          "relError": 0.5786764996965333
-        },
-        {
-          "time": 200,
-          "column": "IkB_active",
-          "web": 8275.779782837564,
-          "ref": 5524.38522873,
-          "relError": 0.33246348094151174
-        },
-        {
-          "time": 200,
-          "column": "NFkB_Inactive",
-          "web": 8272.487674237833,
-          "ref": 5523.278966147,
-          "relError": 0.33233155688492766
-        },
-        {
-          "time": 200,
-          "column": "NonBoundNonPhos_IkB",
-          "web": 3.292108599731683,
-          "ref": 1.106262583076,
-          "relError": 0.6639653433163888
-        }
-      ]
+      "errorAtTime": 13200,
+      "errorColumn": "Phos_IkB_NFkB",
+      "samples": []
     }
   },
   {
@@ -564,18 +493,18 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 9.341516601702395e-8,
-      "maxAbsoluteError": 0.000031268310976884095,
+      "maxRelativeError": 1.4029664626843068e-8,
+      "maxAbsoluteError": 0.000016296680087179993,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 1.5,
+      "errorAtTime": 6,
       "errorColumn": "Autophagy_Drive",
       "samples": []
     }
   },
   {
     "model": "auto_activation_loop",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "[multi-phase concatenation]",
     "referenceInferred": true,
     "details": {
@@ -602,84 +531,13 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.5630313832497451,
-      "maxAbsoluteError": 0.24087096264918717,
+      "maxRelativeError": 2.184754036469846e-8,
+      "maxAbsoluteError": 1.6572227201638867e-9,
       "absTolDominated": false,
       "overlapMatch": false,
       "errorAtTime": 100,
       "errorColumn": "TF_Dimers",
-      "samples": [
-        {
-          "time": 0.5,
-          "column": "Active_Protein",
-          "web": 9.660213122761554,
-          "ref": 9.706493581096,
-          "relError": 0.0047679893823429145
-        },
-        {
-          "time": 0.5,
-          "column": "TF_Dimers",
-          "web": 0.04710271220436353,
-          "ref": 0.02366563902948,
-          "relError": 0.49757375059842845
-        },
-        {
-          "time": 1,
-          "column": "Active_Protein",
-          "web": 9.339508501677091,
-          "ref": 9.425212450467,
-          "relError": 0.009093052198060843
-        },
-        {
-          "time": 1,
-          "column": "TF_Dimers",
-          "web": 0.08879732264436956,
-          "ref": 0.04481687861349,
-          "relError": 0.49529020381639016
-        },
-        {
-          "time": 1.5,
-          "column": "Active_Protein",
-          "web": 9.036358541323624,
-          "ref": 9.15542496435,
-          "relError": 0.013005013256075542
-        },
-        {
-          "time": 1.5,
-          "column": "TF_Dimers",
-          "web": 0.125617684887765,
-          "ref": 0.06367026477855,
-          "relError": 0.4931425074786472
-        },
-        {
-          "time": 2,
-          "column": "Active_Protein",
-          "web": 8.749383961026213,
-          "ref": 8.896455144881,
-          "relError": 0.01653143656205702
-        },
-        {
-          "time": 2,
-          "column": "TF_Dimers",
-          "web": 0.15804231627968085,
-          "ref": 0.08042391112839,
-          "relError": 0.4911241936870428
-        },
-        {
-          "time": 2.5,
-          "column": "Active_Protein",
-          "web": 8.47733605195703,
-          "ref": 8.647676947656,
-          "relError": 0.019697879179580397
-        },
-        {
-          "time": 2.5,
-          "column": "TF_Dimers",
-          "web": 0.18650088378639285,
-          "ref": 0.09525917420517,
-          "relError": 0.48922936840195214
-        }
-      ]
+      "samples": []
     }
   },
   {
@@ -709,19 +567,26 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.4760085589931211,
-      "maxAbsoluteError": 15.181076331856701,
+      "maxRelativeError": 0.5,
+      "maxAbsoluteError": 100,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 0.05,
-      "errorColumn": "ABbonds",
+      "errorAtTime": 0,
+      "errorColumn": "FreeAsites",
       "samples": [
+        {
+          "time": 0,
+          "column": "FreeAsites",
+          "web": 100,
+          "ref": 200,
+          "relError": 0.5
+        },
         {
           "time": 0.05,
           "column": "FreeAsites",
-          "web": 195.24364559354578,
+          "web": 99.89037121706463,
           "ref": 190.9228394992,
-          "relError": 0.022130328908838086
+          "relError": 0.4768024010166516
         },
         {
           "time": 0.05,
@@ -733,9 +598,9 @@
         {
           "time": 0.05,
           "column": "ABbonds",
-          "web": 4.756354411415465,
+          "web": 4.64672562599947,
           "ref": 9.077160501469,
-          "relError": 0.4760085589931211
+          "relError": 0.48808599063027824
         },
         {
           "time": 0.05,
@@ -747,9 +612,9 @@
         {
           "time": 0.1,
           "column": "FreeAsites",
-          "web": 190.94868285086397,
+          "web": 99.61382365117107,
           "ref": 183.4252924744,
-          "relError": 0.03940006426930912
+          "relError": 0.45692427523279644
         },
         {
           "time": 0.1,
@@ -761,9 +626,9 @@
         {
           "time": 0.1,
           "column": "ABbonds",
-          "web": 9.051317155665853,
+          "web": 8.665140803572013,
           "ref": 16.57470751999,
-          "relError": 0.45390788074242205
+          "relError": 0.47720701598375825
         },
         {
           "time": 0.1,
@@ -775,16 +640,9 @@
         {
           "time": 0.15,
           "column": "FreeAsites",
-          "web": 187.0761192189432,
+          "web": 99.23180141633429,
           "ref": 177.1855344141,
-          "relError": 0.05286930713624557
-        },
-        {
-          "time": 0.15,
-          "column": "FreeB",
-          "web": 87.07611921894322,
-          "ref": 77.18553441409,
-          "relError": 0.11358550304687377
+          "relError": 0.43995540186469273
         }
       ]
     }
@@ -923,11 +781,11 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.9621422501101475e-7,
-      "maxAbsoluteError": 0.000002779164127275635,
+      "maxRelativeError": 1.1002847263364292e-7,
+      "maxAbsoluteError": 0.0000030269596535958954,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 17.5,
+      "errorAtTime": 12.5,
       "errorColumn": "Calcium_Signal",
       "samples": []
     }
@@ -963,8 +821,8 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.9904396981014175,
-      "maxAbsoluteError": 198.08520470475867,
+      "maxRelativeError": 0.990439698101416,
+      "maxAbsoluteError": 198.0852047047256,
       "absTolDominated": false,
       "overlapMatch": false,
       "errorAtTime": 200,
@@ -1102,8 +960,8 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.0024387866394194623,
-      "maxAbsoluteError": 0.000001990186476064082,
+      "maxRelativeError": 0.002369893950424309,
+      "maxAbsoluteError": 0.0000025820706639478885,
       "absTolDominated": true,
       "overlapMatch": false,
       "errorAtTime": 132,
@@ -1180,12 +1038,12 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.9617385096192614,
-      "maxAbsoluteError": 2.6089348450307144e-7,
+      "maxRelativeError": 1.9867239358367574,
+      "maxAbsoluteError": 0.0000010515444276511328,
       "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 106,
-      "errorColumn": "SMAD_Output",
+      "errorAtTime": 133.5,
+      "errorColumn": "Active_Nuclear_Smad1",
       "samples": []
     }
   },
@@ -1262,8 +1120,8 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.485857801602525e-8,
-      "maxAbsoluteError": 0.0000011240133090950621,
+      "maxRelativeError": 1.5544755252990523e-8,
+      "maxAbsoluteError": 0.0000011759208575767843,
       "absTolDominated": false,
       "overlapMatch": false,
       "errorAtTime": 150,
@@ -1453,82 +1311,82 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.9999999999381053,
-      "maxAbsoluteError": 75.41394705490994,
+      "maxRelativeError": 0.08595699584000087,
+      "maxAbsoluteError": 0.00845932162916796,
       "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 30,
-      "errorColumn": "Tot_mRNA",
+      "errorAtTime": 2,
+      "errorColumn": "P_R",
       "samples": [
         {
-          "time": 5,
-          "column": "L_Bound_PM",
-          "web": 20.573409583143885,
-          "ref": 20.60134447824,
-          "relError": 0.0013559743698098182
+          "time": 288,
+          "column": "Tot_mRNA",
+          "web": 0.11632989120212331,
+          "ref": 0.1163661717622,
+          "relError": 0.0003117792699310768
         },
         {
-          "time": 5,
-          "column": "L_Bound_EM",
-          "web": 32.81735872298512,
-          "ref": 32.92316507717,
-          "relError": 0.0032137357977847568
+          "time": 307,
+          "column": "Tot_mRNA",
+          "web": 0.35279292999274847,
+          "ref": 0.3528821073906,
+          "relError": 0.0002527115883288925
         },
         {
-          "time": 5,
-          "column": "Rp_tot",
-          "web": 81.31368465903142,
-          "ref": 81.5807898506,
-          "relError": 0.0032741187240002026
+          "time": 325,
+          "column": "Tot_mRNA",
+          "web": 0.08806912303356805,
+          "ref": 0.08810732484203,
+          "relError": 0.0004335826621730351
         },
         {
-          "time": 5,
-          "column": "Rp_PM",
-          "web": 17.98656676575036,
-          "ref": 18.04677722937,
-          "relError": 0.003336355453075098
+          "time": 344,
+          "column": "Tot_mRNA",
+          "web": 0.29208522192527187,
+          "ref": 0.2921787485496,
+          "relError": 0.0003201007081878105
         },
         {
-          "time": 5,
-          "column": "Rp_EM",
-          "web": 63.32711789328107,
-          "ref": 63.53401262123,
-          "relError": 0.0032564404389562153
+          "time": 362,
+          "column": "Tot_mRNA",
+          "web": 0.0658022726195035,
+          "ref": 0.06584152228397,
+          "relError": 0.0005961232836813777
         },
         {
-          "time": 5,
-          "column": "TF_nuc",
-          "web": 5.631219499846789,
-          "ref": 5.63499939905,
-          "relError": 0.0006707896373242651
+          "time": 381,
+          "column": "Tot_mRNA",
+          "web": 0.23691542009020752,
+          "ref": 0.2370196183277,
+          "relError": 0.00043961861987477723
         },
         {
-          "time": 5,
-          "column": "P_R",
-          "web": 9.296486898110699,
-          "ref": 9.323684677319,
-          "relError": 0.002917063387446232
+          "time": 399,
+          "column": "Tot_mRNA",
+          "web": 0.048619618086399766,
+          "ref": 0.04865341680824,
+          "relError": 0.0006946834170649815
         },
         {
-          "time": 6,
-          "column": "L_Bound_PM",
-          "web": 18.575367409868313,
-          "ref": 18.74699436405,
-          "relError": 0.009154905092989479
+          "time": 400,
+          "column": "Tot_mRNA",
+          "web": 0.5434502431769207,
+          "ref": 0.5435951673952,
+          "relError": 0.0002666032131479798
         },
         {
-          "time": 6,
-          "column": "L_Bound_EM",
-          "web": 35.955556184651414,
-          "ref": 36.89576125018,
-          "relError": 0.02548273930854322
+          "time": 418,
+          "column": "Tot_mRNA",
+          "web": 0.18838117463483,
+          "ref": 0.1884934463485,
+          "relError": 0.0005956266164416427
         },
         {
-          "time": 6,
-          "column": "Rp_tot",
-          "web": 73.1447722296658,
-          "ref": 75.16391871806,
-          "relError": 0.026863241337482965
+          "time": 420,
+          "column": "Tot_mRNA",
+          "web": 0.4277703683292151,
+          "ref": 0.4276708504757,
+          "relError": 0.00023264316765039627
         }
       ]
     }
@@ -1562,11 +1420,11 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.9887769433587588,
-      "maxAbsoluteError": 0.00001696133744388817,
+      "maxRelativeError": 1.946525426453693,
+      "maxAbsoluteError": 0.00002757414278420356,
       "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 58.5,
+      "errorAtTime": 150,
       "errorColumn": "TRAF_Sequest",
       "samples": []
     }
@@ -1642,11 +1500,11 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.8128314692002314e-8,
-      "maxAbsoluteError": 0.000037124420941836433,
+      "maxRelativeError": 9.755977147780766e-8,
+      "maxAbsoluteError": 0.00006618993006668461,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 2.666666666667,
+      "errorAtTime": 1.866666666667,
       "errorColumn": "Total_Damage",
       "samples": []
     }
@@ -1750,8 +1608,8 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.0000010718939795048506,
-      "maxAbsoluteError": 0.00020644259825530753,
+      "maxRelativeError": 0.0000010136602274625494,
+      "maxAbsoluteError": 0.00013659992532666365,
       "absTolDominated": false,
       "overlapMatch": false,
       "errorAtTime": 31,
@@ -2069,12 +1927,12 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.413204593481994e-7,
-      "maxAbsoluteError": 0.00004696943676663068,
+      "maxRelativeError": 4.969593478469203e-13,
+      "maxAbsoluteError": 8.503775461576879e-11,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 18,
-      "errorColumn": "Total_Product",
+      "errorAtTime": 102.5,
+      "errorColumn": "ES_Complex",
       "samples": []
     }
   },
@@ -2109,11 +1967,11 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.9403527749669311,
+      "maxRelativeError": 1.9717860434494452,
       "maxAbsoluteError": 0.000014344904741392384,
       "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 16,
+      "errorAtTime": 29,
       "errorColumn": "Opsonization_C3b",
       "samples": []
     }
@@ -2187,12 +2045,12 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 3.027581695858502e-8,
-      "maxAbsoluteError": 0.000006455132165683608,
+      "maxRelativeError": 4.630819771970655e-13,
+      "maxAbsoluteError": 5.042011252953671e-11,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 182.5,
-      "errorColumn": "Free_Rec",
+      "errorAtTime": 2.5,
+      "errorColumn": "Fully_Occupied",
       "samples": []
     }
   },
@@ -2522,8 +2380,8 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.28809386994785957,
-      "maxAbsoluteError": 0.02290509600425139,
+      "maxRelativeError": 0.4010684540020032,
+      "maxAbsoluteError": 0.00030225160298869014,
       "absTolDominated": true,
       "overlapMatch": false,
       "errorAtTime": 480,
@@ -2560,11 +2418,11 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.000002201844286362481,
-      "maxAbsoluteError": 0.0000035915487899274012,
+      "maxRelativeError": 0.000001829321809677229,
+      "maxAbsoluteError": 0.0000027894704288655703,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 3,
+      "errorAtTime": 2.333333333333,
       "errorColumn": "Lesion_Load",
       "samples": []
     }
@@ -2615,7 +2473,7 @@
   },
   {
     "model": "dr5_apoptosis_signaling",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "dr5-apoptosis-signaling.gdat",
     "referenceInferred": false,
     "details": {
@@ -2642,84 +2500,13 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.033261701086248666,
-      "maxAbsoluteError": 3.2281411610103703,
+      "maxRelativeError": 2.1106388998852305e-11,
+      "maxAbsoluteError": 1.531361704110168e-10,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 150,
-      "errorColumn": "FLIP_Block",
-      "samples": [
-        {
-          "time": 9.5,
-          "column": "FLIP_Block",
-          "web": 80.53347346492254,
-          "ref": 80.55012544361,
-          "relError": 0.0002067281533797293
-        },
-        {
-          "time": 10,
-          "column": "FLIP_Block",
-          "web": 82.145795751416,
-          "ref": 82.16537037223,
-          "relError": 0.0002382344377603358
-        },
-        {
-          "time": 10.5,
-          "column": "FLIP_Block",
-          "web": 83.62292796089709,
-          "ref": 83.64570608753,
-          "relError": 0.0002723167476054142
-        },
-        {
-          "time": 11,
-          "column": "FLIP_Block",
-          "web": 84.97928249819651,
-          "ref": 85.00554826352,
-          "relError": 0.00030898883496477256
-        },
-        {
-          "time": 11.5,
-          "column": "FLIP_Block",
-          "web": 86.22743964894427,
-          "ref": 86.25747939359,
-          "relError": 0.00034825669445618203
-        },
-        {
-          "time": 12,
-          "column": "FLIP_Block",
-          "web": 87.37839789307283,
-          "ref": 87.41249919411,
-          "relError": 0.00039011927758114077
-        },
-        {
-          "time": 12.5,
-          "column": "FLIP_Block",
-          "web": 88.44178983243135,
-          "ref": 88.48024061435,
-          "relError": 0.00043456913828063184
-        },
-        {
-          "time": 13,
-          "column": "FLIP_Block",
-          "web": 89.42606918796534,
-          "ref": 89.46915691463,
-          "relError": 0.00048159307800094386
-        },
-        {
-          "time": 13.5,
-          "column": "FLIP_Block",
-          "web": 90.33867021535936,
-          "ref": 90.3866811551,
-          "relError": 0.0005311727250861719
-        },
-        {
-          "time": 14,
-          "column": "FLIP_Block",
-          "web": 91.18614524140386,
-          "ref": 91.23936380428,
-          "relError": 0.0005832851157346981
-        }
-      ]
+      "errorAtTime": 0.5,
+      "errorColumn": "Apoptotic_Drive",
+      "samples": []
     }
   },
   {
@@ -2935,32 +2722,32 @@
       "timeMatch": true,
       "timeOffset": 0,
       "maxRelativeError": 1,
-      "maxAbsoluteError": 106,
+      "maxAbsoluteError": 183,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 6,
+      "errorAtTime": 7,
       "errorColumn": "Res",
       "samples": [
         {
           "time": 1,
           "column": "Res",
-          "web": 38,
+          "web": 43,
           "ref": 49,
-          "relError": 0.22448979591836735
+          "relError": 0.12244897959183673
         },
         {
           "time": 1,
           "column": "Con",
-          "web": 52,
+          "web": 54,
           "ref": 29,
-          "relError": 0.4423076923076923
+          "relError": 0.46296296296296297
         },
         {
           "time": 2,
           "column": "Con",
-          "web": 66,
+          "web": 74,
           "ref": 65,
-          "relError": 0.015151515151515152
+          "relError": 0.12162162162162163
         },
         {
           "time": 2,
@@ -2972,30 +2759,23 @@
         {
           "time": 3,
           "column": "Con",
-          "web": 43,
+          "web": 53,
           "ref": 47,
-          "relError": 0.0851063829787234
-        },
-        {
-          "time": 4,
-          "column": "Con",
-          "web": 30,
-          "ref": 33,
-          "relError": 0.09090909090909091
+          "relError": 0.11320754716981132
         },
         {
           "time": 4,
           "column": "Pred",
-          "web": 8,
+          "web": 9,
           "ref": 6,
-          "relError": 0.25
+          "relError": 0.3333333333333333
         },
         {
           "time": 5,
           "column": "Con",
-          "web": 20,
+          "web": 19,
           "ref": 22,
-          "relError": 0.09090909090909091
+          "relError": 0.13636363636363635
         },
         {
           "time": 5,
@@ -3006,10 +2786,17 @@
         },
         {
           "time": 6,
-          "column": "Res",
-          "web": 1,
-          "ref": 0,
-          "relError": 1
+          "column": "Con",
+          "web": 9,
+          "ref": 15,
+          "relError": 0.4
+        },
+        {
+          "time": 6,
+          "column": "Pred",
+          "web": 9,
+          "ref": 7,
+          "relError": 0.2222222222222222
         }
       ]
     }
@@ -3074,81 +2861,81 @@
       "timeMatch": true,
       "timeOffset": 0,
       "maxRelativeError": 1,
-      "maxAbsoluteError": 5,
+      "maxAbsoluteError": 11,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 5.5,
+      "errorAtTime": 14,
       "errorColumn": "Pop_B",
       "samples": [
         {
           "time": 0.5,
+          "column": "Pop_A",
+          "web": 14,
+          "ref": 10,
+          "relError": 0.2857142857142857
+        },
+        {
+          "time": 0.5,
           "column": "Pop_B",
-          "web": 7,
+          "web": 13,
           "ref": 9,
-          "relError": 0.2222222222222222
+          "relError": 0.3076923076923077
         },
         {
           "time": 1,
           "column": "Pop_A",
-          "web": 5,
+          "web": 8,
           "ref": 9,
+          "relError": 0.1111111111111111
+        },
+        {
+          "time": 1,
+          "column": "Pop_B",
+          "web": 8,
+          "ref": 6,
+          "relError": 0.25
+        },
+        {
+          "time": 2,
+          "column": "Pop_A",
+          "web": 9,
+          "ref": 8,
+          "relError": 0.1111111111111111
+        },
+        {
+          "time": 2,
+          "column": "Pop_B",
+          "web": 9,
+          "ref": 5,
           "relError": 0.4444444444444444
         },
         {
-          "time": 1,
+          "time": 2.5,
+          "column": "Pop_A",
+          "web": 10,
+          "ref": 7,
+          "relError": 0.3
+        },
+        {
+          "time": 2.5,
           "column": "Pop_B",
-          "web": 5,
-          "ref": 6,
+          "web": 6,
+          "ref": 5,
           "relError": 0.16666666666666666
-        },
-        {
-          "time": 1.5,
-          "column": "Pop_A",
-          "web": 3,
-          "ref": 8,
-          "relError": 0.625
-        },
-        {
-          "time": 1.5,
-          "column": "Pop_B",
-          "web": 3,
-          "ref": 7,
-          "relError": 0.5714285714285714
-        },
-        {
-          "time": 2,
-          "column": "Pop_A",
-          "web": 3,
-          "ref": 8,
-          "relError": 0.625
-        },
-        {
-          "time": 2,
-          "column": "Pop_B",
-          "web": 2,
-          "ref": 5,
-          "relError": 0.6
-        },
-        {
-          "time": 2.5,
-          "column": "Pop_A",
-          "web": 2,
-          "ref": 7,
-          "relError": 0.7142857142857143
-        },
-        {
-          "time": 2.5,
-          "column": "Pop_B",
-          "web": 2,
-          "ref": 5,
-          "relError": 0.6
         },
         {
           "time": 3,
           "column": "Pop_A",
-          "web": 2,
+          "web": 11,
           "ref": 6,
-          "relError": 0.6666666666666666
+          "relError": 0.45454545454545453
+        },
+        {
+          "time": 3,
+          "column": "Pop_B",
+          "web": 6,
+          "ref": 7,
+          "relError": 0.14285714285714285
         }
       ]
     }
@@ -3218,82 +3005,82 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.049727345133953556,
-      "maxAbsoluteError": 7.405273360709515,
+      "maxRelativeError": 0.04737682890693812,
+      "maxAbsoluteError": 6.535414499775442,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 100,
-      "errorColumn": "pY1068",
+      "errorAtTime": 0.5,
+      "errorColumn": "Grb2_Recruited",
       "samples": [
         {
           "time": 0.5,
           "column": "Dimers",
-          "web": 97.51570200470526,
+          "web": 97.23693843336761,
           "ref": 95.28718538727,
-          "relError": 0.022852900318840266
+          "relError": 0.02005156761937436
         },
         {
           "time": 0.5,
           "column": "pY1068",
-          "web": 58.370608664157054,
+          "web": 58.32182441571524,
           "ref": 55.57779019769,
-          "relError": 0.04784631393062733
+          "relError": 0.04704986933306293
         },
         {
           "time": 0.5,
           "column": "pY1173",
-          "web": 58.1925691932169,
+          "web": 58.14261604543887,
           "ref": 55.41173147914,
-          "relError": 0.04778681801870054
+          "relError": 0.046968725386636594
         },
         {
           "time": 0.5,
           "column": "Total_Phos",
-          "web": 116.56317785737394,
+          "web": 116.46444046115414,
           "ref": 110.9895216768,
-          "relError": 0.04781661141217206
+          "relError": 0.047009359789782906
         },
         {
           "time": 0.5,
           "column": "Grb2_Recruited",
-          "web": 57.71710211562178,
+          "web": 57.66914215584748,
           "ref": 54.93696107472,
-          "relError": 0.04816841003785079
+          "relError": 0.04737682890693812
         },
         {
           "time": 0.5,
           "column": "Shc_Recruited",
-          "web": 56.1727637772795,
+          "web": 56.11886328826756,
           "ref": 53.47966480691,
-          "relError": 0.047943145205520225
+          "relError": 0.04702872308372864
         },
         {
           "time": 1,
           "column": "Dimers",
-          "web": 98.23604897560051,
+          "web": 97.73354557361496,
           "ref": 96.61010867235,
-          "relError": 0.01655136093323909
+          "relError": 0.011494895582384968
         },
         {
           "time": 1,
           "column": "pY1068",
-          "web": 83.8338163271851,
+          "web": 83.67075908341722,
           "ref": 81.83158989859,
-          "relError": 0.023883279043159088
+          "relError": 0.021981026645086738
         },
         {
           "time": 1,
           "column": "pY1173",
-          "web": 83.50167412410167,
+          "web": 83.33779330085186,
           "ref": 81.51989907348,
-          "relError": 0.02373335710223384
+          "relError": 0.021813563275058182
         },
         {
           "time": 1,
           "column": "Total_Phos",
-          "web": 167.33549045128677,
+          "web": 167.00855238426908,
           "ref": 163.3514889721,
-          "relError": 0.023808466861646272
+          "relError": 0.021897461896170305
         }
       ]
     }
@@ -3329,82 +3116,82 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.12437644812298174,
-      "maxAbsoluteError": 69.126097029829,
+      "maxRelativeError": 0.04654884750112536,
+      "maxAbsoluteError": 5.891707057789262,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 1200,
-      "errorColumn": "Grb2Sos1",
+      "errorAtTime": 220.8,
+      "errorColumn": "Sos1_act",
       "samples": [
         {
           "time": 2.4,
-          "column": "Dim",
-          "web": 468.5898246357286,
-          "ref": 468.7231254252,
-          "relError": 0.0002843913223835735
+          "column": "Sos1_act",
+          "web": 3.867929555035486,
+          "ref": 4.039826376604,
+          "relError": 0.04255054686607982
+        },
+        {
+          "time": 2.4,
+          "column": "RP",
+          "web": 10.43337655908019,
+          "ref": 10.89586546212,
+          "relError": 0.04244627511671059
+        },
+        {
+          "time": 2.4,
+          "column": "Grb2Sos1",
+          "web": 552.2820790185009,
+          "ref": 552.1105396446,
+          "relError": 0.0003106010142603143
         },
         {
           "time": 4.8,
           "column": "Sos1_act",
-          "web": 14.035024096090874,
+          "web": 13.418444187273137,
           "ref": 14.03964437683,
-          "relError": 0.00032908816029203144
-        },
-        {
-          "time": 4.8,
-          "column": "Dim",
-          "web": 594.9775038107867,
-          "ref": 595.4600881846,
-          "relError": 0.0008104394960953347
+          "relError": 0.04424614846954713
         },
         {
           "time": 4.8,
           "column": "RP",
-          "web": 37.85403447181948,
+          "web": 36.211921944049166,
           "ref": 37.8664977168,
-          "relError": 0.00032913645919217707
+          "relError": 0.04369497768516247
         },
         {
           "time": 4.8,
           "column": "Grb2Sos1",
-          "web": 541.8967488422383,
+          "web": 542.7264355597015,
           "ref": 542.1107216444,
-          "relError": 0.0003947031364970432
+          "relError": 0.0011344830009368172
         },
         {
           "time": 7.2,
           "column": "Sos1_act",
-          "web": 23.610483724039348,
+          "web": 22.5757551883446,
           "ref": 23.62440190976,
-          "relError": 0.0005891444690881919
-        },
-        {
-          "time": 7.2,
-          "column": "Dim",
-          "web": 609.813604397209,
-          "ref": 610.7996073108,
-          "relError": 0.0016142821668338407
+          "relError": 0.04438828654460745
         },
         {
           "time": 7.2,
           "column": "RP",
-          "web": 63.68010188144252,
+          "web": 60.97024274923968,
           "ref": 63.71766527454,
-          "relError": 0.0005895287113179127
+          "relError": 0.04311869421866787
         },
         {
           "time": 7.2,
           "column": "Grb2Sos1",
-          "web": 531.936217894747,
+          "web": 533.5564612896567,
           "ref": 532.5259641114,
-          "relError": 0.0011074506341434043
+          "relError": 0.0019313741900265136
         },
         {
           "time": 9.6,
           "column": "Sos1_act",
-          "web": 31.68160174631725,
+          "web": 30.301387508080445,
           "ref": 31.70995307989,
-          "relError": 0.000894083113315313
+          "relError": 0.04442029820292752
         }
       ]
     }
@@ -3438,11 +3225,11 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.949506296596844,
-      "maxAbsoluteError": 0.000027793754611593613,
+      "maxRelativeError": 1.9715255967307743,
+      "maxAbsoluteError": 0.00003300895571101137,
       "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 45.4,
+      "errorAtTime": 107.5,
       "errorColumn": "Active_GEF",
       "samples": []
     }
@@ -3518,82 +3305,82 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.7697322196224292,
-      "maxAbsoluteError": 50,
+      "maxRelativeError": 0.6457757594010188,
+      "maxAbsoluteError": 49.82221676223964,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 19.4,
+      "errorAtTime": 20,
       "errorColumn": "P_T",
       "samples": [
         {
-          "time": 0,
-          "column": "P_T",
-          "web": 100,
-          "ref": 50,
-          "relError": 0.5
-        },
-        {
           "time": 0.1,
           "column": "P_T",
-          "web": 67.86041890521096,
+          "web": 40.10992004068157,
           "ref": 38.57769572584,
-          "relError": 0.43151403501168717
+          "relError": 0.03820063249409396
         },
         {
           "time": 0.1,
           "column": "P_R",
-          "web": 32.13958103800852,
+          "web": 9.890079936561612,
           "ref": 11.42230426917,
-          "relError": 0.644603199535741
+          "relError": 0.13414319006927725
         },
         {
           "time": 0.1,
           "column": "Bound_L",
-          "web": 71.55961917642256,
+          "web": 71.33355555371763,
           "ref": 78.80093850446,
-          "relError": 0.09189382087914602
+          "relError": 0.09476261441124505
         },
         {
           "time": 0.1,
           "column": "Fully_Bound_R",
-          "web": 32.039952504099546,
+          "web": 9.86483467203076,
           "ref": 22.7667891178,
-          "relError": 0.28942500414484185
+          "relError": 0.5667006611697373
         },
         {
           "time": 0.2,
           "column": "P_T",
-          "web": 37.31402310554231,
+          "web": 26.957173177516523,
           "ref": 25.28115328352,
-          "relError": 0.32247580991166436
+          "relError": 0.06217342905206395
         },
         {
           "time": 0.2,
           "column": "P_R",
-          "web": 62.68597683767718,
+          "web": 23.042826799726633,
           "ref": 24.7188467115,
-          "relError": 0.6056718271215832
+          "relError": 0.06780332154386588
         },
         {
           "time": 0.2,
           "column": "Bound_L",
-          "web": 84.53072148886477,
+          "web": 84.23321933946283,
           "ref": 88.2152166096,
-          "relError": 0.04176711527038603
+          "relError": 0.045139573683298434
         },
         {
           "time": 0.2,
           "column": "Fully_Bound_R",
-          "web": 62.570936877243064,
+          "web": 23.013106737556505,
           "ref": 49.34918275408,
-          "relError": 0.2113082332313901
+          "relError": 0.5336679261288502
         },
         {
           "time": 0.3,
           "column": "P_T",
-          "web": 22.450930997540947,
+          "web": 17.889655313526557,
           "ref": 16.51961239764,
-          "relError": 0.2641903180117834
+          "relError": 0.07658296886528906
+        },
+        {
+          "time": 0.3,
+          "column": "P_R",
+          "web": 32.1103446637166,
+          "ref": 33.48038759737,
+          "relError": 0.0409207608385339
         }
       ]
     }
@@ -3636,7 +3423,7 @@
   },
   {
     "model": "energy_cooperativity_adh",
-    "status": "match",
+    "status": "mismatch",
     "referenceFile": "energy_cooperativity_adh.gdat",
     "referenceInferred": false,
     "details": {
@@ -3661,13 +3448,84 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.9895097379440198,
-      "maxAbsoluteError": 0.0000038053838693485886,
+      "maxRelativeError": 0.9790194758880395,
+      "maxAbsoluteError": 50,
       "absTolDominated": true,
       "overlapMatch": false,
       "errorAtTime": 0.1,
       "errorColumn": "Bound_0",
-      "samples": []
+      "samples": [
+        {
+          "time": 0,
+          "column": "Bound_0",
+          "web": 50,
+          "ref": 100,
+          "relError": 0.5
+        },
+        {
+          "time": 0.1,
+          "column": "Bound_2",
+          "web": 49.99966238852306,
+          "ref": 99.99932858243,
+          "relError": 0.500000019027047
+        },
+        {
+          "time": 0.2,
+          "column": "Bound_2",
+          "web": 49.99966450630812,
+          "ref": 99.99932860664,
+          "relError": 0.4999999979701052
+        },
+        {
+          "time": 0.3,
+          "column": "Bound_2",
+          "web": 49.99966450560799,
+          "ref": 99.99932860487,
+          "relError": 0.4999999979682565
+        },
+        {
+          "time": 0.4,
+          "column": "Bound_2",
+          "web": 49.999664515382776,
+          "ref": 99.99932860475,
+          "relError": 0.49999999786990795
+        },
+        {
+          "time": 0.5,
+          "column": "Bound_2",
+          "web": 49.99966450420523,
+          "ref": 99.99932860447,
+          "relError": 0.4999999979802841
+        },
+        {
+          "time": 0.6,
+          "column": "Bound_2",
+          "web": 49.999664505796694,
+          "ref": 99.99932860389,
+          "relError": 0.4999999979614694
+        },
+        {
+          "time": 0.7,
+          "column": "Bound_2",
+          "web": 49.999664506422974,
+          "ref": 99.99932860344,
+          "relError": 0.4999999979529565
+        },
+        {
+          "time": 0.8,
+          "column": "Bound_2",
+          "web": 49.99966450432842,
+          "ref": 99.9993286031,
+          "relError": 0.4999999979722021
+        },
+        {
+          "time": 0.9,
+          "column": "Bound_2",
+          "web": 49.999664504756105,
+          "ref": 99.99932860288,
+          "relError": 0.4999999979668253
+        }
+      ]
     }
   },
   {
@@ -3740,7 +3598,7 @@
   },
   {
     "model": "erk_nuclear_translocation",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "erk-nuclear-translocation.gdat",
     "referenceInferred": false,
     "details": {
@@ -3769,84 +3627,13 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.2858141072614274,
-      "maxAbsoluteError": 19.078299644824824,
+      "maxRelativeError": 2.515676452422765e-8,
+      "maxAbsoluteError": 0.0000034832883955004945,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 0.5,
-      "errorColumn": "Trans_Activity",
-      "samples": [
-        {
-          "time": 0.5,
-          "column": "Functional_ELK",
-          "web": 36.74380185337529,
-          "ref": 41.77857721502,
-          "relError": 0.12051093400649934
-        },
-        {
-          "time": 0.5,
-          "column": "Total_pERK",
-          "web": 998.1801889856363,
-          "ref": 997.8770387045,
-          "relError": 0.00030370296313365984
-        },
-        {
-          "time": 0.5,
-          "column": "Nuclear_pERK",
-          "web": 562.9725006692221,
-          "ref": 562.6386397294,
-          "relError": 0.0005930324117523183
-        },
-        {
-          "time": 0.5,
-          "column": "Trans_Activity",
-          "web": 0.021943855346361202,
-          "ref": 0.03072569140538,
-          "relError": 0.2858141072614274
-        },
-        {
-          "time": 0.5,
-          "column": "ELK1_Occupancy",
-          "web": 39.92536365082681,
-          "ref": 45.64452628836,
-          "relError": 0.12529788569613562
-        },
-        {
-          "time": 1,
-          "column": "Functional_ELK",
-          "web": 84.99275166964665,
-          "ref": 90.7628656002,
-          "relError": 0.0635735098533583
-        },
-        {
-          "time": 1,
-          "column": "Total_pERK",
-          "web": 994.0217514276908,
-          "ref": 993.167166792,
-          "relError": 0.0008597242811471461
-        },
-        {
-          "time": 1,
-          "column": "Nuclear_pERK",
-          "web": 726.0938513461554,
-          "ref": 725.1556125251,
-          "relError": 0.0012921729323501737
-        },
-        {
-          "time": 1,
-          "column": "Cyto_Buffer",
-          "web": 267.98588061438784,
-          "ref": 268.0777709149,
-          "relError": 0.0003427747858337646
-        },
-        {
-          "time": 1,
-          "column": "Trans_Activity",
-          "web": 0.184412572464937,
-          "ref": 0.2156778017903,
-          "relError": 0.14496266683838732
-        }
-      ]
+      "errorAtTime": 1.5,
+      "errorColumn": "Functional_ELK",
+      "samples": []
     }
   },
   {
@@ -4141,9 +3928,9 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.4914079818687311,
-      "maxAbsoluteError": 0.9442324145772574,
-      "absTolDominated": true,
+      "maxRelativeError": 0.4873661003244606,
+      "maxAbsoluteError": 1.3827947583059341,
+      "absTolDominated": false,
       "overlapMatch": false,
       "errorAtTime": 0.1333333333333,
       "errorColumn": "Ras_Drive_Comp",
@@ -4151,72 +3938,72 @@
         {
           "time": 0.1333333333333,
           "column": "Active_Dimer",
-          "web": 0.000557882839692131,
+          "web": 0.0007372036901441411,
           "ref": 0.0003931660160354,
-          "relError": 0.29525343304631924
+          "relError": 0.4666792620659203
         },
         {
           "time": 0.1333333333333,
           "column": "FRS2_Hub_Status",
-          "web": 0.0004470282547784894,
+          "web": 0.00044365180500907875,
           "ref": 0.0002277439764722,
-          "relError": 0.4905378484743626
+          "relError": 0.4866605434693554
         },
         {
           "time": 0.1333333333333,
           "column": "Ras_Drive_Comp",
-          "web": 0.00039706248325701806,
+          "web": 0.0003939318289557428,
           "ref": 0.0002019428096839,
-          "relError": 0.4914079818687311
+          "relError": 0.4873661003244606
         },
         {
           "time": 0.1333333333333,
           "column": "Spry_Brake",
-          "web": 0.016931440939705816,
+          "web": 0.016837459580962787,
           "ref": 0.008751818729365,
-          "relError": 0.4831025451093672
+          "relError": 0.48021738746976933
         },
         {
           "time": 0.2666666666667,
           "column": "Active_Dimer",
-          "web": 0.0016359653466286438,
+          "web": 0.0021441951347922704,
           "ref": 0.001322940333705,
-          "relError": 0.19133963538330317
+          "relError": 0.3830130885763966
         },
         {
           "time": 0.2666666666667,
           "column": "FRS2_Hub_Status",
-          "web": 0.0059698484941862855,
+          "web": 0.00594847724460756,
           "ref": 0.003264464664095,
-          "relError": 0.4531746212196027
+          "relError": 0.4512100273974626
         },
         {
           "time": 0.2666666666667,
           "column": "Ras_Drive_Comp",
-          "web": 0.005650734281445378,
+          "web": 0.005629895510078324,
           "ref": 0.00308237803725,
-          "relError": 0.4545172567446277
+          "relError": 0.45249818016478294
         },
         {
           "time": 0.2666666666667,
           "column": "Spry_Brake",
-          "web": 0.10936655379291625,
+          "web": 0.10908761238471623,
           "ref": 0.06226562063476,
-          "relError": 0.4306703605870318
+          "relError": 0.42921456182238565
         },
         {
           "time": 0.4,
           "column": "Active_Dimer",
-          "web": 0.0025029348355737023,
+          "web": 0.003246187997358264,
           "ref": 0.002324028961362,
-          "relError": 0.07147843869882248
+          "relError": 0.2840744395416142
         },
         {
           "time": 0.4,
           "column": "FRS2_Hub_Status",
-          "web": 0.023793292812366806,
+          "web": 0.023739851964749783,
           "ref": 0.01412833471274,
-          "relError": 0.40620515099966936
+          "relError": 0.40486845774276453
         }
       ]
     }
@@ -4250,89 +4037,89 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.7433106518648801,
-      "maxAbsoluteError": 67.3236526114662,
+      "maxRelativeError": 0.005647171449027864,
+      "maxAbsoluteError": 0.31614261763628093,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 0.5,
-      "errorColumn": "Survival_Relay",
+      "errorAtTime": 4.5,
+      "errorColumn": "Active_Platform",
       "samples": [
         {
           "time": 0.5,
           "column": "Survival_Relay",
-          "web": 0.11975753933614093,
+          "web": 0.03072087706055667,
           "ref": 0.03074048470646,
-          "relError": 0.7433106518648801
+          "relError": 0.000637844396097249
         },
         {
           "time": 0.5,
           "column": "Total_pAKT",
-          "web": 179.9411944082662,
+          "web": 112.58862362891867,
           "ref": 112.6175417968,
-          "relError": 0.37414252379983903
+          "relError": 0.00025678209113734165
         },
         {
           "time": 0.5,
           "column": "Active_Platform",
-          "web": 1.1186096574022646,
+          "web": 0.7011629136487992,
           "ref": 0.7014565303144,
-          "relError": 0.3729210849623942
-        },
-        {
-          "time": 0.5,
-          "column": "SOCS_Feedback",
-          "web": 11.625502848935154,
-          "ref": 10.92023833159,
-          "relError": 0.060665291343484036
-        },
-        {
-          "time": 0.5,
-          "column": "AXL_Dimer_Pool",
-          "web": 0.86724695310874,
-          "ref": 0.5881162801769,
-          "relError": 0.32185834949464637
-        },
-        {
-          "time": 1,
-          "column": "Survival_Relay",
-          "web": 4.209724167524966,
-          "ref": 3.612857861896,
-          "relError": 0.1417827586504042
-        },
-        {
-          "time": 1,
-          "column": "Total_pAKT",
-          "web": 782.9073153409714,
-          "ref": 753.1560451929,
-          "relError": 0.038001011824898
+          "relError": 0.0004185814129767831
         },
         {
           "time": 1,
           "column": "Active_Platform",
-          "web": 7.145736054771572,
+          "web": 5.560175834207322,
           "ref": 5.568621332592,
-          "relError": 0.220707105620904
+          "relError": 0.001516622855148846
         },
         {
           "time": 1,
           "column": "SOCS_Feedback",
-          "web": 38.98393410180683,
+          "web": 33.74637567249784,
           "ref": 33.75407177106,
-          "relError": 0.1341542984627721
+          "relError": 0.00022800504230589662
         },
         {
-          "time": 1,
-          "column": "AXL_Dimer_Pool",
-          "web": 2.650662563732805,
-          "ref": 2.183402501031,
-          "relError": 0.17628047760397855
+          "time": 1.5,
+          "column": "Active_Platform",
+          "web": 13.06424292748439,
+          "ref": 13.09818752161,
+          "relError": 0.0025915489505404874
+        },
+        {
+          "time": 2,
+          "column": "Active_Platform",
+          "web": 21.23053084419157,
+          "ref": 21.30602357658,
+          "relError": 0.003543257713814448
+        },
+        {
+          "time": 2.5,
+          "column": "Active_Platform",
+          "web": 29.26923277722282,
+          "ref": 29.39658587915,
+          "relError": 0.004332241249059741
+        },
+        {
+          "time": 3,
+          "column": "Active_Platform",
+          "web": 36.74248945396664,
+          "ref": 36.92499797083,
+          "relError": 0.004942681838670264
+        },
+        {
+          "time": 3.5,
+          "column": "Active_Platform",
+          "web": 43.376538311125096,
+          "ref": 43.61053110856,
+          "relError": 0.0053655112993790674
         }
       ]
     }
   },
   {
     "model": "genetic_bistability_energy",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "genetic_bistability_energy.gdat",
     "referenceInferred": false,
     "details": {
@@ -4357,84 +4144,13 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.44751976287033923,
-      "maxAbsoluteError": 0.0387654409257987,
+      "maxRelativeError": 0.0002259033595215492,
+      "maxAbsoluteError": 0.0000017011268271527324,
       "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 1.5,
+      "errorAtTime": 37,
       "errorColumn": "GeneA_Free",
-      "samples": [
-        {
-          "time": 0.5,
-          "column": "A",
-          "web": 9.698688694801202,
-          "ref": 9.737454135727,
-          "relError": 0.003981065315991289
-        },
-        {
-          "time": 0.5,
-          "column": "B",
-          "web": 9.698688694801262,
-          "ref": 9.737454135727,
-          "relError": 0.003981065315985087
-        },
-        {
-          "time": 0.5,
-          "column": "GeneA_Free",
-          "web": 0.00041075461392259114,
-          "ref": 0.0007307849500567,
-          "relError": 0.4379268293761091
-        },
-        {
-          "time": 0.5,
-          "column": "GeneB_Free",
-          "web": 0.00041075461392259765,
-          "ref": 0.0007307849500567,
-          "relError": 0.4379268293761002
-        },
-        {
-          "time": 1,
-          "column": "A",
-          "web": 9.227661024689663,
-          "ref": 9.266116211286,
-          "relError": 0.004150086802224595
-        },
-        {
-          "time": 1,
-          "column": "B",
-          "web": 9.227661024689722,
-          "ref": 9.266116211286,
-          "relError": 0.004150086802218269
-        },
-        {
-          "time": 1,
-          "column": "GeneA_Free",
-          "web": 0.0004044044242298622,
-          "ref": 0.0007304737294752,
-          "relError": 0.4463806049255164
-        },
-        {
-          "time": 1,
-          "column": "GeneB_Free",
-          "web": 0.00040440442422986844,
-          "ref": 0.0007304737294752,
-          "relError": 0.44638060492550785
-        },
-        {
-          "time": 1.5,
-          "column": "A",
-          "web": 8.779591772159518,
-          "ref": 8.817764160728,
-          "relError": 0.004329032606529836
-        },
-        {
-          "time": 1.5,
-          "column": "B",
-          "web": 8.779591772159574,
-          "ref": 8.817764160728,
-          "relError": 0.004329032606523591
-        }
-      ]
+      "samples": []
     }
   },
   {
@@ -4649,7 +4365,7 @@
   },
   {
     "model": "glioblastoma_egfrviii_signaling",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "glioblastoma-egfrviii-signaling.gdat",
     "referenceInferred": false,
     "details": {
@@ -4678,84 +4394,13 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.711199341325764,
-      "maxAbsoluteError": 25.006127275532748,
+      "maxRelativeError": 0.0000014782452832018165,
+      "maxAbsoluteError": 0.000012401969371467203,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 116,
+      "errorAtTime": 107,
       "errorColumn": "Active_vIII",
-      "samples": [
-        {
-          "time": 1,
-          "column": "vIII_Platform",
-          "web": 199.73367995845945,
-          "ref": 199.8025027858,
-          "relError": 0.0003444542805067969
-        },
-        {
-          "time": 1,
-          "column": "Active_vIII",
-          "web": 135.8382918743493,
-          "ref": 135.7794865217,
-          "relError": 0.00043290703849321356
-        },
-        {
-          "time": 1.5,
-          "column": "vIII_Platform",
-          "web": 199.65868826912046,
-          "ref": 199.8270747423,
-          "relError": 0.000842660952709696
-        },
-        {
-          "time": 1.5,
-          "column": "Active_vIII",
-          "web": 155.21069599398834,
-          "ref": 155.0748008115,
-          "relError": 0.0008755529483199396
-        },
-        {
-          "time": 1.5,
-          "column": "vIII_Substrate",
-          "web": 126.19155943103412,
-          "ref": 126.1610698672,
-          "relError": 0.00024161333746562246
-        },
-        {
-          "time": 2,
-          "column": "vIII_Platform",
-          "web": 199.5222360117597,
-          "ref": 199.8303043913,
-          "relError": 0.0015416499538380326
-        },
-        {
-          "time": 2,
-          "column": "Active_vIII",
-          "web": 158.49816292327043,
-          "ref": 158.2599955759,
-          "relError": 0.0015026505227427704
-        },
-        {
-          "time": 2,
-          "column": "vIII_Substrate",
-          "web": 117.35917315146098,
-          "ref": 117.295567145,
-          "relError": 0.0005419772886341304
-        },
-        {
-          "time": 2.5,
-          "column": "vIII_Platform",
-          "web": 199.34316147562643,
-          "ref": 199.8280387455,
-          "relError": 0.0024264726457687747
-        },
-        {
-          "time": 2.5,
-          "column": "Active_vIII",
-          "web": 156.78994074780474,
-          "ref": 156.4277217546,
-          "relError": 0.0023102183180703866
-        }
-      ]
+      "samples": []
     }
   },
   {
@@ -4913,7 +4558,7 @@
   },
   {
     "model": "gm_ray_marcher",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "gm_ray_marcher.gdat",
     "referenceInferred": false,
     "details": {
@@ -4954,21 +4599,13 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.003636041957477034,
-      "maxAbsoluteError": 2.114516576931827e+35,
+      "maxRelativeError": 1.494975100037262e-12,
+      "maxAbsoluteError": 2.9754082272355253e+28,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 0.92,
-      "errorColumn": "B1",
-      "samples": [
-        {
-          "time": 0.92,
-          "column": "B1",
-          "web": 0.05906392016644828,
-          "ref": 0.05884916127455,
-          "relError": 0.003636041957477034
-        }
-      ]
+      "errorAtTime": 9.96,
+      "errorColumn": "R3",
+      "samples": []
     }
   },
   {
@@ -5188,7 +4825,7 @@
       "timeMatch": true,
       "timeOffset": 0,
       "maxRelativeError": 1.9156951547377965e-7,
-      "maxAbsoluteError": 1.5176685863593775e-7,
+      "maxAbsoluteError": 1.9512868121296378e-7,
       "absTolDominated": false,
       "overlapMatch": false,
       "errorAtTime": 101,
@@ -5301,82 +4938,82 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.356312816351967,
-      "maxAbsoluteError": 162.70657721890979,
+      "maxRelativeError": 0.08996995952353538,
+      "maxAbsoluteError": 22.54027374795288,
       "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 4,
-      "errorColumn": "SOCS_Feedback",
+      "errorAtTime": 184,
+      "errorColumn": "pgp130_Signals",
       "samples": [
         {
           "time": 2,
           "column": "pgp130_Signals",
-          "web": 14.707239248661192,
+          "web": 18.37670082888704,
           "ref": 18.11363665906,
-          "relError": 0.18805706852328904
-        },
-        {
-          "time": 2,
-          "column": "Global_pSTAT3",
-          "web": 560.6493620576686,
-          "ref": 560.7776146958,
-          "relError": 0.00022870498887699552
-        },
-        {
-          "time": 2,
-          "column": "SOCS_Feedback",
-          "web": 151.92770055869286,
-          "ref": 100.2944795757,
-          "relError": 0.33985389624880075
+          "relError": 0.014315092370308324
         },
         {
           "time": 2,
           "column": "Active_gp130",
-          "web": 14.707239248661192,
+          "web": 18.37670082888704,
           "ref": 18.11363665906,
-          "relError": 0.18805706852328904
-        },
-        {
-          "time": 4,
-          "column": "Active_TF",
-          "web": 428.709689702234,
-          "ref": 428.8208211371,
-          "relError": 0.00025915587440759387
+          "relError": 0.014315092370308324
         },
         {
           "time": 4,
           "column": "pgp130_Signals",
-          "web": 10.650856901620704,
+          "web": 13.413779063624412,
           "ref": 13.27342007499,
-          "relError": 0.19758006290411714
-        },
-        {
-          "time": 4,
-          "column": "Global_pSTAT3",
-          "web": 515.896302396643,
-          "ref": 516.0320371901,
-          "relError": 0.00026303559406138435
-        },
-        {
-          "time": 4,
-          "column": "SOCS_Feedback",
-          "web": 286.1602392985021,
-          "ref": 184.1976785061,
-          "relError": 0.356312816351967
+          "relError": 0.010463791595840363
         },
         {
           "time": 4,
           "column": "Active_gp130",
-          "web": 10.650856901620704,
+          "web": 13.413779063624412,
           "ref": 13.27342007499,
-          "relError": 0.19758006290411714
+          "relError": 0.010463791595840363
         },
         {
           "time": 6,
-          "column": "Active_TF",
-          "web": 394.50310174871805,
-          "ref": 394.6101967802,
-          "relError": 0.0002713944858895765
+          "column": "pgp130_Signals",
+          "web": 11.4876925346286,
+          "ref": 11.38457317347,
+          "relError": 0.008976507757998879
+        },
+        {
+          "time": 6,
+          "column": "Active_gp130",
+          "web": 11.4876925346286,
+          "ref": 11.38457317347,
+          "relError": 0.008976507757998879
+        },
+        {
+          "time": 8,
+          "column": "pgp130_Signals",
+          "web": 10.478945616258434,
+          "ref": 10.39304846911,
+          "relError": 0.008197117371728945
+        },
+        {
+          "time": 8,
+          "column": "Active_gp130",
+          "web": 10.478945616258434,
+          "ref": 10.39304846911,
+          "relError": 0.008197117371728945
+        },
+        {
+          "time": 10,
+          "column": "pgp130_Signals",
+          "web": 9.889726321636399,
+          "ref": 9.813166151233,
+          "relError": 0.007741384130711788
+        },
+        {
+          "time": 10,
+          "column": "Active_gp130",
+          "web": 9.889726321636399,
+          "ref": 9.813166151233,
+          "relError": 0.007741384130711788
         }
       ]
     }
@@ -5667,8 +5304,8 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.9024444240608883,
-      "maxAbsoluteError": 29.537593865692088,
+      "maxRelativeError": 0.8618716989364581,
+      "maxAbsoluteError": 10.721720591533078,
       "absTolDominated": false,
       "overlapMatch": false,
       "errorAtTime": 150,
@@ -5676,73 +5313,73 @@
       "samples": [
         {
           "time": 0.5,
-          "column": "ProSurvival_XBP1",
-          "web": 975.4286311040861,
-          "ref": 975.8815131884,
-          "relError": 0.0004640748678948731
-        },
-        {
-          "time": 0.5,
           "column": "RIDD_Drive",
-          "web": 568.9800866246306,
+          "web": 593.3919982956556,
           "ref": 593.2585252301,
-          "relError": 0.040923876477043014
+          "relError": 0.00022493236501172758
         },
         {
           "time": 0.5,
           "column": "Active_IRE1",
-          "web": 161.45853494166198,
+          "web": 137.71841820761446,
           "ref": 138.0917687258,
-          "relError": 0.14472301649649452
-        },
-        {
-          "time": 0.5,
-          "column": "Spliced_XBP1",
-          "web": 975.4286311040861,
-          "ref": 975.8815131884,
-          "relError": 0.0004640748678948731
-        },
-        {
-          "time": 1,
-          "column": "ProSurvival_XBP1",
-          "web": 951.3452123920326,
-          "ref": 951.7869127885,
-          "relError": 0.00046407487908536296
+          "relError": 0.0027036406415133288
         },
         {
           "time": 1,
           "column": "RIDD_Drive",
-          "web": 399.38992720190794,
+          "web": 429.47426511528823,
           "ref": 428.9275210676,
-          "relError": 0.06886383459884564
+          "relError": 0.001273054271462434
         },
         {
           "time": 1,
           "column": "Active_IRE1",
-          "web": 166.41508134249676,
+          "web": 147.83510425454065,
           "ref": 148.8601655146,
-          "relError": 0.10548873146759587
-        },
-        {
-          "time": 1,
-          "column": "Spliced_XBP1",
-          "web": 951.3452123920326,
-          "ref": 951.7869127885,
-          "relError": 0.00046407487908536296
-        },
-        {
-          "time": 1.5,
-          "column": "ProSurvival_XBP1",
-          "web": 927.8564154066678,
-          "ref": 928.2872101653,
-          "relError": 0.0004640748616535912
+          "relError": 0.0068860682541617155
         },
         {
           "time": 1.5,
           "column": "RIDD_Drive",
-          "web": 279.29059112089385,
+          "web": 307.54578200251547,
           "ref": 306.5352766587,
-          "relError": 0.08887944589862236
+          "relError": 0.003285707048998603
+        },
+        {
+          "time": 1.5,
+          "column": "Active_IRE1",
+          "web": 152.56111861212884,
+          "ref": 154.2757229023,
+          "relError": 0.011113895679211915
+        },
+        {
+          "time": 2,
+          "column": "RIDD_Drive",
+          "web": 219.21427850865695,
+          "ref": 217.8453933996,
+          "relError": 0.006244507056609858
+        },
+        {
+          "time": 2,
+          "column": "Active_IRE1",
+          "web": 154.49411084949924,
+          "ref": 156.8735930598,
+          "relError": 0.015168150125774804
+        },
+        {
+          "time": 2.5,
+          "column": "RIDD_Drive",
+          "web": 156.02501433827615,
+          "ref": 154.4500056628,
+          "relError": 0.01009459080748028
+        },
+        {
+          "time": 2.5,
+          "column": "Active_IRE1",
+          "web": 154.80930698774694,
+          "ref": 157.8083129049,
+          "relError": 0.019004106069876982
         }
       ]
     }
@@ -5888,11 +5525,11 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.9177058289982463,
-      "maxAbsoluteError": 0.000040620471366992206,
+      "maxRelativeError": 1.8579673834636306,
+      "maxAbsoluteError": 0.000046731696869528605,
       "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 195,
+      "errorAtTime": 176,
       "errorColumn": "Lactose_internal",
       "samples": []
     }
@@ -5924,82 +5561,82 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.998695707218451,
-      "maxAbsoluteError": 4.827718755556202,
+      "maxRelativeError": 0.9913223765716473,
+      "maxAbsoluteError": 1.1213914563394642,
       "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 151300,
-      "errorColumn": "tCCNE",
+      "errorAtTime": 323520,
+      "errorColumn": "tCCNA",
       "samples": [
         {
-          "time": 73,
+          "time": 18688,
           "column": "tCCNA",
-          "web": 0.0070876519568299715,
-          "ref": 0.007062108896759,
-          "relError": 0.0036038818252577274
+          "web": 0.10142636817920833,
+          "ref": 0.1013958635415,
+          "relError": 0.000300756482322557
         },
         {
-          "time": 73,
-          "column": "tCCNB",
-          "web": 0.009470051740674371,
-          "ref": 0.009431380134376,
-          "relError": 0.0040835686390471165
-        },
-        {
-          "time": 146,
+          "time": 18761,
           "column": "tCCNA",
-          "web": 0.0071579627501982,
-          "ref": 0.007098736678781,
-          "relError": 0.008274151945755828
+          "web": 0.10223181350457534,
+          "ref": 0.1022003724352,
+          "relError": 0.0003075468222417743
         },
         {
-          "time": 146,
-          "column": "tCCNB",
-          "web": 0.00954621650070222,
-          "ref": 0.009470148508338,
-          "relError": 0.00796839170352208
-        },
-        {
-          "time": 219,
+          "time": 18834,
           "column": "tCCNA",
-          "web": 0.007245737466325389,
-          "ref": 0.007138594015638,
-          "relError": 0.01478710085554974
+          "web": 0.10304630445412563,
+          "ref": 0.1030139042139,
+          "relError": 0.0003144240872806548
         },
         {
-          "time": 219,
-          "column": "tCCNB",
-          "web": 0.009626512296236673,
-          "ref": 0.009511202880237,
-          "relError": 0.011978317011525708
-        },
-        {
-          "time": 292,
+          "time": 18907,
           "column": "tCCNA",
-          "web": 0.007352197747571655,
-          "ref": 0.007181813128437,
-          "relError": 0.02317465130626159
+          "web": 0.10387000234062647,
+          "ref": 0.1038366159877,
+          "relError": 0.000321424397555999
         },
         {
-          "time": 292,
-          "column": "tCCNB",
-          "web": 0.009712272026229605,
-          "ref": 0.009554109926271,
-          "relError": 0.016284768335510038
-        },
-        {
-          "time": 365,
+          "time": 18980,
           "column": "tCCNA",
-          "web": 0.007475177367901365,
-          "ref": 0.007228448543229,
-          "relError": 0.033006417443929285
+          "web": 0.10470306943472411,
+          "ref": 0.1046686683221,
+          "relError": 0.0003285587787429173
         },
         {
-          "time": 365,
-          "column": "tCCNB",
-          "web": 0.009803379965136425,
-          "ref": 0.009598448137704,
-          "relError": 0.020904201220519867
+          "time": 19053,
+          "column": "tCCNA",
+          "web": 0.10554566961020988,
+          "ref": 0.1055102220703,
+          "relError": 0.0003358502536464624
+        },
+        {
+          "time": 19126,
+          "column": "tCCNA",
+          "web": 0.10639796653392714,
+          "ref": 0.1063614424255,
+          "relError": 0.00034327825631415553
+        },
+        {
+          "time": 19199,
+          "column": "tCCNA",
+          "web": 0.10726012609386555,
+          "ref": 0.1072224961331,
+          "relError": 0.0003508289812433845
+        },
+        {
+          "time": 19272,
+          "column": "tCCNA",
+          "web": 0.10813231416547427,
+          "ref": 0.1080935490685,
+          "relError": 0.0003584968773992018
+        },
+        {
+          "time": 19345,
+          "column": "tCCNA",
+          "web": 0.10901469796691776,
+          "ref": 0.1089747669539,
+          "relError": 0.00036629017703537715
         }
       ]
     }
@@ -6125,11 +5762,11 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 8.1932115225954e-8,
-      "maxAbsoluteError": 0.000379966805667209,
+      "maxRelativeError": 4.248684177866423e-13,
+      "maxAbsoluteError": 5.311449058353901e-10,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 129.6,
+      "errorAtTime": 12.6,
       "errorColumn": "Bound",
       "samples": []
     }
@@ -6159,82 +5796,82 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.9000000066777328,
-      "maxAbsoluteError": 3853.667877600661,
+      "maxRelativeError": 0.6323534868902329,
+      "maxAbsoluteError": 2408.759283049401,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 0.6,
-      "errorColumn": "Dimers",
+      "errorAtTime": 121.2,
+      "errorColumn": "Bound",
       "samples": [
         {
           "time": 0.6,
+          "column": "FreeR",
+          "web": 9959.204307564125,
+          "ref": 9918.592800539,
+          "relError": 0.004077786314141626
+        },
+        {
+          "time": 0.6,
+          "column": "Bound",
+          "web": 18.958335315900033,
+          "ref": 37.87449153257,
+          "relError": 0.4994431727328432
+        },
+        {
+          "time": 0.6,
           "column": "Dimers",
-          "web": 2.176635190552108,
+          "web": 10.918678559960473,
           "ref": 21.76635335902,
-          "relError": 0.9000000066777328
+          "relError": 0.4983689559815144
+        },
+        {
+          "time": 1.2,
+          "column": "FreeR",
+          "web": 9906.971069035137,
+          "ref": 9814.887827062,
+          "relError": 0.009294792659781548
+        },
+        {
+          "time": 1.2,
+          "column": "Bound",
+          "web": 26.049135539553316,
+          "ref": 52.02607619338,
+          "relError": 0.49930616633994956
         },
         {
           "time": 1.2,
           "column": "Dimers",
-          "web": 6.654304754602264,
+          "web": 33.4898972892277,
           "ref": 66.54304741113,
-          "relError": 0.8999999997972852
+          "relError": 0.4967183110458784
+        },
+        {
+          "time": 1.8,
+          "column": "FreeR",
+          "web": 9850.833245535057,
+          "ref": 9704.050177194,
+          "relError": 0.014900573858316779
+        },
+        {
+          "time": 1.8,
+          "column": "Bound",
+          "web": 28.852452102647778,
+          "ref": 57.63693043064,
+          "relError": 0.49941032794297263
         },
         {
           "time": 1.8,
           "column": "Dimers",
-          "web": 11.91564455948001,
+          "web": 60.15715076003765,
           "ref": 119.1564452261,
-          "relError": 0.8999999996905748
+          "relError": 0.4951414449643145
         },
         {
           "time": 2.4,
-          "column": "Dimers",
-          "web": 17.416854837706342,
-          "ref": 174.1685482649,
-          "relError": 0.8999999999356005
-        },
-        {
-          "time": 3,
-          "column": "Dimers",
-          "web": 22.9622454176359,
-          "ref": 229.6224525256,
-          "relError": 0.8999999992810986
-        },
-        {
-          "time": 3.6,
-          "column": "Dimers",
-          "web": 28.48106089376768,
-          "ref": 284.8106086443,
-          "relError": 0.8999999998969923
-        },
-        {
-          "time": 4.2,
-          "column": "Dimers",
-          "web": 33.94776627527603,
-          "ref": 339.4776612785,
-          "relError": 0.8999999995657268
-        },
-        {
-          "time": 4.8,
-          "column": "Dimers",
-          "web": 39.353356991111056,
-          "ref": 393.5335692041,
-          "relError": 0.899999999820343
-        },
-        {
-          "time": 5.4,
-          "column": "Dimers",
-          "web": 44.69493326696909,
-          "ref": 446.9493323196,
-          "relError": 0.899999999921671
-        },
-        {
-          "time": 6,
-          "column": "Dimers",
-          "web": 49.97187048228039,
-          "ref": 499.7187034011,
-          "relError": 0.8999999997154992
+          "column": "FreeR",
+          "web": 9793.505998248549,
+          "ref": 9591.509411273,
+          "relError": 0.020625564227118812
         }
       ]
     }
@@ -6340,8 +5977,8 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 6.97495318682035e-8,
-      "maxAbsoluteError": 0.00003537587008395349,
+      "maxRelativeError": 6.970470596977324e-8,
+      "maxAbsoluteError": 0.000034182918852820876,
       "absTolDominated": false,
       "overlapMatch": true,
       "errorAtTime": 29.5,
@@ -6519,7 +6156,7 @@
   },
   {
     "model": "michment",
-    "status": "match",
+    "status": "mismatch",
     "referenceFile": "[multi-phase concatenation]",
     "referenceInferred": true,
     "details": {
@@ -6548,13 +6185,84 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.660549772156488e-13,
-      "maxAbsoluteError": 4.919797902402934e-11,
+      "maxRelativeError": 0.8540775537334871,
+      "maxAbsoluteError": 100.00000000000023,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 10.8,
-      "errorColumn": "SaP",
-      "samples": []
+      "errorAtTime": 20,
+      "errorColumn": "Sa0",
+      "samples": [
+        {
+          "time": 10.2,
+          "column": "Sa0",
+          "web": 203.55921841298525,
+          "ref": 104.0067988906,
+          "relError": 0.4890587628432096
+        },
+        {
+          "time": 10.2,
+          "column": "SaP",
+          "web": 96.44078158701485,
+          "ref": 95.99320110941,
+          "relError": 0.004640987663512704
+        },
+        {
+          "time": 10.2,
+          "column": "ScR",
+          "web": 173.17488624961916,
+          "ref": 103.254107914,
+          "relError": 0.4037581883254907
+        },
+        {
+          "time": 10.2,
+          "column": "ScT",
+          "web": 126.82511375038094,
+          "ref": 96.74589208598,
+          "relError": 0.23717086289079387
+        },
+        {
+          "time": 10.2,
+          "column": "S_tot",
+          "web": 300.0000000000001,
+          "ref": 200,
+          "relError": 0.3333333333333336
+        },
+        {
+          "time": 10.4,
+          "column": "Sa0",
+          "web": 200.2206888082129,
+          "ref": 101.1291236405,
+          "relError": 0.4949117184519857
+        },
+        {
+          "time": 10.4,
+          "column": "SaP",
+          "web": 99.77931119178712,
+          "ref": 98.87087635947,
+          "relError": 0.009104440805078303
+        },
+        {
+          "time": 10.4,
+          "column": "ScR",
+          "web": 140.1592328416139,
+          "ref": 86.74628253836,
+          "relError": 0.38108763311806143
+        },
+        {
+          "time": 10.4,
+          "column": "ScT",
+          "web": 159.84076715838614,
+          "ref": 113.2537174616,
+          "relError": 0.29145912225648324
+        },
+        {
+          "time": 10.4,
+          "column": "S_tot",
+          "web": 300,
+          "ref": 200,
+          "relError": 0.3333333333333333
+        }
+      ]
     }
   },
   {
@@ -6586,11 +6294,11 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.000009345574523469365,
-      "maxAbsoluteError": 3.2578571218522256e-7,
+      "maxRelativeError": 0.000019902201476650664,
+      "maxAbsoluteError": 5.488414327459168e-7,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 4533.333333333,
+      "errorAtTime": 4500,
       "errorColumn": "LossVal",
       "samples": []
     }
@@ -7060,11 +6768,11 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.989617937507132,
-      "maxAbsoluteError": 0.02606616793158878,
-      "absTolDominated": true,
+      "maxRelativeError": 0.000009287230599814639,
+      "maxAbsoluteError": 5.370907274482306e-9,
+      "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 29.28,
+      "errorAtTime": 19.136,
       "errorColumn": "Output",
       "samples": []
     }
@@ -7274,11 +6982,11 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.0000025072613088507797,
-      "maxAbsoluteError": 0.00007567348006887187,
+      "maxRelativeError": 0.0000036526085414087298,
+      "maxAbsoluteError": 0.00016383784554818703,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 759.05,
+      "errorAtTime": 735.425,
       "errorColumn": "NFkB_complex",
       "samples": []
     }
@@ -8131,7 +7839,7 @@
       "timeMatch": true,
       "timeOffset": 0,
       "maxRelativeError": 0.00000157426128239286,
-      "maxAbsoluteError": 0.00005331683507847629,
+      "maxAbsoluteError": 0.000025117007027120053,
       "absTolDominated": false,
       "overlapMatch": false,
       "errorAtTime": 5.1,
@@ -8431,53 +8139,53 @@
       "timeMatch": true,
       "timeOffset": 0,
       "maxRelativeError": 1,
-      "maxAbsoluteError": 6,
+      "maxAbsoluteError": 8,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 0.5,
+      "errorAtTime": 3.5,
       "errorColumn": "Free_Monomers",
       "samples": [
         {
-          "time": 0.25,
+          "time": 0.5,
+          "column": "Free_Monomers",
+          "web": 4,
+          "ref": 2,
+          "relError": 0.5
+        },
+        {
+          "time": 0.5,
+          "column": "Filaments",
+          "web": 48,
+          "ref": 49,
+          "relError": 0.02040816326530612
+        },
+        {
+          "time": 0.75,
           "column": "Free_Monomers",
           "web": 2,
           "ref": 4,
           "relError": 0.5
         },
         {
-          "time": 0.25,
+          "time": 0.75,
           "column": "Filaments",
           "web": 49,
           "ref": 48,
           "relError": 0.02040816326530612
         },
         {
-          "time": 0.5,
-          "column": "Free_Monomers",
-          "web": 0,
-          "ref": 2,
-          "relError": 1
-        },
-        {
-          "time": 0.5,
-          "column": "Filaments",
-          "web": 50,
-          "ref": 49,
-          "relError": 0.02
-        },
-        {
           "time": 1,
           "column": "Free_Monomers",
-          "web": 2,
+          "web": 8,
           "ref": 6,
-          "relError": 0.6666666666666666
+          "relError": 0.25
         },
         {
           "time": 1,
           "column": "Filaments",
-          "web": 49,
+          "web": 46,
           "ref": 47,
-          "relError": 0.04081632653061224
+          "relError": 0.02127659574468085
         },
         {
           "time": 1.25,
@@ -8539,18 +8247,18 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 3.8854951760821647e-7,
-      "maxAbsoluteError": 4.0672617163117764e-8,
+      "maxRelativeError": 4.629334004841163e-13,
+      "maxAbsoluteError": 4.988010005035903e-12,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 50,
+      "errorAtTime": 4.25,
       "errorColumn": "Phagophores",
       "samples": []
     }
   },
   {
     "model": "process_cell_adhesion_strength",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "process_cell_adhesion_strength.gdat",
     "referenceInferred": false,
     "details": {
@@ -8573,84 +8281,13 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.0320509147878777,
-      "maxAbsoluteError": 1.4141908157178875,
+      "maxRelativeError": 5.181647418385359e-12,
+      "maxAbsoluteError": 2.4775204110483173e-10,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 0.2,
-      "errorColumn": "Large_Cluster",
-      "samples": [
-        {
-          "time": 0.2,
-          "column": "Adhesions",
-          "web": 45.38383424676604,
-          "ref": 45.14335632035,
-          "relError": 0.005298757374894498
-        },
-        {
-          "time": 0.2,
-          "column": "Clusters",
-          "web": 48.618954057975635,
-          "ref": 47.30382451632,
-          "relError": 0.02704972920823042
-        },
-        {
-          "time": 0.2,
-          "column": "Large_Cluster",
-          "web": 44.12325904197789,
-          "ref": 42.70906822626,
-          "relError": 0.0320509147878777
-        },
-        {
-          "time": 0.4,
-          "column": "Adhesions",
-          "web": 47.08194575030991,
-          "ref": 47.00668812941,
-          "relError": 0.0015984390555782465
-        },
-        {
-          "time": 0.4,
-          "column": "Clusters",
-          "web": 48.87881209916563,
-          "ref": 48.18809222199,
-          "relError": 0.014131273807847348
-        },
-        {
-          "time": 0.4,
-          "column": "Large_Cluster",
-          "web": 46.0126697634042,
-          "ref": 45.3032525025,
-          "relError": 0.015417867829708621
-        },
-        {
-          "time": 0.6,
-          "column": "Adhesions",
-          "web": 47.5566129095612,
-          "ref": 47.51540998388,
-          "relError": 0.0008663973979719855
-        },
-        {
-          "time": 0.6,
-          "column": "Clusters",
-          "web": 48.90914944399583,
-          "ref": 48.37549043955,
-          "relError": 0.010911230526650334
-        },
-        {
-          "time": 0.6,
-          "column": "Large_Cluster",
-          "web": 46.50725697165436,
-          "ref": 45.97162525215,
-          "relError": 0.011517164296118779
-        },
-        {
-          "time": 0.8,
-          "column": "Adhesions",
-          "web": 47.726466587035624,
-          "ref": 47.69619530437,
-          "relError": 0.0006342661594362854
-        }
-      ]
+      "errorAtTime": 13.2,
+      "errorColumn": "Adhesions",
+      "samples": []
     }
   },
   {
@@ -8926,82 +8563,82 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.9779246399988443,
-      "maxAbsoluteError": 3703480.15290741,
+      "maxRelativeError": 0.6890158106116636,
+      "maxAbsoluteError": 1894083.3853622596,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 38000,
-      "errorColumn": "pTetR",
+      "errorAtTime": 40000,
+      "errorColumn": "pCI",
       "samples": [
         {
           "time": 100,
           "column": "pTetR",
-          "web": 220833.80184129672,
+          "web": 206060.36635344184,
           "ref": 205102.7893875,
-          "relError": 0.07123462224819137
+          "relError": 0.004647070093524801
         },
         {
           "time": 100,
           "column": "pCI",
-          "web": 1886283.1778301685,
+          "web": 1873017.6946889928,
           "ref": 1872027.832871,
-          "relError": 0.0075573726822749316
+          "relError": 0.0005284850328961364
         },
         {
           "time": 100,
           "column": "pLacI",
-          "web": 151299.9159927212,
+          "web": 149675.58431983538,
           "ref": 149575.6711339,
-          "relError": 0.011396204997920392
+          "relError": 0.0006675316244089613
         },
         {
           "time": 200,
           "column": "pTetR",
-          "web": 340776.5033562238,
+          "web": 235696.16202669704,
           "ref": 225983.1718154,
-          "relError": 0.3368581178873912
+          "relError": 0.041209793692766415
         },
         {
           "time": 200,
           "column": "pCI",
-          "web": 1815704.8204025906,
+          "web": 1738251.754236802,
           "ref": 1729356.217825,
-          "relError": 0.04755651998458913
+          "relError": 0.005117519018818843
         },
         {
           "time": 200,
           "column": "pLacI",
-          "web": 141152.5573977308,
+          "web": 135595.33001473232,
           "ref": 135210.5928431,
-          "relError": 0.042096046038244336
+          "relError": 0.002837392494199643
         },
         {
           "time": 300,
           "column": "pTetR",
-          "web": 575001.8243888221,
+          "web": 288292.33129995817,
           "ref": 257242.0923125,
-          "relError": 0.5526238676095917
+          "relError": 0.10770400602557643
         },
         {
           "time": 300,
           "column": "pCI",
-          "web": 1767508.6321505746,
+          "web": 1615313.4824903999,
           "ref": 1591343.432475,
-          "relError": 0.09966865025220828
+          "relError": 0.014839255831904685
         },
         {
           "time": 300,
           "column": "pLacI",
-          "web": 133764.13583433672,
+          "web": 123224.58028694599,
           "ref": 122439.6788753,
-          "relError": 0.08465988950178509
+          "relError": 0.006369682167455817
         },
         {
           "time": 400,
           "column": "pTetR",
-          "web": 905834.9905527493,
+          "web": 365242.4971153866,
           "ref": 300524.2082262,
-          "relError": 0.6682351516992988
+          "relError": 0.17719265802944315
         }
       ]
     }
@@ -9466,12 +9103,12 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.9719927438561524,
-      "maxAbsoluteError": 0.0014586183195610435,
+      "maxRelativeError": 1.9919497650468603,
+      "maxAbsoluteError": 0.0005074761634966674,
       "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 14.76,
-      "errorColumn": "Output",
+      "errorAtTime": 1.4,
+      "errorColumn": "Sin3",
       "samples": []
     }
   },
@@ -9573,7 +9210,7 @@
   },
   {
     "model": "stat3_mediated_transcription",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "stat3-mediated-transcription.gdat",
     "referenceInferred": false,
     "details": {
@@ -9600,84 +9237,13 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.07292777582349098,
-      "maxAbsoluteError": 7.195993957119981,
+      "maxRelativeError": 3.532209775336214e-11,
+      "maxAbsoluteError": 1.1543761502252892e-8,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 0.5,
+      "errorAtTime": 67.5,
       "errorColumn": "mRNA_Level",
-      "samples": [
-        {
-          "time": 0.5,
-          "column": "Active_Dimer",
-          "web": 35.59940145152047,
-          "ref": 34.30206150828,
-          "relError": 0.036442745954793666
-        },
-        {
-          "time": 0.5,
-          "column": "DNA_Engagement",
-          "web": 4.985233487586505,
-          "ref": 4.97037045595,
-          "relError": 0.0029814113368039383
-        },
-        {
-          "time": 0.5,
-          "column": "mRNA_Level",
-          "web": 6.103823797588634,
-          "ref": 5.658685504012,
-          "relError": 0.07292777582349098
-        },
-        {
-          "time": 0.5,
-          "column": "PIAS3_Feedback",
-          "web": 9.985696333269667,
-          "ref": 9.977254142545,
-          "relError": 0.0008454283449957984
-        },
-        {
-          "time": 1,
-          "column": "Active_Dimer",
-          "web": 117.19987523946986,
-          "ref": 115.1632972612,
-          "relError": 0.01737696370502615
-        },
-        {
-          "time": 1,
-          "column": "mRNA_Level",
-          "web": 17.991396083942615,
-          "ref": 17.22633763747,
-          "relError": 0.04252357309588846
-        },
-        {
-          "time": 1,
-          "column": "PIAS3_Feedback",
-          "web": 10.488607344172607,
-          "ref": 10.44998035962,
-          "relError": 0.0036827562787988375
-        },
-        {
-          "time": 1.5,
-          "column": "Active_Dimer",
-          "web": 212.90391628660788,
-          "ref": 210.5426573469,
-          "relError": 0.011090725717460224
-        },
-        {
-          "time": 1.5,
-          "column": "mRNA_Level",
-          "web": 29.304575675043694,
-          "ref": 28.24734739433,
-          "relError": 0.03607724242238556
-        },
-        {
-          "time": 1.5,
-          "column": "PIAS3_Feedback",
-          "web": 11.563558510214481,
-          "ref": 11.47986880111,
-          "relError": 0.007237366337581597
-        }
-      ]
+      "samples": []
     }
   },
   {
@@ -9951,82 +9517,82 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.9783008606704514,
-      "maxAbsoluteError": 455.15658244043186,
+      "maxRelativeError": 0.9807310047955509,
+      "maxAbsoluteError": 471.7507015194205,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 200,
-      "errorColumn": "Active_TLR3",
+      "errorAtTime": 0.5,
+      "errorColumn": "Regulator_Load",
       "samples": [
         {
           "time": 0.5,
           "column": "Active_TLR3",
-          "web": 76.04636118671274,
+          "web": 76.12647638515324,
           "ref": 75.97051539069,
-          "relError": 0.0009973625935437874
+          "relError": 0.0020487089626239343
         },
         {
           "time": 0.5,
           "column": "TRIF_Bound",
-          "web": 68.025194467895,
+          "web": 65.76933499925993,
           "ref": 66.05703119201,
-          "relError": 0.02893285776366128
+          "relError": 0.004355269795789346
         },
         {
           "time": 0.5,
           "column": "Pathogen_Sense",
-          "web": 88.23864538306064,
+          "web": 88.17143863102102,
           "ref": 87.2516955555,
-          "relError": 0.011185006561196632
+          "relError": 0.010431303943785514
         },
         {
           "time": 0.5,
           "column": "Nucleark_IRF3",
-          "web": 46.790709387163794,
+          "web": 17.03261176496757,
           "ref": 17.12564069653,
-          "relError": 0.6339948481048651
+          "relError": 0.005432143136185197
         },
         {
           "time": 0.5,
           "column": "Cyto_IRF3",
-          "web": 149.12794418348477,
+          "web": 56.51863320183048,
           "ref": 56.98186014381,
-          "relError": 0.617899512691596
+          "relError": 0.00812937557339187
         },
         {
           "time": 0.5,
           "column": "Regulator_Load",
-          "web": 0.2233248383599199,
+          "web": 0.09909096077498675,
           "ref": 5.142507936901,
-          "relError": 0.9565727771157314
+          "relError": 0.9807310047955509
         },
         {
           "time": 1,
           "column": "Active_TLR3",
-          "web": 93.46113024810079,
+          "web": 93.63473596154381,
           "ref": 95.07116426526,
-          "relError": 0.016935040499420195
+          "relError": 0.01510897983439412
         },
         {
           "time": 1,
           "column": "TRIF_Bound",
-          "web": 89.7441411774005,
+          "web": 89.48059238048877,
           "ref": 92.03830661511,
-          "relError": 0.02492620216605413
+          "relError": 0.02778967072174846
         },
         {
           "time": 1,
           "column": "Pathogen_Sense",
-          "web": 98.16579167768064,
+          "web": 98.1359129710145,
           "ref": 96.08280554465,
-          "relError": 0.021219063152569065
+          "relError": 0.020921061048985324
         },
         {
           "time": 1,
           "column": "Nucleark_IRF3",
-          "web": 194.52860428981927,
+          "web": 92.31432129119611,
           "ref": 93.62560553626,
-          "relError": 0.5187052008208958
+          "relError": 0.014005615638512953
         }
       ]
     }
@@ -10069,7 +9635,7 @@
   },
   {
     "model": "toy_jim",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "toy-jim.gdat",
     "referenceInferred": false,
     "details": {
@@ -10104,84 +9670,13 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.5854670212504105,
-      "maxAbsoluteError": 0.12008893861949632,
+      "maxRelativeError": 4.392042284787128e-13,
+      "maxAbsoluteError": 4.3920422854171193e-13,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 1,
-      "errorColumn": "RecDim",
-      "samples": [
-        {
-          "time": 1,
-          "column": "RecDim",
-          "web": 0.006100226864023673,
-          "ref": 0.002528745212992,
-          "relError": 0.5854670212504105
-        },
-        {
-          "time": 1,
-          "column": "Rec_Kp",
-          "web": 0.00002934924822489228,
-          "ref": 0.00001473516587794,
-          "relError": 0.4979371953574432
-        },
-        {
-          "time": 1,
-          "column": "RecDim_Kp",
-          "web": 0.000028842103024155632,
-          "ref": 0.00001447653482259,
-          "relError": 0.4980763084277968
-        },
-        {
-          "time": 2,
-          "column": "RecDim",
-          "web": 0.03210444570023676,
-          "ref": 0.01483041019976,
-          "relError": 0.5380574286118065
-        },
-        {
-          "time": 2,
-          "column": "Rec_A",
-          "web": 0.3822856100125127,
-          "ref": 0.3819660105394,
-          "relError": 0.0008360227660734039
-        },
-        {
-          "time": 2,
-          "column": "Rec_K",
-          "web": 0.14606627002781897,
-          "ref": 0.1458980332589,
-          "relError": 0.001151783836794976
-        },
-        {
-          "time": 2,
-          "column": "Rec_Kp",
-          "web": 0.00026485271196059914,
-          "ref": 0.0001415386672421,
-          "relError": 0.46559479722013936
-        },
-        {
-          "time": 2,
-          "column": "RecDim_Kp",
-          "web": 0.0002568733913562541,
-          "ref": 0.0001371189692862,
-          "relError": 0.4662001830464736
-        },
-        {
-          "time": 3,
-          "column": "RecDim",
-          "web": 0.07036815125978041,
-          "ref": 0.03630670114154,
-          "relError": 0.4840463975313866
-        },
-        {
-          "time": 3,
-          "column": "Rec_A",
-          "web": 0.3830603161287571,
-          "ref": 0.3819660108082,
-          "relError": 0.00285674415876917
-        }
-      ]
+      "errorAtTime": 103,
+      "errorColumn": "A_total",
+      "samples": []
     }
   },
   {
@@ -10279,82 +9774,82 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.846311011634773,
-      "maxAbsoluteError": 375.81367394315856,
+      "maxRelativeError": 0.031573546478518885,
+      "maxAbsoluteError": 0.04268033421156958,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 2,
-      "errorColumn": "Migratory_Pool",
+      "errorAtTime": 400,
+      "errorColumn": "Total_Complexes",
       "samples": [
         {
-          "time": 2,
-          "column": "Active_Signal",
-          "web": 29.984289679010654,
-          "ref": 9.895872551616,
-          "relError": 0.6699647496220922
-        },
-        {
-          "time": 2,
-          "column": "Migratory_Pool",
-          "web": 49.028395496367665,
-          "ref": 7.535124505007,
-          "relError": 0.846311011634773
-        },
-        {
-          "time": 2,
+          "time": 26,
           "column": "Total_Complexes",
-          "web": 0.06791468557842105,
-          "ref": 0.03801926348619,
-          "relError": 0.44019083409744747
+          "web": 0.3907105906616873,
+          "ref": 0.3906028891484,
+          "relError": 0.000275655474567157
         },
         {
-          "time": 4,
-          "column": "Active_Signal",
-          "web": 326.738827242042,
-          "ref": 114.5529085104,
-          "relError": 0.6494052773668635
-        },
-        {
-          "time": 4,
-          "column": "Migratory_Pool",
-          "web": 99.97720950310308,
-          "ref": 99.86449153117,
-          "relError": 0.0011274366677495758
-        },
-        {
-          "time": 4,
+          "time": 28,
           "column": "Total_Complexes",
-          "web": 0.1945028395001836,
-          "ref": 0.1239105912207,
-          "relError": 0.3629368520320083
+          "web": 0.3985273830363125,
+          "ref": 0.3983906454936,
+          "relError": 0.0003431070198257377
         },
         {
-          "time": 6,
-          "column": "Active_Signal",
-          "web": 702.3564410089585,
-          "ref": 326.5427670658,
-          "relError": 0.5350754289421616
-        },
-        {
-          "time": 6,
+          "time": 30,
           "column": "Total_Complexes",
-          "web": 0.2899747622479481,
-          "ref": 0.1954385351803,
-          "relError": 0.32601536193971675
+          "web": 0.4061454334997349,
+          "ref": 0.4059758056955,
+          "relError": 0.0004176528658053154
         },
         {
-          "time": 8,
-          "column": "Active_Signal",
-          "web": 866.5553741869771,
-          "ref": 540.1902142015,
-          "relError": 0.3766235484854972
-        },
-        {
-          "time": 8,
+          "time": 32,
           "column": "Total_Complexes",
-          "web": 0.3559889493153827,
-          "ref": 0.24640015411,
-          "relError": 0.3078432502361029
+          "web": 0.41362774923237755,
+          "ref": 0.4134213862035,
+          "relError": 0.000498910020569289
+        },
+        {
+          "time": 34,
+          "column": "Total_Complexes",
+          "web": 0.4210136588619035,
+          "ref": 0.4207667258318,
+          "relError": 0.0005865202349277613
+        },
+        {
+          "time": 36,
+          "column": "Total_Complexes",
+          "web": 0.4283276692389055,
+          "ref": 0.4280363595333,
+          "relError": 0.0006801094734858196
+        },
+        {
+          "time": 38,
+          "column": "Total_Complexes",
+          "web": 0.43558505820774646,
+          "ref": 0.4352455981636,
+          "relError": 0.0007793197625814267
+        },
+        {
+          "time": 40,
+          "column": "Total_Complexes",
+          "web": 0.44279534012176286,
+          "ref": 0.4424040125471,
+          "relError": 0.0008837662441417288
+        },
+        {
+          "time": 42,
+          "column": "Total_Complexes",
+          "web": 0.4499644712891714,
+          "ref": 0.4495175981496,
+          "relError": 0.000993129831542153
+        },
+        {
+          "time": 44,
+          "column": "Total_Complexes",
+          "web": 0.45709622360052526,
+          "ref": 0.4565901517122,
+          "relError": 0.0011071451965604512
         }
       ]
     }
@@ -10454,8 +9949,8 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.1313913689688966e-10,
-      "maxAbsoluteError": 3.0820501706330106e-10,
+      "maxRelativeError": 3.7786075958351396e-12,
+      "maxAbsoluteError": 3.09114511765074e-10,
       "absTolDominated": false,
       "overlapMatch": false,
       "errorAtTime": 0.5,

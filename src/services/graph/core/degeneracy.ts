@@ -38,7 +38,9 @@ function componentMatches(pComp: Component, tComp: Component): boolean {
     return targetBondCount > 0;
   }
 
-  // No wildcard, no bonds: BNGL "unbound" semantics.
+  // No wildcard, no bonds: treat as unbound for statistical-factor counting.
+  // This mirrors matcher behavior for plain sites and avoids overcounting
+  // assignments that consume already-bound copies of repeated sites.
   return targetBondCount === 0;
 }
 

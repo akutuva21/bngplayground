@@ -22,6 +22,9 @@ extern void js_f(double t, double* y, double* ydot);
 // Jac is column-major dense matrix (neq x neq)
 extern void js_jac(double t, double* y, double* fy, double* Jac, int neq);
 
+// Root callback to JS: g(t, y_ptr, gout_ptr)
+extern void js_g(double t, double* y, double* gout);
+
 typedef struct {
     void* cvode_mem;
     N_Vector y;
@@ -51,6 +54,13 @@ int jac_bridge(realtype t, N_Vector y, N_Vector fy, SUNMatrix J,
     double* J_data = SUNDenseMatrix_Data(J);
     sunindextype neq = SUNDenseMatrix_Rows(J);
     js_jac((double)t, y_data, fy_data, J_data, (int)neq);
+    return 0;
+}
+
+// Root function that bridges CVODE -> JS
+int g_bridge(realtype t, N_Vector y, realtype *gout, void *user_data) {
+    double* y_data = N_VGetArrayPointer(y);
+    js_g((double)t, y_data, (double*)gout);
     return 0;
 }
 
@@ -331,6 +341,20 @@ void get_solver_stats(void* ptr, long int* nsteps, long int* nfevals,
     CVodeGetNumRhsEvals(mem->cvode_mem, nfevals);
     CVodeGetNumLinSolvSetups(mem->cvode_mem, nlinsetups);
     CVodeGetNumErrTestFails(mem->cvode_mem, netfails);
+}
+
+// Root-finding initialization
+int init_roots(void* ptr, int nroots) {
+    if (!ptr) return -1;
+    CvodeWrapper* mem = (CvodeWrapper*)ptr;
+    return CVodeRootInit(mem->cvode_mem, nroots, g_bridge);
+}
+
+// Get information on which root triggered
+int get_root_info(void* ptr, int* rootsfound) {
+    if (!ptr) return -1;
+    CvodeWrapper* mem = (CvodeWrapper*)ptr;
+    return CVodeGetRootInfo(mem->cvode_mem, rootsfound);
 }
 
 

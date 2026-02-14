@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ComposedChart, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, ErrorBar, Cell, Scatter } from 'recharts';
+import { bnglService } from '../../services/bnglService';
 import { BNGLModel } from '../../types';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
@@ -31,6 +32,10 @@ interface EstimationResult {
   elbo: number[];
   convergence: boolean;
   iterations: number;
+  rmse: number;
+  sse: number;
+  rSquared: number;
+  bestPredictions?: Map<string, number[]>;
   credibleIntervals: { lower: number; upper: number }[];
   percentiles: { q1: number; q3: number; median: number }[];
   priorMeans: number[];
@@ -224,46 +229,76 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
         });
       }
 
-      // Create estimator
+      const iterations = parseInt(nIterations);
+      setProgress({ current: 0, total: iterations, elbo: 0 });
+
+      // Step 1: Prepare model in worker for efficient parameter overrides
+      const modelId = await bnglService.prepareModel(model);
+
+      // Create estimator with real simulation integration
       const estimator = new VariationalParameterEstimator(
         model,
         simulationData,
         paramsSnapshot,
-        priorsMap
+        priorsMap,
+        async (overrides) => {
+          // Use simulateCached for high-performance iteration
+          const simOptions = {
+            method: 'ode' as const,
+            t_end: timePoints[timePoints.length - 1],
+            n_steps: timePoints.length - 1,
+            atol: 1e-6,
+            rtol: 1e-4,
+          };
+
+          const simResults = await bnglService.simulateCached(modelId, overrides, simOptions);
+
+          // Map results to the Map<string, number[]> format
+          const resMap = new Map<string, number[]>();
+          for (const obs of model.observables) {
+            resMap.set(obs.name, simResults.data.map(d => d[obs.name] || 0));
+          }
+          return resMap;
+        }
       );
 
-      // Run estimation with progress updates
-      const iterations = parseInt(nIterations);
+      // Run estimation
       const lr = parseFloat(learningRate);
 
-      const result = await estimator.fit({
+      const fitResult = await estimator.fit({
         nIterations: iterations,
         learningRate: lr,
-        verbose: false
+        batchSize: 4, // Smaller batch size for real ODE simulations
+        verbose: false,
+        onProgress: (p) => {
+          if (isMountedRef.current) {
+            setProgress(p);
+          }
+        }
       });
 
       // Compute percentiles and credible intervals from posterior
-      const posteriorSamples = await estimator.samplePosterior(1000);
+      const posteriorSamples = await estimator.samplePosterior(100); // Fewer samples for speed
       const credibleIntervals = paramsSnapshot.map((_, i) => {
         const values = posteriorSamples.map(s => s[i]).sort((a, b) => a - b);
         return {
-          lower: values[Math.floor(0.025 * values.length)],
-          upper: values[Math.floor(0.975 * values.length)]
+          lower: values[Math.floor(0.025 * values.length)] ?? 0,
+          upper: values[Math.floor(0.975 * values.length)] ?? 0
         };
       });
 
       const percentiles = paramsSnapshot.map((_, i) => {
         const values = posteriorSamples.map(s => s[i]).sort((a, b) => a - b);
         return {
-          q1: values[Math.floor(0.25 * values.length)],
-          median: values[Math.floor(0.50 * values.length)],
-          q3: values[Math.floor(0.75 * values.length)]
+          q1: values[Math.floor(0.25 * values.length)] ?? 0,
+          median: values[Math.floor(0.50 * values.length)] ?? 0,
+          q3: values[Math.floor(0.75 * values.length)] ?? 0
         };
       });
 
       if (isMountedRef.current) {
         setResult({
-          ...result,
+          ...fitResult,
           parameters: paramsSnapshot,
           priorMeans: priorMeansSnapshot,
           credibleIntervals,
@@ -343,6 +378,23 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
     if (!result?.elbo) return [];
     return result.elbo.map((value, i) => ({ iteration: i, elbo: value }));
   }, [result]);
+
+  const fitComparisonData = useMemo(() => {
+    if (!result?.bestPredictions || !parsedData) return [];
+
+    return parsedData.map((d, i) => {
+      const entry: any = { time: d.time };
+      // Add experimental values
+      for (const [obsName, expVal] of Object.entries(d.values)) {
+        entry[`${obsName}_exp`] = expVal;
+      }
+      // Add predicted values
+      for (const [obsName, predData] of result.bestPredictions!) {
+        entry[`${obsName}_pred`] = predData[i] ?? 0;
+      }
+      return entry;
+    });
+  }, [result, parsedData]);
 
   const guardMessage = !model
     ? 'Parse a model to set up parameter estimation.'
@@ -578,21 +630,26 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
           {result && (
             <>
               {/* Summary Card */}
-              <Card className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                    Estimation Results
-                  </h3>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${result.convergence
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                    }`}>
-                    {result.convergence ? '✓ Converged' : '⚠ May not have converged'}
-                  </span>
-                </div>
-
-                <div className="text-sm text-slate-600 dark:text-slate-400">
-                  Completed {result.iterations} iterations
+              <Card className="p-4 border-l-4 border-l-blue-500">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Estimation Results</h3>
+                    <p className="text-sm text-slate-500">Completed {result.iterations} iterations</p>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-md border border-blue-100 dark:border-blue-800 text-center min-w-[100px]">
+                      <div className="text-[10px] uppercase font-bold text-blue-500 dark:text-blue-400">RMSE</div>
+                      <div className="text-xl font-mono font-bold text-blue-700 dark:text-blue-300">{result.rmse.toExponential(3)}</div>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-center min-w-[100px]">
+                      <div className="text-[10px] uppercase font-bold text-slate-500">SSE</div>
+                      <div className="text-xl font-mono font-bold text-slate-700 dark:text-slate-300">{result.sse.toExponential(3)}</div>
+                    </div>
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 rounded-md border border-emerald-100 dark:border-emerald-800 text-center min-w-[100px]">
+                      <div className="text-[10px] uppercase font-bold text-emerald-500 dark:text-emerald-400">R² Score</div>
+                      <div className="text-xl font-mono font-bold text-emerald-700 dark:text-emerald-300">{result.rSquared.toFixed(4)}</div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-md p-3 space-y-1">
@@ -628,17 +685,17 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
                 </h3>
 
                 <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={posteriorChartData} margin={{ top: 20, right: 30, left: 80, bottom: 60 }}>
+                  <ComposedChart data={posteriorChartData} margin={{ top: 20, right: 10, left: 35, bottom: 35 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(128, 128, 128, 0.1)" vertical={false} />
                     <XAxis
                       dataKey="name"
                       angle={-45}
                       textAnchor="end"
-                      height={80}
+                      height={50}
                       tick={{ fontSize: 11, fill: '#1e293b' }}
                       tickLine={{ stroke: '#1e293b' }}
                       axisLine={{ stroke: '#1e293b' }}
-                      label={{ value: 'Parameter', position: 'bottom', offset: 5, fill: '#1e293b', fontSize: 13, fontWeight: 'bold' }}
+                      label={{ value: 'Parameter', position: 'bottom', offset: -10, fill: '#1e293b', fontSize: 12, fontWeight: 'bold' }}
                     />
                     <YAxis
                       scale="log"
@@ -648,11 +705,12 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
                       tick={{ fontSize: 11, fill: '#1e293b' }}
                       tickLine={{ stroke: '#1e293b' }}
                       axisLine={{ stroke: '#1e293b' }}
+                      width={50}
                       label={{
                         value: 'Estimated Value',
                         angle: -90,
                         position: 'insideLeft',
-                        offset: -55,
+                        offset: -25,
                         fill: '#1e293b',
                         fontSize: 13,
                         fontWeight: 'bold',
@@ -689,6 +747,14 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
                       />
                     </Bar>
                     <Scatter
+                      dataKey="prior"
+                      fill="#94a3b8"
+                      shape="triangle"
+                      name="Prior Mean"
+                      stroke="#475569"
+                      strokeWidth={1}
+                    />
+                    <Scatter
                       dataKey="median"
                       fill="#ffffff"
                       shape="diamond"
@@ -706,6 +772,81 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
                 </ResponsiveContainer>
               </Card>
 
+              {/* Fit Comparison Plot */}
+              {fitComparisonData.length > 0 && (
+                <Card className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                        Fit Comparison (Experimental vs. Predicted)
+                      </h3>
+                      <div className="text-xs text-blue-600 font-medium">RMSE: {typeof result.rmse === 'number' ? result.rmse.toExponential(3) : 'N/A'}</div>
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      Circles: Experimental | Lines: Best Estimate
+                    </div>
+                  </div>
+
+                  <ResponsiveContainer width="100%" height={350}>
+                    <ComposedChart data={fitComparisonData} margin={{ top: 10, right: 10, left: 60, bottom: 35 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(128, 128, 128, 0.1)" vertical={false} />
+                      <XAxis
+                        dataKey="time"
+                        type="number"
+                        tick={{ fontSize: 11, fill: '#334155' }}
+                        label={{ value: 'Time', position: 'bottom', offset: 0, fill: '#334155', fontSize: 13, fontWeight: 'bold' }}
+                      />
+                      <YAxis
+                        width={65}
+                        tick={{ fontSize: 11, fill: '#334155' }}
+                        label={{ 
+                          value: 'Concentration/Amount', 
+                          angle: -90, 
+                          position: 'insideLeft', 
+                          offset: -45, 
+                          fill: '#334155', 
+                          fontSize: 13, 
+                          fontWeight: 'bold',
+                          style: { textAnchor: 'middle' }
+                        }}
+                      />
+                      <Tooltip
+                        formatter={(value: number, name: string) => {
+                          if (name === 'time') return [null, null];
+                          return [value.toFixed(2), name];
+                        }}
+                        labelFormatter={(label) => `Time: ${label}`}
+                      />
+                      <Legend verticalAlign="top" height={40} />
+
+                      {/* Plot each observable: Scatter for experimental, Line for predicted */}
+                      {Array.from(result.bestPredictions?.keys() || []).map((obsName, idx) => (
+                        <React.Fragment key={obsName}>
+                          <Scatter
+                            name={`${obsName} (Exp)`}
+                            dataKey={`${obsName}_exp`}
+                            fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                            stroke="#ffffff"
+                            strokeWidth={1}
+                            shape="circle"
+                            isAnimationActive={false}
+                          />
+                          <Line
+                            name={`${obsName} (Pred)`}
+                            type="monotone"
+                            dataKey={`${obsName}_pred`}
+                            stroke={CHART_COLORS[idx % CHART_COLORS.length]}
+                            strokeWidth={2}
+                            dot={false}
+                            isAnimationActive={false}
+                          />
+                        </React.Fragment>
+                      ))}
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </Card>
+              )}
+
               {/* ELBO Convergence Plot */}
               {elboChartData.length > 0 && (
                 <Card className="space-y-4">
@@ -714,7 +855,7 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
                   </h3>
 
                   <ResponsiveContainer width="100%" height={220}>
-                    <LineChart data={elboChartData} margin={{ top: 10, right: 30, left: 10, bottom: 40 }}>
+                    <LineChart data={elboChartData} margin={{ top: 10, right: 30, left: 55, bottom: 40 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(128, 128, 128, 0.15)" vertical={false} />
                       <XAxis
                         dataKey="iteration"
@@ -724,13 +865,23 @@ export const ParameterEstimationTab: React.FC<ParameterEstimationTabProps> = ({ 
                         label={{ value: 'Iteration', position: 'bottom', offset: 12, fill: '#334155', fontSize: 13, fontWeight: 'bold' }}
                       />
                       <YAxis
+                        width={40}
                         tick={{ fontSize: 11, fill: 'black' }}
                         tickLine={{ stroke: 'black' }}
                         axisLine={{ stroke: 'black' }}
-                        label={{ value: 'ELBO', angle: -90, position: 'insideLeft', offset: 10, fill: '#334155', fontSize: 13, fontWeight: 'bold' }}
+                        label={{ 
+                          value: 'ELBO', 
+                          angle: -90, 
+                          position: 'insideLeft', 
+                          offset: -20, 
+                          fill: '#334155', 
+                          fontSize: 13, 
+                          fontWeight: 'bold',
+                          style: { textAnchor: 'middle' } 
+                        }}
                       />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="elbo" stroke={CHART_COLORS[2]} strokeWidth={1.5} dot={false} />
+                      <Tooltip formatter={(value: number, name: string) => [value.toFixed(4), name]} />
+                      <Line type="monotone" dataKey="elbo" stroke={CHART_COLORS[2]} strokeWidth={1.5} dot={false} isAnimationActive={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </Card>

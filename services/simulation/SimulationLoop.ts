@@ -387,6 +387,12 @@ export async function simulate(
   const compartmentMapForDim = new Map(inputModel.compartments.map(c => [c.name, c]));
 
   model.reactions.forEach((r, idx) => {
+    const declaredScalingVolume = (r as any).scalingVolume;
+    if (typeof declaredScalingVolume === 'number' && Number.isFinite(declaredScalingVolume) && declaredScalingVolume > 0) {
+      reactionReactingVolumes[idx] = declaredScalingVolume;
+      return;
+    }
+
     let vAnchor = 1.0;
     let maxDim = -1;
     
@@ -492,15 +498,11 @@ export async function simulate(
       for (let i = 0; i < concreteObservables.length; i++) {
         const obs = concreteObservables[i];
         let sum = 0;
-        const isMolecules = obs.type?.toLowerCase() === 'molecules' || (obs.type as any) === 0;
         for (let j = 0; j < obs.indices.length; j++) {
           const idx = obs.indices[j];
           const val = currentState[idx];
-          if (isMolecules) {
-            sum += (val * speciesVolumes[idx]) * obs.coefficients[j];
-          } else {
-            sum += val * obs.coefficients[j];
-          }
+          const amount = isOde ? (val * speciesVolumes[idx]) : val;
+          sum += amount * obs.coefficients[j];
         }
         obsValues[obs.name] = sum;
       }
@@ -1389,8 +1391,11 @@ export async function simulate(
       // Just ensuring derivatives func is correct (already done above)
     }
 
-    // Default to 'auto' which now uses CVODE with fallback to Rosenbrock23 (matches BNG2 behavior)
-    let solverType: string = options.solver ?? 'auto';
+    // Default to 'auto' which may apply adaptive CVODE tuning.
+    // For explicit solver selections (e.g., cvode/cvode_sparse), keep strict BNG2 defaults
+    // unless the caller explicitly overrides individual knobs in SimulationOptions.
+    const requestedSolverType: string = options.solver ?? 'auto';
+    let solverType: string = requestedSolverType;
     const allMassAction = functionalRateCount === 0;
 
     // Stiffness Analysis
@@ -1431,6 +1436,8 @@ export async function simulate(
     const userAtol = options.atol ?? model.simulationOptions?.atol ?? BNG2_DEFAULT_ATOL;
     const userRtol = options.rtol ?? model.simulationOptions?.rtol ?? BNG2_DEFAULT_RTOL;
 
+    const useAdaptiveCvodeTuning = requestedSolverType === 'auto';
+
     const solverOptions: any = {
       _debug_v2: true, // Unique marker
       _debug_stab: options.stabLimDet,
@@ -1442,13 +1449,49 @@ export async function simulate(
       minStep: options.minStep ?? 1e-15,
       maxStep: options.maxStep ?? 0,  // 0 = no limit (matches BNG2)
       solver: solverType,
-      stabLimDet: options.stabLimDet !== undefined ? !!options.stabLimDet : (stiffConfig.stabLimDet === 1),
-      maxOrd: options.maxOrd ?? stiffConfig.maxOrd,
-      maxNonlinIters: options.maxNonlinIters ?? stiffConfig.maxNonlinIters,
-      nonlinConvCoef: options.nonlinConvCoef ?? stiffConfig.nonlinConvCoef,
-      maxErrTestFails: options.maxErrTestFails ?? stiffConfig.maxErrTestFails,
-      maxConvFails: options.maxConvFails ?? stiffConfig.maxConvFails
+      // Keep BNG2 defaults for explicit solver modes.
+      // Apply adaptive tuning only in solver='auto' mode unless caller overrides explicitly.
+      stabLimDet: options.stabLimDet !== undefined
+        ? !!options.stabLimDet
+        : (useAdaptiveCvodeTuning ? (stiffConfig.stabLimDet === 1) : false),
+      maxOrd: options.maxOrd ?? (useAdaptiveCvodeTuning ? stiffConfig.maxOrd : 5),
+      maxNonlinIters: options.maxNonlinIters ?? (useAdaptiveCvodeTuning ? stiffConfig.maxNonlinIters : 3),
+      nonlinConvCoef: options.nonlinConvCoef ?? (useAdaptiveCvodeTuning ? stiffConfig.nonlinConvCoef : 0.1),
+      maxErrTestFails: options.maxErrTestFails ?? (useAdaptiveCvodeTuning ? stiffConfig.maxErrTestFails : 7),
+      maxConvFails: options.maxConvFails ?? (useAdaptiveCvodeTuning ? stiffConfig.maxConvFails : 10)
     };
+
+    // Root detection is currently disabled by default because global auto-detection
+    // of if() conditions can introduce broad parity regressions across unrelated models.
+    // Keep this opt-in until condition-to-root mapping is validated against BNG2 behavior.
+    const ENABLE_IF_ROOT_DETECTION = false;
+    if (ENABLE_IF_ROOT_DETECTION) {
+      const rootExprs: string[] = [];
+      if (model.functions) {
+        for (const func of model.functions) {
+          const matches = func.expression.matchAll(/if\s*\(([^,]+),/gi);
+          for (const match of matches) {
+            const cond = match[1].trim();
+            if (!rootExprs.includes(cond)) rootExprs.push(cond);
+          }
+        }
+      }
+
+      if (rootExprs.length > 0) {
+        solverOptions.numRoots = rootExprs.length;
+        solverOptions.rootFunction = (t: number, yCurrent: Float64Array, gout: Float64Array) => {
+          const obsValues = evaluateObservablesFast(yCurrent);
+          const context = { ...model.parameters, ...obsValues, t };
+          for (let i = 0; i < rootExprs.length; i++) {
+            try {
+              gout[i] = evaluateFunctionalRate(rootExprs[i], model.parameters, obsValues, model.functions, context);
+            } catch {
+              gout[i] = 0;
+            }
+          }
+        };
+      }
+    }
 
     // Jacobian
     let jacobianColMajor: ((y: Float64Array, J: Float64Array) => void) | undefined;
@@ -1645,7 +1688,7 @@ export async function simulate(
       let solverError = false;
 
       // Apply parameter updates before this phase
-      if (applyParameterUpdates(phaseIdx)) {
+      if (applyParameterUpdates(phaseIdx + 1)) {
         // Re-build derivatives if parameters changed, as JIT/Hardcoded rates may be in use
         derivatives = buildDerivativesFunction();
       }
@@ -1689,9 +1732,11 @@ export async function simulate(
       const isContinue = phase.continue ?? false;
       const phaseStart = phase.t_start !== undefined ? phase.t_start : (isContinue ? modelTime : 0);
 
-      // Logic update: In BNG2 with continue=>1 or 0, t_end ALWAYS implies the absolute time reached.
+      // `t_end` is an absolute endpoint in the phase's own time frame.
+      // - continue=>1: phase frame is global model time, so subtract current modelTime.
+      // - continue=>0: phase frame starts at phaseStart (usually 0), so do not subtract modelTime.
       const absoluteTEnd = phase.t_end ?? options.t_end ?? 0;
-      let phaseDuration = absoluteTEnd - modelTime;
+      let phaseDuration = absoluteTEnd - phaseStart;
 
       if (phaseDuration < 0) {
         console.warn(`[Worker] Phase duration is negative (${phaseDuration}) for phase ${phaseIdx}. Skipping.`);
@@ -1827,6 +1872,13 @@ export async function simulate(
           }
           y.set(result.y);
           t = result.t;
+
+          if (result.errorMessage === "ROOT_FOUND") {
+            // Signal a discontinuity event. In BNG2, this usually just means 
+            // stopping the current step and starting a new one.
+            if (VERBOSE_SIM_DEBUG) console.log(`[Worker] Root found at t=${t}. Re-evaluating rates.`);
+            // No action needed other than continuing the loop, as y/t are updated.
+          }
 
           if (recordThisPhase) {
             const outT = toBngGridTime(phaseStart, phaseDuration, phase_n_steps, i);

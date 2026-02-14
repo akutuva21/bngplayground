@@ -1068,14 +1068,32 @@ async function runBenchmark() {
       return null;
     };
 
-    const root = path.join(__dirname, '../published-models');
-    const foundPath = findModel(root, target);
+    let foundPath: string | null = null;
+    if (fs.existsSync(target) && target.toLowerCase().endsWith('.bngl')) {
+      foundPath = path.resolve(target);
+    }
+
+    const roots = [
+      path.join(__dirname, '../public/models'),
+      path.join(__dirname, '../example-models'),
+      path.join(__dirname, '../published-models')
+    ];
+
+    if (!foundPath) {
+      for (const root of roots) {
+        const candidate = findModel(root, target);
+        if (candidate) {
+          foundPath = candidate;
+          break;
+        }
+      }
+    }
 
     if (foundPath) {
       console.log(`Found model at: ${foundPath}`);
       allModels = [{ model: target, path: foundPath, hasGdat: false, gdatRows: 0 }];
     } else {
-      console.error(`Model ${target} not found in ${root}`);
+      console.error(`Model ${target} not found in public/models, example-models, or published-models`);
       process.exit(1);
     }
   } else {

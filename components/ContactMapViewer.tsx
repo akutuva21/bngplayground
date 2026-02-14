@@ -184,7 +184,7 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
             label: 'data(label)',
             shape: 'round-rectangle', // BNG yEd uses roundrectangle
             padding: '12px',
-            'font-size': 12,
+            'font-size': 14,
             'font-weight': 700, // bold
             color: '#000000',
           },
@@ -217,7 +217,7 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
             height: 'label',
             padding: '6px',
             label: 'data(label)',
-            'font-size': 12, // BNG yEd standard
+            'font-size': 14, // BNG yEd standard
             shape: 'round-rectangle', // BNG yEd uses roundrectangle
             color: '#000000',
           },
@@ -232,7 +232,7 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
             'text-valign': 'top',
             'text-halign': 'center',
             label: 'data(label)',
-            'font-size': 12,
+            'font-size': 14,
             shape: 'round-rectangle',
             padding: '10px',
             color: '#000000',
@@ -248,7 +248,7 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
             height: 'label',
             padding: '4px',
             label: 'data(label)',
-            'font-size': 12, // BNG yEd standard
+            'font-size': 14, // BNG yEd standard
             shape: 'round-rectangle', // BNG yEd uses roundrectangle
             color: '#000000',
           },
@@ -457,7 +457,7 @@ ${indent}        <y:GroupNode>
 ${indent}          <y:Fill color="${color}"/>
 ${indent}          <y:BorderStyle color="#000000" type="" width="1"/>
 ${indent}          <y:Shape type="roundrectangle"/>
-${indent}          <y:NodeLabel alignment="t" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="${isBold ? 'bold' : ''}" hasBackgroundColor="false" hasLineColor="false" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="t" textColor="#000000" verticalTextPosition="bottom" visible="true">${escapeXml(label)}</y:NodeLabel>
+${indent}          <y:NodeLabel alignment="t" autoSizePolicy="content" fontFamily="Dialog" fontSize="14" fontStyle="${isBold ? 'bold' : ''}" hasBackgroundColor="false" hasLineColor="false" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="t" textColor="#000000" verticalTextPosition="bottom" visible="true">${escapeXml(label)}</y:NodeLabel>
 ${indent}        </y:GroupNode>
 ${indent}      </y:Realizers>
 ${indent}    </y:ProxyAutoBoundsNode>
@@ -480,7 +480,7 @@ ${indent}    <y:ShapeNode>
 ${indent}      <y:Fill color="${color}"/>
 ${indent}      <y:BorderStyle color="#000000" type="" width="1"/>
 ${indent}      <y:Shape type="roundrectangle"/>
-${indent}      <y:NodeLabel alignment="c" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="" hasBackgroundColor="false" hasLineColor="false" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="t" textColor="#000000" verticalTextPosition="bottom" visible="true">${escapeXml(label)}</y:NodeLabel>
+${indent}      <y:NodeLabel alignment="c" autoSizePolicy="content" fontFamily="Dialog" fontSize="14" fontStyle="" hasBackgroundColor="false" hasLineColor="false" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="t" textColor="#000000" verticalTextPosition="bottom" visible="true">${escapeXml(label)}</y:NodeLabel>
 ${indent}    </y:ShapeNode>
 ${indent}  </data>
 ${indent}</node>

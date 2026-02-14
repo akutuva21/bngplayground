@@ -15,5 +15,12 @@ mergeInto(LibraryManager.library, {
     } else {
       console.error("CVODE: No jacobian callback defined!");
     }
+  },
+  js_g: function(t, y_ptr, gout_ptr) {
+    if (Module.rootCallback) {
+      Module.rootCallback(t, y_ptr, gout_ptr);
+    } else {
+      console.error("CVODE: No root callback defined!");
+    }
   }
 });

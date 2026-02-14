@@ -35,6 +35,8 @@ export interface SparseODEOptions {
   useConservationLaws: boolean;
   useILUPreconditioner: boolean;
   gmresMaxIter: number;
+  numRoots?: number;
+  rootFunction?: (t: number, y: Float64Array, gout: Float64Array) => void;
 }
 
 const DEFAULT_OPTIONS: SparseODEOptions = {
@@ -76,6 +78,10 @@ export class SparseODESolver {
   private k: Float64Array;
   private yTemp: Float64Array;
   private yNew: Float64Array;
+
+  // Root findings
+  private g0?: Float64Array;
+  private g1?: Float64Array;
 
   constructor(
     nSpecies: number,
@@ -119,6 +125,11 @@ export class SparseODESolver {
     this.k = new Float64Array(this.n);
     this.yTemp = new Float64Array(this.n);
     this.yNew = new Float64Array(this.n);
+
+    if (this.options.numRoots) {
+      this.g0 = new Float64Array(this.options.numRoots);
+      this.g1 = new Float64Array(this.options.numRoots);
+    }
   }
 
   /**
@@ -317,14 +328,34 @@ export class SparseODESolver {
 
     const hNew = h * scale;
 
-    // Use Richardson extrapolation result if accepted (higher order)
-    if (accepted) {
-      for (let i = 0; i < n; i++) {
-        this.yNew[i] = 2 * this.yTemp[i] - this.yNew[i]; // 2nd order
+    const hNext = h * scale;
+
+    // Root detection
+    if (accepted && this.options.rootFunction && this.options.numRoots && this.g0 && this.g1) {
+      const g0 = this.g0;
+      const g1 = this.g1;
+      const tStart = _t;
+      const tEnd = _t + h;
+      
+      this.options.rootFunction(tStart, y, g0);
+      this.options.rootFunction(tEnd, this.yNew, g1);
+      
+      let rootFound = false;
+      for (let i = 0; i < this.options.numRoots; i++) {
+        // Check for sign change
+        if (g0[i] * g1[i] < 0) {
+          rootFound = true;
+          break;
+        }
+      }
+      
+      if (rootFound) {
+        // Signal root found. Solver will return this state and SimulationLoop can re-evaluate conditions.
+        return { accepted: true, hNew: h, yNew: this.yNew, errNorm, rootFound: true } as any;
       }
     }
 
-    return { accepted, hNew, yNew: this.yNew, errNorm };
+    return { accepted, hNew: hNext, yNew: this.yNew, errNorm };
   }
 
   /**
@@ -389,6 +420,10 @@ export class SparseODESolver {
             output(outputTimes[outputIdx], y);
           }
           outputIdx++;
+        }
+
+        if ((result as any).rootFound) {
+          return { success: true, steps, errorMessage: "ROOT_FOUND", t, y: this.reducedSystem ? this.reducedSystem.expand(y) : y } as any;
         }
 
         h = result.hNew;

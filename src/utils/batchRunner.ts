@@ -207,10 +207,15 @@ async function executeMultiPhaseSimulation(model: BNGLModel, seed?: number): Pro
                 if (typeof change.value === 'number') {
                     newValue = change.value;
                 } else {
-                    try {
-                        newValue = SafeExpressionEvaluator.compile(String(change.value))(singlePhaseModel.parameters);
-                    } catch (e) {
-                        newValue = NaN;
+                    const rawValue = String(change.value).trim();
+                    if (Object.prototype.hasOwnProperty.call(singlePhaseModel.parameters, rawValue)) {
+                        newValue = Number(singlePhaseModel.parameters[rawValue]);
+                    } else {
+                        try {
+                            newValue = SafeExpressionEvaluator.compile(rawValue)(singlePhaseModel.parameters);
+                        } catch (e) {
+                            newValue = NaN;
+                        }
                     }
                 }
                 if (!isNaN(newValue)) {
@@ -530,7 +535,8 @@ async function runSingleBatchItem(modelDef: { name: string, code: string, id?: s
 
 export async function runModels(modelNames?: string[]) {
     const filter = normalizeFilterNames(modelNames);
-    const allModels = MODEL_CATEGORIES.flatMap(c => c.models);
+    const allModelsRaw = MODEL_CATEGORIES.flatMap(c => c.models);
+    const allModels = Array.from(new Map(allModelsRaw.map(m => [m.id || m.name, m])).values());
     const modelsToProcess = filter
         ? allModels.filter(m => {
             const n = m.name.toLowerCase();
@@ -568,9 +574,10 @@ export async function runModels(modelNames?: string[]) {
 }
 
 export function getModelEntries() {
-    return MODEL_CATEGORIES.flatMap(c => c.models)
-        .filter(m => !BNG2_EXCLUDED_MODELS.has(m.id) && !BNG2_EXCLUDED_MODELS.has(m.name))
-        .map(m => ({ id: m.id || m.name, name: m.name }));
+    const all = MODEL_CATEGORIES.flatMap(c => c.models)
+        .filter(m => !BNG2_EXCLUDED_MODELS.has(m.id) && !BNG2_EXCLUDED_MODELS.has(m.name));
+    const deduped = Array.from(new Map(all.map(m => [m.id || m.name, m])).values());
+    return deduped.map(m => ({ id: m.id || m.name, name: m.name }));
 }
 
 export function getModelNames() {

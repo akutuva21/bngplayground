@@ -30,6 +30,9 @@ export interface SolverOptions {
   maxErrTestFails?: number;// Max error test failures
   maxConvFails?: number;  // Max convergence failures
 
+  // Root-finding (for discontinuity detection)
+  rootFunction?: (t: number, y: Float64Array, gout: Float64Array) => void;
+  numRoots?: number;
 }
 
 export interface SolverResult {
@@ -1065,6 +1068,7 @@ interface CVodeModule {
   cwrap: any;
   derivativeCallback: (t: number, y: number, ydot: number) => void;
   jacobianCallback?: (t: number, y: number, fy: number, J: number, neq: number) => void;
+  rootCallback?: (t: number, y: number, gout: number) => void;
   _init_solver_jac?: (neq: number, t0: number, y0: number, rtol: number, atol: number, maxSteps: number) => number;
   // Additional CVODE options (exposed in WASM wrapper)
   _set_min_step?: (mem: number, hmin: number) => number;
@@ -1076,6 +1080,8 @@ interface CVodeModule {
   _set_max_conv_fails?: (mem: number, maxncf: number) => number;
   _reinit_solver?: (mem: number, t0: number, y0: number) => number;
   _get_solver_stats?: (mem: number, nsteps: number, nfevals: number, nlinsetups: number, netfails: number) => void;
+  _init_roots?: (mem: number, nroots: number) => number;
+  _get_root_info?: (mem: number, rootsfound: number) => number;
 }
 
 // Type for Jacobian function: fills column-major matrix J[i + j*neq] = df_i/dy_j
@@ -1106,6 +1112,12 @@ export class CVODESolver {
   private cachedJacBuffer: ArrayBufferLike | null = null;
   private jacYView: Float64Array | null = null;
   private jacJView: Float64Array | null = null;
+
+  private rootsFoundPtr: number = 0;
+  private cachedGOutPtr = 0;
+  private cachedGOutBuffer: ArrayBufferLike | null = null;
+  private gYView: Float64Array | null = null;
+  private gOutView: Float64Array | null = null;
 
   static module: CVodeModule | null = null;
   static initPromise: Promise<void> | null = null;
@@ -1188,6 +1200,10 @@ export class CVODESolver {
       m._free(this.tretPtr);
       this.tretPtr = 0;
     }
+    if (this.rootsFoundPtr) {
+      m._free(this.rootsFoundPtr);
+      this.rootsFoundPtr = 0;
+    }
     this.currentT = NaN;
     this.yOut = null;
   }
@@ -1240,6 +1256,21 @@ export class CVODESolver {
       this.f(this.yView, this.dydtView);
     };
 
+    if (this.options.rootFunction && this.options.numRoots) {
+      const nroots = this.options.numRoots;
+      m.rootCallback = (t: number, yPtr: number, goutPtr: number) => {
+        const buf = m.HEAPF64.buffer;
+        if (!this.gYView || !this.gOutView || this.cachedGOutBuffer !== buf || this.cachedYPtr !== yPtr || this.cachedGOutPtr !== goutPtr) {
+          this.cachedGOutBuffer = buf;
+          this.cachedYPtr = yPtr;
+          this.cachedGOutPtr = goutPtr;
+          this.gYView = new Float64Array(buf, yPtr, neq);
+          this.gOutView = new Float64Array(buf, goutPtr, nroots);
+        }
+        this.options.rootFunction!(t, this.gYView, this.gOutView);
+      };
+    }
+
     // Allocate memory for state and t_reached.
     this.yPtr = m._malloc(neq * 8);
     if (!this.yPtr) return { success: false, errorMessage: 'CVODE malloc failed for yPtr' };
@@ -1249,6 +1280,11 @@ export class CVODESolver {
       this.yPtr = 0;
       return { success: false as const, errorMessage: 'CVODE malloc failed for tretPtr' };
     }
+
+    if (this.options.numRoots) {
+      this.rootsFoundPtr = m._malloc(this.options.numRoots * 4); // CVODE uses int* for rootsfound
+    }
+
     this.yOut = new Float64Array(y0.length);
 
     // Copy initial state into WASM memory.
@@ -1273,6 +1309,10 @@ export class CVODESolver {
       solverMem = m._init_solver_sparse(neq, t0, this.yPtr, rtol, atol, this.options.maxSteps);
     } else {
       solverMem = m._init_solver(neq, t0, this.yPtr, rtol, atol, this.options.maxSteps);
+    }
+
+    if (solverMem && this.options.numRoots && m._init_roots) {
+      m._init_roots(solverMem, this.options.numRoots);
     }
 
     if (!solverMem) {
@@ -1443,6 +1483,15 @@ export class CVODESolver {
           stuckCount = 0; // Reset if we made progress
         }
         lastT = t;
+
+        if (flag === 2) { // CV_ROOT_RETURN
+          // Root found!
+          m._get_y(solverMem, yPtr);
+          const heap = m.HEAPF64;
+          yOut.set(heap.subarray(yPtr >> 3, (yPtr >> 3) + neq));
+          this.currentT = t;
+          return { success: true, t, y: yOut, steps, errorMessage: "ROOT_FOUND" };
+        }
 
         if (flag < 0) {
           // Capture the best available state from CVODE before deciding how to recover.

@@ -160,8 +160,8 @@ export const SimulationControls: React.FC<SimulationControlsProps> = ({
 
         {/* Options popover */}
         {showOptions && (
-          <div className="absolute bottom-full right-0 mb-1 w-72 p-4 bg-white dark:bg-slate-800 
-                          border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-50 ring-1 ring-black ring-opacity-5">
+          <div className="absolute bottom-full right-0 mb-1 w-72 max-h-[85vh] overflow-y-auto p-4 bg-white dark:bg-slate-800 
+                          border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-50 ring-1 ring-black ring-opacity-5 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Simulation Options

@@ -83,11 +83,13 @@ export const buildContactMap = (
     const reactantBonds = extractBonds(reactantGraphs);
     const productBonds = extractBonds(productGraphs);
 
-    productBonds.forEach((bondInfo, key) => {
-      if (reactantBonds.has(key)) {
-        return;
-      }
+    // Collect all unique bonds seen in this rule (union of reactants and products)
+    // BioNetGen contact maps show any bond that *can* exist in the model.
+    const allBondsInRule = new Map<string, any>();
+    reactantBonds.forEach((v, k) => allBondsInRule.set(k, v));
+    productBonds.forEach((v, k) => allBondsInRule.set(k, v));
 
+    allBondsInRule.forEach((bondInfo, key) => {
       // Edge now connects component-level nodes (compound nodes)
       const sourceId = `${bondInfo.mol1}_${bondInfo.comp1}`;
       const targetId = `${bondInfo.mol2}_${bondInfo.comp2}`;
@@ -109,8 +111,9 @@ export const buildContactMap = (
       }
     });
 
-    // Note: BioNetGen contact maps only show BINDING edges
-    // They do NOT show unbinding, state changes, or molecule conversions
+    // Note: BioNetGen contact maps show ALL binding edges present in the model or rules
+    // They do NOT show unbinding, state changes, or molecule conversions separately,
+    // just the static map of possible component interactions.
   });
 
   // Create compound nodes for molecules and component child nodes (BNG-style hierarchy)
@@ -140,7 +143,6 @@ export const buildContactMap = (
 
   // Sort molecules for consistent ordering and numeric IDs (BNG-style)
   const sortedMolNames = Array.from(moleculeMap.keys())
-    .filter(molName => activeMolecules.has(molName))
     .sort();
 
   sortedMolNames.forEach((molName, molIndex) => {

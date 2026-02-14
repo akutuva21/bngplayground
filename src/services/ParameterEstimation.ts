@@ -13,6 +13,7 @@ export interface ParameterEstimationConfig {
   batchSize?: number;
   validationSplit?: number;
   verbose?: boolean;
+  onProgress?: (progress: { current: number; total: number; elbo: number }) => void;
 }
 
 export interface ParameterPrior {
@@ -28,6 +29,10 @@ export interface EstimationResult {
   elbo: number[];
   convergence: boolean;
   iterations: number;
+  rmse: number;
+  sse: number;
+  rSquared: number;
+  bestPredictions?: Map<string, number[]>;
 }
 
 export interface SimulationData {
@@ -82,19 +87,20 @@ export class VariationalParameterEstimator {
   private logSigma: tf.Variable;
 
   private nParams: number;
+  private simulator?: (params: Record<string, number>) => Promise<Map<string, number[]>>;
 
   constructor(
     _model: any, // BNGLModel (reserved for future integration)
     data: SimulationData,
     parameterNames: string[],
-    priors: Map<string, ParameterPrior>
+    priors: Map<string, ParameterPrior>,
+    simulator?: (params: Record<string, number>) => Promise<Map<string, number[]>>
   ) {
     this.data = data;
     this.parameterNames = parameterNames;
     this.priors = priors;
     this.nParams = parameterNames.length;
-
-
+    this.simulator = simulator;
 
     // Initialize variational parameters from priors (lognormal in log-space)
     const initialMu = parameterNames.map((name) => {
@@ -135,39 +141,40 @@ export class VariationalParameterEstimator {
     });
   }
 
-
   /**
    * Simulate model with given parameters
-   * This is a placeholder - actual implementation should use ODESolver
    */
-  private simulateWithParams(params: number[]): Map<string, number[]> {
-    // TODO: Integrate with actual ODESolver
-    // For now, return deterministic dummy predictions (no randomness) so optimizers converge.
-    const result = new Map<string, number[]>();
+  private async simulateWithParams(params: number[]): Promise<Map<string, number[]>> {
+    if (this.simulator) {
+      const paramObj: Record<string, number> = {};
+      this.parameterNames.forEach((name, i) => {
+        paramObj[name] = params[i];
+      });
+      return await this.simulator(paramObj);
+    }
 
-    // Deterministic scale/shape based on parameters
+    // Fallback placeholder logic
+    const result = new Map<string, number[]>();
     const paramSum = params.reduce((a, b) => a + b, 0);
     const scale = 0.9 + 0.2 * (1 / (1 + Math.exp(-(paramSum / Math.max(1, params.length)) * 0.01)));
     const phase = (paramSum % 1000) * 0.001;
 
     for (const [obsName, obsData] of this.data.observables) {
-      // Simple placeholder: smooth deterministic modulation of observations
       const pred = obsData.map((v, i) => {
         const wobble = 1 + 0.02 * Math.sin(phase + i * 0.1);
         return v * scale * wobble;
       });
       result.set(obsName, pred);
     }
-
     return result;
   }
 
-  private computeObjective(params: number[]): number {
+  private async computeObjective(params: number[]): Promise<number> {
     // Negative log-likelihood proxy + weak prior regularization.
-    const predicted = this.simulateWithParams(params);
+    const predicted = await this.simulateWithParams(params);
 
     let dataTerm = 0;
-    const observationNoise = 10.0; // Keep large noise for stability with placeholder simulator
+    const observationNoise = this.simulator ? 1.0 : 10.0; // Use tighter noise for real simulator
 
     for (const [obsName, obsData] of this.data.observables) {
       const predData = predicted.get(obsName);
@@ -206,7 +213,8 @@ export class VariationalParameterEstimator {
       nIterations = 1000,
       learningRate = 0.01,
       batchSize = 16,
-      verbose = true
+      verbose = true,
+      onProgress
     } = config;
 
     // Gradient-free update: sample candidates from current variational distribution,
@@ -218,13 +226,15 @@ export class VariationalParameterEstimator {
     const candidatesPerIter = Math.max(2, batchSize);
     const step = Math.max(0.001, Math.min(0.2, learningRate));
 
-
     const logSigmaMin = Math.log(0.02);
     const logSigmaMax = Math.log(1.0);
 
+    let bestFinalParams: number[] | null = null;
+    let minObjective = Number.POSITIVE_INFINITY;
+
     for (let iter = 0; iter < nIterations; iter++) {
-      let bestParams: number[] | null = null;
-      let bestObjective = Number.POSITIVE_INFINITY;
+      let bestParamsIter: number[] | null = null;
+      let bestObjectiveIter = Number.POSITIVE_INFINITY;
 
       for (let k = 0; k < candidatesPerIter; k++) {
         const eps = tf.randomNormal([this.nParams]).arraySync() as number[];
@@ -235,19 +245,24 @@ export class VariationalParameterEstimator {
         });
         const candidateParams = candidateLogParams.map((x) => Math.exp(x));
 
-        const obj = this.computeObjective(candidateParams);
-        if (obj < bestObjective) {
-          bestObjective = obj;
-          bestParams = candidateParams;
+        const obj = await this.computeObjective(candidateParams);
+        if (obj < bestObjectiveIter) {
+          bestObjectiveIter = obj;
+          bestParamsIter = candidateParams;
+        }
+
+        if (obj < minObjective) {
+          minObjective = obj;
+          bestFinalParams = candidateParams;
         }
       }
 
       // Record an ELBO-like score (higher is better)
-      const elboValue = -bestObjective;
+      const elboValue = -bestObjectiveIter;
       elboHistory.push(elboValue);
 
-      if (bestParams) {
-        const targetMu = bestParams.map((p) => Math.log(Math.max(p, 1e-12)));
+      if (bestParamsIter) {
+        const targetMu = bestParamsIter.map((p) => Math.log(Math.max(p, 1e-12)));
         mu = mu.map((m, i) => (1 - step) * m + step * targetMu[i]);
 
         // Anneal uncertainty slowly to encourage convergence
@@ -262,7 +277,10 @@ export class VariationalParameterEstimator {
       }
 
       // Keep the UI responsive in browsers
-      if (iter % 25 === 0) {
+      if (iter % 10 === 0) {
+        if (onProgress) {
+          onProgress({ current: iter + 1, total: nIterations, elbo: elboValue });
+        }
         await tf.nextFrame();
       }
     }
@@ -271,9 +289,6 @@ export class VariationalParameterEstimator {
     const posteriorMu = this.mu.arraySync() as number[];
     const posteriorSigma = tf.exp(this.logSigma).arraySync() as number[];
 
-    // Transform from log-space to original space assuming a lognormal posterior
-    // mean = exp(mu + 0.5*sigma^2)
-    // std  = sqrt((exp(sigma^2)-1) * exp(2*mu + sigma^2))
     const meanOriginal = posteriorMu.map((muVal, i) => {
       const s = posteriorSigma[i];
       const mean = Math.exp(muVal + 0.5 * s * s);
@@ -286,17 +301,50 @@ export class VariationalParameterEstimator {
       return Number.isFinite(std) ? std : 0;
     });
 
+    // Best predictions for metrics and plotting
+    const bestParams = bestFinalParams || meanOriginal;
+    const bestPredictions = await this.simulateWithParams(bestParams);
+
+    // Calculate RMSE and R-squared
+    let totalSse = 0;
+    let totalVar = 0;
+    let nDataPoints = 0;
+
+    const allExpValues: number[] = [];
+    for (const [_, obsData] of this.data.observables) {
+      allExpValues.push(...obsData);
+    }
+    const expMean = allExpValues.reduce((a, b) => a + b, 0) / allExpValues.length;
+
+    for (const [obsName, obsData] of this.data.observables) {
+      const predData = bestPredictions.get(obsName);
+      if (!predData) continue;
+      for (let i = 0; i < obsData.length; i++) {
+        const residual = obsData[i] - (predData[i] ?? 0);
+        totalSse += residual * residual;
+        totalVar += (obsData[i] - expMean) ** 2;
+        nDataPoints++;
+      }
+    }
+
+    const rmse = Math.sqrt(totalSse / Math.max(1, nDataPoints));
+    const rSquared = 1 - (totalSse / Math.max(1e-12, totalVar));
+
     // Check convergence (ELBO stabilized)
     const recentElbo = elboHistory.slice(-100);
     const elboStd = this.computeStd(recentElbo);
-    const convergence = elboStd < 0.01 * Math.abs(recentElbo[recentElbo.length - 1] || 1);
+    const convergence = elboStd < 0.05 * Math.abs(recentElbo[recentElbo.length - 1] || 1);
 
     return {
       posteriorMean: meanOriginal,
       posteriorStd: stdOriginal,
       elbo: elboHistory,
       convergence,
-      iterations: nIterations
+      iterations: nIterations,
+      rmse,
+      sse: totalSse,
+      rSquared,
+      bestPredictions
     };
   }
 

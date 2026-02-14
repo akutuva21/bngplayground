@@ -197,7 +197,21 @@ export async function generateExpandedNetwork(
             undefined,
             { isMoveConnected: !!(r as any).moveConnected }
         );
-        forwardRule.name = r.name;
+        if (r.name) {
+            forwardRule.name = r.name;
+        }
+        if ((r as any).deleteMolecules) {
+            (forwardRule as any).isDeleteMolecules = true;
+            let globalMolOffset = 0;
+            const deleteIndices: number[] = [];
+            for (const reactantPattern of forwardRule.reactants) {
+                for (let molIdx = 0; molIdx < reactantPattern.molecules.length; molIdx++) {
+                    deleteIndices.push(globalMolOffset + molIdx);
+                }
+                globalMolOffset += reactantPattern.molecules.length;
+            }
+            forwardRule.deleteMolecules = deleteIndices;
+        }
         // Preserve BNGL rule modifiers.
         (forwardRule as any).totalRate = !!(r as any).totalRate;
         // Always preserve original rate expression for parameter updates
@@ -232,7 +246,9 @@ export async function generateExpandedNetwork(
                 undefined,
                 { isMoveConnected: !!(r as any).moveConnected }
             );
-            reverseRule.name = r.name + '_rev';
+            if (r.name) {
+                reverseRule.name = r.name + '_rev';
+            }
             (reverseRule as any).totalRate = !!(r as any).totalRate;
             (reverseRule as any).originalRate = expandedReverseRate;
             (reverseRule as any).rateExpression = expandedReverseRate;

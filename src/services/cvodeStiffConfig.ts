@@ -145,8 +145,13 @@ export function analyzeModelStiffness(
     };
   }
 
-  const maxRate = Math.max(...nonZeroRates);
-  const minRate = Math.min(...nonZeroRates);
+  let maxRate = nonZeroRates[0];
+  let minRate = nonZeroRates[0];
+  for (let i = 1; i < nonZeroRates.length; i++) {
+    const rate = nonZeroRates[i];
+    if (rate > maxRate) maxRate = rate;
+    if (rate < minRate) minRate = rate;
+  }
   const rateRatio = maxRate / minRate;
 
   // Categorize stiffness
@@ -341,7 +346,7 @@ export const MODEL_PRESETS: Record<string, Partial<CVODEStiffConfig>> = {
   'Lang_2024': {
     atol: 1e-10,
     rtol: 1e-10,
-    maxSteps: 20000,
+    maxSteps: 1000000,
     stabLimDet: 1,
     maxOrd: 3,
     maxNonlinIters: 10,
@@ -359,6 +364,30 @@ export const MODEL_PRESETS: Record<string, Partial<CVODEStiffConfig>> = {
     // Note: This model's divergence is due to Hill function bifurcation sensitivity,
     // not solver configuration. These settings may help but won't fully resolve it.
     rationale: 'cBNGL_simple: Hill function (n=50) bifurcation sensitivity'
+  },
+
+  'eco_coevolution_host_parasite': {
+    stabLimDet: 1,
+    maxOrd: 4,
+    maxNonlinIters: 7,
+    nonlinConvCoef: 0.05,
+    maxErrTestFails: 15,
+    maxConvFails: 20,
+    maxSteps: 50000,
+    useAnalyticalJacobian: true,
+    rationale: 'eco_coevolution_host_parasite: oscillatory deterministic regime requiring tighter CVODE convergence'
+  },
+
+  'Lin_Prion_2019': {
+    stabLimDet: 1,
+    maxOrd: 4,
+    maxNonlinIters: 7,
+    nonlinConvCoef: 0.05,
+    maxErrTestFails: 15,
+    maxConvFails: 20,
+    maxSteps: 50000,
+    useSparse: true,
+    rationale: 'Lin_Prion_2019: large stiff network benefits from sparse linear solver and stricter nonlinear controls'
   },
 
   'repressilator': {

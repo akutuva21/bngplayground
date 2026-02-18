@@ -80,6 +80,11 @@ export async function simulate(
     postMessage: (msg: any) => void
   }
 ): Promise<SimulationResults> {
+  const formatCaughtError = (error: unknown): string => {
+    if (error instanceof Error) return error.message;
+    return String(error);
+  };
+
   const VERBOSE_SIM_DEBUG = false; // set true to enable verbose simulation debug
   const debugLog = 'artifacts/logs/direct_debug.log';
   // if (VERBOSE_SIM_DEBUG) fs.appendFileSync(debugLog, '[DEBUG_TRACE] Entering simulate function\n');
@@ -127,11 +132,11 @@ export async function simulate(
   const hasMultiPhase = phases.length > 1;
   const concentrationChanges = model.concentrationChanges || [];
   const parameterChanges = model.parameterChanges || [];
-  // Record all phases for web simulator (suffix is a BNG2.pl file naming convention)
-  // In BNG2.pl, suffix creates separate output files (model_equil.gdat, model_stim.gdat)
-  // In web simulator, we concatenate all phases into a single CSV
-  const recordPhaseIndices = Array.from({ length: phases.length }, (_, i) => i); // Record ALL phases
-  const defaultRecordFromIdx = recordPhaseIndices.length > 0 ? recordPhaseIndices[0] : 0;
+  // BNG2 semantics: phases with suffix write to separate files, while unsuffixed
+  // phases write to the default model.gdat. For parity, default CSV output should
+  // start from the first unsuffixed phase when one exists.
+  const firstUnsuffixedIdx = phases.findIndex((p) => !p.suffix);
+  const defaultRecordFromIdx = firstUnsuffixedIdx >= 0 ? firstUnsuffixedIdx : 0;
   const recordFromPhaseIdx = options.recordFromPhase !== undefined ? options.recordFromPhase : defaultRecordFromIdx;
 
   // Seeded random number generator for SSA
@@ -151,9 +156,6 @@ export async function simulate(
   const changingParameterNames = new Set<string>();
   if (parameterChanges.length > 0) {
     parameterChanges.forEach(c => changingParameterNames.add(c.parameter));
-  }
-  if (model.paramExpressions) {
-    Object.keys(model.paramExpressions).forEach(k => changingParameterNames.add(k));
   }
 
   // fs.appendFileSync(debugLog, `[SimulationLoop] Species Map:\n`);
@@ -276,13 +278,10 @@ export async function simulate(
       const trimmed = current.trim();
       if (trimmed) commaChunks.push(trimmed);
 
-      const patterns: string[] = [];
-      const tokenRe = /([A-Za-z0-9_]+\s*(?:==|<=|>=|<|>)\s*\d+|[^\s]+)/g;
-      for (const chunk of commaChunks) {
-        const matches = Array.from(chunk.matchAll(tokenRe), m => m[1].trim()).filter(Boolean);
-        if (matches.length > 0) patterns.push(...matches);
-      }
-      return patterns;
+      // Preserve each top-level chunk as a full pattern.
+      // Splitting by whitespace can corrupt valid species patterns with spaces,
+      // e.g. "L(r, loc~EC).L(r, loc~EC)".
+      return commaChunks.map(chunk => chunk.trim()).filter(Boolean);
     };
 
     const patterns = splitPatternsSafe(obs.pattern);
@@ -383,7 +382,7 @@ export async function simulate(
   // Highest Dimension Rule: The anchor volume is determined by the reactant
   // with the highest compartment dimension (typically 3D vol over 2D surface).
   const reactionReactingVolumes = new Float64Array(model.reactions.length);
-  const compartmentMapForDim = new Map(inputModel.compartments.map(c => [c.name, c]));
+  const compartmentMapForDim = new Map((inputModel.compartments ?? []).map(c => [c.name, c]));
 
   model.reactions.forEach((r, idx) => {
     const declaredScalingVolume = (r as any).scalingVolume;
@@ -490,6 +489,12 @@ export async function simulate(
 
     const data: Record<string, number>[] = [];
     const speciesData: Record<string, number>[] = [];
+    const includeSpeciesData = options.includeSpeciesData ?? true;
+    const appendSpeciesSnapshot = (snapshot: Record<string, number>) => {
+      if (includeSpeciesData) {
+        speciesData.push(snapshot);
+      }
+    };
 
     const evaluateObservablesFast = (currentState: Float64Array) => {
       const obsValues: Record<string, number> = {};
@@ -733,12 +738,12 @@ export async function simulate(
       let globalTime = 0;
       for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx++) {
         const phase = phases[phaseIdx];
-        const recordThisPhase = (phaseIdx >= recordFromPhaseIdx); // Record all phases
+        const recordThisPhase = (phaseIdx >= recordFromPhaseIdx);
 
         const shouldEmitPhaseStart = recordThisPhase && (phaseIdx === recordFromPhaseIdx || !(phase.continue ?? false));
 
         // Apply parameter changes before this phase
-        applyParameterUpdates(phaseIdx + 1);
+        applyParameterUpdates(phaseIdx);
 
         for (const change of concentrationChanges) {
           if (change.afterPhaseIndex !== phaseIdx - 1) continue;
@@ -789,7 +794,7 @@ export async function simulate(
           data.push({ time: outT0, ...obsValues, ...evaluateFunctionsForOutput(state, obsValues) });
           const speciesPoint0: Record<string, number> = { time: outT0 };
           for (let i = 0; i < numSpecies; i++) speciesPoint0[speciesHeaders[i]] = state[i];
-          speciesData.push(speciesPoint0);
+          appendSpeciesSnapshot(speciesPoint0);
         }
         let totalEvents = 0;
         const maxEvents = options.maxEvents ?? 100_000_000; // 100 million events safeguard
@@ -972,13 +977,13 @@ export async function simulate(
                   }
                   if (VERBOSE_SIM_DEBUG) console.log('[Worker Debug] Nonzero pSTAT3 species at t=', outT, nonzeroP.slice(0, 10));
                 }
-              } catch (e) {
-                console.warn('[Worker Debug] Failed to log early output obs:', e?.message ?? e);
+              } catch (e: unknown) {
+                console.warn('[Worker Debug] Failed to log early output obs:', formatCaughtError(e));
               }
               data.push({ time: outT, ...obsValues, ...evaluateFunctionsForOutput(state, obsValues) });
               const sp: Record<string, number> = { time: outT };
               for (let k = 0; k < numSpecies; k++) sp[speciesHeaders[k]] = state[k];
-              speciesData.push(sp);
+              appendSpeciesSnapshot(sp);
             }
             nextOutIdx += 1;
             nextTOut = (phaseTEnd * nextOutIdx) / phaseNSteps;
@@ -992,7 +997,7 @@ export async function simulate(
             data.push({ time: outT, ...obsValues, ...evaluateFunctionsForOutput(state, obsValues) });
             const sp: Record<string, number> = { time: outT };
             for (let k = 0; k < numSpecies; k++) sp[speciesHeaders[k]] = state[k];
-            speciesData.push(sp);
+            appendSpeciesSnapshot(sp);
           }
           nextOutIdx += 1;
           nextTOut = (phaseTEnd * nextOutIdx) / phaseNSteps;
@@ -1015,7 +1020,15 @@ export async function simulate(
 
       console.log(`[Worker] SSA simulation complete: ${data.length} data points, globalTime=${globalTime}`);
 
-      return { headers, data, speciesHeaders, speciesData, expandedReactions: model.reactions, expandedSpecies: model.species, ssaInfluence } satisfies SimulationResults;
+      return {
+        headers,
+        data,
+        speciesHeaders: includeSpeciesData ? speciesHeaders : undefined,
+        speciesData: includeSpeciesData ? speciesData : undefined,
+        expandedReactions: model.reactions,
+        expandedSpecies: model.species,
+        ssaInfluence
+      } satisfies SimulationResults;
     }
 
 
@@ -1030,7 +1043,7 @@ export async function simulate(
       console.error('[Worker Debug] SimulationLoop: Failed to import ODESolver', err);
       throw err;
     }
-    const debugDerivs = true; // FORCE DEBUG
+    const debugDerivs = VERBOSE_SIM_DEBUG;
     const canJIT = typeof Function !== 'undefined';
 
     let derivatives: (y: Float64Array, dydt: Float64Array) => void;
@@ -1149,12 +1162,12 @@ export async function simulate(
             }
           }
           if (VERBOSE_SIM_DEBUG) console.log('[Worker Debug] Cytosolic phosphorylation reactions (sample):', JSON.stringify(phosReactions.slice(0, 20), null, 2));
-        } catch (err) {
-          console.warn('[Worker Debug] Failed to probe phosphorylation reactions:', err?.message ?? err);
+        } catch (err: unknown) {
+          console.warn('[Worker Debug] Failed to probe phosphorylation reactions:', formatCaughtError(err));
         }
       }
-    } catch (e) {
-      if (VERBOSE_SIM_DEBUG) console.warn('[Worker Debug] Failed post-vol pSTAT3 prod rates:', e?.message ?? e);
+    } catch (e: unknown) {
+      if (VERBOSE_SIM_DEBUG) console.warn('[Worker Debug] Failed post-vol pSTAT3 prod rates:', formatCaughtError(e));
     }
 
     const buildDerivativesFunction = () => {
@@ -1280,7 +1293,8 @@ export async function simulate(
         };
       }
 
-      const allowJit = functionalRateCount === 0 && parameterChanges.length === 0 && !model.paramExpressions;
+      const hasDynamicParamExpressions = !!model.paramExpressions && Object.keys(model.paramExpressions).length > 0;
+      const allowJit = functionalRateCount === 0 && parameterChanges.length === 0 && !hasDynamicParamExpressions;
 
       if (allowJit) {
         try {
@@ -1321,7 +1335,8 @@ export async function simulate(
             };
           });
 
-          const jitResult = jitCompiler.compile(jitReactions, numSpecies, model.parameters);
+          const constantSpeciesMask = model.species.map((s) => !!s.isConstant);
+          const jitResult = jitCompiler.compile(jitReactions, numSpecies, model.parameters, constantSpeciesMask);
 
           // Return the JIT-compiled function but wrapped to handle speciesVolumes
           console.log(`[Worker] JIT compiler active for ${concreteReactions.length} reactions.`);
@@ -1393,10 +1408,9 @@ export async function simulate(
       // Just ensuring derivatives func is correct (already done above)
     }
 
-    // Default to 'auto' which may apply adaptive CVODE tuning.
-    // For explicit solver selections (e.g., cvode/cvode_sparse), keep strict BNG2 defaults
-    // unless the caller explicitly overrides individual knobs in SimulationOptions.
-    const requestedSolverType: string = options.solver ?? 'auto';
+    // Default to explicit CVODE for deterministic BNG2 parity.
+    // Use adaptive auto-tuning only when caller explicitly requests solver='auto'.
+    const requestedSolverType: string = options.solver ?? 'cvode';
     let solverType: string = requestedSolverType;
     const allMassAction = functionalRateCount === 0;
 
@@ -1417,18 +1431,33 @@ export async function simulate(
       systemSize: numSpecies
     });
 
+    const useAdaptiveCvodeTuning = requestedSolverType === 'auto' && options.adaptiveCvodeTuning === true;
     const stiffConfig = getOptimalCVODEConfig(stiffnessProfile);
     const presetConfig = detectModelPreset(model.name || '');
     if (presetConfig) Object.assign(stiffConfig, presetConfig);
+    const usePresetCvodeTuning =
+      requestedSolverType === 'cvode' &&
+      options.adaptiveCvodeTuning !== false &&
+      presetConfig !== null;
 
     if (stiffnessProfile.category !== 'mild') {
       // Logging can go here if needed
     }
 
     if (solverType === 'auto') {
+      if (useAdaptiveCvodeTuning) {
+        if (stiffConfig.useSparse) {
+          solverType = 'cvode_sparse';
+        } else if (stiffConfig.useAnalyticalJacobian) {
+          solverType = 'cvode_jac';
+        }
+      } else {
+        solverType = 'cvode';
+      }
+    } else if (solverType === 'cvode' && usePresetCvodeTuning) {
       if (stiffConfig.useSparse) {
         solverType = 'cvode_sparse';
-      } else if (stiffConfig.useAnalyticalJacobian) {
+      } else if (stiffConfig.useAnalyticalJacobian && allMassAction) {
         solverType = 'cvode_jac';
       }
     }
@@ -1438,16 +1467,15 @@ export async function simulate(
     const userAtol = options.atol ?? model.simulationOptions?.atol ?? BNG2_DEFAULT_ATOL;
     const userRtol = options.rtol ?? model.simulationOptions?.rtol ?? BNG2_DEFAULT_RTOL;
 
-    const useAdaptiveCvodeTuning = requestedSolverType === 'auto';
-
     const solverOptions: any = {
       _debug_v2: true, // Unique marker
       _debug_stab: options.stabLimDet,
       atol: userAtol,
       rtol: userRtol,
-      // Note: BNG2 sets CVodeSetMaxNumSteps to 2000 as default, but we use 1000000 for safety
-      // to avoid "too many steps" errors in stiff systems. CVODE grows mxstep internally.
-      maxSteps: options.maxSteps ?? 1000000,
+      // Start from BNG2 default internally, but allow escalation to a high ceiling.
+      // A low cap (2000) prematurely aborts stiff equilibration phases (e.g., An_2009).
+      maxSteps: options.maxSteps ?? 5_000_000,
+      // Keep a small nonzero floor in Node/WASM to avoid infinitesimal-step stalls.
       minStep: options.minStep ?? 1e-15,
       maxStep: options.maxStep ?? 0,  // 0 = no limit (matches BNG2)
       solver: solverType,
@@ -1455,12 +1483,12 @@ export async function simulate(
       // Apply adaptive tuning only in solver='auto' mode unless caller overrides explicitly.
       stabLimDet: options.stabLimDet !== undefined
         ? !!options.stabLimDet
-        : (useAdaptiveCvodeTuning ? (stiffConfig.stabLimDet === 1) : false),
-      maxOrd: options.maxOrd ?? (useAdaptiveCvodeTuning ? stiffConfig.maxOrd : 5),
-      maxNonlinIters: options.maxNonlinIters ?? (useAdaptiveCvodeTuning ? stiffConfig.maxNonlinIters : 3),
-      nonlinConvCoef: options.nonlinConvCoef ?? (useAdaptiveCvodeTuning ? stiffConfig.nonlinConvCoef : 0.1),
-      maxErrTestFails: options.maxErrTestFails ?? (useAdaptiveCvodeTuning ? stiffConfig.maxErrTestFails : 7),
-      maxConvFails: options.maxConvFails ?? (useAdaptiveCvodeTuning ? stiffConfig.maxConvFails : 10)
+        : ((useAdaptiveCvodeTuning || usePresetCvodeTuning) ? (stiffConfig.stabLimDet === 1) : false),
+      maxOrd: options.maxOrd ?? ((useAdaptiveCvodeTuning || usePresetCvodeTuning) ? stiffConfig.maxOrd : 5),
+      maxNonlinIters: options.maxNonlinIters ?? ((useAdaptiveCvodeTuning || usePresetCvodeTuning) ? stiffConfig.maxNonlinIters : 3),
+      nonlinConvCoef: options.nonlinConvCoef ?? ((useAdaptiveCvodeTuning || usePresetCvodeTuning) ? stiffConfig.nonlinConvCoef : 0.1),
+      maxErrTestFails: options.maxErrTestFails ?? ((useAdaptiveCvodeTuning || usePresetCvodeTuning) ? stiffConfig.maxErrTestFails : 7),
+      maxConvFails: options.maxConvFails ?? ((useAdaptiveCvodeTuning || usePresetCvodeTuning) ? stiffConfig.maxConvFails : 10)
     };
 
     const observableNamesSet = new Set((model.observables || []).map((o) => o.name));
@@ -1660,9 +1688,16 @@ export async function simulate(
             data.push({ time, ...obsValues });
             const sp: Record<string, number> = { time };
             for (let j = 0; j < numSpecies; j++) sp[speciesHeaders[j]] = conc[j];
-            speciesData.push(sp);
+            appendSpeciesSnapshot(sp);
           }
-          const results = { headers, data, speciesHeaders, speciesData, expandedReactions: model.reactions, expandedSpecies: model.species } satisfies SimulationResults;
+          const results = {
+            headers,
+            data,
+            speciesHeaders: includeSpeciesData ? speciesHeaders : undefined,
+            speciesData: includeSpeciesData ? speciesData : undefined,
+            expandedReactions: model.reactions,
+            expandedSpecies: model.species
+          } satisfies SimulationResults;
           gpuSolver.dispose();
           return results;
         } else {
@@ -1691,7 +1726,7 @@ export async function simulate(
       const isLastPhase = phaseIdx === phases.length - 1;
       console.log(`[Worker] Starting Phase ${phaseIdx}: method=${phase.method}, t_end=${phase.t_end}, continue=${phase.continue}`);
 
-      const recordThisPhase = (phaseIdx >= recordFromPhaseIdx); // Record all phases
+      const recordThisPhase = (phaseIdx >= recordFromPhaseIdx);
 
 
       const shouldEmitPhaseStart = recordThisPhase && (phaseIdx === recordFromPhaseIdx || !(phase.continue ?? false));
@@ -1700,7 +1735,7 @@ export async function simulate(
       let solverError = false;
 
       // Apply parameter updates before this phase
-      if (applyParameterUpdates(phaseIdx + 1)) {
+      if (applyParameterUpdates(phaseIdx)) {
         // Re-build derivatives if parameters changed, as JIT/Hardcoded rates may be in use
         derivatives = buildDerivativesFunction();
       }
@@ -1861,7 +1896,7 @@ export async function simulate(
         data.push({ time: outT0, ...obsValues, ...evaluateFunctionsForOutput(y, obsValues) });
         const s0: Record<string, number> = { time: outT0 };
         for (let i = 0; i < numSpecies; i++) s0[speciesHeaders[i]] = y[i];
-        speciesData.push(s0);
+        appendSpeciesSnapshot(s0);
       }
 
       try {
@@ -1898,7 +1933,7 @@ export async function simulate(
             data.push({ time: outT, ...obsValues, ...evaluateFunctionsForOutput(y, obsValues) });
             const sp: Record<string, number> = { time: outT };
             for (let k = 0; k < numSpecies; k++) sp[speciesHeaders[k]] = y[k];
-            speciesData.push(sp);
+            appendSpeciesSnapshot(sp);
 
             if (isCbnglSimpleModel && cbnglTraceSteps.has(i)) {
               const tfCpAmt = tfCpIdx >= 0 ? (y[tfCpIdx] * speciesVolumes[tfCpIdx]) : NaN;
@@ -1962,7 +1997,7 @@ export async function simulate(
 
       // Always output final species state for multi-phase propagation support
       // This ensures batchRunner can capture the equilibrated state even when recordThisPhase=false
-      if (speciesData.length === 0 || t > 0) {
+      if (includeSpeciesData && recordThisPhase && (speciesData.length === 0 || t > 0)) {
         // Check if final state was already recorded (last speciesData row has matching time)
         const finalT = modelTime;
         const lastRecordedT = speciesData.length > 0 ? speciesData[speciesData.length - 1].time : -1;
@@ -1970,7 +2005,7 @@ export async function simulate(
           // Record final species state for multi-phase propagation
           const spFinal: Record<string, number> = { time: finalT };
           for (let k = 0; k < numSpecies; k++) spFinal[speciesHeaders[k]] = y[k];
-          speciesData.push(spFinal);
+          appendSpeciesSnapshot(spFinal);
         }
       }
 
@@ -1983,8 +2018,17 @@ export async function simulate(
     const totalTime = performance.now() - simulationStartTime;
     if (VERBOSE_SIM_DEBUG) console.log('[Worker] ⏱️ TIMING: ODE integration took', odeTime.toFixed(0), 'ms');
     if (VERBOSE_SIM_DEBUG) console.log('[Worker] ⏱️ TIMING: Total simulation time', totalTime.toFixed(0), 'ms');
-    return { headers, data, speciesHeaders, speciesData, expandedReactions: model.reactions, expandedSpecies: model.species } satisfies SimulationResults;
+    return {
+      headers,
+      data,
+      speciesHeaders: includeSpeciesData ? speciesHeaders : undefined,
+      speciesData: includeSpeciesData ? speciesData : undefined,
+      expandedReactions: model.reactions,
+      expandedSpecies: model.species
+    } satisfies SimulationResults;
   }
+
+  throw new Error('Simulation finished without producing results');
 }
 
 

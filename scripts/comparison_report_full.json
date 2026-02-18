@@ -24,10 +24,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 2.3843777377402975e-13,
-      "maxAbsoluteError": 8.448353128187591e-12,
+      "maxRelativeError": 2.3925634386545606e-13,
+      "maxAbsoluteError": 4.995115432393504e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 8.5,
+      "maxAbsoluteErrorColumn": "A",
+      "maxRelativeErrorAtTime": 0.2,
+      "maxRelativeErrorColumn": "C",
       "errorAtTime": 0.2,
       "errorColumn": "C",
       "samples": []
@@ -58,10 +62,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 2.3843777377402975e-13,
-      "maxAbsoluteError": 8.448353128187591e-12,
+      "maxRelativeError": 2.3925634386545606e-13,
+      "maxAbsoluteError": 4.995115432393504e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 8.5,
+      "maxAbsoluteErrorColumn": "A",
+      "maxRelativeErrorAtTime": 0.2,
+      "maxRelativeErrorColumn": "C",
       "errorAtTime": 0.2,
       "errorColumn": "C",
       "samples": []
@@ -96,6 +104,10 @@
       "maxAbsoluteError": 17,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 3.56,
+      "maxAbsoluteErrorColumn": "A",
+      "maxRelativeErrorAtTime": 0.02,
+      "maxRelativeErrorColumn": "C",
       "errorAtTime": 0.02,
       "errorColumn": "C",
       "samples": [
@@ -201,6 +213,10 @@
       "maxAbsoluteError": 0.0000036850858577963663,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 12920,
+      "maxAbsoluteErrorColumn": "Bp",
+      "maxRelativeErrorAtTime": 16820,
+      "maxRelativeErrorColumn": "AB",
       "errorAtTime": 16820,
       "errorColumn": "AB",
       "samples": []
@@ -233,6 +249,10 @@
       "maxAbsoluteError": 5.0249582272954285e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 19800,
+      "maxAbsoluteErrorColumn": "Bp",
+      "maxRelativeErrorAtTime": 19440,
+      "maxRelativeErrorColumn": "Bu",
       "errorAtTime": 19440,
       "errorColumn": "Bu",
       "samples": []
@@ -269,11 +289,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 2.9501994677874816e-8,
-      "maxAbsoluteError": 0.0000010862018129387252,
+      "maxRelativeError": 5.2090454510763e-8,
+      "maxAbsoluteError": 0.0000018383415110179158,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 500,
+      "maxAbsoluteErrorAtTime": 420,
+      "maxAbsoluteErrorColumn": "Active_RTK",
+      "maxRelativeErrorAtTime": 420,
+      "maxRelativeErrorColumn": "Active_RTK",
+      "errorAtTime": 420,
       "errorColumn": "Active_RTK",
       "samples": []
     }
@@ -307,10 +331,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.0631155033016836e-10,
-      "maxAbsoluteError": 7.524647571699461e-11,
+      "maxRelativeError": 3.011797396957213e-10,
+      "maxAbsoluteError": 2.1930190996499732e-10,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 3733.333333333,
+      "maxAbsoluteErrorColumn": "Product_Count",
+      "maxRelativeErrorAtTime": 4866.666666667,
+      "maxRelativeErrorColumn": "Free_Enzyme",
       "errorAtTime": 4866.666666667,
       "errorColumn": "Free_Enzyme",
       "samples": []
@@ -353,6 +381,10 @@
       "maxAbsoluteError": 0.000008564490542539716,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 27.8,
+      "maxAbsoluteErrorColumn": "Low_Energy_Sig",
+      "maxRelativeErrorAtTime": 60,
+      "maxRelativeErrorColumn": "Calcium_Stim",
       "errorAtTime": 60,
       "errorColumn": "Calcium_Stim",
       "samples": []
@@ -360,7 +392,7 @@
   },
   {
     "model": "an_2009",
-    "status": "match",
+    "status": "mismatch",
     "referenceFile": "An_2009.gdat",
     "referenceInferred": false,
     "details": {
@@ -415,13 +447,88 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 7.180089590444738e-10,
-      "maxAbsoluteError": 1.6837674365888233e-8,
-      "absTolDominated": false,
+      "maxRelativeError": 0.9596203898814162,
+      "maxAbsoluteError": 659.8414537683848,
+      "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 13200,
-      "errorColumn": "Phos_IkB_NFkB",
-      "samples": []
+      "maxAbsoluteErrorAtTime": 36000,
+      "maxAbsoluteErrorColumn": "IkBmRNA_Off",
+      "maxRelativeErrorAtTime": 2400,
+      "maxRelativeErrorColumn": "NFkB_Active_Nucleus",
+      "errorAtTime": 2400,
+      "errorColumn": "NFkB_Active_Nucleus",
+      "samples": [
+        {
+          "time": 200,
+          "column": "TNF",
+          "web": 327.86765408575434,
+          "ref": 316.3184044048,
+          "relError": 0.03522534027688386
+        },
+        {
+          "time": 200,
+          "column": "Activated_TAK1",
+          "web": 80.8431649399787,
+          "ref": 86.04556974898,
+          "relError": 0.06046104202898795
+        },
+        {
+          "time": 200,
+          "column": "Activated_Ikk_complex",
+          "web": 0.23806019983264678,
+          "ref": 0.2627729540999,
+          "relError": 0.09404603434894597
+        },
+        {
+          "time": 200,
+          "column": "A20",
+          "web": 339.58524793624514,
+          "ref": 327.4456282295,
+          "relError": 0.03574837181685894
+        },
+        {
+          "time": 200,
+          "column": "NFkB_Active_Cyto",
+          "web": 1856.2403365206555,
+          "ref": 2172.549585685,
+          "relError": 0.14559356953163058
+        },
+        {
+          "time": 200,
+          "column": "NFkB_Active_Nucleus",
+          "web": 1878.6285692722724,
+          "ref": 2179.630426299,
+          "relError": 0.13809765793085718
+        },
+        {
+          "time": 200,
+          "column": "IkB_Degraded",
+          "web": 4221.155072258386,
+          "ref": 4825.912682269,
+          "relError": 0.125314660630427
+        },
+        {
+          "time": 200,
+          "column": "IkB_active",
+          "web": 6134.04184951661,
+          "ref": 5524.38522873,
+          "relError": 0.09938905467928191
+        },
+        {
+          "time": 200,
+          "column": "NFkB_Inactive",
+          "web": 6132.73559501295,
+          "ref": 5523.278966147,
+          "relError": 0.09937761369682264
+        },
+        {
+          "time": 200,
+          "column": "NonBoundNonPhos_IkB",
+          "web": 1.3062545036591209,
+          "ref": 1.106262583076,
+          "relError": 0.1531033347811604
+        }
+      ]
     }
   },
   {
@@ -459,6 +566,10 @@
       "maxAbsoluteError": 4.695266397902742e-10,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 2.45,
+      "maxAbsoluteErrorColumn": "Global_Death",
+      "maxRelativeErrorAtTime": 9.75,
+      "maxRelativeErrorColumn": "Mitochondrial_Fail",
       "errorAtTime": 9.75,
       "errorColumn": "Mitochondrial_Fail",
       "samples": []
@@ -497,6 +608,10 @@
       "maxAbsoluteError": 0.000016296680087179993,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 10.5,
+      "maxAbsoluteErrorColumn": "Autophagy_Drive",
+      "maxRelativeErrorAtTime": 6,
+      "maxRelativeErrorColumn": "Autophagy_Drive",
       "errorAtTime": 6,
       "errorColumn": "Autophagy_Drive",
       "samples": []
@@ -535,6 +650,10 @@
       "maxAbsoluteError": 1.6572227201638867e-9,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 98.5,
+      "maxAbsoluteErrorColumn": "Sequest_mRNA",
+      "maxRelativeErrorAtTime": 100,
+      "maxRelativeErrorColumn": "TF_Dimers",
       "errorAtTime": 100,
       "errorColumn": "TF_Dimers",
       "samples": []
@@ -567,10 +686,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 3.5059365706738815e-13,
-      "maxAbsoluteError": 4.959588295605499e-11,
+      "maxRelativeError": 3.511963968789651e-13,
+      "maxAbsoluteError": 4.9681148084346205e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 2.5,
+      "maxAbsoluteErrorColumn": "FreeAsites",
+      "maxRelativeErrorAtTime": 2.5,
+      "maxRelativeErrorColumn": "FreeAsites",
       "errorAtTime": 2.5,
       "errorColumn": "FreeAsites",
       "samples": []
@@ -599,10 +722,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 3.66333849993981e-13,
-      "maxAbsoluteError": 5.10880227011512e-12,
+      "maxRelativeError": 3.677880803620553e-13,
+      "maxAbsoluteError": 5.066169705969514e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 6.65,
+      "maxAbsoluteErrorColumn": "BAB",
+      "maxRelativeErrorAtTime": 9.55,
+      "maxRelativeErrorColumn": "AB",
       "errorAtTime": 9.55,
       "errorColumn": "AB",
       "samples": []
@@ -643,6 +770,10 @@
       "maxAbsoluteError": 0.0000030269596535958954,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 12.5,
+      "maxAbsoluteErrorColumn": "Active_Relay",
+      "maxRelativeErrorAtTime": 12.5,
+      "maxRelativeErrorColumn": "Calcium_Signal",
       "errorAtTime": 12.5,
       "errorColumn": "Calcium_Signal",
       "samples": []
@@ -650,7 +781,7 @@
   },
   {
     "model": "beta_adrenergic_response",
-    "status": "match",
+    "status": "mismatch",
     "referenceFile": "beta-adrenergic-response.gdat",
     "referenceInferred": false,
     "details": {
@@ -679,13 +810,88 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.468289414289428e-7,
-      "maxAbsoluteError": 0.0000021718174139095936,
+      "maxRelativeError": 0.9904155690962183,
+      "maxAbsoluteError": 256.43763092832455,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 7,
-      "errorColumn": "Desensitized_Frac",
-      "samples": []
+      "maxAbsoluteErrorAtTime": 200,
+      "maxAbsoluteErrorColumn": "Surface_Availability",
+      "maxRelativeErrorAtTime": 200,
+      "maxRelativeErrorColumn": "Sequest_Complex",
+      "errorAtTime": 200,
+      "errorColumn": "Sequest_Complex",
+      "samples": [
+        {
+          "time": 1,
+          "column": "Sequest_Complex",
+          "web": 8.520259347365679,
+          "ref": 8.51919206714,
+          "relError": 0.00012526381911228228
+        },
+        {
+          "time": 2,
+          "column": "Desensitized_Frac",
+          "web": 0.0609124183063324,
+          "ref": 0.06090000898425,
+          "relError": 0.00020372400944571105
+        },
+        {
+          "time": 2,
+          "column": "Sequest_Complex",
+          "web": 24.331272360698794,
+          "ref": 24.30841697333,
+          "relError": 0.0009393420545367847
+        },
+        {
+          "time": 3,
+          "column": "Surface_Availability",
+          "web": 476.8440768609765,
+          "ref": 476.96379709,
+          "relError": 0.0002510048556178736
+        },
+        {
+          "time": 3,
+          "column": "Desensitized_Frac",
+          "web": 0.07312769696588188,
+          "ref": 0.07305677484194,
+          "relError": 0.0009698394299901811
+        },
+        {
+          "time": 3,
+          "column": "Sequest_Complex",
+          "web": 40.382143515054736,
+          "ref": 40.2629076483,
+          "relError": 0.0029526879054917765
+        },
+        {
+          "time": 4,
+          "column": "Surface_Availability",
+          "web": 462.81697050379603,
+          "ref": 463.1725251502,
+          "relError": 0.0007676505558887767
+        },
+        {
+          "time": 4,
+          "column": "Desensitized_Frac",
+          "web": 0.08276548358077652,
+          "ref": 0.08253536493396,
+          "relError": 0.0027803697490866443
+        },
+        {
+          "time": 4,
+          "column": "Sequest_Complex",
+          "web": 54.60242091271748,
+          "ref": 54.24872263316,
+          "relError": 0.006477703252807554
+        },
+        {
+          "time": 5,
+          "column": "Surface_Availability",
+          "web": 449.3346225624067,
+          "ref": 450.116311403,
+          "relError": 0.0017366374441236925
+        }
+      ]
     }
   },
   {
@@ -713,6 +919,10 @@
       "maxAbsoluteError": 4.995115432393504e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 43.6,
+      "maxAbsoluteErrorColumn": "Atot",
+      "maxRelativeErrorAtTime": 1.3,
+      "maxRelativeErrorColumn": "Atot",
       "errorAtTime": 1.3,
       "errorColumn": "Atot",
       "samples": []
@@ -751,6 +961,10 @@
       "maxAbsoluteError": 0.0000025820706639478885,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 258,
+      "maxAbsoluteErrorColumn": "State_R_Level",
+      "maxRelativeErrorAtTime": 132,
+      "maxRelativeErrorColumn": "Locked_TF_L",
       "errorAtTime": 132,
       "errorColumn": "Locked_TF_L",
       "samples": []
@@ -789,6 +1003,10 @@
       "maxAbsoluteError": 5.004494596505538e-10,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 11,
+      "maxAbsoluteErrorColumn": "Clot_Mass",
+      "maxRelativeErrorAtTime": 7,
+      "maxRelativeErrorColumn": "Inhibitor_Work",
       "errorAtTime": 7,
       "errorColumn": "Inhibitor_Work",
       "samples": []
@@ -796,7 +1014,7 @@
   },
   {
     "model": "bmp_signaling",
-    "status": "match",
+    "status": "mismatch",
     "referenceFile": "bmp-signaling.gdat",
     "referenceInferred": false,
     "details": {
@@ -829,9 +1047,35 @@
       "maxAbsoluteError": 0.0000010515444276511328,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 154.5,
+      "maxAbsoluteErrorColumn": "SMAD_Output",
+      "maxRelativeErrorAtTime": 133.5,
+      "maxRelativeErrorColumn": "Active_Nuclear_Smad1",
       "errorAtTime": 133.5,
       "errorColumn": "Active_Nuclear_Smad1",
-      "samples": []
+      "samples": [
+        {
+          "time": 154,
+          "column": "SMAD_Output",
+          "web": 9.77895887352556e-7,
+          "ref": -2.910884907452e-8,
+          "relError": 1.0297668181766526
+        },
+        {
+          "time": 154.5,
+          "column": "SMAD_Output",
+          "web": 0.0000010193775793441527,
+          "ref": -3.216684830698e-8,
+          "relError": 1.0315553814001635
+        },
+        {
+          "time": 155,
+          "column": "SMAD_Output",
+          "web": 0.000001000937324054869,
+          "ref": -2.874706120254e-8,
+          "relError": 1.0287201411234057
+        }
+      ]
     }
   },
   {
@@ -871,6 +1115,10 @@
       "maxAbsoluteError": 2.927524889173583e-11,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 13.9,
+      "maxAbsoluteErrorColumn": "Activator_X",
+      "maxRelativeErrorAtTime": 19.5,
+      "maxRelativeErrorColumn": "Inhibitor_Y",
       "errorAtTime": 19.5,
       "errorColumn": "Inhibitor_Y",
       "samples": []
@@ -911,6 +1159,10 @@
       "maxAbsoluteError": 0.0000011759208575767843,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 150,
+      "maxAbsoluteErrorColumn": "Phospho_NFAT",
+      "maxRelativeErrorAtTime": 150,
+      "maxRelativeErrorColumn": "Phospho_NFAT",
       "errorAtTime": 150,
       "errorColumn": "Phospho_NFAT",
       "samples": []
@@ -918,7 +1170,7 @@
   },
   {
     "model": "calcium_spike_signaling",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "[multi-phase concatenation]",
     "referenceInferred": true,
     "details": {
@@ -945,84 +1197,17 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.6812946755691437,
-      "maxAbsoluteError": 19.943703385069526,
+      "maxRelativeError": 4.362555281658658e-7,
+      "maxAbsoluteError": 0.000012770618884161422,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 124.4,
+      "maxAbsoluteErrorColumn": "IP3_Driver",
+      "maxRelativeErrorAtTime": 124.4,
+      "maxRelativeErrorColumn": "IP3_Driver",
       "errorAtTime": 124.4,
       "errorColumn": "IP3_Driver",
-      "samples": [
-        {
-          "time": 100.1,
-          "column": "Spiking_Ca",
-          "web": 3.3868229916617976,
-          "ref": 10.61119489212,
-          "relError": 0.6808254842084851
-        },
-        {
-          "time": 100.1,
-          "column": "ER_Reserve",
-          "web": 476.0668575059332,
-          "ref": 477.7293311822,
-          "relError": 0.0034799489329088527
-        },
-        {
-          "time": 100.1,
-          "column": "IP3_Driver",
-          "web": 10.515098508790619,
-          "ref": 17.36395112556,
-          "relError": 0.39442938806063366
-        },
-        {
-          "time": 100.1,
-          "column": "SOCE_Sensor",
-          "web": 77.18437890778168,
-          "ref": 77.12120282184,
-          "relError": 0.0008185087039070267
-        },
-        {
-          "time": 100.1,
-          "column": "Total_Mass",
-          "web": 479.45368049759503,
-          "ref": 488.3405260743,
-          "relError": 0.018198050545067485
-        },
-        {
-          "time": 100.2,
-          "column": "Spiking_Ca",
-          "web": 5.137618374342596,
-          "ref": 10.6071205707,
-          "relError": 0.5156443881165813
-        },
-        {
-          "time": 100.2,
-          "column": "ER_Reserve",
-          "web": 474.5511731612333,
-          "ref": 477.4631811447,
-          "relError": 0.006098916311170379
-        },
-        {
-          "time": 100.2,
-          "column": "IP3_Driver",
-          "web": 19.756386206013858,
-          "ref": 26.27121644286,
-          "relError": 0.24798357742649346
-        },
-        {
-          "time": 100.2,
-          "column": "SOCE_Sensor",
-          "web": 77.32310033790885,
-          "ref": 77.14764599807,
-          "relError": 0.0022691063740602675
-        },
-        {
-          "time": 100.2,
-          "column": "Total_Mass",
-          "web": 479.6887915355759,
-          "ref": 488.0703017154,
-          "relError": 0.01717275185637387
-        }
-      ]
+      "samples": []
     }
   },
   {
@@ -1056,6 +1241,10 @@
       "maxAbsoluteError": 0.000012188129630885669,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 14.6,
+      "maxAbsoluteErrorColumn": "C",
+      "maxRelativeErrorAtTime": 9,
+      "maxRelativeErrorColumn": "C",
       "errorAtTime": 9,
       "errorColumn": "C",
       "samples": []
@@ -1092,6 +1281,10 @@
       "maxAbsoluteError": 0.0000015621294551237952,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 14.6,
+      "maxAbsoluteErrorColumn": "C",
+      "maxRelativeErrorAtTime": 9,
+      "maxRelativeErrorColumn": "C",
       "errorAtTime": 9,
       "errorColumn": "C",
       "samples": []
@@ -1128,10 +1321,20 @@
       "maxAbsoluteError": 0.000006934087764420838,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.8,
+      "maxAbsoluteErrorColumn": "Total_Execution",
+      "maxRelativeErrorAtTime": 0.4,
+      "maxRelativeErrorColumn": "Total_Execution",
       "errorAtTime": 0.4,
       "errorColumn": "Total_Execution",
       "samples": []
     }
+  },
+  {
+    "model": "catalysis",
+    "status": "skipped",
+    "referenceInferred": false,
+    "details": null
   },
   {
     "model": "cbngl_simple",
@@ -1174,9 +1377,69 @@
       "maxAbsoluteError": 0.00845932162916796,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 475,
+      "maxAbsoluteErrorColumn": "Tot_P",
+      "maxRelativeErrorAtTime": 2,
+      "maxRelativeErrorColumn": "P_R",
       "errorAtTime": 2,
       "errorColumn": "P_R",
       "samples": [
+        {
+          "time": 102,
+          "column": "Tot_mRNA",
+          "web": 0.02008100634948075,
+          "ref": 0.02007676114251,
+          "relError": 0.0002114040948380698
+        },
+        {
+          "time": 103,
+          "column": "Tot_mRNA",
+          "web": 0.35983403387430096,
+          "ref": 0.3597903427036,
+          "relError": 0.00012142033990100045
+        },
+        {
+          "time": 232,
+          "column": "Tot_mRNA",
+          "web": 0.03688515838449144,
+          "ref": 0.03689235377045,
+          "relError": 0.00019503732408425619
+        },
+        {
+          "time": 250,
+          "column": "Tot_mRNA",
+          "web": 0.005207754561304676,
+          "ref": 0.00520941375433,
+          "relError": 0.0003184989911667376
+        },
+        {
+          "time": 251,
+          "column": "Tot_mRNA",
+          "web": 0.15133652584258822,
+          "ref": 0.1513724862424,
+          "relError": 0.00023756232525759977
+        },
+        {
+          "time": 269,
+          "column": "Tot_mRNA",
+          "web": 0.026811327710480885,
+          "ref": 0.02681952717152,
+          "relError": 0.00030572727798947367
+        },
+        {
+          "time": 270,
+          "column": "Tot_mRNA",
+          "web": 0.41746671149098047,
+          "ref": 0.4175275460036,
+          "relError": 0.00014570179429308235
+        },
+        {
+          "time": 287,
+          "column": "Tot_mRNA",
+          "web": 0.0036798590641900506,
+          "ref": 0.003681375486062,
+          "relError": 0.0004119171971700757
+        },
         {
           "time": 288,
           "column": "Tot_mRNA",
@@ -1185,74 +1448,18 @@
           "relError": 0.0003117792699310768
         },
         {
-          "time": 307,
+          "time": 290,
           "column": "Tot_mRNA",
-          "web": 0.35279292999274847,
-          "ref": 0.3528821073906,
-          "relError": 0.0002527115883288925
-        },
-        {
-          "time": 325,
-          "column": "Tot_mRNA",
-          "web": 0.08806912303356805,
-          "ref": 0.08810732484203,
-          "relError": 0.0004335826621730351
-        },
-        {
-          "time": 344,
-          "column": "Tot_mRNA",
-          "web": 0.29208522192527187,
-          "ref": 0.2921787485496,
-          "relError": 0.0003201007081878105
-        },
-        {
-          "time": 362,
-          "column": "Tot_mRNA",
-          "web": 0.0658022726195035,
-          "ref": 0.06584152228397,
-          "relError": 0.0005961232836813777
-        },
-        {
-          "time": 381,
-          "column": "Tot_mRNA",
-          "web": 0.23691542009020752,
-          "ref": 0.2370196183277,
-          "relError": 0.00043961861987477723
-        },
-        {
-          "time": 399,
-          "column": "Tot_mRNA",
-          "web": 0.048619618086399766,
-          "ref": 0.04865341680824,
-          "relError": 0.0006946834170649815
-        },
-        {
-          "time": 400,
-          "column": "Tot_mRNA",
-          "web": 0.5434502431769207,
-          "ref": 0.5435951673952,
-          "relError": 0.0002666032131479798
-        },
-        {
-          "time": 418,
-          "column": "Tot_mRNA",
-          "web": 0.18838117463483,
-          "ref": 0.1884934463485,
-          "relError": 0.0005956266164416427
-        },
-        {
-          "time": 420,
-          "column": "Tot_mRNA",
-          "web": 0.4277703683292151,
-          "ref": 0.4276708504757,
-          "relError": 0.00023264316765039627
+          "web": 0.5094908466555148,
+          "ref": 0.5094355055208,
+          "relError": 0.00010862046899981908
         }
       ]
     }
   },
   {
     "model": "cd40_signaling",
-    "status": "match",
+    "status": "mismatch",
     "referenceFile": "cd40-signaling.gdat",
     "referenceInferred": false,
     "details": {
@@ -1279,13 +1486,88 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.946525426453693,
-      "maxAbsoluteError": 0.00002757414278420356,
-      "absTolDominated": true,
+      "maxRelativeError": 1,
+      "maxAbsoluteError": 198.7530929163048,
+      "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 150,
+      "maxAbsoluteErrorAtTime": 35,
+      "maxAbsoluteErrorColumn": "Active_IKK",
+      "maxRelativeErrorAtTime": 17.5,
+      "maxRelativeErrorColumn": "TRAF_Sequest",
+      "errorAtTime": 17.5,
       "errorColumn": "TRAF_Sequest",
-      "samples": []
+      "samples": [
+        {
+          "time": 0.5,
+          "column": "Active_IKK",
+          "web": 197.26020984061316,
+          "ref": 197.2127865597,
+          "relError": 0.0002404097661230468
+        },
+        {
+          "time": 0.5,
+          "column": "TRAF_Sequest",
+          "web": 21.420624445254496,
+          "ref": 21.24868839735,
+          "relError": 0.00802665899604928
+        },
+        {
+          "time": 1,
+          "column": "TRAF_Sequest",
+          "web": 37.24932328253943,
+          "ref": 36.86602570392,
+          "relError": 0.010290054820917969
+        },
+        {
+          "time": 1.5,
+          "column": "TRAF_Sequest",
+          "web": 48.89974492705107,
+          "ref": 48.16343110524,
+          "relError": 0.015057620912123442
+        },
+        {
+          "time": 2,
+          "column": "Active_IKK",
+          "web": 199.30396068849637,
+          "ref": 199.2834910272,
+          "relError": 0.0001027057426538934
+        },
+        {
+          "time": 2,
+          "column": "TRAF_Sequest",
+          "web": 57.53008872172455,
+          "ref": 55.83359200006,
+          "relError": 0.02948885981856516
+        },
+        {
+          "time": 2.5,
+          "column": "Active_IKK",
+          "web": 199.37489649678363,
+          "ref": 199.2600238701,
+          "relError": 0.0005761639439169504
+        },
+        {
+          "time": 2.5,
+          "column": "TRAF_Sequest",
+          "web": 63.9648731486963,
+          "ref": 53.01797472673,
+          "relError": 0.1711392188102762
+        },
+        {
+          "time": 3,
+          "column": "Active_IKK",
+          "web": 199.41916835899414,
+          "ref": 197.9794939801,
+          "relError": 0.007219337994141333
+        },
+        {
+          "time": 3,
+          "column": "TRAF_Sequest",
+          "web": 68.78909767894108,
+          "ref": 17.38194379033,
+          "relError": 0.7473154267634584
+        }
+      ]
     }
   },
   {
@@ -1321,82 +1603,86 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.9625365954302734,
-      "maxAbsoluteError": 0.042760587943067425,
+      "maxRelativeError": 1,
+      "maxAbsoluteError": 19.259998010062137,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.25,
+      "maxAbsoluteErrorColumn": "Damage_Block",
+      "maxRelativeErrorAtTime": 0.25,
+      "maxRelativeErrorColumn": "Damage_Block",
       "errorAtTime": 0.25,
-      "errorColumn": "Active_CycB",
+      "errorColumn": "Damage_Block",
       "samples": [
         {
           "time": 0.25,
           "column": "Active_CycB",
-          "web": 0.0016643078438325792,
+          "web": 19.304422905849034,
           "ref": 0.0444248957869,
-          "relError": 0.9625365954302734
+          "relError": 0.9976987193036763
+        },
+        {
+          "time": 0.25,
+          "column": "Damage_Block",
+          "web": 19.259998010062137,
+          "ref": 0,
+          "relError": 1
         },
         {
           "time": 0.5,
           "column": "Active_CycB",
-          "web": 0.0016663813438993647,
+          "web": 18.582580356287345,
           "ref": 0.04287871622896,
-          "relError": 0.9611373312810634
+          "relError": 0.9976925316394797
+        },
+        {
+          "time": 0.5,
+          "column": "Damage_Block",
+          "web": 18.539701640058386,
+          "ref": 0,
+          "relError": 1
         },
         {
           "time": 0.75,
           "column": "Active_CycB",
-          "web": 0.001668462563372948,
+          "web": 17.889096251746132,
           "ref": 0.0413916865331,
-          "relError": 0.9596908774896448
+          "relError": 0.9976862058345144
+        },
+        {
+          "time": 0.75,
+          "column": "Damage_Block",
+          "web": 17.84770456521303,
+          "ref": 0,
+          "relError": 1
         },
         {
           "time": 1,
           "column": "Active_CycB",
-          "web": 0.0016705489901821299,
+          "web": 17.222863178726858,
           "ref": 0.03996156207062,
-          "relError": 0.9581961038652608
+          "relError": 0.9976797375874193
+        },
+        {
+          "time": 1,
+          "column": "Damage_Block",
+          "web": 17.182901616656235,
+          "ref": 0,
+          "relError": 1
         },
         {
           "time": 1.25,
           "column": "Active_CycB",
-          "web": 0.0016726406370183018,
+          "web": 16.582810728548196,
           "ref": 0.03858617173364,
-          "relError": 0.9566518117276696
+          "relError": 0.997673122345465
         },
         {
-          "time": 1.5,
-          "column": "Active_CycB",
-          "web": 0.0016747375229880603,
-          "ref": 0.03726342643632,
-          "relError": 0.9550568027916048
-        },
-        {
-          "time": 1.75,
-          "column": "Active_CycB",
-          "web": 0.0016768396677510947,
-          "ref": 0.03599131686432,
-          "relError": 0.9534098828872407
-        },
-        {
-          "time": 2,
-          "column": "Active_CycB",
-          "web": 0.0016789470910988234,
-          "ref": 0.03476791048464,
-          "relError": 0.9517098649963287
-        },
-        {
-          "time": 2.25,
-          "column": "Active_CycB",
-          "web": 0.0016810598129244196,
-          "ref": 0.03359134860925,
-          "relError": 0.9499555724160027
-        },
-        {
-          "time": 2.5,
-          "column": "Active_CycB",
-          "web": 0.0016831778532211657,
-          "ref": 0.03245984356469,
-          "relError": 0.9481458421120632
+          "time": 1.25,
+          "column": "Damage_Block",
+          "web": 16.544224556814555,
+          "ref": 0,
+          "relError": 1
         }
       ]
     }
@@ -1434,6 +1720,10 @@
       "maxAbsoluteError": 0.00006618993006668461,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 1.866666666667,
+      "maxAbsoluteErrorColumn": "Total_Damage",
+      "maxRelativeErrorAtTime": 1.866666666667,
+      "maxRelativeErrorColumn": "Total_Damage",
       "errorAtTime": 1.866666666667,
       "errorColumn": "Total_Damage",
       "samples": []
@@ -1466,6 +1756,10 @@
       "maxAbsoluteError": 1.1080025785759062e-13,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 65.27472527473,
+      "maxAbsoluteErrorColumn": "total_pS3",
+      "maxRelativeErrorAtTime": 65.27472527473,
+      "maxRelativeErrorColumn": "total_pS3",
       "errorAtTime": 65.27472527473,
       "errorColumn": "total_pS3",
       "samples": []
@@ -1506,6 +1800,10 @@
       "maxAbsoluteError": 1.496118784416467e-10,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 39,
+      "maxAbsoluteErrorColumn": "Active_MCP",
+      "maxRelativeErrorAtTime": 39.2,
+      "maxRelativeErrorColumn": "Environmental_Bias",
       "errorAtTime": 39.2,
       "errorColumn": "Environmental_Bias",
       "samples": []
@@ -1542,6 +1840,10 @@
       "maxAbsoluteError": 0.00013659992532666365,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 2,
+      "maxAbsoluteErrorColumn": "Afree",
+      "maxRelativeErrorAtTime": 31,
+      "maxRelativeErrorColumn": "Afree",
       "errorAtTime": 31,
       "errorColumn": "Afree",
       "samples": []
@@ -1582,6 +1884,10 @@
       "maxAbsoluteError": 2.475898862319692e-8,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 118,
+      "maxAbsoluteErrorColumn": "Activator_Comp",
+      "maxRelativeErrorAtTime": 117.2,
+      "maxRelativeErrorColumn": "Transcription_ON",
       "errorAtTime": 117.2,
       "errorColumn": "Transcription_ON",
       "samples": []
@@ -1614,10 +1920,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.7608228625095641e-7,
-      "maxAbsoluteError": 0.000007294284323222655,
+      "maxRelativeError": 1.7608228367810654e-7,
+      "maxAbsoluteError": 0.000007294284216641245,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 20,
+      "maxAbsoluteErrorColumn": "Surface_R",
+      "maxRelativeErrorAtTime": 20,
+      "maxRelativeErrorColumn": "Surface_R",
       "errorAtTime": 20,
       "errorColumn": "Surface_R",
       "samples": []
@@ -1648,10 +1958,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 5.751830959633193e-8,
-      "maxAbsoluteError": 0.000003888389414896665,
+      "maxRelativeError": 5.7518298370078086e-8,
+      "maxAbsoluteError": 0.000003888391006512393,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 10.7,
+      "maxAbsoluteErrorColumn": "Free_Sites",
+      "maxRelativeErrorAtTime": 0.1,
+      "maxRelativeErrorColumn": "Bound_Protein",
       "errorAtTime": 0.1,
       "errorColumn": "Bound_Protein",
       "samples": []
@@ -1682,10 +1996,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.00000205266811637466,
-      "maxAbsoluteError": 0.0000019317975272770127,
+      "maxRelativeError": 0.0000020526797337271675,
+      "maxAbsoluteError": 0.000001931810047040017,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 17,
+      "maxAbsoluteErrorColumn": "No",
+      "maxRelativeErrorAtTime": 17,
+      "maxRelativeErrorColumn": "Cyto",
       "errorAtTime": 17,
       "errorColumn": "Cyto",
       "samples": []
@@ -1714,10 +2032,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.199342824738144e-7,
-      "maxAbsoluteError": 0.0000036075307363603315,
+      "maxRelativeError": 1.1993428188325518e-7,
+      "maxAbsoluteError": 0.000003607530718596763,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.4,
+      "maxAbsoluteErrorColumn": "Nuclear_TF",
+      "maxRelativeErrorAtTime": 0.4,
+      "maxRelativeErrorColumn": "Nuclear_TF",
       "errorAtTime": 0.4,
       "errorColumn": "Nuclear_TF",
       "samples": []
@@ -1748,10 +2070,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.0000060627212878180265,
-      "maxAbsoluteError": 0.000008490807886119,
+      "maxRelativeError": 0.000006061968620307328,
+      "maxAbsoluteError": 0.000008490381105730194,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 50,
+      "maxAbsoluteErrorColumn": "Secreted",
+      "maxRelativeErrorAtTime": 0.25,
+      "maxRelativeErrorColumn": "Secreted",
       "errorAtTime": 0.25,
       "errorColumn": "Secreted",
       "samples": []
@@ -1786,12 +2112,16 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.969593478469203e-13,
-      "maxAbsoluteError": 8.503775461576879e-11,
+      "maxRelativeError": 4.897086419006667e-13,
+      "maxAbsoluteError": 4.9823256631498225e-11,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 102.5,
-      "errorColumn": "ES_Complex",
+      "maxAbsoluteErrorAtTime": 49.5,
+      "maxAbsoluteErrorColumn": "Total_Product",
+      "maxRelativeErrorAtTime": 74,
+      "maxRelativeErrorColumn": "S_Remaining",
+      "errorAtTime": 74,
+      "errorColumn": "S_Remaining",
       "samples": []
     }
   },
@@ -1830,6 +2160,10 @@
       "maxAbsoluteError": 0.000014344904741392384,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.3333333333333,
+      "maxAbsoluteErrorColumn": "C3_Convertase",
+      "maxRelativeErrorAtTime": 29,
+      "maxRelativeErrorColumn": "Opsonization_C3b",
       "errorAtTime": 29,
       "errorColumn": "Opsonization_C3b",
       "samples": []
@@ -1870,6 +2204,10 @@
       "maxAbsoluteError": 0.0000034098700041340635,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 2.5,
+      "maxAbsoluteErrorColumn": "Active_LATS",
+      "maxRelativeErrorAtTime": 31,
+      "maxRelativeErrorColumn": "Nuclear_YAP",
       "errorAtTime": 31,
       "errorColumn": "Nuclear_YAP",
       "samples": []
@@ -1904,10 +2242,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.630819771970655e-13,
-      "maxAbsoluteError": 5.042011252953671e-11,
+      "maxRelativeError": 4.651824397486085e-13,
+      "maxAbsoluteError": 5.0249582272954285e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 415,
+      "maxAbsoluteErrorColumn": "Total_Bound",
+      "maxRelativeErrorAtTime": 2.5,
+      "maxRelativeErrorColumn": "Fully_Occupied",
       "errorAtTime": 2.5,
       "errorColumn": "Fully_Occupied",
       "samples": []
@@ -1948,6 +2290,10 @@
       "maxAbsoluteError": 4.9960036108132044e-14,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 5,
+      "maxAbsoluteErrorColumn": "Alice_Shared",
+      "maxRelativeErrorAtTime": 0.3,
+      "maxRelativeErrorColumn": "Alice_Shared",
       "errorAtTime": 0.3,
       "errorColumn": "Alice_Shared",
       "samples": []
@@ -1994,6 +2340,10 @@
       "maxAbsoluteError": 4.980904577678302e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.7,
+      "maxAbsoluteErrorColumn": "Hash0",
+      "maxRelativeErrorAtTime": 3.975,
+      "maxRelativeErrorColumn": "Input1",
       "errorAtTime": 3.975,
       "errorColumn": "Input1",
       "samples": []
@@ -2030,12 +2380,16 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 9.535043756680804e-13,
-      "maxAbsoluteError": 5.018208071305708e-13,
+      "maxRelativeError": 4.933381087434978e-13,
+      "maxAbsoluteError": 4.987121826616203e-13,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 4.7,
-      "errorColumn": "ObsP2",
+      "maxAbsoluteErrorAtTime": 9.18,
+      "maxAbsoluteErrorColumn": "B0",
+      "maxRelativeErrorAtTime": 9.18,
+      "maxRelativeErrorColumn": "B0",
+      "errorAtTime": 9.18,
+      "errorColumn": "B0",
       "samples": []
     }
   },
@@ -2066,6 +2420,10 @@
       "maxAbsoluteError": 2.842170943040401e-14,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 6.8,
+      "maxAbsoluteErrorColumn": "Total",
+      "maxRelativeErrorAtTime": 2.4,
+      "maxRelativeErrorColumn": "Hits",
       "errorAtTime": 2.4,
       "errorColumn": "Hits",
       "samples": []
@@ -2102,6 +2460,10 @@
       "maxAbsoluteError": 4.957145804951324e-14,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 6,
+      "maxAbsoluteErrorColumn": "Rank_B",
+      "maxRelativeErrorAtTime": 6,
+      "maxRelativeErrorColumn": "Rank_B",
       "errorAtTime": 6,
       "errorColumn": "Rank_B",
       "samples": []
@@ -2138,6 +2500,10 @@
       "maxAbsoluteError": 5.056222107668873e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 18.6,
+      "maxAbsoluteErrorColumn": "Integral",
+      "maxRelativeErrorAtTime": 8.04,
+      "maxRelativeErrorColumn": "Integral",
       "errorAtTime": 8.04,
       "errorColumn": "Integral",
       "samples": []
@@ -2164,27 +2530,87 @@
       "columnMatch": true,
       "missingColumns": [],
       "extraColumns": [],
-      "timeMatch": true,
+      "timeMatch": false,
       "timeOffset": 0,
       "maxRelativeError": 1,
       "maxAbsoluteError": 1,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 6.15,
+      "maxAbsoluteErrorAtTime": 5.2,
+      "maxAbsoluteErrorColumn": "Match",
+      "maxRelativeErrorAtTime": 5.2,
+      "maxRelativeErrorColumn": "Match",
+      "errorAtTime": 5.2,
       "errorColumn": "Match",
       "samples": [
         {
-          "time": 6.15,
+          "time": 5.2,
           "column": "Match",
+          "web": 1,
+          "ref": 0,
+          "relError": 1
+        },
+        {
+          "time": 5.2,
+          "column": "Current_Q0",
           "web": 0,
           "ref": 1,
           "relError": 1
         },
         {
-          "time": 6.15,
-          "column": "Current_Q0",
+          "time": 5.3,
+          "column": "Match",
           "web": 1,
           "ref": 0,
+          "relError": 1
+        },
+        {
+          "time": 5.3,
+          "column": "Current_Q0",
+          "web": 0,
+          "ref": 1,
+          "relError": 1
+        },
+        {
+          "time": 5.4,
+          "column": "Match",
+          "web": 1,
+          "ref": 0,
+          "relError": 1
+        },
+        {
+          "time": 5.4,
+          "column": "Current_Q0",
+          "web": 0,
+          "ref": 1,
+          "relError": 1
+        },
+        {
+          "time": 5.5,
+          "column": "Match",
+          "web": 1,
+          "ref": 0,
+          "relError": 1
+        },
+        {
+          "time": 5.5,
+          "column": "Current_Q0",
+          "web": 0,
+          "ref": 1,
+          "relError": 1
+        },
+        {
+          "time": 5.6,
+          "column": "Match",
+          "web": 1,
+          "ref": 0,
+          "relError": 1
+        },
+        {
+          "time": 5.6,
+          "column": "Current_Q0",
+          "web": 0,
+          "ref": 1,
           "relError": 1
         }
       ]
@@ -2193,11 +2619,11 @@
   {
     "model": "degranulation_model",
     "status": "match",
-    "referenceFile": "[multi-phase concatenation]",
+    "referenceFile": "degranulation_model_p1_5.gdat",
     "referenceInferred": true,
     "details": {
-      "webRows": 4851,
-      "refRows": 4851,
+      "webRows": 4861,
+      "refRows": 51,
       "webColumns": [
         "time",
         "Ag_total",
@@ -2239,12 +2665,16 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.4010684540020032,
-      "maxAbsoluteError": 0.00030225160298869014,
-      "absTolDominated": true,
-      "overlapMatch": false,
-      "errorAtTime": 480,
-      "errorColumn": "Ag_total",
+      "maxRelativeError": 7.858978772847256e-13,
+      "maxAbsoluteError": 5.362089723348618e-7,
+      "absTolDominated": false,
+      "overlapMatch": true,
+      "maxAbsoluteErrorAtTime": 5,
+      "maxAbsoluteErrorColumn": "X_on_free_or_bound",
+      "maxRelativeErrorAtTime": 4.7,
+      "maxRelativeErrorColumn": "PIP3_total",
+      "errorAtTime": 4.7,
+      "errorColumn": "PIP3_total",
       "samples": []
     }
   },
@@ -2277,11 +2707,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.000001829321809677229,
-      "maxAbsoluteError": 0.0000027894704288655703,
+      "maxRelativeError": 0.0000034472355668746855,
+      "maxAbsoluteError": 0.000004705680083816333,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 2.333333333333,
+      "maxAbsoluteErrorAtTime": 36,
+      "maxAbsoluteErrorColumn": "Final_Integrity",
+      "maxRelativeErrorAtTime": 2,
+      "maxRelativeErrorColumn": "Lesion_Load",
+      "errorAtTime": 2,
       "errorColumn": "Lesion_Load",
       "samples": []
     }
@@ -2321,10 +2755,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.0000015714934484335454,
-      "maxAbsoluteError": 0.00010401497394241233,
+      "maxRelativeError": 0.0000024816858024643713,
+      "maxAbsoluteError": 0.00010982837807205215,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 36,
+      "maxAbsoluteErrorColumn": "Silenced_Marks",
+      "maxRelativeErrorAtTime": 2,
+      "maxRelativeErrorColumn": "Silenced_Marks",
       "errorAtTime": 2,
       "errorColumn": "Silenced_Marks",
       "samples": []
@@ -2363,6 +2801,10 @@
       "maxAbsoluteError": 1.531361704110168e-10,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 38,
+      "maxAbsoluteErrorColumn": "Surface_DR5",
+      "maxRelativeErrorAtTime": 0.5,
+      "maxRelativeErrorColumn": "Apoptotic_Drive",
       "errorAtTime": 0.5,
       "errorColumn": "Apoptotic_Drive",
       "samples": []
@@ -2397,11 +2839,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.5884944712017694e-12,
-      "maxAbsoluteError": 5.002220859751105e-11,
+      "maxRelativeError": 7.197510257606233e-13,
+      "maxAbsoluteError": 5.0249582272954285e-11,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 2.866666666667,
+      "maxAbsoluteErrorAtTime": 1.683333333333,
+      "maxAbsoluteErrorColumn": "Unmodified",
+      "maxRelativeErrorAtTime": 2.85,
+      "maxRelativeErrorColumn": "Fully_Phos",
+      "errorAtTime": 2.85,
       "errorColumn": "Fully_Phos",
       "samples": []
     }
@@ -2443,6 +2889,10 @@
       "maxAbsoluteError": 0.000009750793765306298,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 20,
+      "maxAbsoluteErrorColumn": "HyperPhos_Rb",
+      "maxRelativeErrorAtTime": 150,
+      "maxRelativeErrorColumn": "CKI_Inhibition",
       "errorAtTime": 150,
       "errorColumn": "CKI_Inhibition",
       "samples": []
@@ -2475,82 +2925,86 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.994431663797837,
-      "maxAbsoluteError": 18.88002021657631,
+      "maxRelativeError": 0.9637518608778681,
+      "maxAbsoluteError": 14.851849016687172,
       "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 82.5,
+      "maxAbsoluteErrorAtTime": 82.5,
+      "maxAbsoluteErrorColumn": "P_Lo",
+      "maxRelativeErrorAtTime": 81,
+      "maxRelativeErrorColumn": "P_Lo",
+      "errorAtTime": 81,
       "errorColumn": "P_Lo",
       "samples": [
         {
+          "time": 63,
+          "column": "H_Lo",
+          "web": 0.19334787945912024,
+          "ref": 0.1933741649982,
+          "relError": 0.0001359309765087415
+        },
+        {
+          "time": 63.5,
+          "column": "H_Lo",
+          "web": 0.1839196038077687,
+          "ref": 0.1839557308959,
+          "relError": 0.00019639012035862547
+        },
+        {
           "time": 64,
           "column": "H_Lo",
-          "web": 0.1749458902835283,
+          "web": 0.1749517350747379,
           "ref": 0.1750016920631,
-          "relError": 0.0003188642287617803
+          "relError": 0.0002854657447774355
         },
         {
           "time": 64.5,
           "column": "H_Lo",
-          "web": 0.16641382950919467,
+          "web": 0.1664220205252794,
           "ref": 0.1664914563421,
-          "relError": 0.00046625114952337756
+          "relError": 0.0004170533332227933
         },
         {
           "time": 65,
           "column": "H_Lo",
-          "web": 0.15829795645492012,
+          "web": 0.15830939190841656,
           "ref": 0.1584064775619,
-          "relError": 0.00068507998315576
+          "relError": 0.0006128894157468588
         },
         {
           "time": 65.5,
           "column": "H_Lo",
-          "web": 0.1505779964218225,
+          "web": 0.1505939881139417,
           "ref": 0.1507305141366,
-          "relError": 0.0010118569265892537
+          "relError": 0.0009057623364474343
         },
         {
           "time": 66,
           "column": "H_Lo",
-          "web": 0.14323466851699787,
+          "web": 0.14325717991802395,
           "ref": 0.143450119512,
-          "relError": 0.0015019227292042726
+          "relError": 0.001344994306260762
         },
         {
           "time": 66.5,
           "column": "H_Lo",
-          "web": 0.1362496384077305,
+          "web": 0.13628160288795824,
           "ref": 0.1365555446747,
-          "relError": 0.002240159985434651
+          "relError": 0.002006083219794068
+        },
+        {
+          "time": 66.5,
+          "column": "P_Lo",
+          "web": 0.3406254011594635,
+          "ref": 0.3406739916116,
+          "relError": 0.000142630354335671
         },
         {
           "time": 67,
           "column": "H_Lo",
-          "web": 0.12960550796749704,
+          "web": 0.12965118782041854,
           "ref": 0.1300419666612,
-          "relError": 0.0033562910874769245
-        },
-        {
-          "time": 67.5,
-          "column": "H_Lo",
-          "web": 0.12328577684870243,
-          "ref": 0.1239113840226,
-          "relError": 0.005048827263389082
-        },
-        {
-          "time": 67.5,
-          "column": "P_Lo",
-          "web": 0.30820584533321876,
-          "ref": 0.308304842673,
-          "relError": 0.0003211021238685136
-        },
-        {
-          "time": 68,
-          "column": "H_Lo",
-          "web": 0.11727481223377342,
-          "ref": 0.1181754916679,
-          "relError": 0.007621541670058774
+          "relError": 0.0030050210006401542
         }
       ]
     }
@@ -2584,6 +3038,10 @@
       "maxAbsoluteError": 183,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 22,
+      "maxAbsoluteErrorColumn": "Res",
+      "maxRelativeErrorAtTime": 7,
+      "maxRelativeErrorColumn": "Res",
       "errorAtTime": 7,
       "errorColumn": "Res",
       "samples": [
@@ -2687,12 +3145,16 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 6.352118562070861e-12,
-      "maxAbsoluteError": 1.014228701023967e-10,
+      "maxRelativeError": 7.998213706684145e-12,
+      "maxAbsoluteError": 1.19207754778472e-10,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 37.25,
-      "errorColumn": "Pred2",
+      "maxAbsoluteErrorAtTime": 38,
+      "maxAbsoluteErrorColumn": "Pred1",
+      "maxRelativeErrorAtTime": 38.75,
+      "maxRelativeErrorColumn": "Prey1",
+      "errorAtTime": 38.75,
+      "errorColumn": "Prey1",
       "samples": []
     }
   },
@@ -2723,6 +3185,10 @@
       "maxAbsoluteError": 11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 3.5,
+      "maxAbsoluteErrorColumn": "Pop_A",
+      "maxRelativeErrorAtTime": 14,
+      "maxRelativeErrorColumn": "Pop_B",
       "errorAtTime": 14,
       "errorColumn": "Pop_B",
       "samples": [
@@ -2876,6 +3342,10 @@
       "maxAbsoluteError": 9.234645403921604e-8,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 69,
+      "maxAbsoluteErrorColumn": "Shc_Grb",
+      "maxRelativeErrorAtTime": 0,
+      "maxRelativeErrorColumn": "Shc_P",
       "errorAtTime": 0,
       "errorColumn": "Shc_P",
       "samples": []
@@ -2883,7 +3353,7 @@
   },
   {
     "model": "egfr_signaling_pathway",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "egfr-signaling-pathway.gdat",
     "referenceInferred": false,
     "details": {
@@ -2914,84 +3384,17 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.012468064018402999,
-      "maxAbsoluteError": 1.7877804027232003,
+      "maxRelativeError": 2.9828781260622284e-12,
+      "maxAbsoluteError": 2.899014361901209e-10,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 100,
-      "errorColumn": "pY1068",
-      "samples": [
-        {
-          "time": 0.5,
-          "column": "Dimers",
-          "web": 94.77514256200284,
-          "ref": 95.28718538727,
-          "relError": 0.005373679820493109
-        },
-        {
-          "time": 0.5,
-          "column": "pY1068",
-          "web": 55.50380837873144,
-          "ref": 55.57779019769,
-          "relError": 0.0013311399876714178
-        },
-        {
-          "time": 0.5,
-          "column": "pY1173",
-          "web": 55.33890896521603,
-          "ref": 55.41173147914,
-          "relError": 0.0013142075149084333
-        },
-        {
-          "time": 0.5,
-          "column": "Total_Phos",
-          "web": 110.84271734394744,
-          "ref": 110.9895216768,
-          "relError": 0.0013226864179129102
-        },
-        {
-          "time": 0.5,
-          "column": "Grb2_Recruited",
-          "web": 54.86497502944528,
-          "ref": 54.93696107472,
-          "relError": 0.0013103390480010593
-        },
-        {
-          "time": 0.5,
-          "column": "Shc_Recruited",
-          "web": 53.41381110972132,
-          "ref": 53.47966480691,
-          "relError": 0.001231378271095112
-        },
-        {
-          "time": 1,
-          "column": "Dimers",
-          "web": 95.93318640654121,
-          "ref": 96.61010867235,
-          "relError": 0.007006743653550207
-        },
-        {
-          "time": 1,
-          "column": "pY1068",
-          "web": 81.72461519619284,
-          "ref": 81.83158989859,
-          "relError": 0.0013072543565354367
-        },
-        {
-          "time": 1,
-          "column": "pY1173",
-          "web": 81.4154009393676,
-          "ref": 81.51989907348,
-          "relError": 0.0012818727120627598
-        },
-        {
-          "time": 1,
-          "column": "Total_Phos",
-          "web": 163.14001613556044,
-          "ref": 163.3514889721,
-          "relError": 0.0012945877498285994
-        }
-      ]
+      "maxAbsoluteErrorAtTime": 35.5,
+      "maxAbsoluteErrorColumn": "Shc_Recruited",
+      "maxRelativeErrorAtTime": 35.5,
+      "maxRelativeErrorColumn": "Shc_Recruited",
+      "errorAtTime": 35.5,
+      "errorColumn": "Shc_Recruited",
+      "samples": []
     }
   },
   {
@@ -3029,6 +3432,10 @@
       "maxAbsoluteError": 9.416567081643734e-9,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 1128,
+      "maxAbsoluteErrorColumn": "Grb2Sos1",
+      "maxRelativeErrorAtTime": 806.4,
+      "maxRelativeErrorColumn": "Sos1_act",
       "errorAtTime": 806.4,
       "errorColumn": "Sos1_act",
       "samples": []
@@ -3067,6 +3474,10 @@
       "maxAbsoluteError": 0.00003300895571101137,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 24,
+      "maxAbsoluteErrorColumn": "Feedback_GADD",
+      "maxRelativeErrorAtTime": 107.5,
+      "maxRelativeErrorColumn": "Active_GEF",
       "errorAtTime": 107.5,
       "errorColumn": "Active_GEF",
       "samples": []
@@ -3109,6 +3520,10 @@
       "maxAbsoluteError": 0.0000013125302871230815,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 1.066666666667,
+      "maxAbsoluteErrorColumn": "Rab5_GDP_Mem",
+      "maxRelativeErrorAtTime": 1.066666666667,
+      "maxRelativeErrorColumn": "Early_Endosome",
       "errorAtTime": 1.066666666667,
       "errorColumn": "Early_Endosome",
       "samples": []
@@ -3116,7 +3531,7 @@
   },
   {
     "model": "energy_allostery_mwc",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "energy_allostery_mwc.gdat",
     "referenceInferred": false,
     "details": {
@@ -3143,84 +3558,17 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.5000000000017779,
-      "maxAbsoluteError": 50,
+      "maxRelativeError": 3.0499626642665932e-12,
+      "maxAbsoluteError": 5.7411853049416095e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 19.9,
+      "maxAbsoluteErrorColumn": "Fully_Bound_R",
+      "maxRelativeErrorAtTime": 19.2,
+      "maxRelativeErrorColumn": "P_T",
       "errorAtTime": 19.2,
       "errorColumn": "P_T",
-      "samples": [
-        {
-          "time": 0,
-          "column": "P_T",
-          "web": 100,
-          "ref": 50,
-          "relError": 0.5
-        },
-        {
-          "time": 0.1,
-          "column": "P_T",
-          "web": 77.15539145168094,
-          "ref": 38.57769572584,
-          "relError": 0.5000000000000061
-        },
-        {
-          "time": 0.1,
-          "column": "P_R",
-          "web": 22.844608538349412,
-          "ref": 11.42230426917,
-          "relError": 0.500000000000206
-        },
-        {
-          "time": 0.2,
-          "column": "P_T",
-          "web": 50.56230656703248,
-          "ref": 25.28115328352,
-          "relError": 0.49999999999992567
-        },
-        {
-          "time": 0.2,
-          "column": "P_R",
-          "web": 49.437693422997874,
-          "ref": 24.7188467115,
-          "relError": 0.4999999999999785
-        },
-        {
-          "time": 0.3,
-          "column": "P_T",
-          "web": 33.03922479528203,
-          "ref": 16.51961239764,
-          "relError": 0.5000000000000308
-        },
-        {
-          "time": 0.3,
-          "column": "P_R",
-          "web": 66.9607751947483,
-          "ref": 33.48038759737,
-          "relError": 0.500000000000062
-        },
-        {
-          "time": 0.4,
-          "column": "P_T",
-          "web": 22.314874986531464,
-          "ref": 11.15743749327,
-          "relError": 0.4999999999998087
-        },
-        {
-          "time": 0.4,
-          "column": "P_R",
-          "web": 77.68512500349884,
-          "ref": 38.84256250175,
-          "relError": 0.4999999999999925
-        },
-        {
-          "time": 0.5,
-          "column": "P_T",
-          "web": 15.78686859524315,
-          "ref": 7.893434297621,
-          "relError": 0.5000000000000364
-        }
-      ]
+      "samples": []
     }
   },
   {
@@ -3250,12 +3598,16 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.697102372454761e-7,
-      "maxAbsoluteError": 4.349330993136391e-7,
+      "maxRelativeError": 4.668023317826558e-13,
+      "maxAbsoluteError": 4.9823256631498225e-11,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 13.25,
-      "errorColumn": "Enzyme_Free",
+      "maxAbsoluteErrorAtTime": 39.5,
+      "maxAbsoluteErrorColumn": "Product",
+      "maxRelativeErrorAtTime": 7.75,
+      "maxRelativeErrorColumn": "Substrate",
+      "errorAtTime": 7.75,
+      "errorColumn": "Substrate",
       "samples": []
     }
   },
@@ -3286,10 +3638,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.00013569022684607854,
-      "maxAbsoluteError": 4.880007509200368e-11,
-      "absTolDominated": false,
+      "maxRelativeError": 0.00019921493648050755,
+      "maxAbsoluteError": 4.766320671478752e-11,
+      "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 2.8,
+      "maxAbsoluteErrorColumn": "L_free",
+      "maxRelativeErrorAtTime": 0.2,
+      "maxRelativeErrorColumn": "Bound_0",
       "errorAtTime": 0.2,
       "errorColumn": "Bound_0",
       "samples": []
@@ -3324,6 +3680,10 @@
       "maxAbsoluteError": 4.998668146072305e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 27.75,
+      "maxAbsoluteErrorColumn": "C",
+      "maxRelativeErrorAtTime": 15.25,
+      "maxRelativeErrorColumn": "C",
       "errorAtTime": 15.25,
       "errorColumn": "C",
       "samples": []
@@ -3354,11 +3714,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 7.90544026306961e-9,
-      "maxAbsoluteError": 3.248952680223738e-7,
+      "maxRelativeError": 8.287552640784768e-9,
+      "maxAbsoluteError": 2.76470530025108e-7,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 17.8,
+      "maxAbsoluteErrorAtTime": 16,
+      "maxAbsoluteErrorColumn": "Energy_Source",
+      "maxRelativeErrorAtTime": 2.3,
+      "maxRelativeErrorColumn": "A_out",
+      "errorAtTime": 2.3,
       "errorColumn": "A_out",
       "samples": []
     }
@@ -3398,6 +3762,10 @@
       "maxAbsoluteError": 0.0000034832883955004945,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 1.5,
+      "maxAbsoluteErrorColumn": "ELK1_Occupancy",
+      "maxRelativeErrorAtTime": 1.5,
+      "maxRelativeErrorColumn": "Functional_ELK",
       "errorAtTime": 1.5,
       "errorColumn": "Functional_ELK",
       "samples": []
@@ -3428,11 +3796,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.935923406562069e-13,
-      "maxAbsoluteError": 5.8406612879480235e-12,
+      "maxRelativeError": 4.4618847642823756e-13,
+      "maxAbsoluteError": 5.115907697472721e-12,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 30.04166666667,
+      "maxAbsoluteErrorAtTime": 1.75,
+      "maxAbsoluteErrorColumn": "Phospho_EIF2A",
+      "maxRelativeErrorAtTime": 15.45833333333,
+      "maxRelativeErrorColumn": "Active_PERK",
+      "errorAtTime": 15.45833333333,
       "errorColumn": "Active_PERK",
       "samples": []
     }
@@ -3458,10 +3830,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 9.048067253561838e-8,
-      "maxAbsoluteError": 0.0000013744477644905828,
+      "maxRelativeError": 9.048067990274786e-8,
+      "maxAbsoluteError": 0.0000013744478764010637,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 2,
+      "maxAbsoluteErrorColumn": "Product",
+      "maxRelativeErrorAtTime": 2,
+      "maxRelativeErrorColumn": "Product",
       "errorAtTime": 2,
       "errorColumn": "Product",
       "samples": []
@@ -3494,6 +3870,10 @@
       "maxAbsoluteError": 4.988010005035903e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 13.9,
+      "maxAbsoluteErrorColumn": "Output",
+      "maxRelativeErrorAtTime": 3.3,
+      "maxRelativeErrorColumn": "Output",
       "errorAtTime": 3.3,
       "errorColumn": "Output",
       "samples": []
@@ -3526,6 +3906,10 @@
       "maxAbsoluteError": 14,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 4,
+      "maxAbsoluteErrorColumn": "S_conc",
+      "maxRelativeErrorAtTime": 19.4,
+      "maxRelativeErrorColumn": "S_conc",
       "errorAtTime": 19.4,
       "errorColumn": "S_conc",
       "samples": [
@@ -3631,6 +4015,10 @@
       "maxAbsoluteError": 4.959588295605499e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 8.6,
+      "maxAbsoluteErrorColumn": "A",
+      "maxRelativeErrorAtTime": 1.2,
+      "maxRelativeErrorColumn": "C",
       "errorAtTime": 1.2,
       "errorColumn": "C",
       "samples": []
@@ -3661,6 +4049,10 @@
       "maxAbsoluteError": 4.973799150320701e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 100,
+      "maxAbsoluteErrorColumn": "Total_M",
+      "maxRelativeErrorAtTime": 3,
+      "maxRelativeErrorColumn": "Total_M",
       "errorAtTime": 3,
       "errorColumn": "Total_M",
       "samples": []
@@ -3668,7 +4060,7 @@
   },
   {
     "model": "fgf_signaling_pathway",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "fgf-signaling-pathway.gdat",
     "referenceInferred": false,
     "details": {
@@ -3695,84 +4087,17 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.0007399506105102342,
-      "maxAbsoluteError": 0.031369937180748764,
-      "absTolDominated": true,
+      "maxRelativeError": 1.1497930931278943e-11,
+      "maxAbsoluteError": 5.271516556604183e-11,
+      "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 40,
+      "maxAbsoluteErrorAtTime": 38.93333333333,
+      "maxAbsoluteErrorColumn": "Ras_Drive_Comp",
+      "maxRelativeErrorAtTime": 39.46666666667,
+      "maxRelativeErrorColumn": "Active_Dimer",
+      "errorAtTime": 39.46666666667,
       "errorColumn": "Active_Dimer",
-      "samples": [
-        {
-          "time": 0.2666666666667,
-          "column": "Spry_Brake",
-          "web": 0.062240847542732326,
-          "ref": 0.06226562063476,
-          "relError": 0.0003978614807839279
-        },
-        {
-          "time": 0.4,
-          "column": "Spry_Brake",
-          "web": 0.17654365999591878,
-          "ref": 0.1766140797945,
-          "relError": 0.0003987213174802054
-        },
-        {
-          "time": 0.5333333333333,
-          "column": "Spry_Brake",
-          "web": 0.342204384862831,
-          "ref": 0.3423410457413,
-          "relError": 0.00039919513061325017
-        },
-        {
-          "time": 0.6666666666667,
-          "column": "FRS2_Hub_Status",
-          "web": 0.07482889746486315,
-          "ref": 0.07485881857506,
-          "relError": 0.0003997005398480667
-        },
-        {
-          "time": 0.6666666666667,
-          "column": "Ras_Drive_Comp",
-          "web": 0.07376259276293456,
-          "ref": 0.07379208569409,
-          "relError": 0.00039967607471757074
-        },
-        {
-          "time": 0.6666666666667,
-          "column": "Spry_Brake",
-          "web": 0.5416774597664832,
-          "ref": 0.5418939525791,
-          "relError": 0.00039951140179077455
-        },
-        {
-          "time": 0.8,
-          "column": "FRS2_Hub_Status",
-          "web": 0.12736393752414957,
-          "ref": 0.127414933979,
-          "relError": 0.00040023922830613966
-        },
-        {
-          "time": 0.8,
-          "column": "Ras_Drive_Comp",
-          "web": 0.12627537142749207,
-          "ref": 0.1263259287707,
-          "relError": 0.0004002135088174168
-        },
-        {
-          "time": 0.8,
-          "column": "Spry_Brake",
-          "web": 0.7599788551125083,
-          "ref": 0.7602827769785,
-          "relError": 0.00039974845569900653
-        },
-        {
-          "time": 0.9333333333333,
-          "column": "FRS2_Hub_Status",
-          "web": 0.19400788382261366,
-          "ref": 0.1940856631983,
-          "relError": 0.0004007476616491499
-        }
-      ]
+      "samples": []
     }
   },
   {
@@ -3804,11 +4129,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 5.130582882129606e-7,
-      "maxAbsoluteError": 0.0002953442485704727,
+      "maxRelativeError": 6.428334431719119e-7,
+      "maxAbsoluteError": 0.0002812649786392285,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 85.5,
+      "maxAbsoluteErrorAtTime": 139,
+      "maxAbsoluteErrorColumn": "SOCS_Feedback",
+      "maxRelativeErrorAtTime": 70.5,
+      "maxRelativeErrorColumn": "Active_Platform",
+      "errorAtTime": 70.5,
       "errorColumn": "Active_Platform",
       "samples": []
     }
@@ -3840,12 +4169,16 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.0002259033595215492,
-      "maxAbsoluteError": 0.0000017011268271527324,
-      "absTolDominated": true,
+      "maxRelativeError": 0.00004785857402157739,
+      "maxAbsoluteError": 2.4335924853069457e-7,
+      "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 37,
-      "errorColumn": "GeneA_Free",
+      "maxAbsoluteErrorAtTime": 24.5,
+      "maxAbsoluteErrorColumn": "B",
+      "maxRelativeErrorAtTime": 74.5,
+      "maxRelativeErrorColumn": "GeneB_Free",
+      "errorAtTime": 74.5,
+      "errorColumn": "GeneB_Free",
       "samples": []
     }
   },
@@ -3876,10 +4209,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 7.975842208906488e-14,
-      "maxAbsoluteError": 1.7053025658242404e-12,
+      "maxRelativeError": 7.85149723014849e-14,
+      "maxAbsoluteError": 1.4779288903810084e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 2,
+      "maxAbsoluteErrorColumn": "Free_Nuc",
+      "maxRelativeErrorAtTime": 2,
+      "maxRelativeErrorColumn": "Growing_Chain",
       "errorAtTime": 2,
       "errorColumn": "Growing_Chain",
       "samples": []
@@ -3910,11 +4247,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 8.367369032648164e-7,
-      "maxAbsoluteError": 3.3571006774479883e-7,
+      "maxRelativeError": 4.797164503678859e-13,
+      "maxAbsoluteError": 4.989342272665453e-13,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 46.5,
+      "maxAbsoluteErrorAtTime": 8,
+      "maxAbsoluteErrorColumn": "RNA",
+      "maxRelativeErrorAtTime": 63,
+      "maxRelativeErrorColumn": "RNA",
+      "errorAtTime": 63,
       "errorColumn": "RNA",
       "samples": []
     }
@@ -3948,6 +4289,10 @@
       "maxAbsoluteError": 4.995115432393504e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 49.5,
+      "maxAbsoluteErrorColumn": "Completed_Proteins",
+      "maxRelativeErrorAtTime": 16.5,
+      "maxRelativeErrorColumn": "Completed_Proteins",
       "errorAtTime": 16.5,
       "errorColumn": "Completed_Proteins",
       "samples": []
@@ -3986,6 +4331,10 @@
       "maxAbsoluteError": 1.7063683799278806e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 6.75,
+      "maxAbsoluteErrorColumn": "A2",
+      "maxRelativeErrorAtTime": 6.75,
+      "maxRelativeErrorColumn": "A2",
       "errorAtTime": 6.75,
       "errorColumn": "A2",
       "samples": []
@@ -4022,6 +4371,10 @@
       "maxAbsoluteError": 4.990852175978944e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 188,
+      "maxAbsoluteErrorColumn": "Protein",
+      "maxRelativeErrorAtTime": 146,
+      "maxRelativeErrorColumn": "Protein",
       "errorAtTime": 146,
       "errorColumn": "Protein",
       "samples": []
@@ -4054,6 +4407,10 @@
       "maxAbsoluteError": 3.141931159689193e-14,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 1,
+      "maxAbsoluteErrorColumn": "Bp",
+      "maxRelativeErrorAtTime": 1,
+      "maxRelativeErrorColumn": "Bu",
       "errorAtTime": 1,
       "errorColumn": "Bu",
       "samples": []
@@ -4094,6 +4451,10 @@
       "maxAbsoluteError": 0.000012401969371467203,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 1.5,
+      "maxAbsoluteErrorColumn": "vIII_Substrate",
+      "maxRelativeErrorAtTime": 107,
+      "maxRelativeErrorColumn": "Active_vIII",
       "errorAtTime": 107,
       "errorColumn": "Active_vIII",
       "samples": []
@@ -4128,6 +4489,10 @@
       "maxAbsoluteError": 5.590194973592588e-12,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 6,
+      "maxAbsoluteErrorColumn": "ATP_pool",
+      "maxRelativeErrorAtTime": 29.33333333333,
+      "maxRelativeErrorColumn": "Glucose_pool",
       "errorAtTime": 29.33333333333,
       "errorColumn": "Glucose_pool",
       "samples": []
@@ -4176,6 +4541,10 @@
       "maxAbsoluteError": 1,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.1,
+      "maxAbsoluteErrorColumn": "Alive_Count",
+      "maxRelativeErrorAtTime": 0.1,
+      "maxRelativeErrorColumn": "C21",
       "errorAtTime": 0.1,
       "errorColumn": "C21",
       "samples": [
@@ -4299,6 +4668,10 @@
       "maxAbsoluteError": 2.9754082272355253e+28,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 10,
+      "maxAbsoluteErrorColumn": "R3",
+      "maxRelativeErrorAtTime": 9.96,
+      "maxRelativeErrorColumn": "R3",
       "errorAtTime": 9.96,
       "errorColumn": "R3",
       "samples": []
@@ -4306,7 +4679,7 @@
   },
   {
     "model": "gpcr_desensitization_arrestin",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "gpcr-desensitization-arrestin.gdat",
     "referenceInferred": false,
     "details": {
@@ -4335,84 +4708,59 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.9725676401648491,
-      "maxAbsoluteError": 14.2688085121884,
+      "maxRelativeError": 1.8211214395259357e-8,
+      "maxAbsoluteError": 0.000003418397795940109,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 0.5,
+      "maxAbsoluteErrorAtTime": 69,
+      "maxAbsoluteErrorColumn": "Arrestin_Block",
+      "maxRelativeErrorAtTime": 69,
+      "maxRelativeErrorColumn": "Internal_Rec",
+      "errorAtTime": 69,
       "errorColumn": "Internal_Rec",
-      "samples": [
-        {
-          "time": 0.5,
-          "column": "G_Signal_Act",
-          "web": 5.374211458609141,
-          "ref": 5.38036380682,
-          "relError": 0.0011434818223743288
-        },
-        {
-          "time": 0.5,
-          "column": "Desensitized_R",
-          "web": 0.8738548640354614,
-          "ref": 0.8725610921415,
-          "relError": 0.0014805340648752195
-        },
-        {
-          "time": 0.5,
-          "column": "Internal_Rec",
-          "web": 0.23692316333124697,
-          "ref": 0.006499361469785,
-          "relError": 0.9725676401648491
-        },
-        {
-          "time": 0.5,
-          "column": "Surface_Rec",
-          "web": 499.7630768355497,
-          "ref": 499.9935006334,
-          "relError": 0.0004608535862133681
-        },
-        {
-          "time": 0.5,
-          "column": "Active_Rec_Mem",
-          "web": 1.4982301054260585,
-          "ref": 1.502451064753,
-          "relError": 0.002809382232782051
-        },
-        {
-          "time": 1,
-          "column": "G_Signal_Act",
-          "web": 14.553764772259353,
-          "ref": 14.64844871589,
-          "relError": 0.0064637522694084475
-        },
-        {
-          "time": 1,
-          "column": "Desensitized_R",
-          "web": 2.58894271000156,
-          "ref": 2.586996608437,
-          "relError": 0.0007516974234470124
-        },
-        {
-          "time": 1,
-          "column": "Internal_Rec",
-          "web": 1.1573567384271928,
-          "ref": 0.06808835214294,
-          "relError": 0.9411690882489095
-        },
-        {
-          "time": 1,
-          "column": "Surface_Rec",
-          "web": 498.8426432604528,
-          "ref": 499.9319116392,
-          "relError": 0.00217883346389241
-        },
-        {
-          "time": 1,
-          "column": "Active_Rec_Mem",
-          "web": 1.973721039785011,
-          "ref": 2.004026025649,
-          "relError": 0.015122052047290547
-        }
-      ]
+      "samples": []
+    }
+  },
+  {
+    "model": "haugh2b",
+    "status": "match",
+    "referenceFile": "Haugh2b.gdat",
+    "referenceInferred": false,
+    "details": {
+      "webRows": 6,
+      "refRows": 6,
+      "webColumns": [
+        "time",
+        "S2_P_tot",
+        "S2_P_mem",
+        "R_total",
+        "S1_total",
+        "S2_total"
+      ],
+      "refColumns": [
+        "time",
+        "S2_P_tot",
+        "S2_P_mem",
+        "R_total",
+        "S1_total",
+        "S2_total"
+      ],
+      "columnMatch": true,
+      "missingColumns": [],
+      "extraColumns": [],
+      "timeMatch": true,
+      "timeOffset": 0,
+      "maxRelativeError": 1.6555408754567242e-13,
+      "maxAbsoluteError": 9.57012247226885e-14,
+      "absTolDominated": false,
+      "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 10,
+      "maxAbsoluteErrorColumn": "R_total",
+      "maxRelativeErrorAtTime": 10,
+      "maxRelativeErrorColumn": "S2_P_tot",
+      "errorAtTime": 10,
+      "errorColumn": "S2_P_tot",
+      "samples": []
     }
   },
   {
@@ -4446,12 +4794,52 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.6706251857947478e-8,
-      "maxAbsoluteError": 0.00000814210409316729,
+      "maxRelativeError": 5.053042674146615e-7,
+      "maxAbsoluteError": 0.00000789165596870589,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 3.25,
+      "maxAbsoluteErrorAtTime": 85.5,
+      "maxAbsoluteErrorColumn": "Ptch_Density",
+      "maxRelativeErrorAtTime": 1.5,
+      "maxRelativeErrorColumn": "Repressor_Level",
+      "errorAtTime": 1.5,
       "errorColumn": "Repressor_Level",
+      "samples": []
+    }
+  },
+  {
+    "model": "heise",
+    "status": "match",
+    "referenceFile": "[multi-phase concatenation]",
+    "referenceInferred": true,
+    "details": {
+      "webRows": 41,
+      "refRows": 41,
+      "webColumns": [
+        "time",
+        "A",
+        "B"
+      ],
+      "refColumns": [
+        "time",
+        "A",
+        "B"
+      ],
+      "columnMatch": true,
+      "missingColumns": [],
+      "extraColumns": [],
+      "timeMatch": true,
+      "timeOffset": 0,
+      "maxRelativeError": 3.71876154486771e-7,
+      "maxAbsoluteError": 8.675901741472813e-8,
+      "absTolDominated": false,
+      "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 1,
+      "maxAbsoluteErrorColumn": "A",
+      "maxRelativeErrorAtTime": 1,
+      "maxRelativeErrorColumn": "B",
+      "errorAtTime": 1,
+      "errorColumn": "B",
       "samples": []
     }
   },
@@ -4480,10 +4868,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 2.0589348536125307e-13,
-      "maxAbsoluteError": 5.041300710217911e-12,
+      "maxRelativeError": 2.0576267628542002e-13,
+      "maxAbsoluteError": 5.073275133327115e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 77.5,
+      "maxAbsoluteErrorColumn": "Active_JAK2",
+      "maxRelativeErrorAtTime": 2,
+      "maxRelativeErrorColumn": "Active_EPOR",
       "errorAtTime": 2,
       "errorColumn": "Active_EPOR",
       "samples": []
@@ -4524,6 +4916,10 @@
       "maxAbsoluteError": 1.9512868121296378e-7,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 149.5,
+      "maxAbsoluteErrorColumn": "Hypoxia_Factor",
+      "maxRelativeErrorAtTime": 101,
+      "maxRelativeErrorColumn": "HIF_Substrate",
       "errorAtTime": 101,
       "errorColumn": "HIF_Substrate",
       "samples": []
@@ -4554,10 +4950,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 3.931319941020573e-13,
-      "maxAbsoluteError": 5.016431714466307e-12,
+      "maxRelativeError": 3.9394299357416055e-13,
+      "maxAbsoluteError": 5.009326287108706e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 60,
+      "maxAbsoluteErrorColumn": "VEGF_pool",
+      "maxRelativeErrorAtTime": 20,
+      "maxRelativeErrorColumn": "Stable_HIF1",
       "errorAtTime": 20,
       "errorColumn": "Stable_HIF1",
       "samples": []
@@ -4598,6 +4998,10 @@
       "maxAbsoluteError": 0.000020448865512889824,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 49,
+      "maxAbsoluteErrorColumn": "ProInflam_NFkB",
+      "maxRelativeErrorAtTime": 30,
+      "maxRelativeErrorColumn": "Signal_Burst",
       "errorAtTime": 30,
       "errorColumn": "Signal_Burst",
       "samples": []
@@ -4605,7 +5009,7 @@
   },
   {
     "model": "il6_jak_stat_pathway",
-    "status": "match",
+    "status": "mismatch",
     "referenceFile": "il6-jak-stat-pathway.gdat",
     "referenceInferred": false,
     "details": {
@@ -4634,13 +5038,88 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.0004114140409473085,
-      "maxAbsoluteError": 0.000017808020274401315,
+      "maxRelativeError": 0.08996995952353538,
+      "maxAbsoluteError": 22.54027374795288,
       "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 598,
-      "errorColumn": "Global_pSTAT3",
-      "samples": []
+      "maxAbsoluteErrorAtTime": 202,
+      "maxAbsoluteErrorColumn": "pgp130_Signals",
+      "maxRelativeErrorAtTime": 184,
+      "maxRelativeErrorColumn": "pgp130_Signals",
+      "errorAtTime": 184,
+      "errorColumn": "pgp130_Signals",
+      "samples": [
+        {
+          "time": 2,
+          "column": "pgp130_Signals",
+          "web": 18.37670082888704,
+          "ref": 18.11363665906,
+          "relError": 0.014315092370308324
+        },
+        {
+          "time": 2,
+          "column": "Active_gp130",
+          "web": 18.37670082888704,
+          "ref": 18.11363665906,
+          "relError": 0.014315092370308324
+        },
+        {
+          "time": 4,
+          "column": "pgp130_Signals",
+          "web": 13.413779063624412,
+          "ref": 13.27342007499,
+          "relError": 0.010463791595840363
+        },
+        {
+          "time": 4,
+          "column": "Active_gp130",
+          "web": 13.413779063624412,
+          "ref": 13.27342007499,
+          "relError": 0.010463791595840363
+        },
+        {
+          "time": 6,
+          "column": "pgp130_Signals",
+          "web": 11.4876925346286,
+          "ref": 11.38457317347,
+          "relError": 0.008976507757998879
+        },
+        {
+          "time": 6,
+          "column": "Active_gp130",
+          "web": 11.4876925346286,
+          "ref": 11.38457317347,
+          "relError": 0.008976507757998879
+        },
+        {
+          "time": 8,
+          "column": "pgp130_Signals",
+          "web": 10.478945616258434,
+          "ref": 10.39304846911,
+          "relError": 0.008197117371728945
+        },
+        {
+          "time": 8,
+          "column": "Active_gp130",
+          "web": 10.478945616258434,
+          "ref": 10.39304846911,
+          "relError": 0.008197117371728945
+        },
+        {
+          "time": 10,
+          "column": "pgp130_Signals",
+          "web": 9.889726321636399,
+          "ref": 9.813166151233,
+          "relError": 0.007741384130711788
+        },
+        {
+          "time": 10,
+          "column": "Active_gp130",
+          "web": 9.889726321636399,
+          "ref": 9.813166151233,
+          "relError": 0.007741384130711788
+        }
+      ]
     }
   },
   {
@@ -4668,11 +5147,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.9686040641801503,
-      "maxAbsoluteError": 6.771746541289758e-8,
+      "maxRelativeError": 1.9712643570130957,
+      "maxAbsoluteError": 5.399689939622476e-8,
       "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 34.93333333333,
+      "maxAbsoluteErrorAtTime": 38.93333333333,
+      "maxAbsoluteErrorColumn": "Active_TCR",
+      "maxRelativeErrorAtTime": 29.86666666667,
+      "maxRelativeErrorColumn": "Bound_TCR",
+      "errorAtTime": 29.86666666667,
       "errorColumn": "Bound_TCR",
       "samples": []
     }
@@ -4702,12 +5185,16 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 2.2792130807635527e-13,
-      "maxAbsoluteError": 5.115907697472721e-12,
+      "maxRelativeError": 3.5129911832072297e-13,
+      "maxAbsoluteError": 5.066169705969514e-12,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 0.5,
-      "errorColumn": "Mature_IL1B",
+      "maxAbsoluteErrorAtTime": 58,
+      "maxAbsoluteErrorColumn": "Active_Caspase1",
+      "maxRelativeErrorAtTime": 50.5,
+      "maxRelativeErrorColumn": "Primed_Sensor",
+      "errorAtTime": 50.5,
+      "errorColumn": "Primed_Sensor",
       "samples": []
     }
   },
@@ -4750,6 +5237,10 @@
       "maxAbsoluteError": 4.992273261450464e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 6,
+      "maxAbsoluteErrorColumn": "Ca_Level",
+      "maxRelativeErrorAtTime": 6,
+      "maxRelativeErrorColumn": "Ca_Level",
       "errorAtTime": 6,
       "errorColumn": "Ca_Level",
       "samples": []
@@ -4757,7 +5248,7 @@
   },
   {
     "model": "insulin_glucose_homeostasis",
-    "status": "match",
+    "status": "mismatch",
     "referenceFile": "insulin-glucose-homeostasis.gdat",
     "referenceInferred": false,
     "details": {
@@ -4784,13 +5275,32 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.0026483996059165635,
-      "maxAbsoluteError": 0.0004525207258438968,
+      "maxRelativeError": 0.0026486764899247813,
+      "maxAbsoluteError": 0.0004529568719817689,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 53.33333333333,
+      "maxAbsoluteErrorColumn": "Blood_Glucose",
+      "maxRelativeErrorAtTime": 2.666666666667,
+      "maxRelativeErrorColumn": "Cellular_Glucose",
       "errorAtTime": 2.666666666667,
       "errorColumn": "Cellular_Glucose",
-      "samples": []
+      "samples": [
+        {
+          "time": 5.333333333333,
+          "column": "Cellular_Glucose",
+          "web": 0.003561296338814043,
+          "ref": 0.003558970440935,
+          "relError": 0.000653104279386489
+        },
+        {
+          "time": 8,
+          "column": "Cellular_Glucose",
+          "web": 0.029428762253662845,
+          "ref": 0.02942340047018,
+          "relError": 0.00018219534469806278
+        }
+      ]
     }
   },
   {
@@ -4818,11 +5328,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.206697212605396e-11,
-      "maxAbsoluteError": 1.472344024477934e-9,
+      "maxRelativeError": 3.048787313605875e-13,
+      "maxAbsoluteError": 5.030642569181509e-12,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 55.5,
+      "maxAbsoluteErrorAtTime": 8,
+      "maxAbsoluteErrorColumn": "Nuclear_STAT1",
+      "maxRelativeErrorAtTime": 1.5,
+      "maxRelativeErrorColumn": "Active_IFNAR",
+      "errorAtTime": 1.5,
       "errorColumn": "Active_IFNAR",
       "samples": []
     }
@@ -4858,82 +5372,86 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.683587862787969,
-      "maxAbsoluteError": 25.224446951411522,
+      "maxRelativeError": 0.20448664605939215,
+      "maxAbsoluteError": 1.899289649550738,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 14,
+      "maxAbsoluteErrorColumn": "Active_IRE1",
+      "maxRelativeErrorAtTime": 150,
+      "maxRelativeErrorColumn": "Active_IRE1",
       "errorAtTime": 150,
       "errorColumn": "Active_IRE1",
       "samples": [
         {
           "time": 0.5,
-          "column": "RIDD_Drive",
-          "web": 593.0975065934442,
-          "ref": 593.2585252301,
-          "relError": 0.0002714139448620442
-        },
-        {
-          "time": 0.5,
           "column": "Active_IRE1",
-          "web": 138.56882168437346,
+          "web": 138.10573650747716,
           "ref": 138.0917687258,
-          "relError": 0.003442714982884668
-        },
-        {
-          "time": 1,
-          "column": "RIDD_Drive",
-          "web": 428.18003743084415,
-          "ref": 428.9275210676,
-          "relError": 0.001742680523029597
+          "relError": 0.00010113831641171824
         },
         {
           "time": 1,
           "column": "Active_IRE1",
-          "web": 150.3996780573989,
+          "web": 148.92477002075532,
           "ref": 148.8601655146,
-          "relError": 0.010236142541550823
+          "relError": 0.00043380631809144816
         },
         {
           "time": 1.5,
           "column": "RIDD_Drive",
-          "web": 305.01742175924215,
+          "web": 306.47040065556814,
           "ref": 306.5352766587,
-          "relError": 0.0049516483583971205
+          "relError": 0.00021164286159503035
         },
         {
           "time": 1.5,
           "column": "Active_IRE1",
-          "web": 157.18536269220704,
+          "web": 154.4198264316901,
           "ref": 154.2757229023,
-          "relError": 0.018510882566111147
+          "relError": 0.0009331931832849209
         },
         {
           "time": 2,
           "column": "RIDD_Drive",
-          "web": 215.62962184602964,
+          "web": 217.7387598220293,
           "ref": 217.8453933996,
-          "relError": 0.010171303230203772
+          "relError": 0.0004894920012153003
         },
         {
           "time": 2,
           "column": "Active_IRE1",
-          "web": 161.33435892327046,
+          "web": 157.11762358470506,
           "ref": 156.8735930598,
-          "relError": 0.027649199421878764
+          "relError": 0.0015531709259433235
         },
         {
           "time": 2.5,
           "column": "RIDD_Drive",
-          "web": 151.73925199760316,
+          "web": 154.30810469914235,
           "ref": 154.4500056628,
-          "relError": 0.017551010461696246
+          "relError": 0.0009187501356747395
         },
         {
           "time": 2.5,
           "column": "Active_IRE1",
-          "web": 163.92920397388278,
+          "web": 158.16612107341183,
           "ref": 157.8083129049,
-          "relError": 0.037338624971045224
+          "relError": 0.0022622301544953692
+        },
+        {
+          "time": 3,
+          "column": "RIDD_Drive",
+          "web": 109.29202928306212,
+          "ref": 109.4579593158,
+          "relError": 0.0015159247785640406
+        },
+        {
+          "time": 3,
+          "column": "Active_IRE1",
+          "web": 158.1635506488504,
+          "ref": 157.6834646629,
+          "relError": 0.003035376886652305
         }
       ]
     }
@@ -4963,10 +5481,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 3.7786840605121904e-13,
-      "maxAbsoluteError": 4.9965365178650245e-11,
+      "maxRelativeError": 3.791580593141925e-13,
+      "maxAbsoluteError": 5.013589543523267e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 56,
+      "maxAbsoluteErrorColumn": "Nuclear_STAT",
+      "maxRelativeErrorAtTime": 56,
+      "maxRelativeErrorColumn": "Nuclear_STAT",
       "errorAtTime": 56,
       "errorColumn": "Nuclear_STAT",
       "samples": []
@@ -5005,6 +5527,10 @@
       "maxAbsoluteError": 6.292566467891447e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 2.5,
+      "maxAbsoluteErrorColumn": "Active_JNK",
+      "maxRelativeErrorAtTime": 1,
+      "maxRelativeErrorColumn": "MKK7_Driver",
       "errorAtTime": 1,
       "errorColumn": "MKK7_Driver",
       "samples": []
@@ -5047,6 +5573,10 @@
       "maxAbsoluteError": 1.7788011064112652e-9,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 1.283333333333,
+      "maxAbsoluteErrorColumn": "Lipid_Occupancy",
+      "maxRelativeErrorAtTime": 1.95,
+      "maxRelativeErrorColumn": "Conducting_Pool",
       "errorAtTime": 1.95,
       "errorColumn": "Conducting_Pool",
       "samples": []
@@ -5079,18 +5609,22 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.8579673834636306,
-      "maxAbsoluteError": 0.000046731696869528605,
+      "maxRelativeError": 1.993969541718669,
+      "maxAbsoluteError": 0.00003791859731450131,
       "absTolDominated": true,
       "overlapMatch": false,
-      "errorAtTime": 176,
+      "maxAbsoluteErrorAtTime": 186,
+      "maxAbsoluteErrorColumn": "Beta_gal",
+      "maxRelativeErrorAtTime": 197,
+      "maxRelativeErrorColumn": "Lactose_internal",
+      "errorAtTime": 197,
       "errorColumn": "Lactose_internal",
       "samples": []
     }
   },
   {
     "model": "lang_2024",
-    "status": "match",
+    "status": "mismatch",
     "referenceFile": "[multi-phase concatenation]",
     "referenceInferred": true,
     "details": {
@@ -5115,20 +5649,200 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.00012596416723936873,
-      "maxAbsoluteError": 0.00005409412543144754,
+      "maxRelativeError": 0.00011764769097782218,
+      "maxAbsoluteError": 0.00005082262032896079,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 225920,
+      "maxAbsoluteErrorAtTime": 220980,
+      "maxAbsoluteErrorColumn": "tCCNB",
+      "maxRelativeErrorAtTime": 225270,
+      "maxRelativeErrorColumn": "tCCNA",
+      "errorAtTime": 225270,
       "errorColumn": "tCCNA",
-      "samples": []
+      "samples": [
+        {
+          "time": 221630,
+          "column": "tCCNB",
+          "web": 0.45096493966347756,
+          "ref": 0.4510115850901,
+          "relError": 0.00010342400985796715
+        },
+        {
+          "time": 221760,
+          "column": "tCCNB",
+          "web": 0.4268210084696796,
+          "ref": 0.4268659430569,
+          "relError": 0.00010526627375950151
+        },
+        {
+          "time": 221890,
+          "column": "tCCNB",
+          "web": 0.40362261747207384,
+          "ref": 0.403665693009,
+          "relError": 0.00010671091864428845
+        },
+        {
+          "time": 222020,
+          "column": "tCCNB",
+          "web": 0.3814344763515489,
+          "ref": 0.3814756057876,
+          "relError": 0.00010781668716703605
+        },
+        {
+          "time": 222150,
+          "column": "tCCNB",
+          "web": 0.36029778412754204,
+          "ref": 0.3603369263272,
+          "relError": 0.00010862666798241545
+        },
+        {
+          "time": 222280,
+          "column": "tCCNB",
+          "web": 0.34023390872582043,
+          "ref": 0.3402710301147,
+          "relError": 0.00010909359185545555
+        },
+        {
+          "time": 222410,
+          "column": "tCCNA",
+          "web": 0.32209378151128626,
+          "ref": 0.3221272427576,
+          "relError": 0.00010387586603142126
+        },
+        {
+          "time": 222410,
+          "column": "tCCNB",
+          "web": 0.32124779920452234,
+          "ref": 0.321282900915,
+          "relError": 0.00010925483546647008
+        },
+        {
+          "time": 222540,
+          "column": "tCCNA",
+          "web": 0.30459870133576905,
+          "ref": 0.3046308075836,
+          "relError": 0.00010539396223785814
+        },
+        {
+          "time": 222540,
+          "column": "tCCNB",
+          "web": 0.30333106161308415,
+          "ref": 0.3033641659013,
+          "relError": 0.00010912392410452536
+        }
+      ]
     }
   },
   {
     "model": "lin_prion_2019",
-    "status": "skipped",
+    "status": "mismatch",
+    "referenceFile": "Lin_Prion_2019_ODE.gdat",
     "referenceInferred": true,
-    "details": null
+    "details": {
+      "webRows": 30001,
+      "refRows": 30001,
+      "webColumns": [
+        "time",
+        "Species1",
+        "Species2",
+        "Species15",
+        "Species30"
+      ],
+      "refColumns": [
+        "time",
+        "Species1",
+        "Species2",
+        "Species15",
+        "Species30"
+      ],
+      "columnMatch": true,
+      "missingColumns": [],
+      "extraColumns": [],
+      "timeMatch": true,
+      "timeOffset": 0,
+      "maxRelativeError": 0.043927405970003115,
+      "maxAbsoluteError": 5.361922856929596,
+      "absTolDominated": true,
+      "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 9.84,
+      "maxAbsoluteErrorColumn": "Species1",
+      "maxRelativeErrorAtTime": 0.04,
+      "maxRelativeErrorColumn": "Species30",
+      "errorAtTime": 0.04,
+      "errorColumn": "Species30",
+      "samples": [
+        {
+          "time": 4.15,
+          "column": "Species2",
+          "web": 0.09883181711531713,
+          "ref": 0.09882062230676,
+          "relError": 0.00011327130152902018
+        },
+        {
+          "time": 4.16,
+          "column": "Species2",
+          "web": 0.09953942632668906,
+          "ref": 0.09952780389226,
+          "relError": 0.00011676211987519455
+        },
+        {
+          "time": 4.17,
+          "column": "Species2",
+          "web": 0.10025216232286753,
+          "ref": 0.1002401001252,
+          "relError": 0.00012031857855276378
+        },
+        {
+          "time": 4.18,
+          "column": "Species2",
+          "web": 0.10097006240923147,
+          "ref": 0.1009575481104,
+          "relError": 0.00012394068630703901
+        },
+        {
+          "time": 4.19,
+          "column": "Species2",
+          "web": 0.10169316417092496,
+          "ref": 0.1016801852334,
+          "relError": 0.00012762841662732006
+        },
+        {
+          "time": 4.2,
+          "column": "Species2",
+          "web": 0.10242150548453607,
+          "ref": 0.1024080491627,
+          "relError": 0.000131381800847599
+        },
+        {
+          "time": 4.21,
+          "column": "Species2",
+          "web": 0.10315512449788952,
+          "ref": 0.1031411778557,
+          "relError": 0.0001352006723602947
+        },
+        {
+          "time": 4.22,
+          "column": "Species2",
+          "web": 0.10389405964921607,
+          "ref": 0.103879609549,
+          "relError": 0.00013908495119797516
+        },
+        {
+          "time": 4.23,
+          "column": "Species2",
+          "web": 0.10463834966473212,
+          "ref": 0.1046233827703,
+          "relError": 0.00014303450388955603
+        },
+        {
+          "time": 4.24,
+          "column": "Species2",
+          "web": 0.10538803356415373,
+          "ref": 0.1053725363375,
+          "relError": 0.0001470492059641004
+        }
+      ]
+    }
   },
   {
     "model": "lin_tcr_2019",
@@ -5157,6 +5871,10 @@
       "maxAbsoluteError": 1.6301783034577966e-7,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 120,
+      "maxAbsoluteErrorColumn": "Species7",
+      "maxRelativeErrorAtTime": 70,
+      "maxRelativeErrorColumn": "Species15",
       "errorAtTime": 70,
       "errorColumn": "Species15",
       "samples": []
@@ -5187,10 +5905,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.00014115335641638537,
-      "maxAbsoluteError": 5.60262947146839e-12,
-      "absTolDominated": false,
+      "maxRelativeError": 0.00021294217516814237,
+      "maxAbsoluteError": 4.970246436641901e-12,
+      "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 28,
+      "maxAbsoluteErrorColumn": "Active_PI3K",
+      "maxRelativeErrorAtTime": 70,
+      "maxRelativeErrorColumn": "PIP3_High",
       "errorAtTime": 70,
       "errorColumn": "PIP3_High",
       "samples": []
@@ -5223,6 +5945,10 @@
       "maxAbsoluteError": 0.000003551041565685864,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 71.95,
+      "maxAbsoluteErrorColumn": "K1p",
+      "maxRelativeErrorAtTime": 50.1,
+      "maxRelativeErrorColumn": "K1p",
       "errorAtTime": 50.1,
       "errorColumn": "K1p",
       "samples": []
@@ -5255,6 +5981,10 @@
       "maxAbsoluteError": 5.311449058353901e-10,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 33,
+      "maxAbsoluteErrorColumn": "FreeR",
+      "maxRelativeErrorAtTime": 12.6,
+      "maxRelativeErrorColumn": "Bound",
       "errorAtTime": 12.6,
       "errorColumn": "Bound",
       "samples": []
@@ -5289,6 +6019,10 @@
       "maxAbsoluteError": 0.00016609093427177868,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 57,
+      "maxAbsoluteErrorColumn": "FreeR",
+      "maxRelativeErrorAtTime": 98.4,
+      "maxRelativeErrorColumn": "Bound",
       "errorAtTime": 98.4,
       "errorColumn": "Bound",
       "samples": []
@@ -5323,6 +6057,10 @@
       "maxAbsoluteError": 0.0004348218672021176,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 75.6,
+      "maxAbsoluteErrorColumn": "FreeR",
+      "maxRelativeErrorAtTime": 58.2,
+      "maxRelativeErrorColumn": "Bound",
       "errorAtTime": 58.2,
       "errorColumn": "Bound",
       "samples": []
@@ -5351,11 +6089,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 2.6219149285771927e-12,
-      "maxAbsoluteError": 7.54425855120644e-9,
+      "maxRelativeError": 4.151747463835473e-12,
+      "maxAbsoluteError": 1.1420070222811773e-8,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 0.000746,
+      "maxAbsoluteErrorAtTime": 0.00096,
+      "maxAbsoluteErrorColumn": "Wtot",
+      "maxRelativeErrorAtTime": 0.000964,
+      "maxRelativeErrorColumn": "Stot",
+      "errorAtTime": 0.000964,
       "errorColumn": "Stot",
       "samples": []
     }
@@ -5399,6 +6141,10 @@
       "maxAbsoluteError": 0.000034182918852820876,
       "absTolDominated": false,
       "overlapMatch": true,
+      "maxAbsoluteErrorAtTime": 30,
+      "maxAbsoluteErrorColumn": "Calcium_Inflow",
+      "maxRelativeErrorAtTime": 29.5,
+      "maxRelativeErrorColumn": "Conducting_R",
       "errorAtTime": 29.5,
       "errorColumn": "Conducting_R",
       "samples": []
@@ -5431,10 +6177,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 2.9536750448924954e-13,
-      "maxAbsoluteError": 4.6782133722444996e-11,
+      "maxRelativeError": 2.9586812737821424e-13,
+      "maxAbsoluteError": 4.695266397902742e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 3,
+      "maxAbsoluteErrorColumn": "MAPK_P",
+      "maxRelativeErrorAtTime": 0.5,
+      "maxRelativeErrorColumn": "Active_Receptor",
       "errorAtTime": 0.5,
       "errorColumn": "Active_Receptor",
       "samples": []
@@ -5467,6 +6217,10 @@
       "maxAbsoluteError": 4.9897863618753036e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.88,
+      "maxAbsoluteErrorColumn": "H",
+      "maxRelativeErrorAtTime": 0.44,
+      "maxRelativeErrorColumn": "H",
       "errorAtTime": 0.44,
       "errorColumn": "H",
       "samples": []
@@ -5495,12 +6249,16 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 2.085869240060974e-12,
-      "maxAbsoluteError": 1.042934627548675e-10,
+      "maxRelativeError": 1.418774311445278e-13,
+      "maxAbsoluteError": 5.002220859751105e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 3.9,
+      "maxAbsoluteErrorColumn": "Slow_Product",
+      "maxRelativeErrorAtTime": 0.1,
+      "maxRelativeErrorColumn": "Slow_Product",
       "errorAtTime": 0.1,
-      "errorColumn": "Fast_Pool",
+      "errorColumn": "Slow_Product",
       "samples": []
     }
   },
@@ -5535,6 +6293,10 @@
       "maxAbsoluteError": 4.835243316847482e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 48,
+      "maxAbsoluteErrorColumn": "Tokens_P4",
+      "maxRelativeErrorAtTime": 16,
+      "maxRelativeErrorColumn": "Tokens_P1",
       "errorAtTime": 16,
       "errorColumn": "Tokens_P1",
       "samples": []
@@ -5567,6 +6329,10 @@
       "maxAbsoluteError": 4.918287999089443e-13,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 8,
+      "maxAbsoluteErrorColumn": "obs_Product",
+      "maxRelativeErrorAtTime": 8,
+      "maxRelativeErrorColumn": "obs_Product",
       "errorAtTime": 8,
       "errorColumn": "obs_Product",
       "samples": []
@@ -5607,6 +6373,10 @@
       "maxAbsoluteError": 4.919797902402934e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 18.4,
+      "maxAbsoluteErrorColumn": "ScT",
+      "maxRelativeErrorAtTime": 10.8,
+      "maxRelativeErrorColumn": "SaP",
       "errorAtTime": 10.8,
       "errorColumn": "SaP",
       "samples": []
@@ -5645,6 +6415,10 @@
       "maxAbsoluteError": 5.488414327459168e-7,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 4283.333333333,
+      "maxAbsoluteErrorColumn": "Y_shifted",
+      "maxRelativeErrorAtTime": 4500,
+      "maxRelativeErrorColumn": "LossVal",
       "errorAtTime": 4500,
       "errorColumn": "LossVal",
       "samples": []
@@ -5679,6 +6453,10 @@
       "maxAbsoluteError": 4.979350265443827e-14,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 2,
+      "maxAbsoluteErrorColumn": "S2",
+      "maxRelativeErrorAtTime": 8.6,
+      "maxRelativeErrorColumn": "S2",
       "errorAtTime": 8.6,
       "errorColumn": "S2",
       "samples": []
@@ -5715,6 +6493,10 @@
       "maxAbsoluteError": 4.668265773943858e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.04,
+      "maxAbsoluteErrorColumn": "ObsAY",
+      "maxRelativeErrorAtTime": 0.04,
+      "maxRelativeErrorColumn": "ObsAY",
       "errorAtTime": 0.04,
       "errorColumn": "ObsAY",
       "samples": []
@@ -5753,6 +6535,10 @@
       "maxAbsoluteError": 52.14136563800275,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 100,
+      "maxAbsoluteErrorColumn": "Q_Right",
+      "maxRelativeErrorAtTime": 85.4,
+      "maxRelativeErrorColumn": "Rew",
       "errorAtTime": 85.4,
       "errorColumn": "Rew",
       "samples": []
@@ -5787,6 +6573,10 @@
       "maxAbsoluteError": 3.8996583739958623e-14,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.06,
+      "maxAbsoluteErrorColumn": "ObsW1",
+      "maxRelativeErrorAtTime": 0.06,
+      "maxRelativeErrorColumn": "ObsW1",
       "errorAtTime": 0.06,
       "errorColumn": "ObsW1",
       "samples": []
@@ -5821,6 +6611,10 @@
       "maxAbsoluteError": 4.783942131325603e-10,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.04,
+      "maxAbsoluteErrorColumn": "MotCW",
+      "maxRelativeErrorAtTime": 0.07,
+      "maxRelativeErrorColumn": "CheYp",
       "errorAtTime": 0.07,
       "errorColumn": "CheYp",
       "samples": []
@@ -5859,6 +6653,10 @@
       "maxAbsoluteError": 0.000012848683695665386,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 10.5,
+      "maxAbsoluteErrorColumn": "Active_mTORC2",
+      "maxRelativeErrorAtTime": 10.5,
+      "maxRelativeErrorColumn": "Active_mTORC2",
       "errorAtTime": 10.5,
       "errorColumn": "Active_mTORC2",
       "samples": []
@@ -5891,12 +6689,16 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.65260881710122e-13,
-      "maxAbsoluteError": 1.3063328196949442e-11,
+      "maxRelativeError": 2.880089841397303e-13,
+      "maxAbsoluteError": 5.229594535194337e-12,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 90.5,
-      "errorColumn": "Active_Rheb",
+      "maxAbsoluteErrorAtTime": 94.5,
+      "maxAbsoluteErrorColumn": "Active_AMPK",
+      "maxRelativeErrorAtTime": 0.5,
+      "maxRelativeErrorColumn": "Active_MTORC1",
+      "errorAtTime": 0.5,
+      "errorColumn": "Active_MTORC1",
       "samples": []
     }
   },
@@ -5933,6 +6735,10 @@
       "maxAbsoluteError": 4.945377440890297e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 7.2,
+      "maxAbsoluteErrorColumn": "Val_Root",
+      "maxRelativeErrorAtTime": 0.2,
+      "maxRelativeErrorColumn": "Val_Add",
       "errorAtTime": 0.2,
       "errorColumn": "Val_Add",
       "samples": []
@@ -5967,6 +6773,10 @@
       "maxAbsoluteError": 4.969358258222201e-13,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.6,
+      "maxAbsoluteErrorColumn": "S1",
+      "maxRelativeErrorAtTime": 0.9,
+      "maxRelativeErrorColumn": "S1",
       "errorAtTime": 0.9,
       "errorColumn": "S1",
       "samples": []
@@ -6011,6 +6821,10 @@
       "maxAbsoluteError": 5.370907274482306e-9,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 31.448,
+      "maxAbsoluteErrorColumn": "Output",
+      "maxRelativeErrorAtTime": 19.136,
+      "maxRelativeErrorColumn": "Output",
       "errorAtTime": 19.136,
       "errorColumn": "Output",
       "samples": []
@@ -6049,6 +6863,10 @@
       "maxAbsoluteError": 0.00004589557647705078,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 9.2,
+      "maxAbsoluteErrorColumn": "R4_2",
+      "maxRelativeErrorAtTime": 0.4,
+      "maxRelativeErrorColumn": "R4_0",
       "errorAtTime": 0.4,
       "errorColumn": "R4_0",
       "samples": []
@@ -6081,9 +6899,122 @@
       "maxAbsoluteError": 4.984457291357103e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 3,
+      "maxAbsoluteErrorColumn": "S2",
+      "maxRelativeErrorAtTime": 1.3,
+      "maxRelativeErrorColumn": "S2",
       "errorAtTime": 1.3,
       "errorColumn": "S2",
       "samples": []
+    }
+  },
+  {
+    "model": "mwc",
+    "status": "mismatch",
+    "referenceFile": "mwc.gdat",
+    "referenceInferred": false,
+    "details": {
+      "webRows": 11,
+      "refRows": 11,
+      "webColumns": [
+        "time",
+        "H_ox",
+        "H_free",
+        "boundfrac"
+      ],
+      "refColumns": [
+        "time",
+        "H_ox",
+        "H_free",
+        "boundfrac"
+      ],
+      "columnMatch": true,
+      "missingColumns": [],
+      "extraColumns": [],
+      "timeMatch": true,
+      "timeOffset": 0,
+      "maxRelativeError": 0.2731775851354365,
+      "maxAbsoluteError": 8510173415984560,
+      "absTolDominated": false,
+      "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 1,
+      "maxAbsoluteErrorColumn": "H_free",
+      "maxRelativeErrorAtTime": 9,
+      "maxRelativeErrorColumn": "H_ox",
+      "errorAtTime": 9,
+      "errorColumn": "H_ox",
+      "samples": [
+        {
+          "time": 1,
+          "column": "H_ox",
+          "web": 31152531829166356,
+          "ref": 22642358413230000,
+          "relError": 0.27317758513511126
+        },
+        {
+          "time": 1,
+          "column": "H_free",
+          "web": 113378871370815440,
+          "ref": 121889044786800000,
+          "relError": 0.06981901803291653
+        },
+        {
+          "time": 1,
+          "column": "boundfrac",
+          "web": 0.21554161337562022,
+          "ref": 0.1566604759375,
+          "relError": 0.2731775851353085
+        },
+        {
+          "time": 2,
+          "column": "H_ox",
+          "web": 31152531829166440,
+          "ref": 22642358413230000,
+          "relError": 0.27317758513511325
+        },
+        {
+          "time": 2,
+          "column": "H_free",
+          "web": 113378871370815540,
+          "ref": 121889044786800000,
+          "relError": 0.06981901803291575
+        },
+        {
+          "time": 2,
+          "column": "boundfrac",
+          "web": 0.21554161337562053,
+          "ref": 0.1566604759375,
+          "relError": 0.2731775851353095
+        },
+        {
+          "time": 3,
+          "column": "H_ox",
+          "web": 31152531829166524,
+          "ref": 22642358413230000,
+          "relError": 0.2731775851351152
+        },
+        {
+          "time": 3,
+          "column": "H_free",
+          "web": 113378871370815570,
+          "ref": 121889044786800000,
+          "relError": 0.06981901803291549
+        },
+        {
+          "time": 3,
+          "column": "boundfrac",
+          "web": 0.21554161337562097,
+          "ref": 0.1566604759375,
+          "relError": 0.273177585135311
+        },
+        {
+          "time": 4,
+          "column": "H_ox",
+          "web": 31152531829166564,
+          "ref": 22642358413230000,
+          "relError": 0.27317758513511614
+        }
+      ]
     }
   },
   {
@@ -6111,11 +7042,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.2484381472600518e-13,
-      "maxAbsoluteError": 5.073275133327115e-12,
+      "maxRelativeError": 1.2591390456652958e-13,
+      "maxAbsoluteError": 5.115907697472721e-12,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 17.4,
+      "maxAbsoluteErrorAtTime": 99.6,
+      "maxAbsoluteErrorColumn": "High_MYOD",
+      "maxRelativeErrorAtTime": 12.6,
+      "maxRelativeErrorColumn": "MEF2_On",
+      "errorAtTime": 12.6,
       "errorColumn": "MEF2_On",
       "samples": []
     }
@@ -6147,10 +7082,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.752048762971083e-13,
-      "maxAbsoluteError": 4.984457291357103e-12,
+      "maxRelativeError": 4.670691767590476e-13,
+      "maxAbsoluteError": 4.82458517581108e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 42,
+      "maxAbsoluteErrorColumn": "Protein",
+      "maxRelativeErrorAtTime": 20,
+      "maxRelativeErrorColumn": "Free_gene",
       "errorAtTime": 20,
       "errorColumn": "Free_gene",
       "samples": []
@@ -6183,10 +7122,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.7622695148789802e-13,
-      "maxAbsoluteError": 6.920686246303376e-12,
+      "maxRelativeError": 1.7722597048726252e-13,
+      "maxAbsoluteError": 7.773337529215496e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 28.8,
+      "maxAbsoluteErrorColumn": "High_Calcium",
+      "maxRelativeErrorAtTime": 0.4,
+      "maxRelativeErrorColumn": "High_Calcium",
       "errorAtTime": 0.4,
       "errorColumn": "High_Calcium",
       "samples": []
@@ -6225,6 +7168,10 @@
       "maxAbsoluteError": 0.00016383784554818703,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 10.4,
+      "maxAbsoluteErrorColumn": "Total_IkB",
+      "maxRelativeErrorAtTime": 735.425,
+      "maxRelativeErrorColumn": "NFkB_complex",
       "errorAtTime": 735.425,
       "errorColumn": "NFkB_complex",
       "samples": []
@@ -6259,71 +7206,75 @@
       "maxAbsoluteError": 175,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.5,
+      "maxAbsoluteErrorColumn": "Free_Sites",
+      "maxRelativeErrorAtTime": 3,
+      "maxRelativeErrorColumn": "Monomers",
       "errorAtTime": 3,
       "errorColumn": "Monomers",
       "samples": [
         {
           "time": 0.25,
           "column": "Dimers",
-          "web": 254,
+          "web": 251,
           "ref": 118,
-          "relError": 0.5354330708661418
+          "relError": 0.5298804780876494
         },
         {
           "time": 0.25,
           "column": "Free_Sites",
-          "web": 2,
+          "web": 10,
           "ref": 170,
-          "relError": 0.9882352941176471
+          "relError": 0.9411764705882353
         },
         {
           "time": 0.5,
           "column": "Dimers",
-          "web": 250,
+          "web": 257,
           "ref": 110,
-          "relError": 0.56
+          "relError": 0.5719844357976653
         },
         {
           "time": 0.5,
           "column": "Free_Sites",
-          "web": 3,
+          "web": 1,
           "ref": 176,
-          "relError": 0.9829545454545454
+          "relError": 0.9943181818181818
         },
         {
           "time": 0.75,
           "column": "Dimers",
-          "web": 246,
+          "web": 257,
           "ref": 110,
-          "relError": 0.5528455284552846
+          "relError": 0.5719844357976653
         },
         {
           "time": 0.75,
+          "column": "Free_Sites",
+          "web": 6,
+          "ref": 171,
+          "relError": 0.9649122807017544
+        },
+        {
+          "time": 1,
+          "column": "Dimers",
+          "web": 255,
+          "ref": 110,
+          "relError": 0.5686274509803921
+        },
+        {
+          "time": 1,
           "column": "Free_Sites",
           "web": 5,
-          "ref": 171,
-          "relError": 0.9707602339181286
-        },
-        {
-          "time": 1,
-          "column": "Dimers",
-          "web": 250,
-          "ref": 110,
-          "relError": 0.56
-        },
-        {
-          "time": 1,
-          "column": "Free_Sites",
-          "web": 3,
           "ref": 168,
-          "relError": 0.9821428571428571
+          "relError": 0.9702380952380952
         },
         {
           "time": 1.25,
           "column": "Dimers",
-          "web": 248,
+          "web": 249,
           "ref": 110,
-          "relError": 0.5564516129032258
+          "relError": 0.5582329317269076
         },
         {
           "time": 1.25,
@@ -6364,50 +7315,54 @@
       "maxAbsoluteError": 6,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 4,
+      "maxAbsoluteErrorAtTime": 282,
+      "maxAbsoluteErrorColumn": "Size_Large",
+      "maxRelativeErrorAtTime": 6,
+      "maxRelativeErrorColumn": "Size_1",
+      "errorAtTime": 6,
       "errorColumn": "Size_1",
       "samples": [
         {
           "time": 2,
-          "column": "Size_1",
-          "web": 4,
-          "ref": 2,
-          "relError": 0.5
-        },
-        {
-          "time": 2,
-          "column": "Size_2",
-          "web": 2,
-          "ref": 1,
-          "relError": 0.5
-        },
-        {
-          "time": 2,
           "column": "Size_Large",
-          "web": 5,
+          "web": 4,
           "ref": 7,
-          "relError": 0.2857142857142857
+          "relError": 0.42857142857142855
         },
         {
           "time": 4,
+          "column": "Size_Large",
+          "web": 6,
+          "ref": 3,
+          "relError": 0.5
+        },
+        {
+          "time": 6,
           "column": "Size_1",
-          "web": 0,
-          "ref": 2,
+          "web": 2,
+          "ref": 0,
           "relError": 1
         },
         {
-          "time": 4,
+          "time": 6,
           "column": "Size_2",
-          "web": 4,
-          "ref": 1,
-          "relError": 0.75
+          "web": 1,
+          "ref": 2,
+          "relError": 0.5
         },
         {
-          "time": 4,
-          "column": "Size_Large",
+          "time": 8,
+          "column": "Size_1",
+          "web": 2,
+          "ref": 0,
+          "relError": 1
+        },
+        {
+          "time": 8,
+          "column": "Size_2",
           "web": 1,
-          "ref": 3,
-          "relError": 0.6666666666666666
+          "ref": 2,
+          "relError": 0.5
         },
         {
           "time": 8,
@@ -6418,24 +7373,24 @@
         },
         {
           "time": 10,
+          "column": "Size_1",
+          "web": 2,
+          "ref": 0,
+          "relError": 1
+        },
+        {
+          "time": 10,
+          "column": "Size_2",
+          "web": 1,
+          "ref": 2,
+          "relError": 0.5
+        },
+        {
+          "time": 10,
           "column": "Size_Large",
           "web": 1,
           "ref": 3,
           "relError": 0.6666666666666666
-        },
-        {
-          "time": 12,
-          "column": "Size_2",
-          "web": 0,
-          "ref": 2,
-          "relError": 1
-        },
-        {
-          "time": 12,
-          "column": "Size_Large",
-          "web": 1,
-          "ref": 2,
-          "relError": 0.5
         }
       ]
     }
@@ -6464,77 +7419,81 @@
       "timeMatch": true,
       "timeOffset": 0,
       "maxRelativeError": 1,
-      "maxAbsoluteError": 627,
+      "maxAbsoluteError": 353,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 0.4,
+      "maxAbsoluteErrorAtTime": 20,
+      "maxAbsoluteErrorColumn": "Cells",
+      "maxRelativeErrorAtTime": 0.2,
+      "maxRelativeErrorColumn": "LargeCells",
+      "errorAtTime": 0.2,
       "errorColumn": "LargeCells",
       "samples": [
         {
+          "time": 0.2,
+          "column": "LargeCells",
+          "web": 1,
+          "ref": 0,
+          "relError": 1
+        },
+        {
           "time": 0.4,
           "column": "LargeCells",
-          "web": 2,
+          "web": 1,
           "ref": 0,
           "relError": 1
         },
         {
           "time": 0.6,
           "column": "LargeCells",
-          "web": 3,
+          "web": 1,
           "ref": 0,
           "relError": 1
         },
         {
           "time": 0.8,
           "column": "LargeCells",
-          "web": 3,
+          "web": 2,
           "ref": 1,
-          "relError": 0.6666666666666666
+          "relError": 0.5
         },
         {
           "time": 1,
           "column": "LargeCells",
-          "web": 3,
+          "web": 2,
           "ref": 1,
-          "relError": 0.6666666666666666
+          "relError": 0.5
         },
         {
-          "time": 1.2,
+          "time": 1.6,
           "column": "LargeCells",
           "web": 3,
           "ref": 2,
           "relError": 0.3333333333333333
         },
         {
-          "time": 1.4,
-          "column": "LargeCells",
-          "web": 4,
-          "ref": 2,
-          "relError": 0.5
-        },
-        {
-          "time": 1.6,
-          "column": "LargeCells",
-          "web": 4,
-          "ref": 2,
-          "relError": 0.5
-        },
-        {
           "time": 1.8,
+          "column": "LargeCells",
+          "web": 2,
+          "ref": 3,
+          "relError": 0.3333333333333333
+        },
+        {
+          "time": 2,
           "column": "Cells",
           "web": 11,
           "ref": 10,
           "relError": 0.09090909090909091
         },
         {
-          "time": 1.8,
+          "time": 2,
           "column": "LargeCells",
-          "web": 7,
-          "ref": 3,
-          "relError": 0.5714285714285714
+          "web": 6,
+          "ref": 4,
+          "relError": 0.3333333333333333
         },
         {
-          "time": 2,
+          "time": 2.2,
           "column": "Cells",
           "web": 11,
           "ref": 10,
@@ -6570,6 +7529,10 @@
       "maxAbsoluteError": 1,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.2,
+      "maxAbsoluteErrorColumn": "P_at_0",
+      "maxRelativeErrorAtTime": 0.2,
+      "maxRelativeErrorColumn": "P_at_0",
       "errorAtTime": 0.2,
       "errorColumn": "P_at_0",
       "samples": [
@@ -6658,9 +7621,13 @@
       "timeMatch": true,
       "timeOffset": 0,
       "maxRelativeError": 1,
-      "maxAbsoluteError": 2,
+      "maxAbsoluteError": 4,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 21,
+      "maxAbsoluteErrorColumn": "Cyclic_Dimers",
+      "maxRelativeErrorAtTime": 4.25,
+      "maxRelativeErrorColumn": "Cyclic_Dimers",
       "errorAtTime": 4.25,
       "errorColumn": "Cyclic_Dimers",
       "samples": [
@@ -6701,23 +7668,37 @@
         },
         {
           "time": 5.5,
-          "column": "Linear_Dimers",
-          "web": 1,
+          "column": "Cyclic_Dimers",
+          "web": 2,
           "ref": 0,
           "relError": 1
         },
         {
           "time": 5.75,
-          "column": "Linear_Dimers",
-          "web": 1,
+          "column": "Cyclic_Dimers",
+          "web": 2,
           "ref": 0,
           "relError": 1
         },
         {
-          "time": 18.5,
-          "column": "Linear_Dimers",
-          "web": 0,
-          "ref": 1,
+          "time": 6,
+          "column": "Cyclic_Dimers",
+          "web": 2,
+          "ref": 0,
+          "relError": 1
+        },
+        {
+          "time": 6.25,
+          "column": "Cyclic_Dimers",
+          "web": 2,
+          "ref": 0,
+          "relError": 1
+        },
+        {
+          "time": 6.5,
+          "column": "Cyclic_Dimers",
+          "web": 2,
+          "ref": 0,
           "relError": 1
         }
       ]
@@ -6784,6 +7765,10 @@
       "maxAbsoluteError": 0.000060601944262828056,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 41.2,
+      "maxAbsoluteErrorColumn": "W11_Pos",
+      "maxRelativeErrorAtTime": 23.2,
+      "maxRelativeErrorColumn": "Truth",
       "errorAtTime": 23.2,
       "errorColumn": "Truth",
       "samples": []
@@ -6812,11 +7797,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 8.417325006803195e-13,
-      "maxAbsoluteError": 1.7486012637846216e-13,
+      "maxRelativeError": 3.84265008741565e-13,
+      "maxAbsoluteError": 5.551115123125783e-14,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 763.3333333333,
+      "maxAbsoluteErrorAtTime": 730,
+      "maxAbsoluteErrorColumn": "Active_notch",
+      "maxRelativeErrorAtTime": 730,
+      "maxRelativeErrorColumn": "Active_notch",
+      "errorAtTime": 730,
       "errorColumn": "Active_notch",
       "samples": []
     }
@@ -6856,6 +7845,10 @@
       "maxAbsoluteError": 0.0000026006648567999946,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 9.75,
+      "maxAbsoluteErrorColumn": "Phospho_Drive",
+      "maxRelativeErrorAtTime": 9.75,
+      "maxRelativeErrorColumn": "Phospho_Drive",
       "errorAtTime": 9.75,
       "errorColumn": "Phospho_Drive",
       "samples": []
@@ -6890,8 +7883,12 @@
       "timeOffset": 0,
       "maxRelativeError": 0.00015449701278579743,
       "maxAbsoluteError": 0.000005982798313652893,
-      "absTolDominated": false,
+      "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.00634,
+      "maxAbsoluteErrorColumn": "C",
+      "maxRelativeErrorAtTime": 0.00001,
+      "maxRelativeErrorColumn": "D",
       "errorAtTime": 0.00001,
       "errorColumn": "D",
       "samples": []
@@ -6928,8 +7925,12 @@
       "timeOffset": 0,
       "maxRelativeError": 0.00015449701278579743,
       "maxAbsoluteError": 0.0000055855503546808905,
-      "absTolDominated": false,
+      "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.00634,
+      "maxAbsoluteErrorColumn": "C_cyt",
+      "maxRelativeErrorAtTime": 0.00001,
+      "maxRelativeErrorColumn": "FreeD",
       "errorAtTime": 0.00001,
       "errorColumn": "FreeD",
       "samples": []
@@ -6963,9 +7964,13 @@
       "timeMatch": true,
       "timeOffset": 0,
       "maxRelativeError": 2.990304030602073e-13,
-      "maxAbsoluteError": 5.258016244624741e-12,
+      "maxAbsoluteError": 4.995115432393504e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 31,
+      "maxAbsoluteErrorColumn": "High_Antioxidant",
+      "maxRelativeErrorAtTime": 1,
+      "maxRelativeErrorColumn": "Elevated_ROS",
       "errorAtTime": 1,
       "errorColumn": "Elevated_ROS",
       "samples": []
@@ -7004,6 +8009,10 @@
       "maxAbsoluteError": 6.787104211980477e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 29,
+      "maxAbsoluteErrorColumn": "Total_Workload",
+      "maxRelativeErrorAtTime": 7,
+      "maxRelativeErrorColumn": "Upstream_Drive",
       "errorAtTime": 7,
       "errorColumn": "Upstream_Drive",
       "samples": []
@@ -7032,10 +8041,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 3.8770999717795997e-13,
-      "maxAbsoluteError": 4.831690603168681e-12,
+      "maxRelativeError": 3.880481655139198e-13,
+      "maxAbsoluteError": 4.82458517581108e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.46875,
+      "maxAbsoluteErrorColumn": "p53_total",
+      "maxRelativeErrorAtTime": 1.09375,
+      "maxRelativeErrorColumn": "p53_total",
       "errorAtTime": 1.09375,
       "errorColumn": "p53_total",
       "samples": []
@@ -7074,6 +8087,10 @@
       "maxAbsoluteError": 0.000025117007027120053,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 12.6,
+      "maxAbsoluteErrorColumn": "Repaired_Units",
+      "maxRelativeErrorAtTime": 5.1,
+      "maxRelativeErrorColumn": "PAR_Chain",
       "errorAtTime": 5.1,
       "errorColumn": "PAR_Chain",
       "samples": []
@@ -7104,12 +8121,16 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.3162766689930266e-13,
-      "maxAbsoluteError": 5.051958851254312e-12,
+      "maxRelativeError": 4.4904270769203366e-11,
+      "maxAbsoluteError": 3.143298954455531e-9,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 2.5,
-      "errorColumn": "Sensor_P",
+      "maxAbsoluteErrorAtTime": 9,
+      "maxAbsoluteErrorColumn": "Relay_P",
+      "maxRelativeErrorAtTime": 9,
+      "maxRelativeErrorColumn": "Relay_P",
+      "errorAtTime": 9,
+      "errorColumn": "Relay_P",
       "samples": []
     }
   },
@@ -7142,6 +8163,10 @@
       "maxAbsoluteError": 5.575344630415202e-10,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 32.66,
+      "maxAbsoluteErrorColumn": "Z_raw",
+      "maxRelativeErrorAtTime": 31.79,
+      "maxRelativeErrorColumn": "Y_raw",
       "errorAtTime": 31.79,
       "errorColumn": "Y_raw",
       "samples": []
@@ -7178,6 +8203,10 @@
       "maxAbsoluteError": 5.002220859751105e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 12.18,
+      "maxAbsoluteErrorColumn": "Ey",
+      "maxRelativeErrorAtTime": 10.02,
+      "maxRelativeErrorColumn": "EVy",
       "errorAtTime": 10.02,
       "errorColumn": "EVy",
       "samples": []
@@ -7226,6 +8255,10 @@
       "maxAbsoluteError": 4.998224056862455e-13,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 9.02,
+      "maxAbsoluteErrorColumn": "i4",
+      "maxRelativeErrorAtTime": 9.02,
+      "maxRelativeErrorColumn": "i4",
       "errorAtTime": 9.02,
       "errorColumn": "i4",
       "samples": []
@@ -7274,6 +8307,10 @@
       "maxAbsoluteError": 5.113687251423471e-13,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 8.93,
+      "maxAbsoluteErrorColumn": "V5",
+      "maxRelativeErrorAtTime": 9.58,
+      "maxRelativeErrorColumn": "V5",
       "errorAtTime": 9.58,
       "errorColumn": "V5",
       "samples": []
@@ -7306,10 +8343,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.795483052692212e-12,
-      "maxAbsoluteError": 8.468958867524634e-11,
+      "maxRelativeError": 2.0616070925111962e-11,
+      "maxAbsoluteError": 3.6408565051715414e-10,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 68,
+      "maxAbsoluteErrorColumn": "High_ADP",
+      "maxRelativeErrorAtTime": 68,
+      "maxRelativeErrorColumn": "High_ADP",
       "errorAtTime": 68,
       "errorColumn": "High_ADP",
       "samples": []
@@ -7338,10 +8379,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.0001573705630768143,
-      "maxAbsoluteError": 0.2088613339483345,
+      "maxRelativeError": 0.00005473584604429034,
+      "maxAbsoluteError": 0.06791201308078598,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 950,
+      "maxAbsoluteErrorColumn": "Prey_count",
+      "maxRelativeErrorAtTime": 936.6666666667,
+      "maxRelativeErrorColumn": "Prey_count",
       "errorAtTime": 936.6666666667,
       "errorColumn": "Prey_count",
       "samples": []
@@ -7374,6 +8419,10 @@
       "maxAbsoluteError": 6,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 3.5,
+      "maxAbsoluteErrorColumn": "Free_Monomers",
+      "maxRelativeErrorAtTime": 0.5,
+      "maxRelativeErrorColumn": "Free_Monomers",
       "errorAtTime": 0.5,
       "errorColumn": "Free_Monomers",
       "samples": [
@@ -7483,6 +8532,10 @@
       "maxAbsoluteError": 4.988010005035903e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 35.75,
+      "maxAbsoluteErrorColumn": "Degraded",
+      "maxRelativeErrorAtTime": 4.25,
+      "maxRelativeErrorColumn": "Phagophores",
       "errorAtTime": 4.25,
       "errorColumn": "Phagophores",
       "samples": []
@@ -7513,10 +8566,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 5.181647418385359e-12,
-      "maxAbsoluteError": 2.4775204110483173e-10,
+      "maxRelativeError": 1.9944616841336343e-12,
+      "maxAbsoluteError": 9.536194056636305e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 13.2,
+      "maxAbsoluteErrorColumn": "Adhesions",
+      "maxRelativeErrorAtTime": 13.2,
+      "maxRelativeErrorColumn": "Adhesions",
       "errorAtTime": 13.2,
       "errorColumn": "Adhesions",
       "samples": []
@@ -7549,6 +8606,10 @@
       "maxAbsoluteError": 4.9666937229631e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 48.25,
+      "maxAbsoluteErrorColumn": "Signaling_TCR",
+      "maxRelativeErrorAtTime": 1.25,
+      "maxRelativeErrorColumn": "Signaling_TCR",
       "errorAtTime": 1.25,
       "errorColumn": "Signaling_TCR",
       "samples": []
@@ -7579,11 +8640,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 5.110505340514049e-13,
-      "maxAbsoluteError": 1.6726175999792758e-11,
+      "maxRelativeError": 4.0783089765730874e-13,
+      "maxAbsoluteError": 7.958078640513122e-12,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 94,
+      "maxAbsoluteErrorAtTime": 94,
+      "maxAbsoluteErrorColumn": "AI_Conc",
+      "maxRelativeErrorAtTime": 2,
+      "maxRelativeErrorColumn": "AI_Conc",
+      "errorAtTime": 2,
       "errorColumn": "AI_Conc",
       "samples": []
     }
@@ -7617,6 +8682,10 @@
       "maxAbsoluteError": 5.0237591864288333e-14,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 22.85,
+      "maxAbsoluteErrorColumn": "B_conc",
+      "maxRelativeErrorAtTime": 21.4,
+      "maxRelativeErrorColumn": "C_conc",
       "errorAtTime": 21.4,
       "errorColumn": "C_conc",
       "samples": []
@@ -7649,12 +8718,16 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.3539056292242626e-7,
-      "maxAbsoluteError": 0.000012265031728020404,
+      "maxRelativeError": 1.921211251707899e-7,
+      "maxAbsoluteError": 0.000024958271865216375,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 22.83333333333,
-      "errorColumn": "Protein",
+      "maxAbsoluteErrorAtTime": 5.333333333333,
+      "maxAbsoluteErrorColumn": "Autoinducer_pool",
+      "maxRelativeErrorAtTime": 5.333333333333,
+      "maxRelativeErrorColumn": "Autoinducer_env_pool",
+      "errorAtTime": 5.333333333333,
+      "errorColumn": "Autoinducer_env_pool",
       "samples": []
     }
   },
@@ -7685,10 +8758,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.62881886669771e-13,
-      "maxAbsoluteError": 6.387779194483301e-12,
+      "maxRelativeError": 4.652573802230616e-13,
+      "maxAbsoluteError": 5.027089855502709e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 22.875,
+      "maxAbsoluteErrorColumn": "Active_GEF",
+      "maxRelativeErrorAtTime": 1.3125,
+      "maxRelativeErrorColumn": "Active_GEF",
       "errorAtTime": 1.3125,
       "errorColumn": "Active_GEF",
       "samples": []
@@ -7727,6 +8804,10 @@
       "maxAbsoluteError": 2.5143123139059753e-8,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 148,
+      "maxAbsoluteErrorColumn": "Active_NFAT",
+      "maxRelativeErrorAtTime": 148,
+      "maxRelativeErrorColumn": "Active_NFAT",
       "errorAtTime": 148,
       "errorColumn": "Active_NFAT",
       "samples": []
@@ -7765,6 +8846,10 @@
       "maxAbsoluteError": 4.998668146072305e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 50.5,
+      "maxAbsoluteErrorColumn": "GAP_Complexes",
+      "maxRelativeErrorAtTime": 6.5,
+      "maxRelativeErrorColumn": "GAP_Complexes",
       "errorAtTime": 6.5,
       "errorColumn": "GAP_Complexes",
       "samples": []
@@ -7772,7 +8857,7 @@
   },
   {
     "model": "repressilator",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "Repressilator.gdat",
     "referenceInferred": false,
     "details": {
@@ -7795,84 +8880,17 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.9480191354315671,
-      "maxAbsoluteError": 1325167.861237571,
+      "maxRelativeError": 1.414348771703389e-10,
+      "maxAbsoluteError": 0.00014719925820827484,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 29800,
+      "maxAbsoluteErrorAtTime": 20500,
+      "maxAbsoluteErrorColumn": "pLacI",
+      "maxRelativeErrorAtTime": 31000,
+      "maxRelativeErrorColumn": "pTetR",
+      "errorAtTime": 31000,
       "errorColumn": "pTetR",
-      "samples": [
-        {
-          "time": 100,
-          "column": "pTetR",
-          "web": 206395.42031890078,
-          "ref": 205102.7893875,
-          "relError": 0.006262885723934873
-        },
-        {
-          "time": 100,
-          "column": "pCI",
-          "web": 1873403.9223998396,
-          "ref": 1872027.832871,
-          "relError": 0.0007345396859620066
-        },
-        {
-          "time": 100,
-          "column": "pLacI",
-          "web": 150352.00971004827,
-          "ref": 149575.6711339,
-          "relError": 0.005163473222908175
-        },
-        {
-          "time": 200,
-          "column": "pTetR",
-          "web": 242267.85895414185,
-          "ref": 225983.1718154,
-          "relError": 0.067217695360177
-        },
-        {
-          "time": 200,
-          "column": "pCI",
-          "web": 1745777.7346944832,
-          "ref": 1729356.217825,
-          "relError": 0.009406419009208581
-        },
-        {
-          "time": 200,
-          "column": "pLacI",
-          "web": 140978.717270736,
-          "ref": 135210.5928431,
-          "relError": 0.04091485962777547
-        },
-        {
-          "time": 300,
-          "column": "pTetR",
-          "web": 317311.0681016629,
-          "ref": 257242.0923125,
-          "relError": 0.1893062733314978
-        },
-        {
-          "time": 300,
-          "column": "pCI",
-          "web": 1647519.1475269021,
-          "ref": 1591343.432475,
-          "relError": 0.034097154583136606
-        },
-        {
-          "time": 300,
-          "column": "pLacI",
-          "web": 139553.16226872755,
-          "ref": 122439.6788753,
-          "relError": 0.12263056684070935
-        },
-        {
-          "time": 400,
-          "column": "pTetR",
-          "web": 437158.6895587144,
-          "ref": 300524.2082262,
-          "relError": 0.3125512190331587
-        }
-      ]
+      "samples": []
     }
   },
   {
@@ -7902,12 +8920,16 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 2.629924188742684e-13,
-      "maxAbsoluteError": 4.561684363579843e-12,
+      "maxRelativeError": 3.059820524338581e-13,
+      "maxAbsoluteError": 4.433786671143025e-12,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 2.5,
-      "errorColumn": "Protein_A",
+      "maxAbsoluteErrorAtTime": 20,
+      "maxAbsoluteErrorColumn": "Protein_B",
+      "maxRelativeErrorAtTime": 302.5,
+      "maxRelativeErrorColumn": "Protein_B",
+      "errorAtTime": 302.5,
+      "errorColumn": "Protein_B",
       "samples": []
     }
   },
@@ -7936,11 +8958,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.1495695969540237e-13,
-      "maxAbsoluteError": 1.659827830735594e-11,
+      "maxRelativeError": 1.7227108696176488e-12,
+      "maxAbsoluteError": 6.890843451401452e-11,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 18.75,
+      "maxAbsoluteErrorAtTime": 25,
+      "maxAbsoluteErrorColumn": "Active_RARRXR",
+      "maxRelativeErrorAtTime": 25,
+      "maxRelativeErrorColumn": "Active_RARRXR",
+      "errorAtTime": 25,
       "errorColumn": "Active_RARRXR",
       "samples": []
     }
@@ -7974,114 +9000,17 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 8.972320553914635e-8,
-      "maxAbsoluteError": 0.00002759543065167236,
+      "maxRelativeError": 6.70600695103697e-8,
+      "maxAbsoluteError": 0.000020632474274862034,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 5.973333333333,
+      "maxAbsoluteErrorAtTime": 7.386666666667,
+      "maxAbsoluteErrorColumn": "Active_RhoA",
+      "maxRelativeErrorAtTime": 7.386666666667,
+      "maxRelativeErrorColumn": "Active_RhoA",
+      "errorAtTime": 7.386666666667,
       "errorColumn": "Active_RhoA",
       "samples": []
-    }
-  },
-  {
-    "model": "shp2_base_model",
-    "status": "mismatch",
-    "referenceFile": "SHP2_base_model.gdat",
-    "referenceInferred": false,
-    "details": {
-      "webRows": 12,
-      "refRows": 12,
-      "webColumns": [
-        "time",
-        "pYR"
-      ],
-      "refColumns": [
-        "time",
-        "pYR"
-      ],
-      "columnMatch": true,
-      "missingColumns": [],
-      "extraColumns": [],
-      "timeMatch": true,
-      "timeOffset": 0,
-      "maxRelativeError": 0.004871047496333216,
-      "maxAbsoluteError": 0.00007626438358829431,
-      "absTolDominated": false,
-      "overlapMatch": false,
-      "errorAtTime": 110,
-      "errorColumn": "pYR",
-      "samples": [
-        {
-          "time": 10,
-          "column": "pYR",
-          "web": 0.019417326103985093,
-          "ref": 0.01939836617004,
-          "relError": 0.0009764441223038738
-        },
-        {
-          "time": 20,
-          "column": "pYR",
-          "web": 0.01834878723266851,
-          "ref": 0.01830106946477,
-          "relError": 0.0026005951943000225
-        },
-        {
-          "time": 30,
-          "column": "pYR",
-          "web": 0.016764318300032336,
-          "ref": 0.01669998066854,
-          "relError": 0.003837772007240589
-        },
-        {
-          "time": 40,
-          "column": "pYR",
-          "web": 0.01604192126650297,
-          "ref": 0.01597010466995,
-          "relError": 0.004476807694034058
-        },
-        {
-          "time": 50,
-          "column": "pYR",
-          "web": 0.015779565003823933,
-          "ref": 0.01570482595885,
-          "relError": 0.004736445203389303
-        },
-        {
-          "time": 60,
-          "column": "pYR",
-          "web": 0.015693786323657064,
-          "ref": 0.01561801217569,
-          "relError": 0.00482828977050882
-        },
-        {
-          "time": 70,
-          "column": "pYR",
-          "web": 0.015667436765803164,
-          "ref": 0.01559132165307,
-          "relError": 0.004858172646293814
-        },
-        {
-          "time": 80,
-          "column": "pYR",
-          "web": 0.015659674700329276,
-          "ref": 0.01558345341941,
-          "relError": 0.004867360425927147
-        },
-        {
-          "time": 90,
-          "column": "pYR",
-          "web": 0.01565745885490639,
-          "ref": 0.01558120598635,
-          "relError": 0.0048700666732070744
-        },
-        {
-          "time": 100,
-          "column": "pYR",
-          "web": 0.015656839760881537,
-          "ref": 0.01558057787408,
-          "relError": 0.004870835236627853
-        }
-      ]
     }
   },
   {
@@ -8119,6 +9048,10 @@
       "maxAbsoluteError": 4.5497472456190735e-10,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 13.75,
+      "maxAbsoluteErrorColumn": "Substrate_State",
+      "maxRelativeErrorAtTime": 20,
+      "maxRelativeErrorColumn": "Active_Substrate",
       "errorAtTime": 20,
       "errorColumn": "Active_Substrate",
       "samples": []
@@ -8149,10 +9082,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 3.0387921637280713e-13,
-      "maxAbsoluteError": 5.184119800105691e-11,
+      "maxRelativeError": 3.054681273080898e-13,
+      "maxAbsoluteError": 4.979483492206782e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 17.75,
+      "maxAbsoluteErrorColumn": "Messenger",
+      "maxRelativeErrorAtTime": 1.583333333333,
+      "maxRelativeErrorColumn": "Messenger",
       "errorAtTime": 1.583333333333,
       "errorColumn": "Messenger",
       "samples": []
@@ -8183,12 +9120,16 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 3.7866108721692076e-13,
-      "maxAbsoluteError": 4.9897863618753036e-12,
+      "maxRelativeError": 3.7920029844827254e-13,
+      "maxAbsoluteError": 4.9968917892329046e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 39.5,
+      "maxAbsoluteErrorColumn": "B_free",
+      "maxRelativeErrorAtTime": 39.5,
+      "maxRelativeErrorColumn": "B_free",
       "errorAtTime": 39.5,
-      "errorColumn": "A_free",
+      "errorColumn": "B_free",
       "samples": []
     }
   },
@@ -8221,6 +9162,10 @@
       "maxAbsoluteError": 1.5432988220709376e-11,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 97.5,
+      "maxAbsoluteErrorColumn": "R",
+      "maxRelativeErrorAtTime": 174,
+      "maxRelativeErrorColumn": "I",
       "errorAtTime": 174,
       "errorColumn": "I",
       "samples": []
@@ -8251,11 +9196,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 3.838702187891134e-13,
-      "maxAbsoluteError": 5.3944404498906806e-11,
+      "maxRelativeError": 1.2775203032639438e-12,
+      "maxAbsoluteError": 1.7260504137084354e-10,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 6.666666666667,
+      "maxAbsoluteErrorAtTime": 1126.666666667,
+      "maxAbsoluteErrorColumn": "Susceptible",
+      "maxRelativeErrorAtTime": 1106.666666667,
+      "maxRelativeErrorColumn": "Infected",
+      "errorAtTime": 1106.666666667,
       "errorColumn": "Infected",
       "samples": []
     }
@@ -8285,10 +9234,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 2.667579322229708e-13,
-      "maxAbsoluteError": 4.973799150320701e-12,
+      "maxRelativeError": 2.6709242492795245e-13,
+      "maxAbsoluteError": 5.087485988042317e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 18,
+      "maxAbsoluteErrorColumn": "Phospho_SMAD2",
+      "maxRelativeErrorAtTime": 0.6666666666667,
+      "maxRelativeErrorColumn": "SMAD_Complex",
       "errorAtTime": 0.6666666666667,
       "errorColumn": "SMAD_Complex",
       "samples": []
@@ -8327,6 +9280,10 @@
       "maxAbsoluteError": 5.270806013868423e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 50.5,
+      "maxAbsoluteErrorColumn": "Morphogen_Drive",
+      "maxRelativeErrorAtTime": 73,
+      "maxRelativeErrorColumn": "Bound_Shh",
       "errorAtTime": 73,
       "errorColumn": "Bound_Shh",
       "samples": []
@@ -8334,7 +9291,7 @@
   },
   {
     "model": "sp_fourier_synthesizer",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "sp_fourier_synthesizer.gdat",
     "referenceInferred": false,
     "details": {
@@ -8365,84 +9322,17 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.9919497650468603,
-      "maxAbsoluteError": 0.0005074761634966674,
-      "absTolDominated": true,
+      "maxRelativeError": 1.276774009335573e-8,
+      "maxAbsoluteError": 9.737988193592173e-12,
+      "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 1.4,
-      "errorColumn": "Sin3",
-      "samples": [
-        {
-          "time": 18.84,
-          "column": "Cos1",
-          "web": 0.0007567181507585445,
-          "ref": 0.0007197116721245,
-          "relError": 0.04890391303148832
-        },
-        {
-          "time": 18.85,
-          "column": "Cos1",
-          "web": 0.0006910062103657964,
-          "ref": 0.000628522620304,
-          "relError": 0.09042406439259007
-        },
-        {
-          "time": 18.86,
-          "column": "Cos1",
-          "web": 0.000799701385137624,
-          "ref": 0.0007372687428961,
-          "relError": 0.07806994385883141
-        },
-        {
-          "time": 18.87,
-          "column": "Cos1",
-          "web": 0.0011083938310835987,
-          "ref": 0.00104593938187,
-          "relError": 0.0563468033312142
-        },
-        {
-          "time": 18.88,
-          "column": "Cos1",
-          "web": 0.001616955828924814,
-          "ref": 0.001554504281086,
-          "relError": 0.0386229151852224
-        },
-        {
-          "time": 18.89,
-          "column": "Cos1",
-          "web": 0.002325344992329328,
-          "ref": 0.002262912052907,
-          "relError": 0.026848893230155966
-        },
-        {
-          "time": 18.9,
-          "column": "Cos1",
-          "web": 0.0032334961855140336,
-          "ref": 0.00317109172447,
-          "relError": 0.019299376731478343
-        },
-        {
-          "time": 18.91,
-          "column": "Cos1",
-          "web": 0.00434132387759661,
-          "ref": 0.00427895226641,
-          "relError": 0.014366956473457055
-        },
-        {
-          "time": 18.92,
-          "column": "Cos1",
-          "web": 0.005648729505466331,
-          "ref": 0.005586383382582,
-          "relError": 0.011037193907762411
-        },
-        {
-          "time": 18.93,
-          "column": "Cos1",
-          "web": 0.007155568061993569,
-          "ref": 0.007093254587734,
-          "relError": 0.00870838956735586
-        }
-      ]
+      "maxAbsoluteErrorAtTime": 15.95,
+      "maxAbsoluteErrorColumn": "Sin9",
+      "maxRelativeErrorAtTime": 8.12,
+      "maxRelativeErrorColumn": "Output",
+      "errorAtTime": 8.12,
+      "errorColumn": "Output",
+      "samples": []
     }
   },
   {
@@ -8496,6 +9386,10 @@
       "maxAbsoluteError": 4.9112713895738125e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 4,
+      "maxAbsoluteErrorColumn": "Edge_r3c2",
+      "maxRelativeErrorAtTime": 0.3,
+      "maxRelativeErrorColumn": "Edge_r3c2",
       "errorAtTime": 0.3,
       "errorColumn": "Edge_r3c2",
       "samples": []
@@ -8536,6 +9430,10 @@
       "maxAbsoluteError": 6.565414878423326e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 19.94,
+      "maxAbsoluteErrorColumn": "Estimate",
+      "maxRelativeErrorAtTime": 0.86,
+      "maxRelativeErrorColumn": "Innov",
       "errorAtTime": 0.86,
       "errorColumn": "Innov",
       "samples": []
@@ -8570,10 +9468,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 3.532209775336214e-11,
-      "maxAbsoluteError": 1.1543761502252892e-8,
+      "maxRelativeError": 6.620574436744373e-11,
+      "maxAbsoluteError": 2.183446667913813e-8,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 67.5,
+      "maxAbsoluteErrorColumn": "PIAS3_Feedback",
+      "maxRelativeErrorAtTime": 67.5,
+      "maxRelativeErrorColumn": "mRNA_Level",
       "errorAtTime": 67.5,
       "errorColumn": "mRNA_Level",
       "samples": []
@@ -8608,6 +9510,10 @@
       "maxAbsoluteError": 4.956746124662459e-10,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 90,
+      "maxAbsoluteErrorColumn": "Enzyme",
+      "maxRelativeErrorAtTime": 88,
+      "maxRelativeErrorColumn": "Enzyme",
       "errorAtTime": 88,
       "errorColumn": "Enzyme",
       "samples": []
@@ -8640,10 +9546,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.13713283181711e-8,
-      "maxAbsoluteError": 0.000009854873269432574,
+      "maxRelativeError": 6.178717370404284e-8,
+      "maxAbsoluteError": 0.000014718037618877133,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 5,
+      "maxAbsoluteErrorColumn": "Cytosolic_Ca",
+      "maxRelativeErrorAtTime": 5,
+      "maxRelativeErrorColumn": "Cytosolic_Ca",
       "errorAtTime": 5,
       "errorColumn": "Cytosolic_Ca",
       "samples": []
@@ -8672,11 +9582,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.2142351750725583e-7,
-      "maxAbsoluteError": 2.4236227275098443e-8,
+      "maxRelativeError": 3.120386980698915e-9,
+      "maxAbsoluteError": 6.228314530787316e-10,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 94,
+      "maxAbsoluteErrorAtTime": 83.5,
+      "maxAbsoluteErrorColumn": "Output_Level",
+      "maxRelativeErrorAtTime": 83.5,
+      "maxRelativeErrorColumn": "Output_Level",
+      "errorAtTime": 83.5,
       "errorColumn": "Output_Level",
       "samples": []
     }
@@ -8746,6 +9660,10 @@
       "maxAbsoluteError": 0.0000024988880795717705,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 26.75,
+      "maxAbsoluteErrorColumn": "Repressor",
+      "maxRelativeErrorAtTime": 42.75,
+      "maxRelativeErrorColumn": "Output",
       "errorAtTime": 42.75,
       "errorColumn": "Output",
       "samples": []
@@ -8810,11 +9728,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.363397781777532e-13,
-      "maxAbsoluteError": 3.140598892059643e-12,
+      "maxRelativeError": 3.172617965097375e-13,
+      "maxAbsoluteError": 3.1725733151688473e-12,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 40.8,
+      "maxAbsoluteErrorAtTime": 1.2,
+      "maxAbsoluteErrorColumn": "O1_A",
+      "maxRelativeErrorAtTime": 57.2,
+      "maxRelativeErrorColumn": "Sig",
+      "errorAtTime": 57.2,
       "errorColumn": "Sig",
       "samples": []
     }
@@ -8850,11 +9772,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 7.921019477211318e-8,
-      "maxAbsoluteError": 0.000005233998933817929,
+      "maxRelativeError": 7.110997379467907e-8,
+      "maxAbsoluteError": 0.000005233998820131092,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 71,
+      "maxAbsoluteErrorAtTime": 6,
+      "maxAbsoluteErrorColumn": "Nucleark_IRF3",
+      "maxRelativeErrorAtTime": 80,
+      "maxRelativeErrorColumn": "TRIF_Bound",
+      "errorAtTime": 80,
       "errorColumn": "TRIF_Bound",
       "samples": []
     }
@@ -8886,10 +9812,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 1.0945910858463521e-11,
-      "maxAbsoluteError": 4.3783643377537373e-10,
+      "maxRelativeError": 1.0984813073296426e-11,
+      "maxAbsoluteError": 4.3939252236668835e-10,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 69,
+      "maxAbsoluteErrorColumn": "Active_TNFR",
+      "maxRelativeErrorAtTime": 69,
+      "maxRelativeErrorColumn": "Active_TNFR",
       "errorAtTime": 69,
       "errorColumn": "Active_TNFR",
       "samples": []
@@ -8897,7 +9827,7 @@
   },
   {
     "model": "toy_jim",
-    "status": "mismatch",
+    "status": "match",
     "referenceFile": "toy-jim.gdat",
     "referenceInferred": false,
     "details": {
@@ -8932,84 +9862,17 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.14338838638554577,
-      "maxAbsoluteError": 0.05296654125999167,
-      "absTolDominated": true,
+      "maxRelativeError": 4.4098058531785745e-13,
+      "maxAbsoluteError": 4.409805853811122e-13,
+      "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 120,
-      "errorColumn": "RecDim",
-      "samples": [
-        {
-          "time": 1,
-          "column": "RecDim",
-          "web": 0.0024947135889508095,
-          "ref": 0.002528745212992,
-          "relError": 0.013457909427310205
-        },
-        {
-          "time": 2,
-          "column": "RecDim",
-          "web": 0.014445797816174923,
-          "ref": 0.01483041019976,
-          "relError": 0.02593403543155551
-        },
-        {
-          "time": 3,
-          "column": "RecDim",
-          "web": 0.03496510012994247,
-          "ref": 0.03630670114154,
-          "relError": 0.036951884071410306
-        },
-        {
-          "time": 4,
-          "column": "RecDim",
-          "web": 0.059813801828484996,
-          "ref": 0.06273381191211,
-          "relError": 0.04654603306612285
-        },
-        {
-          "time": 4,
-          "column": "Rec_Kp",
-          "web": 0.0008336926129141768,
-          "ref": 0.0008486433884968,
-          "relError": 0.01761726513784014
-        },
-        {
-          "time": 4,
-          "column": "RecDim_Kp",
-          "web": 0.0007846565625376681,
-          "ref": 0.0008066637387611,
-          "relError": 0.02728172244017218
-        },
-        {
-          "time": 5,
-          "column": "RecDim",
-          "web": 0.085529466430943,
-          "ref": 0.09049862512169,
-          "relError": 0.05490866501082383
-        },
-        {
-          "time": 5,
-          "column": "Rec_Kp",
-          "web": 0.0012963400201829029,
-          "ref": 0.001324780200028,
-          "relError": 0.021467847907521615
-        },
-        {
-          "time": 5,
-          "column": "RecDim_Kp",
-          "web": 0.001210890922750939,
-          "ref": 0.001251160883564,
-          "relError": 0.03218607722002127
-        },
-        {
-          "time": 6,
-          "column": "RecDim",
-          "web": 0.11012956794435806,
-          "ref": 0.117438680748,
-          "relError": 0.06223769508553861
-        }
-      ]
+      "maxAbsoluteErrorAtTime": 17,
+      "maxAbsoluteErrorColumn": "A_total",
+      "maxRelativeErrorAtTime": 17,
+      "maxRelativeErrorColumn": "A_total",
+      "errorAtTime": 17,
+      "errorColumn": "A_total",
+      "samples": []
     }
   },
   {
@@ -9041,6 +9904,10 @@
       "maxAbsoluteError": 4.997673386242241e-10,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 73,
+      "maxAbsoluteErrorColumn": "Target",
+      "maxRelativeErrorAtTime": 50,
+      "maxRelativeErrorColumn": "Target",
       "errorAtTime": 50,
       "errorColumn": "Target",
       "samples": []
@@ -9069,10 +9936,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.064825618698653e-13,
+      "maxRelativeError": 4.0618683064987996e-13,
       "maxAbsoluteError": 4.985167834092863e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 77.5,
+      "maxAbsoluteErrorColumn": "Cytokine_pool",
+      "maxRelativeErrorAtTime": 1.25,
+      "maxRelativeErrorColumn": "Cytokine_pool",
       "errorAtTime": 1.25,
       "errorColumn": "Cytokine_pool",
       "samples": []
@@ -9111,6 +9982,10 @@
       "maxAbsoluteError": 0.00003172231265580194,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 10,
+      "maxAbsoluteErrorColumn": "Active_Signal",
+      "maxRelativeErrorAtTime": 346,
+      "maxRelativeErrorColumn": "Decoy_Occupancy",
       "errorAtTime": 346,
       "errorColumn": "Decoy_Occupancy",
       "samples": []
@@ -9143,12 +10018,16 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 3.4692465838860395e-13,
-      "maxAbsoluteError": 9.698908343125368e-12,
+      "maxRelativeError": 3.450341966042075e-13,
+      "maxAbsoluteError": 7.439382443408249e-12,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 3.25,
-      "errorColumn": "Active_RIGI",
+      "maxAbsoluteErrorAtTime": 37.5,
+      "maxAbsoluteErrorColumn": "Active_RIGI",
+      "maxRelativeErrorAtTime": 0.25,
+      "maxRelativeErrorColumn": "IFNB_On",
+      "errorAtTime": 0.25,
+      "errorColumn": "IFNB_On",
       "samples": []
     }
   },
@@ -9177,11 +10056,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 8.407823275336236e-10,
-      "maxAbsoluteError": 1.5016894394648261e-9,
+      "maxRelativeError": 4.316895080831689e-13,
+      "maxAbsoluteError": 4.990852175978944e-11,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 181,
+      "maxAbsoluteErrorAtTime": 110,
+      "maxAbsoluteErrorColumn": "Noble_Metal",
+      "maxRelativeErrorAtTime": 30,
+      "maxRelativeErrorColumn": "Catalyst",
+      "errorAtTime": 30,
       "errorColumn": "Catalyst",
       "samples": []
     }
@@ -9215,6 +10098,10 @@
       "maxAbsoluteError": 3.09114511765074e-10,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 0.5,
+      "maxAbsoluteErrorColumn": "Singularity_Mass",
+      "maxRelativeErrorAtTime": 0.5,
+      "maxRelativeErrorColumn": "Universe_Mass",
       "errorAtTime": 0.5,
       "errorColumn": "Universe_Mass",
       "samples": []
@@ -9251,6 +10138,10 @@
       "maxAbsoluteError": 3.380762336746557e-11,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 9.25,
+      "maxAbsoluteErrorColumn": "V",
+      "maxRelativeErrorAtTime": 9.25,
+      "maxRelativeErrorColumn": "H",
       "errorAtTime": 9.25,
       "errorColumn": "H",
       "samples": []
@@ -9283,6 +10174,10 @@
       "maxAbsoluteError": 5.222489107836736e-13,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 43,
+      "maxAbsoluteErrorColumn": "Cars",
+      "maxRelativeErrorAtTime": 10.5,
+      "maxRelativeErrorColumn": "Jam",
       "errorAtTime": 10.5,
       "errorColumn": "Jam",
       "samples": []
@@ -9313,10 +10208,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 0.5428982949182939,
-      "maxAbsoluteError": 1.7459512946516043e-8,
+      "maxRelativeError": 1.3757407409828284,
+      "maxAbsoluteError": 4.629072236639331e-9,
       "absTolDominated": true,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 757.3333333333,
+      "maxAbsoluteErrorColumn": "Dead_Z",
+      "maxRelativeErrorAtTime": 704,
+      "maxRelativeErrorColumn": "Humans",
       "errorAtTime": 704,
       "errorColumn": "Humans",
       "samples": []
@@ -9347,11 +10246,15 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 2.1992376457181987e-8,
-      "maxAbsoluteError": 0.000004400522527703288,
+      "maxRelativeError": 2.0387571480421652e-8,
+      "maxAbsoluteError": 0.000003741877208085498,
       "absTolDominated": false,
       "overlapMatch": false,
-      "errorAtTime": 67,
+      "maxAbsoluteErrorAtTime": 54,
+      "maxAbsoluteErrorColumn": "Nuclear_BC",
+      "maxRelativeErrorAtTime": 100,
+      "maxRelativeErrorColumn": "Transcription_Active",
+      "errorAtTime": 100,
       "errorColumn": "Transcription_Active",
       "samples": []
     }
@@ -9381,10 +10284,14 @@
       "extraColumns": [],
       "timeMatch": true,
       "timeOffset": 0,
-      "maxRelativeError": 4.00927548901041e-13,
-      "maxAbsoluteError": 5.17985654369113e-12,
+      "maxRelativeError": 4.0211548237926585e-13,
+      "maxAbsoluteError": 6.0182969718880486e-12,
       "absTolDominated": false,
       "overlapMatch": false,
+      "maxAbsoluteErrorAtTime": 14,
+      "maxAbsoluteErrorColumn": "Active_PDGFR",
+      "maxRelativeErrorAtTime": 2.444444444444,
+      "maxRelativeErrorColumn": "Active_PDGFR",
       "errorAtTime": 2.444444444444,
       "errorColumn": "Active_PDGFR",
       "samples": []

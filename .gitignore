@@ -218,4 +218,6 @@ test_*.bngl
 manual_*.bngl
 tests/pac/**/*.BNGL
 
+published-models/**/playground.yaml
+
 # End of .gitignore

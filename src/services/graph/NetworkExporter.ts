@@ -4,8 +4,25 @@ import { Rxn } from './core/Rxn.ts';
 import { BNGLParser } from './core/BNGLParser.ts';
 import { GraphMatcher } from './core/Matcher.ts';
 import { GraphCanonicalizer } from './core/Canonical.ts';
+import { countEmbeddingDegeneracy } from './core/degeneracy.ts';
 
 export class NetworkExporter {
+  private static requiresGeneratedFunction(expr: string, model: BNGLModel): boolean {
+    if (this.containsObservables(expr, model)) return true;
+    if (/\bSpecies\d+\b/.test(expr)) return true;
+    if (/\b(reactants|products)\b/.test(expr)) return true;
+
+    const fnCallRegex = /\b([A-Za-z_]\w*)\s*\(/g;
+    let match: RegExpExecArray | null;
+    while ((match = fnCallRegex.exec(expr)) !== null) {
+      const name = match[1];
+      const isModelFunction = model.functions?.some((f) => f.name === name) ?? false;
+      if (isModelFunction) return true;
+    }
+
+    return false;
+  }
+
   private static splitObservablePatterns(pattern: string): string[] {
     const parts: string[] = [];
     let start = 0;
@@ -54,20 +71,51 @@ export class NetworkExporter {
   ): string {
     let out = '# Created by BioNetGen Web Simulator\n';
 
-    // Identified unique rate laws that are not simple constants or parameters
-    const uniqueRates = new Map<string, string>();
+    const normalizedReverse = new Map<string, Rxn>();
+    const dedupedReactions: Rxn[] = [];
+    for (const rxn of reactionList) {
+      const name = rxn.name ?? '';
+      const isReverse = name.startsWith('_reverse__');
+      if (!isReverse) {
+        dedupedReactions.push(rxn);
+        continue;
+      }
+
+      const reactantsKey = rxn.reactants.slice().sort((a, b) => a - b).join(',');
+      const productsKey = rxn.products.slice().sort((a, b) => a - b).join(',');
+      const rateExprKey = (rxn.rateExpression ?? '').replace(/\s+/g, ' ').trim();
+      const scaleKey = String((rxn as Rxn & { scalingVolume?: number }).scalingVolume ?? '');
+      const key = `${reactantsKey}|${productsKey}|${rateExprKey}|${rxn.rate}|${scaleKey}`;
+
+      if (normalizedReverse.has(key)) {
+        continue;
+      }
+
+      normalizedReverse.set(key, rxn);
+      dedupedReactions.push(rxn);
+    }
+
+    const sortedReactions = [...dedupedReactions].sort((a, b) => {
+      const ra = a.reactants.slice().sort((x, y) => x - y).join(',');
+      const rb = b.reactants.slice().sort((x, y) => x - y).join(',');
+      if (ra !== rb) return ra.localeCompare(rb);
+      const pa = a.products.slice().sort((x, y) => x - y).join(',');
+      const pb = b.products.slice().sort((x, y) => x - y).join(',');
+      if (pa !== pb) return pa.localeCompare(pb);
+      const ea = (a.rateExpression ?? '').replace(/\s+/g, ' ').trim();
+      const eb = (b.rateExpression ?? '').replace(/\s+/g, ' ').trim();
+      if (ea !== eb) return ea.localeCompare(eb);
+      return 0;
+    });
+
+    const generatedRateLaws: Array<{ name: string; expr: string; asFunction: boolean }> = [];
     let rateLawCounter = 1;
 
-    // Helper to get or create a rate law parameter/function name
-    const getRateLawName = (rawExpr: string) => {
+    const normalizeRateExpr = (rawExpr: string): { key: string; display: string } => {
       let expr = rawExpr.trim();
 
-      // Unwrap simple parentheses, e.g., "(p1)" -> "p1"
-      // Unwrap outer parentheses if present (NetworkGenerator often adds them)
       while (expr.length >= 2 && expr.startsWith('(') && expr.endsWith(')')) {
         const inside = expr.substring(1, expr.length - 1).trim();
-        
-        // Only unwrap if the parentheses are matching pair for the whole string
         let balance = 0;
         let isMatchingPair = true;
         for (let i = 0; i < inside.length; i++) {
@@ -78,12 +126,25 @@ export class NetworkExporter {
             break;
           }
         }
-        
         if (isMatchingPair && balance === 0) {
           expr = inside;
         } else {
           break;
         }
+      }
+
+      return {
+        key: expr.replace(/\s+/g, ''),
+        display: expr
+      };
+    };
+
+    // Helper to get or create a rate law parameter/function name
+    const getRateLawName = (rawExpr: string) => {
+      const normalized = normalizeRateExpr(rawExpr);
+      const expr = normalized.display;
+      if (!expr) {
+        return expr;
       }
 
       // 1. If it's a parameter name already, use it directly
@@ -98,35 +159,61 @@ export class NetworkExporter {
         return funcName;
       }
 
-      console.log(`[DEBUG_EXPORTER] getRateLawName(${expr}): not found in params (${Object.keys(model.parameters).length}) or functions (${model.functions?.length || 0})`);
-
-      // 3. Check cache
-      if (uniqueRates.has(expr)) {
-        return uniqueRates.get(expr)!;
-      }
-
-      // 4. Create a new _rateLawN
       const name = `_rateLaw${rateLawCounter++}`;
-      uniqueRates.set(expr, name);
+      generatedRateLaws.push({
+        name,
+        expr,
+        asFunction: this.requiresGeneratedFunction(expr, model)
+      });
       return name;
     };
 
-    // Pre-calculate rate law names for all rules (BNG2 includes these even if rules don't fire)
-    model.reactionRules.forEach(rule => {
-      if (rule.rateExpression !== undefined && rule.rateExpression !== null) {
-        getRateLawName(rule.rateExpression.toString());
-      } else if (rule.rate !== undefined && rule.rate !== null) {
-        getRateLawName(rule.rate.toString());
+    const ruleRateLaws = new Map<number, { forward?: { key: string; name: string }; reverse?: { key: string; name: string } }>();
+
+    // Pre-calculate generated _rateLawN naming in BNGL reaction-rule order,
+    // assigning per rule occurrence (forward then reverse for bidirectional).
+    (model.reactionRules ?? []).forEach((rule, idx) => {
+      const ruleIndex = idx + 1;
+      const entry: { forward?: { key: string; name: string }; reverse?: { key: string; name: string } } = {};
+
+      const forwardExpr = rule.rateExpression ?? rule.rate;
+      if (forwardExpr && forwardExpr.trim().length > 0) {
+        const normalized = normalizeRateExpr(forwardExpr);
+        entry.forward = { key: normalized.key, name: getRateLawName(forwardExpr) };
       }
-      if (rule.isBidirectional && rule.reverseRate !== undefined && rule.reverseRate !== null) {
-        getRateLawName(rule.reverseRate.toString());
+
+      if (rule.isBidirectional) {
+        const reverseExpr = rule.reverseRate ?? '';
+        if (reverseExpr && reverseExpr.trim().length > 0) {
+          const normalized = normalizeRateExpr(reverseExpr);
+          entry.reverse = { key: normalized.key, name: getRateLawName(reverseExpr) };
+        }
+      }
+
+      if (entry.forward || entry.reverse) {
+        ruleRateLaws.set(ruleIndex, entry);
       }
     });
 
-    // Pre-calculate rate law names for reactions
-    const rxnRateNames = reactionList.map(rxn => {
+    const rxnRateNames = new WeakMap<Rxn, string>();
+    dedupedReactions.forEach(rxn => {
       const expr = rxn.rateExpression || rxn.rate.toString();
-      return getRateLawName(expr);
+      const normalizedExpr = normalizeRateExpr(expr).key;
+      const name = rxn.name ?? '';
+      const ruleMatch = name.match(/_R(\d+)/);
+      const ruleIndex = ruleMatch ? Number.parseInt(ruleMatch[1], 10) : null;
+      const isReverse = name.startsWith('_reverse__');
+
+      if (ruleIndex !== null) {
+        const mapped = ruleRateLaws.get(ruleIndex);
+        const side = isReverse ? mapped?.reverse : mapped?.forward;
+        if (side && side.key === normalizedExpr) {
+          rxnRateNames.set(rxn, side.name);
+          return;
+        }
+      }
+
+      rxnRateNames.set(rxn, getRateLawName(expr));
     });
 
     // 1. Parameters
@@ -137,11 +224,11 @@ export class NetworkExporter {
     }
 
     // Add generated rate law constants (parameters)
-    for (const [expr, name] of uniqueRates.entries()) {
-      if (expr.includes('(') || this.containsObservables(expr, model)) {
+    for (const rateLaw of generatedRateLaws) {
+      if (rateLaw.asFunction) {
         continue;
       }
-      out += `    ${(paramIdx++).toString().padStart(5)} ${name.padEnd(16)} ${expr}\n`;
+      out += `    ${(paramIdx++).toString().padStart(5)} ${rateLaw.name.padEnd(16)} ${rateLaw.expr}\n`;
     }
     out += 'end parameters\n';
 
@@ -155,9 +242,9 @@ export class NetworkExporter {
       });
     }
     // Add generated rate law functions
-    for (const [expr, name] of uniqueRates.entries()) {
-      if (expr.includes('(') || this.containsObservables(expr, model)) {
-        out += `    ${(funcIdx++).toString().padStart(5)} ${name}() ${expr}\n`;
+    for (const rateLaw of generatedRateLaws) {
+      if (rateLaw.asFunction) {
+        out += `    ${(funcIdx++).toString().padStart(5)} ${rateLaw.name}() ${rateLaw.expr}\n`;
       }
     }
     out += 'end functions\n';
@@ -169,14 +256,16 @@ export class NetworkExporter {
       // Use canonical species strings so ordering/formatting is stable and
       // closer to BNG2 .net conventions (notably compartment prefixes).
       const name = GraphCanonicalizer.canonicalize(spec.graph);
-      const conc = spec.initialConcentration ?? 0;
-      out += `    ${idx.toString().padStart(5)} ${name.padEnd(30)} ${conc}\n`;
+      const conc = spec.concentration ?? spec.initialConcentration ?? 0;
+      const prefix = (spec as Species & { isConstant?: boolean }).isConstant ? '$' : '';
+      out += `    ${idx.toString().padStart(5)} ${(prefix + name).padEnd(30)} ${conc}\n`;
     });
     out += 'end species\n';
 
     // 4. Reactions
     out += 'begin reactions\n';
-    reactionList.forEach((rxn, i) => {
+    const parameterMap = new Map<string, number>(Object.entries(model.parameters ?? {}).map(([k, v]) => [k, Number(v)]));
+    sortedReactions.forEach((rxn, i) => {
       const idx = i + 1;
       const reactants = rxn.reactants.length > 0
         ? rxn.reactants.map(r => r + 1).join(',')
@@ -185,30 +274,67 @@ export class NetworkExporter {
         ? rxn.products.map(p => p + 1).join(',')
         : '0'; // BNG .net explicit null species
 
-      const rateName = rxnRateNames[i];
+      const rateName = rxnRateNames.get(rxn) ?? (rxn.rateExpression || rxn.rate.toString());
+      const baseRateExpr = (rxn.rateExpression ?? '').trim();
 
-      // BNG2 .net stores compartment unit conversion in reaction coefficients.
-      // Web runtime keeps anchor-volume scaling separate (scalingVolume), so fold
-      // that into exported net rates as 1 / V^(order-1) for n-th order reactions.
+      // BNG2 .net stores multiplicative coefficients in reaction coefficients.
+      // Reconstruct numeric prefix as: statFactor * unitFactor.
       const reactantOrder = rxn.reactants.length;
       const scalingVolume = (rxn as any).scalingVolume as number | undefined;
-      let rateToken = rateName;
+      const rateNameIsNumeric = Number.isFinite(Number(rateName));
+
+      // Prefer deriving symbolic multiplicative factor directly from the
+      // generated numeric reaction rate when the base rate token is evaluable.
+      // This is robust against stale/inexact statFactor metadata on Rxn.
+      let inferredStatFactor: number | null = null;
+      if (!rateNameIsNumeric) {
+        let baseRateValue = Number.NaN;
+
+        if (baseRateExpr.length > 0) {
+          try {
+            baseRateValue = BNGLParser.evaluateExpression(baseRateExpr, parameterMap as any);
+          } catch {
+            baseRateValue = Number.NaN;
+          }
+        }
+
+        if (!Number.isFinite(baseRateValue)) {
+          try {
+            baseRateValue = BNGLParser.evaluateExpression(rateName, parameterMap as any);
+          } catch {
+            baseRateValue = Number.NaN;
+          }
+        }
+
+        if (Number.isFinite(baseRateValue) && Math.abs(baseRateValue) > 1e-15 && Number.isFinite(rxn.rate)) {
+          const ratio = rxn.rate / baseRateValue;
+          if (Number.isFinite(ratio) && Math.abs(ratio) > 1e-15) {
+            inferredStatFactor = Number(ratio.toPrecision(12));
+          }
+        }
+      }
+
+      const statFactor = rateNameIsNumeric
+        ? 1
+        : (inferredStatFactor ?? (rxn.statFactor ?? 1));
+      let unitFactor = 1;
       if (
         typeof scalingVolume === 'number' &&
         Number.isFinite(scalingVolume) &&
         scalingVolume > 0
       ) {
-        let unitFactor = 1;
         if (reactantOrder === 0) {
           // Zero-order synthesis in compartment C scales as k * Volume(C).
           unitFactor = scalingVolume;
         } else if (reactantOrder > 1) {
           unitFactor = 1 / Math.pow(scalingVolume, reactantOrder - 1);
         }
-        if (Math.abs(unitFactor - 1) > 1e-15) {
-          rateToken = `${this.formatNumericFactor(unitFactor)}*${rateName}`;
-        }
       }
+
+      const prefix = statFactor * unitFactor;
+      const rateToken = Math.abs(prefix - 1) > 1e-15
+        ? `${this.formatNumericFactor(prefix)}*${rateName}`
+        : rateName;
 
       const ruleName = rxn.name ? ` #${rxn.name}` : '';
       out += `    ${idx.toString().padStart(5)} ${reactants.padEnd(10)} ${products.padEnd(10)} ${rateToken}${ruleName}\n`;
@@ -250,6 +376,7 @@ export class NetworkExporter {
     speciesList: Species[]
   ): { speciesIdx: number; weight: number }[] {
     const weightsMap = new Map<number, number>();
+    const obsType = (obs.type ?? '').toLowerCase();
 
     // Split multi-pattern observables on top-level commas only so component
     // lists like A(b,b!?) are preserved as one pattern.
@@ -260,10 +387,15 @@ export class NetworkExporter {
         const patternGraph = BNGLParser.parseSpeciesGraph(patternStr, true);
         speciesList.forEach((species, i) => {
           const speciesIdx = i + 1;
-          const matches = GraphMatcher.findAllMaps(patternGraph, species.graph, { symmetryBreaking: false });
-          const count = matches.length;
+          const matches = GraphMatcher.findAllMaps(patternGraph, species.graph, {
+            symmetryBreaking: false,
+            allowExtraTargetBonds: false
+          });
+          const count = matches.reduce((total, match) => {
+            return total + countEmbeddingDegeneracy(patternGraph, species.graph, match);
+          }, 0);
           if (count > 0) {
-            const weightToAdd = (obs.type === 'Species') ? 1 : count;
+            const weightToAdd = (obsType === 'species') ? 1 : count;
             weightsMap.set(speciesIdx, (weightsMap.get(speciesIdx) ?? 0) + weightToAdd);
           }
         });

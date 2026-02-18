@@ -1,0 +1,19 @@
+models:
+  - file: An_2009.bngl
+    id: An_2009
+    name: "An 2009 - NF-κB Signaling"
+    description: "Detailed model of NF-κB signaling pathway dynamics"
+    tags: [immune-signaling, nfkb]
+    bng2_compatible: true
+  - file: Faeder_2003.bngl
+    id: Faeder_2003
+    name: "Faeder 2003 - FcεRI Signaling"
+    description: "Model of early events in FcεRI signaling"
+    tags: [immune-signaling, fceri]
+    bng2_compatible: true
+  - file: BaruaBCR_2012.bngl
+    id: BaruaBCR_2012
+    name: "Barua 2012 - BCR Signaling"
+    description: "Model of B-cell receptor signaling"
+    tags: [immune-signaling, bcr]
+    bng2_compatible: true

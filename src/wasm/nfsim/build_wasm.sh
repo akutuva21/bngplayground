@@ -11,6 +11,11 @@ if [ ! -f "$NFSIM_SRC/src/NFsim.cpp" ]; then
 fi
 
 # Resolve Emscripten tools
+if ! command -v emcc &> /dev/null; then
+    echo "Error: emcc not found. Please activate the Emscripten SDK first:"
+    echo "  source \$EMSDK/emsdk_env.sh"
+    exit 1
+fi
 EMCMAKE="emcmake"
 EMMAKE="emmake"
 

@@ -220,10 +220,10 @@ int solve_step(void* ptr, double tout, double* tret) {
     int flag = CVode(mem->cvode_mem, tout, mem->y, &t_reached, CV_NORMAL);
 
     // Match BNG2 Network3 behavior: on CV_TOO_MUCH_WORK, increase mxstep and retry.
-    // This preserves progress CVODE already made and avoids treating it as fatal.
+    // This preserves already-made progress in CVODE and avoids hard failure for stiff phases.
     while (flag == CV_TOO_MUCH_WORK) {
         if (mem->max_num_steps <= 0) mem->max_num_steps = 2000;
-        // Prevent runaway overflow; still huge enough for pathological stiff models.
+        // Prevent runaway overflow while still allowing very large stiff workloads.
         if (mem->max_num_steps > 1000000000L) break;
         mem->max_num_steps *= 2;
         CVodeSetMaxNumSteps(mem->cvode_mem, mem->max_num_steps);
@@ -320,6 +320,14 @@ int set_max_conv_fails(void* ptr, int maxncf) {
     if (!ptr) return -1;
     CvodeWrapper* mem = (CvodeWrapper*)ptr;
     return CVodeSetMaxConvFails(mem->cvode_mem, maxncf);
+}
+
+// Set maximum number of internal CVODE steps (mxstep)
+int set_max_num_steps(void* ptr, int mxstep) {
+    if (!ptr) return -1;
+    CvodeWrapper* mem = (CvodeWrapper*)ptr;
+    mem->max_num_steps = (mxstep > 0) ? (long int)mxstep : 2000;
+    return CVodeSetMaxNumSteps(mem->cvode_mem, mem->max_num_steps);
 }
 
 // Reinitialize the solver at a new time point with new initial conditions

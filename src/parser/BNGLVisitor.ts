@@ -353,7 +353,15 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
   // Seed species block
   visitSeed_species_block(ctx: Parser.Seed_species_blockContext): void {
+    const seenLines = new Set<number>();
     for (const speciesDef of ctx.seed_species_def()) {
+      const line = (speciesDef as any).start?.line as number | undefined;
+      if (typeof line === 'number') {
+        if (seenLines.has(line)) {
+          continue;
+        }
+        seenLines.add(line);
+      }
       this.visitSeed_species_def(speciesDef);
     }
   }
@@ -445,11 +453,11 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     const patterns = patternListCtx.observable_pattern().map(op => {
       const speciesDef = op.species_def();
       if (speciesDef) {
-        return this.getSpeciesString(speciesDef, { completeMissingComponents: true });
+        return this.getSpeciesString(speciesDef, { completeMissingComponents: false });
       }
       // For stoichiometry comparisons like R==1, just return the text
       return op.text;
-    });
+    }).map((p) => p?.trim() ?? '').filter((p) => p.length > 0 && p !== ',');
 
     // Check for count filter (>N syntax) in the first pattern (NFsim limitation: typically per-species observable)
     let countFilter: number | undefined;
@@ -585,6 +593,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     // Check modifiers (can be prefix or suffix, so we get an array)
     let deleteMolecules = false;
     let moveConnected = false;
+    let matchOnce = false;
     let totalRate = false;
     const constraints: string[] = [];
 
@@ -598,12 +607,15 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       if (modifiersCtx.MOVECONNECTED()) {
         moveConnected = true;
       }
+      if (modifiersCtx.MATCHONCE()) {
+        matchOnce = true;
+      }
       if (modifiersCtx.TOTALRATE()) {
         totalRate = true;
       }
 
       const getPatternListStr = (pl?: Parser.Pattern_listContext) => {
-        return pl ? pl.species_def().map(sd => this.getSpeciesString(sd, { completeMissingComponents: true })).join(',') : '';
+        return pl ? pl.species_def().map(sd => this.getSpeciesString(sd, { completeMissingComponents: false })).join(',') : '';
       };
 
       if (modifiersCtx.INCLUDE_REACTANTS()) {
@@ -626,8 +638,6 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
         const patterns = getPatternListStr(modifiersCtx.pattern_list());
         constraints.push(`exclude_products(${idx},${patterns})`);
       }
-      // Note: MATCHONCE is valid but probably ignored by simulator currently
-      // If needed: if (modifiersCtx.MATCHONCE()) ...
     };
 
     if (modifiersList && modifiersList.length > 0) {
@@ -645,6 +655,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       isBidirectional,
       deleteMolecules,
       moveConnected,
+      matchOnce,
       constraints,
       totalRate,
       isArrhenius,
@@ -726,7 +737,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     const expr = ctx.expression();
     if (!speciesDef || !expr) return;
 
-    const pattern = this.getSpeciesString(speciesDef, { completeMissingComponents: true });
+    const pattern = this.getSpeciesString(speciesDef, { completeMissingComponents: false });
     const expression = expr.text;
 
     // Optional label
@@ -751,7 +762,9 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
     const args = this.parseActionArgs(argsCtx);
     this.actions.push({ type: 'generate_network', args });
 
-    if (args.max_agg !== undefined) this.networkOptions!.maxAgg = parseInt(args.max_agg);
+    if (args.max_agg !== undefined) {
+      this.networkOptions!.maxAgg = parseInt(args.max_agg);
+    }
     if (args.max_iter !== undefined) this.networkOptions!.maxIter = parseInt(args.max_iter);
     if (args.overwrite !== undefined) this.networkOptions!.overwrite = args.overwrite === '1';
     if (args.max_stoich !== undefined) {
@@ -828,14 +841,15 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
     // Build simulation phase
     console.log(`[BNGLVisitor] visitSimulate_cmd: ${cmdText}, raw args:`, args);
+    const parsedContinue = args.continue !== undefined
+      ? (String(args.continue).trim() === '1' || String(args.continue).trim().toLowerCase() === 'true')
+      : undefined;
     const phase: SimulationPhase = {
       method,
       t_start: args.t_start !== undefined ? evalNumericArg(args.t_start, 0) : undefined,
       t_end: evalNumericArg(args.t_end, 100),
       n_steps: args.n_steps !== undefined ? evalIntArg(args.n_steps, 100) : 100,
-      continue: args.continue !== undefined
-        ? (String(args.continue).trim() === '1' || String(args.continue).trim().toLowerCase() === 'true')
-        : undefined,
+      continue: parsedContinue,
       atol: args.atol !== undefined ? evalNumericArg(args.atol, 1e-8) : (args.atoll !== undefined ? evalNumericArg(args.atoll, 1e-8) : undefined),
       rtol: args.rtol !== undefined ? evalNumericArg(args.rtol, 1e-8) : undefined,
       suffix: args.suffix?.replace(/["']/g, ''),
@@ -1103,6 +1117,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       const nameNode = mp.STRING() || (mp as any).keyword_as_mol_name?.();
       if (!nameNode) return '';
       const name = nameNode.text;
+      const rawPatternText = mp.text?.replace(/\s+/g, '') ?? '';
       const compListCtx = mp.component_pattern_list();
 
       const shouldComplete = options.completeMissingComponents === true;
@@ -1208,11 +1223,19 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
       if (entry.compartment) {
         molStr += `@${entry.compartment}`;
+      } else {
+        // Legacy compartment-before-parentheses syntax support, e.g. "B@EC()".
+        const legacyCompBeforeParen = rawPatternText.match(/^([A-Za-z_][A-Za-z0-9_]*)@([A-Za-z0-9_]+)\(([^()]*)\)$/);
+        if (legacyCompBeforeParen && legacyCompBeforeParen[1] === name && !/@[A-Za-z0-9_]+$/.test(molStr)) {
+          const comp = legacyCompBeforeParen[2];
+          molStr += `@${comp}`;
+        }
       }
 
       return molStr;
     }).filter(m => m); // Filter out empty molecules
 
+    const rawSpeciesText = ctx.text?.replace(/\s+/g, '') ?? '';
     let res = prefix + molecules.join('.');
 
     // Handle species-level suffix compartment (AT STRING at end) - e.g., A.B@PM
@@ -1223,6 +1246,19 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
       const suffixComp = last?.text ?? '';
       if (prev?.text === '@' && /^[A-Za-z0-9_]+$/.test(suffixComp)) {
         res = `${res}@${suffixComp}`;
+      }
+    }
+
+    // Fallback: recover compartment-before-parentheses syntax when parse-tree
+    // compartment nodes are missing in some observable contexts.
+    // Example: `B@EC()` should normalize to `B()@EC`.
+    if (!prefix && !res.includes('@') && rawSpeciesText.includes('@')) {
+      const normalizedRaw = rawSpeciesText.replace(
+        /([A-Za-z_][A-Za-z0-9_]*)@([A-Za-z0-9_]+)\(([^()]*)\)/g,
+        (_m, mol, comp, args) => `${mol}(${String(args ?? '')})@${comp}`
+      );
+      if (normalizedRaw.includes('@')) {
+        res = normalizedRaw;
       }
     }
 

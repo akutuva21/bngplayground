@@ -106,6 +106,30 @@ describe('Pattern Matching - Complex Patterns', () => {
     const matches = GraphMatcher.findAllMaps(pattern, target);
     expect(matches.length).toBe(2);
   });
+
+  it('should keep strict explicit bond cardinality by default', () => {
+    const pattern = BNGLParser.parseSpeciesGraph('Cyclin(b!1).CDK(b!1)');
+    const target = BNGLParser.parseSpeciesGraph('p21(b!2).Cyclin(b!1!2).CDK(b!1)');
+
+    const matches = GraphMatcher.findAllMaps(pattern, target);
+    expect(matches.length).toBe(0);
+  });
+
+  it('should allow extra target bonds in observable matching mode', () => {
+    const pattern = BNGLParser.parseSpeciesGraph('Cyclin(b!1).CDK(b!1)');
+    const target = BNGLParser.parseSpeciesGraph('p21(b!2).Cyclin(b!1!2).CDK(b!1)');
+
+    const matches = GraphMatcher.findAllMaps(pattern, target, { allowExtraTargetBonds: true });
+    expect(matches.length).toBe(1);
+  });
+
+  it('should keep strict observable counting by default', () => {
+    const species = 'p21(b!2).Cyclin(b!1!2).CDK(b!1)';
+    const pattern = 'Cyclin(b!1).CDK(b!1)';
+
+    expect(countPatternMatches(species, pattern)).toBe(0);
+  });
+
 });
 
 describe('Pattern Matching - Edge Cases', () => {

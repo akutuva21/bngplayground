@@ -11,12 +11,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
 
-import { DEFAULT_BNG2_PATH } from './bngDefaults.js';
+import { DEFAULT_BNG2_PATH } from '../bngDefaults.js';
 
 const require = createRequire(import.meta.url);
 
 const SEED = 12345;
+const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../');
 const BNG2_PATH = process.env.BNG2_PATH ?? DEFAULT_BNG2_PATH;
 
 // Helper to parse gdat file
@@ -199,7 +201,7 @@ end model
     const xmlContent = fs.readFileSync(xmlPath, 'utf8');
 
     // Load WASM module
-    const nfsimPath = path.join(process.cwd(), 'public/nfsim.js');
+    const nfsimPath = path.join(PROJECT_ROOT, 'public/nfsim.js');
     console.log('Loading WASM from:', nfsimPath);
 
     // Use dynamic require for CJS - the module exports { default: createNFsimModule }
@@ -213,11 +215,11 @@ end model
         process.exit(1);
     }
 
-    const wasmPath = path.join(process.cwd(), 'public/nfsim.wasm');
-    
+    const wasmPath = path.join(PROJECT_ROOT, 'public/nfsim.wasm');
+
     // Read WASM binary directly for Node.js (fetch doesn't work in Node)
     const wasmBinary = fs.readFileSync(wasmPath);
-    
+
     const module = await createNFsimModule({
         wasmBinary: wasmBinary,
         locateFile: (p: string) => p.endsWith('.wasm') ? wasmPath : p

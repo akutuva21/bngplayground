@@ -226,8 +226,10 @@ reaction_rules_block
     ;
 
 reaction_rule_def
-    : label_def? (LBRACKET rule_modifiers RBRACKET)? reactant_patterns reaction_sign product_patterns rate_law rule_modifiers?
-    ;
+        : label_def?
+            (LBRACKET rule_modifiers (COMMA? rule_modifiers)* RBRACKET)?
+            reactant_patterns reaction_sign product_patterns rate_law rule_modifiers*
+        ;
 
 // Labels can be: "ruleName:", "1:", "1 Description:", or just inline before the rule
 // The multi-word format is: INT (STRING | INT | LPAREN | RPAREN)* COLON

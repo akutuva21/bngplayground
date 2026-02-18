@@ -24,8 +24,11 @@ export class RxnRule {
   changeCompartments: Array<[number, string]>; // [reactantMolIdx, newCompartment]
   excludeReactants: Array<{ reactantIndex: number; pattern: SpeciesGraph }>;
   includeReactants: Array<{ reactantIndex: number; pattern: SpeciesGraph }>;
+  excludeProducts: Array<{ productIndex: number; pattern: SpeciesGraph }>;
+  includeProducts: Array<{ productIndex: number; pattern: SpeciesGraph }>;
   isDeleteMolecules: boolean;
   isMoveConnected: boolean;
+  isMatchOnce: boolean;
 
   // Mapping from Product Molecule Global Index to Reactant Molecule Global Index
   molecularMap: Map<number, number>;
@@ -39,7 +42,7 @@ export class RxnRule {
     reactants: SpeciesGraph[],
     products: SpeciesGraph[],
     rateConstant: number,
-    options: { allowsIntramolecular?: boolean; rateExpression?: string; isMoveConnected?: boolean; totalRate?: boolean } = {}
+    options: { allowsIntramolecular?: boolean; rateExpression?: string; isMoveConnected?: boolean; isMatchOnce?: boolean; totalRate?: boolean } = {}
   ) {
     this.name = name;
     this.reactants = reactants;
@@ -49,6 +52,7 @@ export class RxnRule {
     this.allowsIntramolecular = options.allowsIntramolecular ?? true;
     this.rateExpression = options.rateExpression;
     this.isMoveConnected = options.isMoveConnected ?? false;
+    this.isMatchOnce = options.isMatchOnce ?? false;
     this.totalRate = options.totalRate ?? false;
     this.isArrhenius = false;
     this.deleteBonds = [];
@@ -59,6 +63,8 @@ export class RxnRule {
     this.changeCompartments = [];
     this.excludeReactants = [];
     this.includeReactants = [];
+    this.excludeProducts = [];
+    this.includeProducts = [];
     this.isDeleteMolecules = false;
     this.molecularMap = new Map();
   }
@@ -114,7 +120,7 @@ export class RxnRule {
     for (const constraint of constraints) {
       // Match constraint type, index, and pattern
       // Example: exclude_reactants(1, A(b~P))
-      const match = constraint.match(/^(exclude_reactants|include_reactants)\s*\(\s*(\d+)\s*,\s*(.+)\s*\)$/);
+      const match = constraint.match(/^(exclude_reactants|include_reactants|exclude_products|include_products)\s*\(\s*(\d+)\s*,\s*(.+)\s*\)$/);
       if (match) {
         const type = match[1];
         const index = parseInt(match[2], 10);
@@ -124,12 +130,16 @@ export class RxnRule {
           const pattern = parser(patternStr);
 
           // BNGL uses 1-based indexing, convert to 0-based
-          const reactantIndex = index - 1;
+          const mappedIndex = index - 1;
 
           if (type === 'exclude_reactants') {
-            this.excludeReactants.push({ reactantIndex, pattern });
+            this.excludeReactants.push({ reactantIndex: mappedIndex, pattern });
           } else if (type === 'include_reactants') {
-            this.includeReactants.push({ reactantIndex, pattern });
+            this.includeReactants.push({ reactantIndex: mappedIndex, pattern });
+          } else if (type === 'exclude_products') {
+            this.excludeProducts.push({ productIndex: mappedIndex, pattern });
+          } else if (type === 'include_products') {
+            this.includeProducts.push({ productIndex: mappedIndex, pattern });
           }
         } catch (e) {
           console.warn(`Failed to parse pattern in constraint: ${constraint}`, e);

@@ -29,7 +29,7 @@ import {
 
 // SafeExpressionEvaluator will be dynamically imported only when functional rates are enabled to avoid bundling vulnerable libs
 // Using official ANTLR parser for bng2.pl parity (util polyfill added in vite.config.ts)
-import { parseBNGLStrict as parseBNGLModel } from '../src/parser/BNGLParserWrapper';
+import { parseBNGLWithANTLR } from '../src/parser/BNGLParserWrapper';
 import { Atomizer } from '../src/lib/atomizer';
 
 const ctx: DedicatedWorkerGlobalScope = typeof self !== 'undefined'
@@ -272,8 +272,17 @@ async function parseBNGL(jobId: number, bnglCode: string): Promise<BNGLModel> {
   ensureNotCancelled(jobId);
   console.log('[Worker-Debug] parseBNGL called for job', jobId);
 
-  // 1. Unified parsing via ANTLR (Strict)
-  const model = parseBNGLModel(bnglCode);
+  // 1. Parse via ANTLR best-effort model recovery (preserves recoverable legacy inputs)
+  const parseResult = parseBNGLWithANTLR(bnglCode);
+  if (!parseResult.model) {
+    const errorMsg = parseResult.errors.map(e => `Line ${e.line}:${e.column}: ${e.message}`).join('\n');
+    throw new Error(`BNGL parse error:\n${errorMsg}`);
+  }
+  if (!parseResult.success) {
+    const errorMsg = parseResult.errors.map(e => `Line ${e.line}:${e.column}: ${e.message}`).join('\n');
+    console.warn(`[Worker] ANTLR parse reported recoverable errors; continuing with best-effort model:\n${errorMsg}`);
+  }
+  const model = parseResult.model;
 
   // 2. Resolve compartmental volumes if needed
   if (requiresCompartmentResolution(model)) {
@@ -592,7 +601,23 @@ if (typeof ctx.addEventListener === 'function') {
           })();
 
           const response: WorkerResponse = { id, type: 'simulate_success', payload: results };
-          ctx.postMessage(response);
+          try {
+            ctx.postMessage(response);
+          } catch (postError: any) {
+            const msg = postError?.message ?? String(postError ?? '');
+            if (/Data cannot be cloned|out of memory/i.test(msg)) {
+              console.warn('[Worker] simulate_success payload too large; retrying without speciesData payload');
+              const slimResults = {
+                ...(results as any),
+                speciesHeaders: undefined,
+                speciesData: undefined
+              };
+              const slimResponse: WorkerResponse = { id, type: 'simulate_success', payload: slimResults };
+              ctx.postMessage(slimResponse);
+            } else {
+              throw postError;
+            }
+          }
         } catch (error) {
           console.error(`[Worker] Simulation error for job ${id}:`, error);
           const response: WorkerResponse = { id, type: 'simulate_error', payload: serializeError(error) };
@@ -723,17 +748,22 @@ if (typeof ctx.addEventListener === 'function') {
              }
           }
 
-          // Prepare model with options
+          // Prepare model with merged network options.
+          // Preserve parser-populated options (e.g., max_stoich maps) unless explicitly overridden.
+          const mergedNetworkOptions: Record<string, any> = { ...(model.networkOptions || {}) };
+          if (options?.maxSpecies !== undefined) mergedNetworkOptions.maxSpecies = options.maxSpecies;
+          if (options?.maxReactions !== undefined) mergedNetworkOptions.maxReactions = options.maxReactions;
+          if (options?.maxIterations !== undefined) mergedNetworkOptions.maxIter = options.maxIterations;
+          if (options?.maxAgg !== undefined) mergedNetworkOptions.maxAgg = options.maxAgg;
+          if (options?.maxStoich !== undefined) {
+            mergedNetworkOptions.maxStoich = options.maxStoich instanceof Map
+              ? Object.fromEntries(options.maxStoich.entries())
+              : options.maxStoich;
+          }
+
           const modelWithOptions = {
             ...model,
-            networkOptions: {
-              ...(model.networkOptions || {}),
-              maxSpecies: options?.maxSpecies,
-              maxReactions: options?.maxReactions,
-              maxIter: options?.maxIterations,
-              maxAgg: options?.maxAgg,
-              maxStoich: options?.maxStoich instanceof Map ? undefined : (options?.maxStoich as any), // Types might differ, simplifying
-            }
+            networkOptions: mergedNetworkOptions
           };
 
           // Call service

@@ -5,12 +5,12 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const PROJECT_ROOT = path.resolve(__dirname, '..');
+const PROJECT_ROOT = path.resolve(__dirname, '../../');
 
 const VALID_MODELS_JSON = path.join(PROJECT_ROOT, 'tests/bionetgen-repo/valid_models.json');
 // Target root constants.ts
 const DEST_FILE = path.join(PROJECT_ROOT, 'validation_models.ts');
-const INDEX_FILE = path.join(PROJECT_ROOT, 'constants.ts'); 
+const INDEX_FILE = path.join(PROJECT_ROOT, 'constants.ts');
 
 const SKIP_MODELS = ['blbr', 'cBNGL_simple'];
 
@@ -56,14 +56,14 @@ ${modelObjects.map(m => `  {
         const importLine = `import { VALIDATION_MODELS } from './validation_models';\n`;
         // Look for the RAW_MODEL_CATEGORIES definition
         const exportLineToCheck = `const RAW_MODEL_CATEGORIES: ModelCategory[] = [`;
-        
+
         let newContent = importLine + indexContent;
         if (newContent.includes(exportLineToCheck)) {
-             newContent = newContent.replace(exportLineToCheck, `${exportLineToCheck}\n  {\n    name: 'Validation Candidates',\n    models: VALIDATION_MODELS\n  },`);
-             fs.writeFileSync(INDEX_FILE, newContent);
-             console.log(`Updated ${INDEX_FILE}`);
+            newContent = newContent.replace(exportLineToCheck, `${exportLineToCheck}\n  {\n    name: 'Validation Candidates',\n    models: VALIDATION_MODELS\n  },`);
+            fs.writeFileSync(INDEX_FILE, newContent);
+            console.log(`Updated ${INDEX_FILE}`);
         } else {
-             console.error(`Could not find RAW_MODEL_CATEGORIES in ${INDEX_FILE}`);
+            console.error(`Could not find RAW_MODEL_CATEGORIES in ${INDEX_FILE}`);
         }
     } else {
         console.log(`constants.ts already updated.`);

@@ -43,9 +43,30 @@ export class EnergyService {
      */
     public calculateDeltaG(reactants: SpeciesGraph | SpeciesGraph[], products: SpeciesGraph[]): number {
         const reactantList = Array.isArray(reactants) ? reactants : [reactants];
-        const gReactants = reactantList.reduce((sum, g) => sum + this.calculateEnergy(g), 0);
-        const gProducts = products.reduce((sum, g) => sum + this.calculateEnergy(g), 0);
-        return gProducts - gReactants;
+        // BNG2 parity (EnergyPattern::getStoich / getDeltaEnergy):
+        // deltaG = sum_over_patterns( (stoich_products - stoich_reactants) * G_pattern )
+        // where stoichiometric weight of a species for a pattern is
+        // (#subgraph matches) / (pattern automorphisms).
+        let deltaG = 0;
+        for (const p of this.patterns) {
+            let stoich = 0;
+            for (const reactant of reactantList) {
+                const matches = GraphMatcher.findAllMaps(p.graph, reactant, { symmetryBreaking: false });
+                if (matches.length > 0) {
+                    stoich -= matches.length / p.symmetry;
+                }
+            }
+            for (const product of products) {
+                const matches = GraphMatcher.findAllMaps(p.graph, product, { symmetryBreaking: false });
+                if (matches.length > 0) {
+                    stoich += matches.length / p.symmetry;
+                }
+            }
+            if (stoich !== 0) {
+                deltaG += stoich * p.value;
+            }
+        }
+        return deltaG;
     }
 
     /**

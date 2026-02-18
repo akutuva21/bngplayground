@@ -251,26 +251,8 @@ The following are gitignored and should be considered temporary/debug:
 - Supports dense and sparse Jacobian modes via `cvode`, `cvode_sparse`, `cvode_auto`
 - Explicit methods (RK4/RK45) exist for non-stiff fallback only
 
-### Compartment Volume Scaling
-- **Implemented** in `NetworkGenerator.ts::getVolumeScale()`
-- Bimolecular reaction rates scaled by 1/volume for 3D compartments
-- Heterogeneous (3D+2D) reactions use the 3D compartment's volume
-
-### Degeneracy / Symmetry
-- Component-level degeneracy calculated in `src/services/graph/core/degeneracy.ts`
-- Used for statistical factors in reaction rates
-- Does not implement full automorphism group computation (known gap vs BNG2's HNauty)
-
-### Match Cache
-- Fixed-size cache (50,000 entries) in `Matcher.ts`
-- **Cleared between network generation runs** via `clearMatchCache()`
-- No LRU eviction; stops caching when full
-
 ### Features NOT Implemented
-- NFsim (network-free simulation) - exponential networks will hit `maxSpecies` limit
-- Time-dependent rate constants `k(t)`
 - Local functions (`%x` syntax)
-- Parameter scan / bifurcation analysis actions
 - Hybrid SSA/ODE (PLA)
 
 ### Automated Validation

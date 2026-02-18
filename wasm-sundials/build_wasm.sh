@@ -11,31 +11,12 @@ EMCC="emcc"
 EMCMAKE="emcmake"
 EMMAKE="emmake"
 
-if ! command -v emcc &> /dev/null
-then
-    if command -v emcc.bat &> /dev/null
-    then
-        echo "Found emcc.bat..."
-        EMCC="emcc.bat"
-        EMCMAKE="emcmake.bat"
-        EMMAKE="emmake.bat"
-    # User specific path check (Git Bash style)
-    elif [ -f "/c/Users/Achyudhan/emsdk/upstream/emscripten/emcc.bat" ]; then
-        echo "Found emcc.bat at user path..."
-        EMCC="/c/Users/Achyudhan/emsdk/upstream/emscripten/emcc.bat"
-        EMCMAKE="/c/Users/Achyudhan/emsdk/upstream/emscripten/emcmake.bat"
-        EMMAKE="/c/Users/Achyudhan/emsdk/upstream/emscripten/emmake.bat"
-    elif [ -f "/c/Users/Achyudhan/emsdk/upstream/emscripten/emcc" ]; then
-        echo "Found emcc at user path..."
-        EMCC="/c/Users/Achyudhan/emsdk/upstream/emscripten/emcc"
-        EMCMAKE="/c/Users/Achyudhan/emsdk/upstream/emscripten/emcmake"
-        EMMAKE="/c/Users/Achyudhan/emsdk/upstream/emscripten/emmake"
-    else
-        echo "Error: emcc (or emcc.bat) not found in PATH or at C:/Users/Achyudhan/emsdk/upstream/emscripten/emcc"
-        echo "Please make sure you have activated the Emscripten environment (e.g., emsdk_env.bat)."
-        exit 1
-    fi
+if ! command -v emcc &> /dev/null; then
+    echo "Error: emcc not found. Please activate the Emscripten SDK first:"
+    echo "  source \$EMSDK/emsdk_env.sh"
+    exit 1
 fi
+echo "Using emcc: $(which emcc)"
 
 # Temp directory for building to avoid path length issues
 BUILD_DIR="/tmp/bng_cvode_build"
@@ -68,7 +49,7 @@ $EMCC -I$SUNDIALS_INC -I$BUILD_INC -O3 \
  $LIBS \
  -o cvode.js \
  --js-library library_cvode.js \
- -s EXPORTED_FUNCTIONS="['_init_solver', '_init_solver_sparse', '_init_solver_jac', '_solve_step', '_get_y', '_destroy_solver', '_set_init_step', '_set_max_step', '_set_min_step', '_set_max_ord', '_set_stab_lim_det', '_set_max_nonlin_iters', '_set_nonlin_conv_coef', '_set_max_err_test_fails', '_set_max_conv_fails', '_reinit_solver', '_get_solver_stats', '_malloc', '_free']" \
+ -s EXPORTED_FUNCTIONS="['_init_solver', '_init_solver_sparse', '_init_solver_jac', '_solve_step', '_get_y', '_destroy_solver', '_set_init_step', '_set_max_step', '_set_min_step', '_set_max_ord', '_set_stab_lim_det', '_set_max_nonlin_iters', '_set_nonlin_conv_coef', '_set_max_err_test_fails', '_set_max_conv_fails', '_reinit_solver', '_get_solver_stats', '_init_roots', '_get_root_info', '_malloc', '_free']" \
  -s EXPORTED_RUNTIME_METHODS="['cwrap', 'getValue', 'setValue', 'HEAPF64', 'HEAP32']" \
  -s MODULARIZE=1 \
  -s EXPORT_NAME="createCVodeModule" \

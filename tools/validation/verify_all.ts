@@ -2,15 +2,15 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { NetworkGenerator } from '../src/services/graph/NetworkGenerator.ts';
-import { BNGLParser } from '../src/services/graph/core/BNGLParser.ts';
-import { parseBNGL } from '../services/parseBNGL.ts';
+import { NetworkGenerator } from '../../src/services/graph/NetworkGenerator.ts';
+import { BNGLParser } from '../../src/services/graph/core/BNGLParser.ts';
+import { parseBNGL } from '../../services/parseBNGL.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PUBLISHED_MODELS_DIR = path.resolve(__dirname, '../published-models');
-const EXAMPLE_MODELS_DIR = path.resolve(__dirname, '../example-models');
+const PUBLISHED_MODELS_DIR = path.resolve(__dirname, '../../published-models');
+const EXAMPLE_MODELS_DIR = path.resolve(__dirname, '../../example-models');
 
 interface VerificationResult {
   model: string;
@@ -38,12 +38,12 @@ async function verifyModel(filePath: string): Promise<VerificationResult | null>
     const model = parseBNGL(bnglCode);
 
     const seedSpecies = model.species.map(s => BNGLParser.parseSpeciesGraph(s.name));
-    
+
     const rules = model.reactionRules.flatMap(r => {
       const rate = model.parameters[r.rate] ?? parseFloat(r.rate);
       const reverseRate = r.reverseRate ? (model.parameters[r.reverseRate] ?? parseFloat(r.reverseRate)) : rate;
       const ruleStr = `${r.reactants.join(' + ')} -> ${r.products.join(' + ')}`;
-      
+
       try {
         const forwardRule = BNGLParser.parseRxnRule(ruleStr, rate);
         forwardRule.name = r.name || (r.reactants.join('+') + '->' + r.products.join('+'));
@@ -77,7 +77,7 @@ async function verifyModel(filePath: string): Promise<VerificationResult | null>
 
     const generator = new NetworkGenerator(generatorOptions);
     const result = await generator.generate(seedSpecies, rules, (progress) => {
-        // Optional: log progress
+      // Optional: log progress
     });
 
     return {
@@ -89,16 +89,16 @@ async function verifyModel(filePath: string): Promise<VerificationResult | null>
 
   } catch (e: any) {
     if (e.message.includes('Max species limit reached') || e.message.includes('Max reactions limit reached')) {
-        console.log(`[DEBUG] Hit limit: ${e.message}`);
-        const partialSpecies = e.species || [];
-        const partialReactions = e.reactions || [];
-        return {
-            model: modelName,
-            success: partialSpecies.length > 0,
-            parserSpecies: partialSpecies.length,
-            parserReactions: partialReactions.length,
-            error: `Limit Reached: ${e.message}`
-        };
+      console.log(`[DEBUG] Hit limit: ${e.message}`);
+      const partialSpecies = e.species || [];
+      const partialReactions = e.reactions || [];
+      return {
+        model: modelName,
+        success: partialSpecies.length > 0,
+        parserSpecies: partialSpecies.length,
+        parserReactions: partialReactions.length,
+        error: `Limit Reached: ${e.message}`
+      };
     }
     console.error(`[DEBUG] Verification failed with error:`, e);
     return { model: modelName, success: false, error: e.message };

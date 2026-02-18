@@ -8,7 +8,10 @@ import { chromium } from 'playwright';
 const PROJECT_ROOT = process.cwd();
 const WEB_OUTPUT_DIR = path.join(PROJECT_ROOT, 'web_output');
 const PORT = Number(process.env.WEB_OUTPUT_PORT || 5175);
-const TIMEOUT_PER_MODEL_MS = 120_000; // 120 seconds timeout per model to accommodate large networks
+const DEFAULT_TIMEOUT_PER_MODEL_MS = Number(process.env.WEB_OUTPUT_TIMEOUT_MS || 120_000);
+const MODEL_TIMEOUT_OVERRIDES_MS = {
+  lin_prion_2019: Number(process.env.WEB_OUTPUT_TIMEOUT_LIN_PRION_MS || 900_000), // 15 minutes
+};
 
 function readViteBasePath() {
   const envBase = process.env.WEB_OUTPUT_BASE;
@@ -35,6 +38,15 @@ function normalizeBasePath(p) {
 
 function safeModelName(name) {
   return String(name || '').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+}
+
+function getTimeoutForModel(modelId) {
+  const key = safeModelName(modelId);
+  const override = MODEL_TIMEOUT_OVERRIDES_MS[key];
+  if (typeof override === 'number' && Number.isFinite(override) && override > 0) {
+    return override;
+  }
+  return DEFAULT_TIMEOUT_PER_MODEL_MS;
 }
 
 function normalizeKey(value) {
@@ -210,23 +222,39 @@ async function main() {
   // Parse filtering
   const args = process.argv.slice(2);
   const modelsIdx = args.indexOf('--models');
-  if (modelsIdx !== -1 && args[modelsIdx + 1]) {
+  const hasModelsArg = modelsIdx !== -1 && !!args[modelsIdx + 1];
+  if (hasModelsArg) {
     process.env.WEB_OUTPUT_MODELS = args[modelsIdx + 1];
   }
-  const envModelList = process.env.WEB_OUTPUT_MODELS ? process.env.WEB_OUTPUT_MODELS.split(',').map(s => s.trim()).filter(Boolean) : null;
+  const rawModelList = hasModelsArg
+    ? (process.env.WEB_OUTPUT_MODELS || '')
+    : (process.env.MODELS || process.env.WEB_OUTPUT_MODELS || '');
+  const envModelList = rawModelList
+    ? rawModelList.split(',').map(s => s.trim()).filter(Boolean)
+    : null;
 
   if (envModelList) {
-    console.log(`[generate:web-output] Targeted models: ${envModelList.join(', ')}`);
+    const source = hasModelsArg
+      ? '--models'
+      : (process.env.MODELS ? 'MODELS' : 'WEB_OUTPUT_MODELS');
+    console.log(`[generate:web-output] Targeted models (${source}): ${envModelList.join(', ')}`);
   } else {
     // Only clean if running full suite
     console.log(`[generate:web-output] Cleaning output directory...`);
     cleanOldOutputs(WEB_OUTPUT_DIR);
   }
 
-  const devServer = startViteDevServer();
+  let devServer = null;
+  const existingServer = await waitForHttpOk(BASE_URL, 2_000).then(() => true).catch(() => false);
+  if (existingServer) {
+    console.log(`[generate:web-output] Reusing existing app server at ${BASE_URL}`);
+  } else {
+    devServer = startViteDevServer();
+  }
   let succeeded = false;
 
   const shutdown = async () => {
+    if (!devServer) return;
     try { if (!devServer.killed) devServer.kill(); } catch { }
     await waitForChildExit(devServer, 2000);
     await killProcessTree(devServer.pid);
@@ -236,7 +264,9 @@ async function main() {
   process.on('SIGTERM', () => { void shutdown(); process.exit(143); });
 
   try {
-    await waitForHttpOk(BASE_URL, 90_000);
+    if (!existingServer) {
+      await waitForHttpOk(BASE_URL, 90_000);
+    }
     console.log(`[generate:web-output] App is up: ${BASE_URL}`);
 
     const headed = String(process.env.WEB_OUTPUT_HEADED || '').trim() === '1';
@@ -303,15 +333,22 @@ async function main() {
       console.log(`[generate:web-output] Processing: ${modelId}`);
 
       try {
+        const timeoutMs = getTimeoutForModel(modelId);
+        if (timeoutMs !== DEFAULT_TIMEOUT_PER_MODEL_MS) {
+          console.log(`[generate:web-output] Timeout override for ${modelId}: ${timeoutMs} ms`);
+        }
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT_PER_MODEL_MS)
+          setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs)
         );
 
         // Run single model
-        await Promise.race([
+        const runResult = await Promise.race([
           page.evaluate((name) => window.runModels([name]), modelId),
           timeoutPromise
         ]);
+        if (runResult && typeof runResult === 'object' && Number(runResult.failed) > 0) {
+          throw new Error('MODEL_FAILED');
+        }
 
         // Wait for download to start and finish (simple heuristic: wait short time for activeDownloads to go up, then wait for 0)
         // runModels resolves AFTER downloadCsv is called, but FileSystem IO might take a moment
@@ -330,14 +367,18 @@ async function main() {
 
         successCount++;
       } catch (err) {
-        console.error(`[generate:web-output] ❌ FAILED ${modelId}:`, err.message);
+        console.error(`[generate:web-output] ? FAILED ${modelId}:`, err.message);
         failCount++;
 
         if (err.message === 'TIMEOUT') {
-          console.log(`[generate:web-output] ⚠️ Timeout exceeded for ${modelId}. Writing skipped marker.`);
+          console.log(`[generate:web-output] ?? Timeout exceeded for ${modelId}. Writing skipped marker.`);
           // Create a marker file so the report generator knows it was skipped
           const skippedFile = path.join(WEB_OUTPUT_DIR, `results_${safeModelName(modelId)}.csv`);
           fs.writeFileSync(skippedFile, 'Time,Observable\n# SKIPPED (Timeout)\n0,0');
+        } else if (err.message === 'MODEL_FAILED') {
+          console.log(`[generate:web-output] ?? Model run failed for ${modelId}. Writing skipped marker.`);
+          const skippedFile = path.join(WEB_OUTPUT_DIR, `results_${safeModelName(modelId)}.csv`);
+          fs.writeFileSync(skippedFile, 'Time,Observable\n# SKIPPED (ModelFailed)\n0,0');
         }
 
         console.log('[generate:web-output] Reloading page to recover...');

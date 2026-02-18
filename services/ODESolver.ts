@@ -46,9 +46,9 @@ export interface SolverResult {
 type DerivativeFunction = (y: Float64Array, dydt: Float64Array) => void;
 
 const DEFAULT_OPTIONS: SolverOptions = {
-  atol: 1e-6,          // Absolute tolerance (matches BNG2 CVODE default)
+  atol: 1e-8,          // Absolute tolerance (matches BNG2 CVODE default)
   rtol: 1e-8,          // Relative tolerance (matches BNG2 CVODE default)
-  maxSteps: 2000,      // Maximum steps (matches BNG2 CVODE default)
+  maxSteps: 2000,      // Initial CVODE mxstep (matches BNG2 default)
   minStep: 1e-15,
   maxStep: Infinity,
   solver: 'auto',      // 'auto' now uses CVODE with fallback to Rosenbrock23 (matches BNG2 behavior)
@@ -1078,6 +1078,7 @@ interface CVodeModule {
   _set_nonlin_conv_coef?: (mem: number, nlscoef: number) => number;
   _set_max_err_test_fails?: (mem: number, maxnef: number) => number;
   _set_max_conv_fails?: (mem: number, maxncf: number) => number;
+  _set_max_num_steps?: (mem: number, mxstep: number) => number;
   _reinit_solver?: (mem: number, t0: number, y0: number) => number;
   _get_solver_stats?: (mem: number, nsteps: number, nfevals: number, nlinsetups: number, netfails: number) => void;
   _init_roots?: (mem: number, nroots: number) => number;
@@ -1137,15 +1138,37 @@ export class CVODESolver {
     this.initPromise = (async () => {
       try {
         const isNode = typeof process !== 'undefined' && process.versions && process.versions.node;
-        let loader;
+        const resolveLoader = (moduleLike: unknown) => {
+          const candidates: unknown[] = [moduleLike];
+
+          if (moduleLike && typeof moduleLike === 'object') {
+            const asRecord = moduleLike as Record<string, unknown>;
+            candidates.push(asRecord.default, asRecord.createCVodeModule);
+
+            const nestedDefault = asRecord.default;
+            if (nestedDefault && typeof nestedDefault === 'object') {
+              const nestedRecord = nestedDefault as Record<string, unknown>;
+              candidates.push(nestedRecord.default, nestedRecord.createCVodeModule);
+            }
+          }
+
+          const callable = candidates.find((candidate) => typeof candidate === 'function');
+          if (!callable) {
+            throw new Error('Failed to resolve callable CVODE loader export');
+          }
+
+          return callable as (moduleArg?: unknown) => Promise<CVodeModule>;
+        };
+
+        let loader: (moduleArg?: unknown) => Promise<CVodeModule>;
         if (isNode) {
           console.log('[ODESolver] Loading CVODE via cvode_node');
           // Use dynamic import with string template to avoid Vite static analysis
           const modulePath = './cvode_node';
-          loader = (await import(/* @vite-ignore */ modulePath)).default;
+          loader = resolveLoader(await import(/* @vite-ignore */ modulePath));
         } else {
           console.log('[ODESolver] Loading CVODE via cvode_loader');
-          loader = (await import('./cvode_loader')).default;
+          loader = resolveLoader(await import('./cvode_loader'));
         }
 
         this.module = await loader({
@@ -1418,127 +1441,76 @@ export class CVODESolver {
 
     let t = this.currentT;
     let steps = 0;
-
-    let solverMem = this.solverMem!;
-    let yPtr = this.yPtr;
-    let tretPtr = this.tretPtr;
-    let lastT = t0; // Track previous t to detect stuck solver
+    const INITIAL_MXSTEP = 2000;
+    const maxMxstep = Math.max(INITIAL_MXSTEP, this.options.maxSteps ?? 5_000_000);
+    let mxstep = INITIAL_MXSTEP;
     let stuckCount = 0;
-    const MAX_STUCK_ITERATIONS = 10; // If t doesn't advance 10 times in a row, we're stuck
-    let mxstepBumps = 0;
-    const MAX_MXSTEP_BUMPS = 12;
-    const MAX_MXSTEP = 5_000_000;
+    let lastT = t;
+
+    const solverMem = this.solverMem!;
+    const yPtr = this.yPtr;
+    const tretPtr = this.tretPtr;
 
     try {
-      // Check if we're already at or past the target (within floating point tolerance)
-      const relTol = 1e-10 * Math.max(1, Math.abs(tEnd));
+      if (m._set_max_num_steps) {
+        m._set_max_num_steps(solverMem, mxstep);
+      }
 
-      while (t < tEnd - relTol) {
+      while (true) {
         if (checkCancelled) checkCancelled();
 
-        // Hard limit on steps within a single integrate() call to prevent infinite loops
-        if (steps >= 1000000) {
-          console.warn(`[CVODESolver] Reached 1000000 steps at t=${t}, target=${tEnd}, stopping`);
-          m._get_y(solverMem, yPtr);
-          const currentHeap = m.HEAPF64;
-          yOut.set(currentHeap.subarray(yPtr >> 3, (yPtr >> 3) + neq));
-          return { success: false, t, y: yOut, steps, errorMessage: `Max internal iterations exceeded at t=${t}` };
-        }
-
-        // CRITICAL: Check if remaining distance to target is too small for CVODE
-        // If we're within ~1e-13 relative of target, just consider it done
-        // This prevents CVODE from getting stuck with h ~ machine epsilon
-        const remainingDistance = Math.abs(tEnd - t);
-        const machineEpsilonRelative = Math.max(1e-13, Math.abs(tEnd) * 1e-13);
-
-        if (remainingDistance < machineEpsilonRelative) {
-          // We're close enough: stop iterating, but do NOT snap time forward.
-          // Snapping desynchronizes JS time from CVODE's internal time/state.
-          break;
-        }
-
-        const tout = tEnd;
-        const flag = m._solve_step(solverMem, tout, tretPtr);
-
-        // Update t from CVODE
+        const flag = m._solve_step(solverMem, tEnd, tretPtr);
         const currentHeap = m.HEAPF64;
         t = currentHeap[tretPtr >> 3];
         steps++;
 
-        // Detect stuck solver: if t hasn't advanced meaningfully
-        const advance = Math.abs(t - lastT);
-        const minAdvance = Math.max(1e-14, Math.abs(t) * 1e-14);
-
-        if (advance < minAdvance) {
+        const tTol = Math.max(this.options.minStep, 1e-15 * Math.max(1, Math.abs(lastT), Math.abs(t)));
+        if (Math.abs(t - lastT) <= tTol && t < tEnd - tTol) {
           stuckCount++;
-          if (stuckCount >= MAX_STUCK_ITERATIONS) {
-            console.warn(`[CVODESolver] Solver stuck at t=${t} (target=${tEnd}), advance=${advance}`);
+          if (stuckCount >= 10) {
             m._get_y(solverMem, yPtr);
             yOut.set(currentHeap.subarray(yPtr >> 3, (yPtr >> 3) + neq));
-            // If we're close enough, return success without snapping time.
-            if (Math.abs(t - tEnd) < relTol * 10) return { success: true, t, y: yOut, steps };
-            return { success: false, t, y: yOut, steps, errorMessage: `Solver stuck at t=${t}` };
+            this.currentT = t;
+            return { success: false, t, y: yOut, steps, errorMessage: 'CVODE appears stuck (no meaningful time advance)' };
           }
         } else {
-          stuckCount = 0; // Reset if we made progress
+          stuckCount = 0;
         }
         lastT = t;
 
-        if (flag === 2) { // CV_ROOT_RETURN
-          // Root found!
+        if (flag === 2) {
           m._get_y(solverMem, yPtr);
-          const heap = m.HEAPF64;
-          yOut.set(heap.subarray(yPtr >> 3, (yPtr >> 3) + neq));
+          yOut.set(currentHeap.subarray(yPtr >> 3, (yPtr >> 3) + neq));
           this.currentT = t;
-          return { success: true, t, y: yOut, steps, errorMessage: "ROOT_FOUND" };
+          return { success: true, t, y: yOut, steps, errorMessage: 'ROOT_FOUND' };
         }
 
-        if (flag < 0) {
-          // Capture the best available state from CVODE before deciding how to recover.
-          m._get_y(solverMem, yPtr);
-          const heapY = currentHeap.subarray(yPtr >> 3, (yPtr >> 3) + neq);
-          yOut.set(heapY);
-
-          // BNG2 behavior: if CVODE hits mxstep (CV_TOO_MUCH_WORK == -1), increase mxstep and continue.
-          // We approximate this by reinitializing CVODE from the current (t,y) with a larger maxSteps.
-          if (flag === -1 && mxstepBumps < MAX_MXSTEP_BUMPS) {
-            const prevMax = this.options.maxSteps;
-            const nextMax = Math.min(MAX_MXSTEP, Math.max(2000, prevMax > 0 ? prevMax * 2 : 2000));
-
-            if (nextMax > prevMax) {
-              const yRestart = new Float64Array(neq);
-              yRestart.set(heapY);
-              const tRestart = t;
-
-              this.destroy();
-              this.options.maxSteps = nextMax;
-
-              const reinit = this.ensureInitialized(yRestart, tRestart);
-              if (reinit.success) {
-                solverMem = this.solverMem!;
-                yPtr = this.yPtr;
-                tretPtr = this.tretPtr;
-                t = this.currentT;
-                lastT = t;
-                stuckCount = 0;
-                mxstepBumps++;
-                continue;
-              }
-            }
-          }
-
-          return { success: false, t, y: yOut, steps, errorMessage: `CVODE failed with flag ${flag}` };
-        }
-
-        // Early exit if we've reached the target
-        if (t >= tEnd - relTol) {
+        if (flag === 0 || flag === 1) {
           break;
         }
+
+        if (flag === -1) {
+          mxstep *= 2;
+          if (mxstep > maxMxstep) {
+            m._get_y(solverMem, yPtr);
+            yOut.set(currentHeap.subarray(yPtr >> 3, (yPtr >> 3) + neq));
+            this.currentT = t;
+            return { success: false, t, y: yOut, steps, errorMessage: `CVODE exceeded max mxstep escalation (${maxMxstep})` };
+          }
+          if (m._set_max_num_steps) {
+            m._set_max_num_steps(solverMem, mxstep);
+          }
+          continue;
+        }
+
+        m._get_y(solverMem, yPtr);
+        yOut.set(currentHeap.subarray(yPtr >> 3, (yPtr >> 3) + neq));
+        this.currentT = t;
+        return { success: false, t, y: yOut, steps, errorMessage: `CVODE failed with flag ${flag}` };
       }
 
-      // Get final state
-      m._get_y(solverMem, yPtr);
       const currentHeap = m.HEAPF64;
+      m._get_y(solverMem, yPtr);
       yOut.set(currentHeap.subarray(yPtr >> 3, (yPtr >> 3) + neq));
 
       this.currentT = t;

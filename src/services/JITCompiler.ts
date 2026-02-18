@@ -55,7 +55,8 @@ export class JITCompiler {
             totalRate?: boolean; // Parsed modifier; BNG2 ODE/network ignores TotalRate
         }>,
         nSpecies: number,
-        parameters?: Record<string, number>
+        parameters?: Record<string, number>,
+        constantSpeciesMask?: boolean[]
     ): JITCompiledFunction {
         // Build a cache key based on reactions and parameters
         // Note: For large networks, hashing might be slow, so we use a simplified signature 
@@ -72,6 +73,7 @@ export class JITCompiler {
                 t: r.totalRate
             })),
             nSpecies,
+            constantSpeciesMask: constantSpeciesMask ?? [],
             parameters: parameters || {}
         });
 
@@ -82,6 +84,9 @@ export class JITCompiler {
 
         // Build the function source code
         let source = '';
+
+        const isConstantSpecies = (idx: number): boolean =>
+            !!constantSpeciesMask && idx >= 0 && idx < constantSpeciesMask.length && !!constantSpeciesMask[idx];
 
         // Add parameter bindings if provided
         if (parameters) {
@@ -170,6 +175,7 @@ export class JITCompiler {
             // Subtract for reactants
             for (let j = 0; j < rxn.reactantIndices.length; j++) {
                 const idx = rxn.reactantIndices[j];
+                if (isConstantSpecies(idx)) continue;
                 const stoich = rxn.reactantStoich[j];
                 if (!speciesContributions.has(idx)) {
                     speciesContributions.set(idx, []);
@@ -184,6 +190,7 @@ export class JITCompiler {
             // Add for products
             for (let j = 0; j < rxn.productIndices.length; j++) {
                 const idx = rxn.productIndices[j];
+                if (isConstantSpecies(idx)) continue;
                 const stoich = rxn.productStoich[j];
                 if (!speciesContributions.has(idx)) {
                     speciesContributions.set(idx, []);

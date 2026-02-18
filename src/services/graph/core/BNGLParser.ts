@@ -393,7 +393,7 @@ export class BNGLParser {
    * Also handles synthesis rules: "0 -> A()" or "" -> A()
    * Also handles degradation rules: "A() -> 0"
    */
-  static parseRxnRule(ruleStr: string, rateConstant: number | string, name?: string, options?: { isMoveConnected?: boolean }): RxnRule {
+  static parseRxnRule(ruleStr: string, rateConstant: number | string, name?: string, options?: { isMoveConnected?: boolean; isMatchOnce?: boolean }): RxnRule {
     // Detect arrow robustly (->, <-, <->, ~>) and split around the first arrow
     const arrowRegex = /(?:<->|->|<-|~>)/;
     const arrowMatch = ruleStr.match(arrowRegex);
@@ -477,7 +477,11 @@ export class BNGLParser {
       }
     }
 
-    return new RxnRule(name || '', reactants, products, rateNum, { rateExpression: rateExpr, isMoveConnected: options?.isMoveConnected });
+    return new RxnRule(name || '', reactants, products, rateNum, {
+      rateExpression: rateExpr,
+      isMoveConnected: options?.isMoveConnected,
+      isMatchOnce: options?.isMatchOnce,
+    });
   }
 
   /**

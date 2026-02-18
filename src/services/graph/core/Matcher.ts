@@ -35,6 +35,13 @@ export interface MatchMap {
   componentMap: Map<string, string>;     // "pMol.pCompIdx" => "tMol.tCompIdx"
 }
 
+export interface GraphMatchOptions {
+  symmetryBreaking?: boolean;
+  // Observable semantics: allow target sites to carry additional bonds as long
+  // as the explicit pattern bonds are satisfied.
+  allowExtraTargetBonds?: boolean;
+}
+
 // Disable verbose logging in production to prevent console spam
 // Can be enabled via environment: DEBUG_GRAPH_MATCHER=1
 const shouldLogGraphMatcher = typeof process !== 'undefined' && process.env?.DEBUG_GRAPH_MATCHER === '1';
@@ -46,22 +53,26 @@ const shouldLogGraphMatcher = typeof process !== 'undefined' && process.env?.DEB
 const MAX_VF2_ITERATIONS = 100000;
 const MAX_COMPONENT_ITERATIONS = 10000;
 
-// Cache for findAllMaps results - keyed by pattern string + target string
-// Size: ~2000 entries to match conservative browser memory budget
-// Note: Cache is cleared at the start of each network generation run
+// Cache for strict rule-matching results (allowExtraTargetBonds=false).
+// Note: Cache is cleared at the start of each network generation run.
 const matchCache = new Map<string, MatchMap[]>();
-const MAX_CACHE_SIZE = 2000;  // Reduced from 50000 for browser memory constraints
+const MAX_CACHE_SIZE = 2000;
+
+// Separate cache for relaxed observable matching (allowExtraTargetBonds=true)
+// so relaxed lookups do not evict strict rule-matching cache entries.
+const relaxedMatchCache = new Map<string, MatchMap[]>();
+const MAX_RELAXED_CACHE_SIZE = 1000;
 
 /**
  * Add entry to matchCache with LRU eviction when size exceeds limit
  */
-function addToMatchCache(key: string, value: MatchMap[]): void {
-  matchCache.set(key, value);
-  if (matchCache.size > MAX_CACHE_SIZE) {
+function addToCache(cache: Map<string, MatchMap[]>, maxSize: number, key: string, value: MatchMap[]): void {
+  cache.set(key, value);
+  if (cache.size > maxSize) {
     // Remove oldest entry (Map maintains insertion order, so the first key is the oldest)
-    const oldestKey = matchCache.keys().next().value;
+    const oldestKey = cache.keys().next().value;
     if (oldestKey !== undefined) {
-      matchCache.delete(oldestKey);
+      cache.delete(oldestKey);
     }
   }
 }
@@ -71,6 +82,7 @@ function addToMatchCache(key: string, value: MatchMap[]): void {
  */
 export function clearMatchCache() {
   matchCache.clear();
+  relaxedMatchCache.clear();
 }
 
 /**
@@ -251,7 +263,7 @@ export class GraphMatcher {
    * Find ALL isomorphic embeddings of pattern in target
    * BioNetGen: SpeciesGraph::findMaps($pattern)
    */
-  static findAllMaps(pattern: SpeciesGraph, target: SpeciesGraph, options: { symmetryBreaking?: boolean } = {}): MatchMap[] {
+  static findAllMaps(pattern: SpeciesGraph, target: SpeciesGraph, options: GraphMatchOptions = {}): MatchMap[] {
     // Fast pre-filter: check if target has enough molecules of each type
     if (!this.canPossiblyMatch(pattern, target)) {
       if (shouldLogGraphMatcher && pattern.toString().includes('C3(s~b)')) {
@@ -264,7 +276,9 @@ export class GraphMatcher {
     // Note: caching is only valid within a single network generation run
     const symmetryKey = options.symmetryBreaking ? '1' : '0';
     const cacheKey = `${pattern.toString()}|${target.toString()}|${symmetryKey}`;
-    const cached = matchCache.get(cacheKey);
+    const useRelaxedCache = options.allowExtraTargetBonds ?? false;
+    const selectedCache = useRelaxedCache ? relaxedMatchCache : matchCache;
+    const cached = selectedCache.get(cacheKey);
     if (cached !== undefined) {
       // Return a shallow copy to prevent mutations
       return cached.map(m => ({
@@ -275,7 +289,13 @@ export class GraphMatcher {
 
     const matches: MatchMap[] = [];
     const ordering = this.computeNodeOrdering(pattern, target);
-    const state = new VF2State(pattern, target, ordering, options.symmetryBreaking ?? false);
+    const state = new VF2State(
+      pattern,
+      target,
+      ordering,
+      options.symmetryBreaking ?? false,
+      options.allowExtraTargetBonds ?? false
+    );
 
     const iterationCount = { value: 0 };
     this.vf2Backtrack(state, matches, iterationCount);
@@ -287,7 +307,11 @@ export class GraphMatcher {
     }
 
     // Cache result with LRU eviction
-    addToMatchCache(cacheKey, matches);
+    if (useRelaxedCache) {
+      addToCache(relaxedMatchCache, MAX_RELAXED_CACHE_SIZE, cacheKey, matches);
+    } else {
+      addToCache(matchCache, MAX_CACHE_SIZE, cacheKey, matches);
+    }
 
     if (shouldLogGraphMatcher) {
       // console.log(
@@ -333,21 +357,27 @@ export class GraphMatcher {
   /**
    * Check if target species matches the pattern (has at least one valid mapping)
    */
-  static matchesPattern(pattern: SpeciesGraph, target: SpeciesGraph): boolean {
-    return this.findFirstMap(pattern, target) !== null;
+  static matchesPattern(pattern: SpeciesGraph, target: SpeciesGraph, options: GraphMatchOptions = {}): boolean {
+    return this.findFirstMap(pattern, target, options) !== null;
   }
 
   /**
    * Find the first valid embedding of `pattern` in `target`, or null.
    * This is a performance-friendly alternative to `findAllMaps` for boolean checks.
    */
-  static findFirstMap(pattern: SpeciesGraph, target: SpeciesGraph): MatchMap | null {
+  static findFirstMap(pattern: SpeciesGraph, target: SpeciesGraph, options: GraphMatchOptions = {}): MatchMap | null {
     if (!this.canPossiblyMatch(pattern, target)) {
       return null;
     }
 
     const ordering = this.computeNodeOrdering(pattern, target);
-    const state = new VF2State(pattern, target, ordering);
+    const state = new VF2State(
+      pattern,
+      target,
+      ordering,
+      options.symmetryBreaking ?? false,
+      options.allowExtraTargetBonds ?? false
+    );
     const iterationCount = { value: 0 };
     return this.vf2BacktrackFirst(state, iterationCount);
   }
@@ -473,10 +503,17 @@ class VF2State {
   bondPartnerLookup: Map<string, BondEndpoint>;
   nodeOrdering: number[];
   symmetryBreaking: boolean;
+  allowExtraTargetBonds: boolean;
   private componentCandidateCache: Map<number, Map<number, Map<number, Map<string, number[]>>>>;
   private usedTargetsScratch: number[];
 
-  constructor(pattern: SpeciesGraph, target: SpeciesGraph, nodeOrdering: number[], symmetryBreaking: boolean = false) {
+  constructor(
+    pattern: SpeciesGraph,
+    target: SpeciesGraph,
+    nodeOrdering: number[],
+    symmetryBreaking: boolean = false,
+    allowExtraTargetBonds: boolean = false
+  ) {
     this.pattern = pattern;
     this.target = target;
     this.corePattern = new Map();
@@ -485,6 +522,7 @@ class VF2State {
     this.bondPartnerLookup = this.buildBondPartnerLookup();
     this.nodeOrdering = nodeOrdering.length ? nodeOrdering : pattern.molecules.map((_, idx) => idx);
     this.symmetryBreaking = symmetryBreaking;
+    this.allowExtraTargetBonds = allowExtraTargetBonds;
     this.componentCandidateCache = new Map();
     this.usedTargetsScratch = [];
   }
@@ -1309,22 +1347,6 @@ class VF2State {
     tCompIdx: number,
     currentAssignments: Map<number, number>
   ): boolean {
-    // Symmetry-breaking check
-    if (this.symmetryBreaking) {
-      const pMol = this.pattern.molecules[pMolIdx];
-      const sig = this.getComponentSignature(pMol.components[pCompIdx]);
-      for (const [prevPIdx, prevTIdx] of currentAssignments.entries()) {
-        if (prevPIdx === pCompIdx) continue;
-        const prevSig = this.getComponentSignature(pMol.components[prevPIdx]);
-        if (sig === prevSig) {
-          // Enforce a canonical ordering of matched target components
-          // for symmetric pattern components within the same molecule.
-          if (prevPIdx < pCompIdx && tCompIdx <= prevTIdx) return false;
-          if (prevPIdx > pCompIdx && tCompIdx >= prevTIdx) return false;
-        }
-      }
-    }
-
     if (!this.componentBondStateCompatible(pMolIdx, pCompIdx, tMolIdx, tCompIdx)) {
       if (shouldLogGraphMatcher) {
         console.log(`[GraphMatcher] Bond state incompatible: P${pMolIdx}.${pCompIdx} vs T${tMolIdx}.${tCompIdx}`);
@@ -1396,7 +1418,6 @@ class VF2State {
     }
 
     const pComp = this.pattern.molecules[pMolIdx].components[pCompIdx];
-    const hasSpecificBond = pComp.edges.size > 0;
     const targetBound = this.targetHasBond(tMolIdx, tCompIdx);
 
     if (pComp.wildcard === '+') {
@@ -1428,10 +1449,13 @@ class VF2State {
       return !targetBound;
     }
 
-    // Specific bonds (e.g., !1, !1!2): in BNG semantics this constrains the number
-    // of bonds on the site unless wildcard modifiers relax it.
-    // Bond partner identity is still validated by VF2 edge mapping.
-    if (!pComp.wildcard && tComp.edges.size !== pComp.edges.size) {
+    // Specific bonds (e.g., !1, !1!2): for strict rule matching we require exact
+    // cardinality. For observable matching we allow extra target bonds, as long as
+    // all explicit pattern bonds can still be satisfied.
+    if (!pComp.wildcard && !this.allowExtraTargetBonds && tComp.edges.size !== pComp.edges.size) {
+      return false;
+    }
+    if (!pComp.wildcard && this.allowExtraTargetBonds && tComp.edges.size < pComp.edges.size) {
       return false;
     }
 

@@ -5,14 +5,15 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { NetworkGenerator } from '../src/services/graph/NetworkGenerator.ts';
-import { BNGLParser } from '../src/services/graph/core/BNGLParser.ts';
-import { GraphCanonicalizer } from '../src/services/graph/core/Canonical.ts';
-import { parseBNGL } from '../services/parseBNGL.ts';
+import { NetworkGenerator } from '../../src/services/graph/NetworkGenerator.ts';
+import { BNGLParser } from '../../src/services/graph/core/BNGLParser.ts';
+import { GraphCanonicalizer } from '../../src/services/graph/core/Canonical.ts';
+import { parseBNGL } from '../../services/parseBNGL.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.resolve(__dirname, '..');
+const PROJECT_ROOT = path.resolve(__dirname, '../../');
+const ROOT_DIR = PROJECT_ROOT;
 
 interface BNG2Species {
   index: number;
@@ -139,13 +140,13 @@ function parseBNG2NetFile(content: string): BNG2Network {
   const lines = content.split('\n');
   const species: BNG2Species[] = [];
   const reactions: BNG2Reaction[] = [];
-  
+
   let inSpecies = false;
   let inReactions = false;
-  
+
   for (const line of lines) {
     const trimmed = line.trim();
-    
+
     if (trimmed === 'begin species') {
       inSpecies = true;
       continue;
@@ -162,7 +163,7 @@ function parseBNG2NetFile(content: string): BNG2Network {
       inReactions = false;
       continue;
     }
-    
+
     if (inSpecies && trimmed && !trimmed.startsWith('#')) {
       // Format: index pattern concentration
       const match = trimmed.match(/^\s*(\d+)\s+(\S+)\s+(\S+)/);
@@ -174,7 +175,7 @@ function parseBNG2NetFile(content: string): BNG2Network {
         });
       }
     }
-    
+
     if (inReactions && trimmed && !trimmed.startsWith('#')) {
       // Format: index reactant_indices product_indices rate
       // e.g., "1 1,2 3 kf"
@@ -189,7 +190,7 @@ function parseBNG2NetFile(content: string): BNG2Network {
       }
     }
   }
-  
+
   return { species, reactions };
 }
 
@@ -307,7 +308,7 @@ function compareReactionsCanonical(
  */
 function findBnglModel(netFile: string): string | null {
   const baseName = path.basename(netFile, '.net');
-  
+
   // Try different name patterns
   const patterns = [
     // temp_test_ModelName_bngl.net -> published-models/**/ModelName.bngl
@@ -315,11 +316,11 @@ function findBnglModel(netFile: string): string | null {
     // temp_mapk.net -> published-models/**/mapk.bngl
     baseName.replace(/^temp_/, ''),
   ];
-  
+
   const publishedModelsDir = path.join(ROOT_DIR, 'published-models');
   const bngTestOutputDir = path.join(ROOT_DIR, 'bng_test_output');
   const publicModelsDir = path.join(ROOT_DIR, 'public', 'models');
-  
+
   function searchDir(dir: string, targetName: string): string | null {
     const items = fs.readdirSync(dir, { withFileTypes: true });
     for (const item of items) {
@@ -333,7 +334,7 @@ function findBnglModel(netFile: string): string | null {
     }
     return null;
   }
-  
+
   // 1) Fast paths (non-recursive) for this repo's common model locations.
   for (const pattern of patterns) {
     const directCandidates = [
@@ -352,7 +353,7 @@ function findBnglModel(netFile: string): string | null {
       if (found) return found;
     }
   }
-  
+
   return null;
 }
 
@@ -375,7 +376,7 @@ async function compareModel(
 ): Promise<ComparisonResult> {
   const netFileName = path.basename(netFilePath);
   console.log(`\nComparing ${netFileName}...`);
-  
+
   const result: ComparisonResult = {
     netFile: netFileName,
     bnglFile: null,
@@ -387,14 +388,14 @@ async function compareModel(
     reactionsMatch: false,
     speciesDiff: []
   };
-  
+
   try {
     // Parse BNG2 .net file
     const netContent = fs.readFileSync(netFilePath, 'utf8');
     const bng2Network = parseBNG2NetFile(netContent);
     result.bng2Species = bng2Network.species.length;
     result.bng2Reactions = bng2Network.reactions.length;
-    
+
     // Find corresponding BNGL model
     const bnglPath = findBnglModel(netFilePath);
     if (!bnglPath) {
@@ -402,11 +403,11 @@ async function compareModel(
       return result;
     }
     result.bnglFile = path.basename(bnglPath);
-    
+
     // Parse with our parser
     const bnglCode = fs.readFileSync(bnglPath, 'utf8');
     const model = parseBNGL(bnglCode);
-    
+
     const seedSpecies = model.species.map(s => BNGLParser.parseSpeciesGraph(s.name));
 
     // Build numeric parameters map for evaluating BNG2 .net rate expressions.
@@ -415,12 +416,12 @@ async function compareModel(
       const n = Number(v);
       if (Number.isFinite(n)) parametersMap.set(k, n);
     }
-    
+
     const rules = model.reactionRules.flatMap(r => {
       const rate = model.parameters[r.rate] ?? parseFloat(r.rate);
       const reverseRate = r.reverseRate ? (model.parameters[r.reverseRate] ?? parseFloat(r.reverseRate)) : rate;
       const ruleStr = `${r.reactants.join(' + ')} -> ${r.products.join(' + ')}`;
-      
+
       try {
         const forwardRule = BNGLParser.parseRxnRule(ruleStr, rate);
         // Preserve rule name for debugging/attribution.
@@ -428,7 +429,7 @@ async function compareModel(
         if (r.constraints && r.constraints.length > 0) {
           forwardRule.applyConstraints(r.constraints, (s) => BNGLParser.parseSpeciesGraph(s));
         }
-        
+
         if (r.isBidirectional) {
           const reverseRuleStr = `${r.products.join(' + ')} -> ${r.reactants.join(' + ')}`;
           const reverseRule = BNGLParser.parseRxnRule(reverseRuleStr, reverseRate);
@@ -440,7 +441,7 @@ async function compareModel(
         return [];
       }
     });
-    
+
     const generatorOptions = {
       maxSpecies: 5000,
       maxReactions: 5000,
@@ -449,21 +450,21 @@ async function compareModel(
       maxStoich: (model.networkOptions?.maxStoich ?? 100) as any,
       partialReturnOnLimit: true
     };
-    
+
     const generator = new NetworkGenerator(generatorOptions);
-    const ourNetwork = await generator.generate(seedSpecies, rules, () => {});
-    
+    const ourNetwork = await generator.generate(seedSpecies, rules, () => { });
+
     result.ourSpecies = ourNetwork.species.length;
     result.ourReactions = ourNetwork.reactions.length;
-    
+
     // Compare species counts
     result.speciesMatch = result.bng2Species === result.ourSpecies;
     result.reactionsMatch = result.bng2Reactions === result.ourReactions;
-    
+
     // Find species differences
     const bng2SpeciesSet = new Set(bng2Network.species.map(s => normalizeSpecies(s.pattern)));
     const ourSpeciesSet = new Set(ourNetwork.species.map(s => normalizeSpecies(s.toString())));
-    
+
     // Species in BNG2 but not in ours
     const missingInOurs: string[] = [];
     for (const s of bng2Network.species) {
@@ -472,7 +473,7 @@ async function compareModel(
         missingInOurs.push(s.pattern);
       }
     }
-    
+
     // Species in ours but not in BNG2
     const extraInOurs: string[] = [];
     for (const s of ourNetwork.species) {
@@ -481,7 +482,7 @@ async function compareModel(
         extraInOurs.push(s.toString());
       }
     }
-    
+
     if (missingInOurs.length > 0) {
       result.speciesDiff.push(`Missing in ours (${missingInOurs.length}): ${missingInOurs.slice(0, 5).join(', ')}${missingInOurs.length > 5 ? '...' : ''}`);
     }
@@ -527,11 +528,11 @@ async function compareModel(
         }
       }
     }
-    
+
   } catch (e: any) {
     result.error = e.message;
   }
-  
+
   return result;
 }
 
@@ -554,16 +555,16 @@ async function run() {
   }
 
   console.log(`Found ${netFiles.length} BNG2 .net files to compare against.\n`);
-  
+
   const results: ComparisonResult[] = [];
-  
+
   for (const netFile of netFiles) {
     const result = await compareModel(netFile, { verboseRxnDiff: !!args.net });
     results.push(result);
-    
+
     const speciesStatus = result.speciesMatch ? '✅' : (Math.abs(result.bng2Species - result.ourSpecies) <= 2 ? '⚠️' : '❌');
     const reactionsStatus = result.reactionsMatch ? '✅' : (Math.abs(result.bng2Reactions - result.ourReactions) <= 5 ? '⚠️' : '❌');
-    
+
     if (result.error) {
       console.log(`❌ ${result.netFile}: ${result.error}`);
     } else {
@@ -574,18 +575,18 @@ async function run() {
       }
     }
   }
-  
+
   console.log('\n=== SUMMARY ===');
   const matched = results.filter(r => r.speciesMatch && r.reactionsMatch && !r.error).length;
   const closeMatch = results.filter(r => !r.error && !r.speciesMatch && Math.abs(r.bng2Species - r.ourSpecies) <= 2).length;
   const failed = results.filter(r => r.error).length;
   const mismatch = results.length - matched - closeMatch - failed;
-  
+
   console.log(`Exact match (species & reactions): ${matched}/${results.length}`);
   console.log(`Close match (within 2 species): ${closeMatch}/${results.length}`);
   console.log(`Mismatch: ${mismatch}/${results.length}`);
   console.log(`Errors/Missing: ${failed}/${results.length}`);
-  
+
   // Print detailed mismatches
   const mismatches = results.filter(r => !r.error && !r.speciesMatch);
   if (mismatches.length > 0) {

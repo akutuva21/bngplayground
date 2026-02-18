@@ -1223,9 +1223,7 @@ async function runWebSimulator(
 
     const n = y.length;
     const enforceSteadyState = phase.steady_state;
-    const steadyStateWindow = 5;
-    let steadyStateCount = 0;
-    const prevState = new Float64Array(n);
+    const steadyStateDerivs = enforceSteadyState ? new Float64Array(n) : null;
 
     // Honor action-block tolerances (critical for models like An_2009).
     const phaseAtol = phase.atol ?? 1e-8;
@@ -1246,9 +1244,6 @@ async function runWebSimulator(
     for (let i = 1; i <= n_steps; i++) {
       const tTarget = t_start + i * dtOut;
 
-      // Save previous state for steady-state detection
-      if (enforceSteadyState) prevState.set(y);
-
       let result = activeSolver.integrate(y, t, tTarget);
       if (!result.success && shouldRetryWithFallbackSolver(result.errorMessage)) {
         console.warn(
@@ -1268,23 +1263,19 @@ async function runWebSimulator(
       phaseData.push({ time: Math.round(tTarget * 1e10) / 1e10, ...evaluateObservables(y) });
 
       if (enforceSteadyState) {
-        // Scale-aware steady-state detection based on the action-block tolerances.
-        // This avoids prematurely exiting strict steady_state phases (e.g. atol/rtol=1e-12).
-        let maxNormDelta = 0;
-        for (let k = 0; k < n; k++) {
-          const delta = Math.abs(y[k] - prevState[k]);
-          const scale = phaseAtol + phaseRtol * Math.max(Math.abs(y[k]), Math.abs(prevState[k]));
-          const norm = scale > 0 ? delta / scale : delta;
-          if (norm > maxNormDelta) maxNormDelta = norm;
-        }
+        const obsValues = evaluateObservables(y);
+        derivatives(y, steadyStateDerivs!, obsValues);
 
-        if (maxNormDelta <= 1.0) {
-          steadyStateCount += 1;
-          if (steadyStateCount >= steadyStateWindow) {
-            break;
-          }
-        } else {
-          steadyStateCount = 0;
+        // Match BNG2 run_network.cpp behavior:
+        // dx = NORM(derivs) / n_species, where NORM is L2 norm.
+        let sumSq = 0;
+        for (let k = 0; k < n; k++) {
+          sumSq += steadyStateDerivs![k] * steadyStateDerivs![k];
+        }
+        const dx = Math.sqrt(sumSq) / n;
+
+        if (dx < phaseAtol) {
+          break;
         }
       }
     }

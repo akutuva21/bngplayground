@@ -1716,7 +1716,13 @@ export async function simulate(
     let modelTime = 0;
     let shouldStop = false;
 
-
+    // Persisted CVODE solver for continue=>1 multi-phase continuity.
+    // BNG2 keeps the same CVODE instance running (preserving BDF step-size history) across
+    // phases with continue=>1. We replicate this by NOT destroying the solver at phase end
+    // when the next phase also uses continue=>1 with the same solver configuration.
+    // The CVODESolver.ensureInitialized() reuse path triggers when t0 === currentT.
+    let persistedSolver: { integrate: (y: Float64Array, t0: number, tEnd: number, check?: () => void) => SolverResult; destroy?: () => void } | undefined = undefined;
+    let persistedSolverKey = '';
 
     // Clear JIT cache at the start of simulation to ensure no stale state from previous runs
     jitCompiler.clearCache();
@@ -1875,17 +1881,36 @@ export async function simulate(
       else if (phase.sparse === false && currentSolverType === 'cvode_sparse') currentSolverType = 'cvode';
 
       const phaseSolverOptions = { ...solverOptions, atol: phaseAtol, rtol: phaseRtol, solver: currentSolverType };
+      // Key used to detect whether a persisted solver is compatible with this phase.
+      const thisSolverKey = `${phaseAtol}:${phaseRtol}:${currentSolverType}`;
+
+      // Reuse the persisted CVODE instance for continue=>1 phases when solver config matches.
+      // This preserves CVODE's internal BDF history (step sizes, order) across phase boundaries,
+      // matching BNG2's continuous-integration behavior.
+      const canReuseCvode = isContinue && persistedSolver !== undefined && thisSolverKey === persistedSolverKey;
 
       let solver;
-      try {
-        console.log(`[Worker Debug] About to create solver: ${JSON.stringify(phaseSolverOptions)}`);
-        solver = await createSolver(numSpecies, derivatives, phaseSolverOptions);
-        console.log('[Worker Debug] Solver created successfully');
-      } catch (err) {
-        console.error('[Worker Debug] Failed to create solver:', err);
-        throw err;
+      if (canReuseCvode) {
+        solver = persistedSolver!;
+      } else {
+        // Dispose any stale persisted solver before creating a new one.
+        if (persistedSolver) {
+          persistedSolver.destroy?.();
+          persistedSolver = undefined;
+        }
+        try {
+          console.log(`[Worker Debug] About to create solver: ${JSON.stringify(phaseSolverOptions)}`);
+          solver = await createSolver(numSpecies, derivatives, phaseSolverOptions);
+          console.log('[Worker Debug] Solver created successfully');
+        } catch (err) {
+          console.error('[Worker Debug] Failed to create solver:', err);
+          throw err;
+        }
       }
-      let t = 0;
+      // Use absolute integration time (phaseStart-based) so that when the CVODE solver is
+      // reused across continue phases, t0 === solver.currentT and ensureInitialized() reuses
+      // the solver without CVodeReInit, preserving full BDF history.
+      let t = phaseStart;
       const steadyStateEnabled = (phase.steady_state ?? !!options.steadyState) === true;
       const steadyStateAtol = phase.atol ?? userAtol; // Use model's atol for steady-state detection
       const steadyStateDerivs = steadyStateEnabled ? new Float64Array(numSpecies) : null;
@@ -1903,7 +1928,7 @@ export async function simulate(
         if (VERBOSE_SIM_DEBUG) console.log(`[DEBUG_TRACE] Starting loop for Phase ${phaseIdx}, steps=${phase_n_steps}, record=${recordThisPhase}`);
         for (let i = 1; i <= phase_n_steps && !shouldStop; i++) {
           callbacks.checkCancelled();
-          const tTarget = (phaseDuration * i) / phase_n_steps;
+          const tTarget = phaseStart + (phaseDuration * i) / phase_n_steps;
           const result = solver.integrate(y, t, tTarget, callbacks.checkCancelled);
 
           if (VERBOSE_SIM_DEBUG) console.log(`[DEBUG_TRACE] Step ${i} done. t=${result.t}, success=${result.success}`);
@@ -1912,7 +1937,7 @@ export async function simulate(
             const msg = result.errorMessage || 'Unknown error';
             console.warn(`[Worker] ODE solver failed at phase ${phaseIdx}: ${msg}`);
             // ... (Error handling)
-            callbacks.postMessage({ type: 'progress', message: `Simulation stopped at t=${(phaseStart + t).toFixed(2)}`, warning: msg });
+            callbacks.postMessage({ type: 'progress', message: `Simulation stopped at t=${t.toFixed(2)}`, warning: msg });
             shouldStop = true;
             solverError = true;
             break;
@@ -1987,13 +2012,34 @@ export async function simulate(
           if (i % Math.ceil(phase_n_steps / 10) === 0) {
             const phaseProgress = (i / phase_n_steps) * 100;
             // Include simulation time (model time) where possible to help UI show a running time metric
-            callbacks.postMessage({ type: 'progress', message: `Simulating: ${phaseProgress.toFixed(0)}%`, simulationProgress: phaseProgress, simulationTime: phaseStart + t });
+            callbacks.postMessage({ type: 'progress', message: `Simulating: ${phaseProgress.toFixed(0)}%`, simulationProgress: phaseProgress, simulationTime: t });
           }
         }
       } finally {
-        (solver as any)?.destroy?.();
+        // Determine whether to persist the solver for the next continue phase.
+        const nextPhase = phases[phaseIdx + 1];
+        const nextUsesContinue = (nextPhase?.continue === true) && (nextPhase?.method !== 'nf') && (nextPhase?.method !== 'ssa');
+        const nextAtol = nextPhase?.atol ?? userAtol;
+        const nextRtol = nextPhase?.rtol ?? userRtol;
+        const nextSolverType = nextPhase?.sparse === true ? 'cvode_sparse' : currentSolverType;
+        // Do NOT reuse CVODE when parameter or concentration changes apply before the next phase.
+        // After a discontinuous parameter change the BDF history is inconsistent with the new
+        // dynamics; CVodeReInit is required, which is equivalent to creating a fresh solver.
+        const nextHasParamChange =
+          parameterChanges.some((c) => c.afterPhaseIndex === phaseIdx) ||
+          concentrationChanges.some((c) => c.afterPhaseIndex === phaseIdx && (c.mode === 'set' || c.mode === 'add'));
+        const shouldPersist = !solverError && nextUsesContinue && !nextHasParamChange
+          && nextAtol === phaseAtol && nextRtol === phaseRtol && nextSolverType === currentSolverType;
+        if (shouldPersist) {
+          persistedSolver = solver as typeof persistedSolver;
+          persistedSolverKey = thisSolverKey;
+        } else {
+          (solver as any)?.destroy?.();
+          persistedSolver = undefined;
+        }
       }
-      modelTime = phaseStart + t;
+      // t is now absolute (phaseStart + elapsed), so modelTime = t directly.
+      modelTime = t;
 
       // Always output final species state for multi-phase propagation support
       // This ensures batchRunner can capture the equilibrated state even when recordThisPhase=false
@@ -2012,6 +2058,12 @@ export async function simulate(
       if (shouldStop && !isLastPhase && !solverError) {
         shouldStop = false;
       } else if (shouldStop && solverError) break;
+    }
+
+    // Clean up any persisted solver that was not consumed (e.g. early break due to error).
+    if (persistedSolver) {
+      persistedSolver.destroy?.();
+      persistedSolver = undefined;
     }
 
     const odeTime = performance.now() - odeStart;

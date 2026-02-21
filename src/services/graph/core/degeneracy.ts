@@ -88,6 +88,16 @@ export const countEmbeddingDegeneracy = (
 
     for (let pCompIdx = 0; pCompIdx < pMol.components.length; pCompIdx++) {
       const pComp = pMol.components[pCompIdx];
+
+      // Skip '?' wildcard components — they are spectator components that serve as
+      // "any-bond-state" witnesses in expanded rule patterns (e.g., H(g,g?,g?,g?,m?,b?)
+      // expanded from the rule H(g)). These do NOT contribute distinct embedding choices
+      // because any permutation of spectator components that doesn't change the reaction
+      // center represents the same physical event. Including them causes the embedding
+      // count to be inflated by (n_spectators)! — e.g. 3! = 6 extra factor for H with
+      // 3 non-participating g'? sites — leading to overcounting of Arrhenius and other rates.
+      if (pComp.wildcard === '?') continue;
+
       const candidates: number[] = [];
       for (let tCompIdx = 0; tCompIdx < tMol.components.length; tCompIdx++) {
         const tComp = tMol.components[tCompIdx];

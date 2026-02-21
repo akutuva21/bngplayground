@@ -432,6 +432,55 @@ export class NetworkGenerator {
     return defaultValue;
   }
 
+  /**
+   * BNG2 local function evaluation for %x:: rules.
+   *
+   * For rules like: %x::A() -> %x::A() + C()  f_synth(x)
+   * where f_synth(x) = k_synthC*(AB_motif(x))^2
+   * BNG2 evaluates AB_motif(x) as the count of the AB_motif pattern WITHIN the
+   * specific reactant species x (not the global observable value).  This gives
+   * a per-species constant rate (e.g., __R1_local1 = k_synthC*(0^2) for unbound A,
+   * __R1_local2 = k_synthC*(1^2) for A bound to one B, etc.).
+   *
+   * @returns The numeric rate for this specific reactant, or null if evaluation fails.
+   */
+  private evaluateLocalFunctionForSpecies(
+    reactantGraph: SpeciesGraph,
+    localFnCtx: { observablePatterns: Record<string, string>; bodyTemplate: string }
+  ): number | null {
+    try {
+      const obsValues: Record<string, number> = {};
+      for (const [obsName, obsPat] of Object.entries(localFnCtx.observablePatterns)) {
+        // Parse the observable pattern and count how many times it embeds in the reactant species.
+        const patGraph = BNGLParser.parseSpeciesGraph(obsPat);
+        const maps = GraphMatcher.findAllMaps(patGraph, reactantGraph, {
+          allowExtraTargetBonds: false,
+          symmetryBreaking: false,
+        });
+        let total = 0;
+        for (const map of maps) {
+          const d = countEmbeddingDegeneracy(patGraph, reactantGraph, map);
+          total += Number.isFinite(d) && d > 0 ? d : 1;
+        }
+        obsValues[obsName] = total;
+      }
+
+      // Substitute observable counts into the function body template.
+      let localExpr = localFnCtx.bodyTemplate;
+      for (const [obsName, obsVal] of Object.entries(obsValues)) {
+        const escapedName = obsName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        localExpr = localExpr.replace(new RegExp(`\\b${escapedName}\\b`, 'g'), String(obsVal));
+      }
+
+      // Evaluate the resulting expression using the model's parameter values.
+      if (!this.options.parameters) return null;
+      const result = BNGLParser.evaluateExpression(localExpr, this.options.parameters);
+      return Number.isFinite(result) ? result : null;
+    } catch {
+      return null;
+    }
+  }
+
 
   /**
    * Helper: Get the effective compartment name for a species or graph.
@@ -1198,6 +1247,19 @@ export class NetworkGenerator {
         ops.push(`delMol:${tm}`);
       }
 
+      // Compartment changes: map pattern mol idx → target mol idx, record new compartment.
+      // This enables correct dedup of symmetric molecule permutations for rules like @PM:R.R -> @EM:R.R
+      // where both permutation matches should collapse to one physical event.
+      if (rule.changeCompartments) {
+        for (const [m, newComp] of rule.changeCompartments) {
+          const tm = getTargetMolIdx(match, m);
+          if (tm === undefined) return null;
+          const targetMol = reactantSpecies.graph.molecules[tm];
+          const molName = targetMol?.name ?? `mol${tm}`;
+          ops.push(`changeComp:${tm}:${molName}:${newComp}`);
+        }
+      }
+
       // If there are no mapped operations, don't attempt to dedup.
       if (ops.length === 0) return null;
 
@@ -1417,11 +1479,6 @@ export class NetworkGenerator {
         [match]
       );
 
-      // Debug: log transformation result for phosphorylation rule
-      if (rule.name?.includes('DeCe1')) {
-        const productSummary = products ? products.map(p => p.toString()).join('|') : 'null';
-        console.log(`[DeCe1_TRACE] Name='${rule.name}' ProductsLen=${products?.length} Result=${productSummary}`);
-      }
       if (shouldLogNetworkGenerator) {
         debugNetworkLog(`[applyUnimolecularRule] Transformation result: ${products ? products.map(p => p.toString()).join(', ') : 'null'}`);
       }
@@ -1484,6 +1541,51 @@ export class NetworkGenerator {
         seenSignatures.add(signature);
       }
 
+      // For pure state-change/compartment-change rules (no bond/molecule topology changes, signature=null),
+      // deduplicate matches by the SET OF ACTUALLY CHANGED COMPONENTS + MOLECULE COMPARTMENTS.
+      //
+      // This correctly handles multi-molecule collective rules like:
+      // - Rule3 in Motivating_example: 4 permutations all change same component states → 1 event
+      // - cBNGL Rule3 @PM:R.R -> @EM:R.R: 2 permutations both move same Rs → 1 event
+      //
+      // Contrast with phosphorylation A(s~U) → A(s~P) on A(s~U,s~U):
+      //   match 1 changes component s[0], match 2 changes s[1] → 2 events → rate = 2k
+      if (!signature && matchCount > 1) {
+        const changedComps: string[] = [];
+        for (const productGraph of products) {
+          for (const productMol of productGraph.molecules) {
+            const sourceKey = (productMol as any)._sourceKey as string | undefined;
+            if (!sourceKey) continue;
+            const [rStr, molIdxStr] = sourceKey.split(':');
+            if (rStr !== '0') continue;
+            const molIdx = Number(molIdxStr);
+            if (!Number.isFinite(molIdx)) continue;
+            const reactantMol = reactantSpecies.graph.molecules[molIdx];
+            if (!reactantMol) continue;
+            // Detect compartment changes on the molecule
+            if ((productMol.compartment ?? '') !== (reactantMol.compartment ?? '')) {
+              changedComps.push(`m${molIdx}@${reactantMol.compartment ?? 'none'}->${productMol.compartment ?? 'none'}`);
+            }
+            // Detect component state changes
+            for (let ci = 0; ci < productMol.components.length && ci < reactantMol.components.length; ci++) {
+              const prodComp = productMol.components[ci];
+              const rctComp = reactantMol.components[ci];
+              if (prodComp && rctComp && prodComp.state !== rctComp.state) {
+                changedComps.push(`m${molIdx}c${ci}:${rctComp.state}->${prodComp.state}`);
+              }
+            }
+          }
+        }
+        if (changedComps.length > 0) {
+          changedComps.sort();
+          const ccKey = `CC:${changedComps.join(';')}`;
+          if (seenSignatures.has(ccKey)) {
+            continue;
+          }
+          seenSignatures.add(ccKey);
+        }
+      }
+
       // Add all products to network
       const productSpeciesIndices: number[] = [];
       const productSpeciesList: Species[] = [];
@@ -1535,6 +1637,7 @@ export class NetworkGenerator {
         rule.deleteBonds.length > 0 ||
         rule.changeStates.length > 0 ||
         rule.deleteMolecules.length > 0 ||
+        (rule.changeCompartments?.length ?? 0) > 0 ||
         hasTopologyChangingSignature ||
         hasConcreteBondChange;
 
@@ -1625,6 +1728,19 @@ export class NetworkGenerator {
       // must be restored (e.g., dsRNA unbinding from TLR3 homodimer has 2 equivalent sites).
       // Only apply when statFactor is not already accounting for the symmetry (statFactor <= 1)
       // and the rule genuinely has topology-changing ops.
+      //
+      // IMPORTANT GUARD: Do NOT apply this scaling when all non-SB matches produce
+      // exactly the same product(s) as the SB match. In that case, SB correctly identifies
+      // the extra matches as automorphism-equivalent representations of the same physical event,
+      // and the rate should NOT be multiplied.
+      //
+      // Example of correct non-application: Rule3 in Motivating_example
+      //   R(loc~PM).L(loc~EC).L(loc~EC).R(loc~PM) -> R(loc~EM).L(loc~EN).L(loc~EN).R(loc~EM)
+      //   4 molecule permutations (2R × 2L automorphisms) all produce the identical product.
+      //   BNG2 divides by the 4-fold rule pattern automorphism → rate = k_R_endo (not 4*k).
+      //
+      // Example of correct application: dsRNA unbinding from TLR3 homodimer
+      //   Two distinct bond-breaking events produce different product SPECIES.
       if (
         hasTopologyChangingOps &&
         !isSymmetricHomodimerUnbind &&
@@ -1641,7 +1757,28 @@ export class NetworkGenerator {
         // matchCount = SB match count (from filteredMatches above)
         // Only apply if SB collapsed some equivalent embeddings
         if (fullMapsNoSB.length > matchCount && matchCount > 0) {
-          statFactor = Math.max(statFactor, fullMapsNoSB.length / matchCount);
+          // Guard: check whether the extra non-SB matches produce distinct products.
+          // If all non-SB matches produce the same canonical product as the SB match,
+          // SB correctly deduplicates them → do NOT scale.
+          const sbProductKey = products.map((p) => p.toString()).sort().join('|');
+          let allNonSBMatchesSameProduct = true;
+          const sampleLimit = Math.min(fullMapsNoSB.length, 6);
+          for (let _ni = 0; _ni < sampleLimit; _ni++) {
+            const noSBProds = this.applyRuleTransformation(
+              rule,
+              [rule.reactants[0]],
+              [reactantSpecies.graph],
+              [fullMapsNoSB[_ni]]
+            );
+            const noSBKey = noSBProds ? noSBProds.map((p) => p.toString()).sort().join('|') : null;
+            if (noSBKey !== sbProductKey) {
+              allNonSBMatchesSameProduct = false;
+              break;
+            }
+          }
+          if (!allNonSBMatchesSameProduct) {
+            statFactor = Math.max(statFactor, fullMapsNoSB.length / matchCount);
+          }
         }
       }
       const hasRateExpression = !!rule.rateExpression;
@@ -1667,6 +1804,25 @@ export class NetworkGenerator {
       // For Arrhenius rules: use null rateExpression so the NET file writes the numeric rate.
       // The string "Arrhenius(phi,Ea0)" cannot be evaluated by downstream tools.
       const rateExpression = (rule as any).isArrhenius ? undefined : rule.rateExpression;
+
+      // Local function evaluation (BNG2 %x:: syntax):
+      // When a rule's rate uses a local function f(x), the function body is evaluated
+      // with observables counted WITHIN the specific reactant species x (not globally).
+      // BNG2 generates per-reaction constant parameters __R1_local1, __R1_local2, etc.
+      // We replicate this by computing the per-species rate now, at network-generation time.
+      const localFnCtx = (rule as any).localFunctionContext as {
+        observablePatterns: Record<string, string>;
+        bodyTemplate: string;
+      } | undefined;
+      if (localFnCtx) {
+        const localRate = this.evaluateLocalFunctionForSpecies(reactantSpecies.graph, localFnCtx);
+        if (localRate !== null && Number.isFinite(localRate)) {
+          // Replace effectiveRate with the per-species computed constant.
+          // Clear rateExpression so NET file shows the numeric constant (like BNG2's __R1_local*).
+          effectiveRate = localRate;
+          // rateExpression already undefined for local function rules (set in NetworkExpansion)
+        }
+      }
 
 
 
@@ -1772,6 +1928,16 @@ export class NetworkGenerator {
   ): boolean {
     if (rule.products.length === 0) return true;
 
+    // MoveConnected rules can still have explicit product-implied-free constraints.
+    // For example: GPCR(b!1,loc~mem).Arrestin(b!1) -> GPCR(l,b!1,loc~cyt,s~P).Arrestin(b!1)
+    // has 'l' explicitly free in the product. When the target GPCR has l bonded to Ligand,
+    // this constraint must REJECT the match (BNG2 does not fire on ligand-bound GPCR).
+    //
+    // Synthetic wildcard components (added by completeMissingComponents for components not
+    // mentioned in the rule) are already skipped by the `if (prodComp.wildcard) continue`
+    // guard below, so transported cargo (e.g. Im(cargo!1) in Rule29) is handled correctly
+    // without needing a blanket bypass here.
+
     // Count total reactant molecules by name across ALL reactant patterns, and
     // total product molecules by name. If a molecule type has more reactant instances
     // than product instances, some are being deleted (DeleteMolecules). For deleted
@@ -1818,6 +1984,50 @@ export class NetworkGenerator {
       for (const prodPattern of rule.products) {
         for (const prodMol of prodPattern.molecules) {
           if (prodMol.name !== reactantMol.name) continue;
+
+          // Skip product mols that share NO *explicitly written* (non-synthetic) component names
+          // with this reactant mol. This prevents cross-contamination in dissociation rules where
+          // different product patterns correspond to different matched molecules.
+          //
+          // Example: A(x!1).A(y!1) → A(x) + A(y): when checking reactant mol A(x!1),
+          // completeMissingComponents adds 'y' as a synthetic wildcard, so reactantCompNames = {x, y}.
+          // But product A(y) corresponds to the OTHER matched molecule (A(y!1)), not this one.
+          // We must skip A(y) here to avoid wrongly rejecting trimer+ matches where target mol0.y
+          // is bonded to a bystander. Using only explicit (non-synthetic) component names ensures
+          // we correctly associate each product pattern with its corresponding reactant molecule.
+          // Skip product mols that don't correspond to this reactant mol.
+          //
+          // For dissociation rules (multiple product patterns), each product pattern corresponds
+          // to ONE of the matched reactant molecules. The correspondence is determined by which
+          // bond is being broken: the reactant mol has an explicit bond (!n) on component C,
+          // and the corresponding product mol has C explicitly FREE (bond broken by the rule).
+          //
+          // Example: PrP(a~Sc,y!1).PrP(a~Sc,x!1) → PrP(a~Sc,y) + PrP(a~Sc,x)
+          //   - reactant mol0 PrP(a~Sc,y!1): explicitly bonded at y → bondedReactantCompNames = {y}
+          //   - product PrP(a~Sc,y): has y → overlap {y}∩{y} → relevant ✓ (bond at y being broken)
+          //   - product PrP(a~Sc,x): has x but NOT y → {x}∩{y} = ∅ → SKIP ✓ (belongs to mol1)
+          //
+          // Without this guard, product PrP(a~Sc,x)'s x-free constraint would be checked against
+          // target mol0 (which may have x bonded), causing wrong rejection of valid matches.
+          //
+          // Note: state components like a~Sc are shared across all molecules and must NOT be used
+          // as the correspondence identifier. Only explicit bond sites (edges.size > 0) qualify.
+          //
+          // When bondedReactantCompNames is empty (no explicit bonds in this reactant mol,
+          // e.g. GPCR state-change rules), skip this filter to preserve the GPCR fix behavior.
+          const bondedReactantCompNames = new Set(
+            reactantMol.components
+              .filter(c => !c.syntheticWildcard && c.edges.size > 0)
+              .map(c => c.name)
+          );
+          if (bondedReactantCompNames.size > 0 && prodMol.components.length > 0) {
+            // Only check explicit (non-synthetic) product components for overlap.
+            // Product A(y) has synthetic x added by completeMissingComponents, but that
+            // synthetic x must NOT be used to match reactant mol A(x!1)'s bonded set {x}.
+            const hasBondOverlap = prodMol.components.some(pc => !pc.syntheticWildcard && bondedReactantCompNames.has(pc.name));
+            if (!hasBondOverlap) continue;
+          }
+
 
           for (const prodComp of prodMol.components) {
             if (prodComp.wildcard) continue;
@@ -2228,7 +2438,8 @@ export class NetworkGenerator {
 
     let totalDegeneracy = 1;
     for (let k = 0; k < n; k++) {
-      totalDegeneracy *= countEmbeddingDegeneracy(patterns[k], reactantSpeciesList[k].graph, currentMatches[k]);
+      const kDeg = countEmbeddingDegeneracy(patterns[k], reactantSpeciesList[k].graph, currentMatches[k]);
+      totalDegeneracy *= kDeg;
     }
 
     // Account for signature-collapsed duplicate SB matches: bucket.multiplicity
@@ -2279,6 +2490,10 @@ export class NetworkGenerator {
       const countByName = (mol: Molecule): Map<string, { total: number; bound: number }> => {
         const map = new Map<string, { total: number; bound: number }>();
         for (const comp of mol.components) {
+          // Skip synthetic wildcard components added by completeMissingComponents.
+          // These are background expansions (e.g. b!? on A when only b was written in the rule)
+          // and should NOT be counted as explicitly-constrained equivalent sites.
+          if ((comp as any).syntheticWildcard) continue;
           const entry = map.get(comp.name) ?? { total: 0, bound: 0 };
           entry.total += 1;
           if (comp.edges.size > 0) entry.bound += 1;
@@ -2354,6 +2569,92 @@ export class NetworkGenerator {
           shouldApplyDegeneracyStatFactor(patterns[k], reactantSpeciesList[k].graph, match)
         )
       );
+
+    // SPECTATOR CORRECTION for hasSelectiveEquivalentSiteBonding:
+    // countEmbeddingDegeneracy counts ALL component permutations (including permutations
+    // of spectator components that are same-name-and-state but do NOT participate in bonding).
+    // These spectator permutations do NOT create distinct physical events — only the
+    // choice of which site(s) gets bonded matters.
+    //
+    // NOTE: rule.addBonds is always empty for rules stored as reactant/product pattern pairs.
+    // We instead derive the correction directly from comparing reactant vs product molecules.
+    //
+    // For each component name on each molecule where deltaBound > 0 && deltaBound < total:
+    //   spectatorFree  = (n_free_in_reactant) - deltaBound   [free sites that stay free]
+    //   spectatorBound = n_bound_in_reactant                  [bound sites that stay bound]
+    //   correction    *= factorial(spectatorFree) * factorial(spectatorBound)
+    //
+    // Example: L(r,r,r) + R(l) → L(r,r,r!1).R(l!1) kp1
+    //   deltaBound=1, freeInR=3, spectatorFree=2, spectatorBound=0
+    //   correction = 2! * 1 = 2  →  totalDegeneracy = 6 / 2 = 3  ✓
+    //
+    // Example: L(r!+,r!+,r) + R(l) → L(r!+,r!+,r!1).R(l!1) kp3
+    //   deltaBound=1, freeInR=1, spectatorFree=0, spectatorBound=2
+    //   correction = 1 * 2! = 2  →  totalDegeneracy = 2 / 2 = 1  ✓
+    //
+    // Example: L(r!+,r,r) + R(l) → L(r!+,r,r!1).R(l!1) kp2
+    //   deltaBound=1, freeInR=2, spectatorFree=1, spectatorBound=1
+    //   correction = 1! * 1! = 1  →  totalDegeneracy unchanged = 2  ✓
+    if (hasSelectiveEquivalentSiteBonding && useEmbeddingDegeneracy) {
+      let spectatorCorrectionFactor = 1;
+
+      const _specCountByName = (mol: Molecule): Map<string, { total: number; bound: number }> => {
+        const map = new Map<string, { total: number; bound: number }>();
+        for (const comp of mol.components) {
+          // Skip synthetic wildcard components (added by completeMissingComponents).
+          // These are NOT explicitly written in the rule and must NOT be counted as
+          // equivalent-site selectors — doing so causes spurious spectator corrections
+          // for rules like A(b)+B(a) where expansion produces A(b,b!?,b!?).
+          if ((comp as any).syntheticWildcard) continue;
+          const entry = map.get(comp.name) ?? { total: 0, bound: 0 };
+          entry.total += 1;
+          // Count as bound if has a concrete bond edge OR is a bound wildcard (+)
+          const isBound = comp.edges.size > 0 || comp.wildcard === '+';
+          if (isBound) entry.bound += 1;
+          map.set(comp.name, entry);
+        }
+        return map;
+      };
+
+      const _specMolSig = (mol: Molecule): string => {
+        const names = mol.components.map((c) => c.name).sort();
+        return `${mol.name}|${names.join(',')}`;
+      };
+
+      const _specReactantMols = patterns.flatMap((pat) => pat.molecules);
+      const _specProductMols = rule.products.flatMap((pat) => pat.molecules);
+
+      for (const rMol of _specReactantMols) {
+        const sig = _specMolSig(rMol);
+        const pMatches = _specProductMols.filter((pMol) => _specMolSig(pMol) === sig);
+        if (pMatches.length !== 1) continue;
+
+        const pMol = pMatches[0];
+        const rCounts = _specCountByName(rMol);
+        const pCounts = _specCountByName(pMol);
+
+        for (const [name, rEntry] of rCounts.entries()) {
+          if (rEntry.total < 2) continue;
+          const pEntry = pCounts.get(name);
+          if (!pEntry) continue;
+          const deltaBound = pEntry.bound - rEntry.bound;
+          if (deltaBound <= 0 || deltaBound >= rEntry.total) continue;
+
+          // Free-group spectators: free in reactant and still free in product
+          const freeInReactant = rEntry.total - rEntry.bound;
+          const spectatorFree = freeInReactant - deltaBound;
+          // Bound-group spectators: bound in reactant, stayed bound (all bound ones, since deltaBound>0)
+          const spectatorBound = rEntry.bound;
+
+          if (spectatorFree > 1) spectatorCorrectionFactor *= factorial(spectatorFree);
+          if (spectatorBound > 1) spectatorCorrectionFactor *= factorial(spectatorBound);
+        }
+      }
+
+      if (spectatorCorrectionFactor > 1) {
+        totalDegeneracy = Math.max(1, Math.round(totalDegeneracy / spectatorCorrectionFactor));
+      }
+    }
 
     // Default n-ary multiplicity should not include full embedding automorphisms,
     // since event-signature deduplication already collapses symmetry-equivalent mappings.
@@ -2940,6 +3241,52 @@ export class NetworkGenerator {
         return null;
       }
 
+      // COMPARTMENT COMPATIBILITY: For bimolecular rules that form bonds between molecules
+      // from different reactant complexes, verify that the bonded partners were in
+      // compartments that are the same or adjacent in the original reactants.
+      // BNG2 rejects, e.g., Im@NU binding TF@CP because NM separates NU and CP.
+      // We use the adjacency map to find all bonds and check original (pre-override) compartments.
+      if (this.options.compartments && this.options.compartments.length > 0 && reactantGraphs.length >= 2) {
+        const seenBondIds = new Set<string>();
+        let invalidInterComplexBond = false;
+        for (const [key1, partners] of fullProductGraph.adjacency) {
+          if (invalidInterComplexBond) break;
+          const mol1Idx = parseInt(key1.split('.')[0], 10);
+          const mol1 = fullProductGraph.molecules[mol1Idx] as any;
+          if (!mol1?._sourceKey) continue;
+          const sk1Parts = mol1._sourceKey.split(':');
+          const r1 = parseInt(sk1Parts[0], 10);
+          const rMol1 = parseInt(sk1Parts[1], 10);
+          for (const key2 of partners) {
+            const bondId = key1 < key2 ? `${key1}||${key2}` : `${key2}||${key1}`;
+            if (seenBondIds.has(bondId)) continue;
+            seenBondIds.add(bondId);
+            const mol2Idx = parseInt(key2.split('.')[0], 10);
+            const mol2 = fullProductGraph.molecules[mol2Idx] as any;
+            if (!mol2?._sourceKey) continue;
+            const sk2Parts = mol2._sourceKey.split(':');
+            const r2 = parseInt(sk2Parts[0], 10);
+            if (r1 === r2) continue; // Intra-complex bond — always OK
+            const rMol2 = parseInt(sk2Parts[1], 10);
+            // Use ORIGINAL reactant compartments (before product-pattern compartment override)
+            const gr1 = reactantGraphs[r1];
+            const gr2 = reactantGraphs[r2];
+            const origComp1 = gr1?.molecules[rMol1]?.compartment || gr1?.compartment;
+            const origComp2 = gr2?.molecules[rMol2]?.compartment || gr2?.compartment;
+            if (!origComp1 || !origComp2) continue; // No compartment info — allow
+            if (origComp1 === origComp2) continue;  // Same compartment — valid
+            if (this.areCompartmentsAdjacent(origComp1, origComp2)) continue; // Adjacent — valid
+            // Non-adjacent: BNG2 disallows this binding
+            if (shouldLogNetworkGenerator) {
+              debugNetworkLog(`[applyTransformation] Rejecting inter-reactant bond between non-adjacent compartments ${origComp1} (r${r1}) and ${origComp2} (r${r2})`);
+            }
+            invalidInterComplexBond = true;
+            break;
+          }
+        }
+        if (invalidInterComplexBond) return null;
+      }
+
       // BIO-NETGEN PARITY: Split the product graph into connected components.
       // Often a single product pattern like A.B produces one connected component,
       // but if bonds are broken explicitly or implicitly, it might split.
@@ -3210,7 +3557,14 @@ export class NetworkGenerator {
 
                 const anchorComp = anchorMol?.components?.[nC];
                 if (!anchorComp) continue;
-                if (anchorComp.edges.size !== 0) continue;
+                // Allow multi-bond on the anchor component: only block if this SPECIFIC
+                // bond label from the reactant is already placed on the anchor component.
+                // A plain edges.size!==0 check incorrectly prevents the second bystander
+                // bonded to the same multi-valent anchor component (e.g. Im.cargo with two
+                // TF bonds in Motivating_example_cBNGL Rule29 MoveConnected).
+                const reactantBondLabel = oldMol.components[c]?.edges.keys().next().value;
+                if (reactantBondLabel != null && anchorComp.edges.has(reactantBondLabel)) continue;
+                if (reactantBondLabel == null && anchorComp.edges.size !== 0) continue;
 
                 reconnectable.add(oldIdx);
               }
@@ -3307,7 +3661,6 @@ export class NetworkGenerator {
                     const bondLabel = oldMol.components[c].edges.keys().next().value;
                     const anchorMol = targetGraph.molecules[anchorLoc.molIdx];
                     const anchorComp = anchorMol?.components?.[nC];
-                    const anchorIsFree = !!anchorComp && anchorComp.edges.size === 0;
                     const explicitUnbound = (anchorMol as any)?._explicitUnboundComponents as Set<number> | undefined;
                     const explicitBonded = (anchorMol as any)?._explicitBondedComponents as Set<number> | undefined;
                     if (explicitUnbound && explicitUnbound.has(nC)) {
@@ -3316,9 +3669,16 @@ export class NetworkGenerator {
                     if (explicitBonded && explicitBonded.has(nC)) {
                       continue;
                     }
-                    if (!anchorIsFree) {
-                      // Anchor component is already occupied in retained product; do not
-                      // resurrect historical orphan bonds and create multi-bond artifacts.
+                    if (!anchorComp) continue;
+                    // Multi-bond support: only skip if THIS specific bond label is already placed.
+                    // A plain edges.size!==0 guard would drop the second bystander bonded to the
+                    // same multi-valent anchor component (e.g. Im.cargo with two TF bonds).
+                    if (bondLabel != null && anchorComp.edges.has(bondLabel)) {
+                      // This exact bond is already present — avoid duplicate.
+                      continue;
+                    }
+                    if (bondLabel == null && anchorComp.edges.size !== 0) {
+                      // No label available and anchor is already occupied — skip (legacy guard).
                       continue;
                     }
                     targetGraph.addBond(newIdx, c, anchorLoc.molIdx, nC, bondLabel);
@@ -4367,7 +4727,59 @@ export class NetworkGenerator {
         const targetCompInfo = compartmentMap.get(targetComp);
 
         if (!sourceCompInfo || !targetCompInfo) continue;
-        if (sourceCompInfo.dimension !== 2 || targetCompInfo.dimension !== 2) continue;
+        if (sourceCompInfo.dimension !== 2 || targetCompInfo.dimension !== 2) {
+          // Volume-to-volume (3D→3D) co-transport: only for MoveConnected rules.
+          // When Im moves CP→NU (both 3D), bystanders bonded to Im that are in CP must
+          // also move to NU. Without this, the preserved Im@NU–P1@CP bond spans
+          // non-adjacent compartments and buildProductGraph rejects the product.
+          // Apply unconditionally (like 2D surface co-transport) — in cBNGL, 3D→3D
+          // compartment transport implicitly co-transports all bonded same-compartment
+          // bystanders, regardless of whether the rule has MoveConnected.
+          if (sourceCompInfo.dimension === 3 && targetCompInfo.dimension === 3) {
+            const _vol3dRemap = new Map<string, string>();
+            _vol3dRemap.set(sourceComp, targetComp);
+
+            const _vol3dVisited = new Set<number>();
+            _vol3dVisited.add(sourceMolIdx);
+            const _vol3dQueue: number[] = [sourceMolIdx];
+            let _vol3dHead = 0;
+
+            while (_vol3dHead < _vol3dQueue.length) {
+              const _vol3dCurrIdx = _vol3dQueue[_vol3dHead++];
+              const _vol3dCurrMol = reactantGraph.molecules[_vol3dCurrIdx];
+              if (!_vol3dCurrMol) continue;
+
+              for (let _vol3dCi = 0; _vol3dCi < _vol3dCurrMol.components.length; _vol3dCi++) {
+                const _vol3dAdjKey = `${_vol3dCurrIdx}.${_vol3dCi}`;
+                const _vol3dPartners = reactantGraph.adjacency.get(_vol3dAdjKey);
+                if (!_vol3dPartners) continue;
+
+                for (const _vol3dPartnerKey of _vol3dPartners) {
+                  const [_vol3dPMolIdxStr] = _vol3dPartnerKey.split('.');
+                  const _vol3dPMolIdx = Number(_vol3dPMolIdxStr);
+                  if (_vol3dVisited.has(_vol3dPMolIdx)) continue;
+                  _vol3dVisited.add(_vol3dPMolIdx);
+                  _vol3dQueue.push(_vol3dPMolIdx);
+
+                  const _vol3dSrcKey = `${rIdx}:${_vol3dPMolIdx}`;
+                  const _vol3dProductMol = sourceKeyToProductMol.get(_vol3dSrcKey);
+                  if (!_vol3dProductMol || _vol3dProductMol === productMol) continue;
+
+                  const _vol3dPComp = _vol3dProductMol.compartment;
+                  if (!_vol3dPComp) continue;
+                  const _vol3dNewComp = _vol3dRemap.get(_vol3dPComp);
+                  if (_vol3dNewComp) {
+                    if (shouldLogNetworkGenerator) {
+                      debugNetworkLog(`  [MoveConnected 3D] Moving bound ${_vol3dProductMol.name} from ${_vol3dPComp} to ${_vol3dNewComp} (volume co-transport)`);
+                    }
+                    _vol3dProductMol.compartment = _vol3dNewComp;
+                  }
+                }
+              }
+            }
+          }
+          continue;
+        }
 
         // Surface to surface transport - update bound volume partners
         const sourceOutside = getOutside(sourceComp);
@@ -4381,40 +4793,65 @@ export class NetworkGenerator {
           debugNetworkLog(`  Target: Outside=${targetOutside}, Inside=${targetInside}`);
         }
 
-        // Find molecules bound to this one in the REACTANT graph
-        for (let compIdx = 0; compIdx < sourceMol.components.length; compIdx++) {
-          const adjKey = `${sourceMolIdx}.${compIdx}`;
-          const partnerKeys = reactantGraph.adjacency.get(adjKey);
-          if (!partnerKeys) continue;
+        // BFS through the full connected complex in the REACTANT graph to propagate
+        // co-transport.  The original 1-hop loop only moved DIRECT neighbors of the
+        // transported surface molecule, missing multi-hop cargo chains (e.g. L-L dimers
+        // where one L is a direct partner of R but the second L is only bound to the first).
+        //
+        // Compartment remapping for this surface→surface move:
+        //   Inside(sourceComp)  → Outside(targetComp)
+        //   Outside(sourceComp) → Inside(targetComp)
+        const _compRemap = new Map<string, string>();
+        if (sourceInside && targetOutside && sourceInside !== targetOutside) {
+          _compRemap.set(sourceInside, targetOutside);
+        }
+        if (sourceOutside && targetInside && sourceOutside !== targetInside) {
+          _compRemap.set(sourceOutside, targetInside);
+        }
+        // Always co-transport same-surface bystanders (e.g., R2 bonded to R1 via an
+        // L-linker when R1 moves EM→PM). In cBNGL, surface transport implicitly moves
+        // all connected molecules on the same surface to the corresponding target surface.
+        // This is NOT limited to MoveConnected rules — it is an inherent property of
+        // compartmental topology (verified against BNG2 output).
+        _compRemap.set(sourceComp, targetComp);
 
-          for (const partnerKey of partnerKeys) {
-            const [partnerMolIdxStr] = partnerKey.split('.');
-            const partnerMolIdx = Number(partnerMolIdxStr);
+        if (_compRemap.size > 0) {
+          const _bfsVisited = new Set<number>();
+          _bfsVisited.add(sourceMolIdx);
+          const _bfsQueue: number[] = [sourceMolIdx];
+          let _bfsHead = 0;
 
-            // Find the corresponding product molecule
-            const partnerSourceKey = `${rIdx}:${partnerMolIdx}`;
-            const partnerProductMol = sourceKeyToProductMol.get(partnerSourceKey);
-            if (!partnerProductMol || partnerProductMol === productMol) continue;
+          while (_bfsHead < _bfsQueue.length) {
+            const _currMolIdx = _bfsQueue[_bfsHead++];
+            const _currMol = reactantGraph.molecules[_currMolIdx];
+            if (!_currMol) continue;
 
-            // Check if partner is in an adjacent volume and needs transport
-            const partnerComp = partnerProductMol.compartment;
-            if (!partnerComp) continue;
+            for (let _ci = 0; _ci < _currMol.components.length; _ci++) {
+              const _adjKey = `${_currMolIdx}.${_ci}`;
+              const _partnerKeys = reactantGraph.adjacency.get(_adjKey);
+              if (!_partnerKeys) continue;
 
-            if (partnerComp === sourceOutside) {
-              // Outside(source) -> Inside(target)
-              if (targetInside) {
-                if (shouldLogNetworkGenerator) {
-                  debugNetworkLog(`  Moving bound ${partnerProductMol.name} from ${partnerComp} to ${targetInside} (Outside->Inside)`);
+              for (const _partnerKey of _partnerKeys) {
+                const [_pMolIdxStr] = _partnerKey.split('.');
+                const _pMolIdx = Number(_pMolIdxStr);
+                if (_bfsVisited.has(_pMolIdx)) continue;
+                _bfsVisited.add(_pMolIdx);
+                _bfsQueue.push(_pMolIdx);
+
+                // Apply remapping to the corresponding product molecule
+                const _pSourceKey = `${rIdx}:${_pMolIdx}`;
+                const _pProductMol = sourceKeyToProductMol.get(_pSourceKey);
+                if (!_pProductMol || _pProductMol === productMol) continue;
+
+                const _pComp = _pProductMol.compartment;
+                if (!_pComp) continue;
+                const _newComp = _compRemap.get(_pComp);
+                if (_newComp) {
+                  if (shouldLogNetworkGenerator) {
+                    debugNetworkLog(`  Moving bound ${_pProductMol.name} from ${_pComp} to ${_newComp} (BFS co-transport)`);
+                  }
+                  _pProductMol.compartment = _newComp;
                 }
-                partnerProductMol.compartment = targetInside;
-              }
-            } else if (partnerComp === sourceInside) {
-              // Inside(source) -> Outside(target)
-              if (targetOutside) {
-                if (shouldLogNetworkGenerator) {
-                  debugNetworkLog(`  Moving bound ${partnerProductMol.name} from ${partnerComp} to ${targetOutside} (Inside->Outside)`);
-                }
-                partnerProductMol.compartment = targetOutside;
               }
             }
           }

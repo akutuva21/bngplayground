@@ -182,7 +182,10 @@ export function isSpeciesMatch(speciesStr: string, pattern: string): boolean {
     const specGlobalComp = getCompartment(rawSpec);
     if (patPrefixComp && specGlobalComp && patPrefixComp !== specGlobalComp) return false;
 
-    const cleanPat = normalizeBareMoleculePattern(rawPat);
+    // Strip compartment prefix from pattern after equality check — the @COMP: / @COMP:: prefix
+    // uses observable notation (single colon) which BNGLParser.parseSpeciesGraph cannot handle.
+    const innerPat = patPrefixComp ? rawPat.replace(/^@[A-Za-z0-9_]+::?/, '') : rawPat;
+    const cleanPat = normalizeBareMoleculePattern(innerPat);
     const cleanSpec = normalizeBareMoleculePattern(rawSpec);
     const graphPat = normalizeGraphString(cleanPat);
     const graphSpec = normalizeGraphString(cleanSpec);
@@ -214,7 +217,9 @@ export function countMultiMoleculePatternMatches(speciesStr: string, pattern: st
     const specGlobalComp = getCompartment(rawSpec);
     if (patPrefixComp && specGlobalComp && patPrefixComp !== specGlobalComp) return 0;
 
-    const cleanPat = normalizeBareMoleculePattern(rawPat);
+    // Strip compartment prefix from pattern after equality check.
+    const innerPat = patPrefixComp ? rawPat.replace(/^@[A-Za-z0-9_]+::?/, '') : rawPat;
+    const cleanPat = normalizeBareMoleculePattern(innerPat);
     const cleanSpec = normalizeBareMoleculePattern(rawSpec);
     const graphPat = normalizeGraphString(cleanPat);
     const graphSpec = normalizeGraphString(cleanSpec);
@@ -248,7 +253,9 @@ export function countPatternMatches(speciesStr: string, patternStr: string): num
     const specGlobalComp = getCompartment(rawSpec);
     if (patPrefixComp && specGlobalComp && patPrefixComp !== specGlobalComp) return 0;
 
-    const cleanPat = normalizeBareMoleculePattern(rawPat);
+    // Strip compartment prefix from pattern after equality check.
+    const innerPat2 = patPrefixComp ? rawPat.replace(/^@[A-Za-z0-9_]+::?/, '') : rawPat;
+    const cleanPat = normalizeBareMoleculePattern(innerPat2);
     const cleanSpec = normalizeBareMoleculePattern(rawSpec);
     const graphPat = normalizeGraphString(cleanPat);
     const graphSpec = normalizeGraphString(cleanSpec);

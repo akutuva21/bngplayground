@@ -106,6 +106,53 @@ export async function generateExpandedNetwork(
     const functionNames = new Set((inputModel.functions || []).map((f) => f.name));
     const changingParams = new Set((inputModel.parameterChanges || []).map(c => c.parameter));
 
+    // Build a map of local functions (BNG2 %x:: syntax).
+    // A "local function" has args (e.g., f_synth(x)) and evaluates observables
+    // within the REACTANT SPECIES rather than globally. BNG2 computes these as
+    // per-reaction constant parameters at network-generation time.
+    // Reference: BNG2 RxnRule.pm – local function expansion.
+    interface LocalFnDef {
+        contextVar: string;
+        observablePatterns: Record<string, string>; // obsName -> pattern string
+        bodyTemplate: string; // expression with obsName(var) refs replaced by just obsName
+    }
+    const localFunctionMap = new Map<string, LocalFnDef>();
+    for (const fn of (inputModel.functions || [])) {
+        if (fn.args.length === 1) {
+            const contextVar = fn.args[0];
+            const escapedCtx = contextVar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const obsCallRe = new RegExp(`\\b([A-Za-z_][A-Za-z0-9_]*)\\s*\\(\\s*${escapedCtx}\\s*\\)`, 'g');
+            const observablePatterns: Record<string, string> = {};
+            let bodyTemplate = fn.expression;
+            let callMatch: RegExpExecArray | null;
+            // Reset lastIndex for global regex on each function
+            obsCallRe.lastIndex = 0;
+            while ((callMatch = obsCallRe.exec(fn.expression)) !== null) {
+                const obsName = callMatch[1];
+                const obs = inputModel.observables.find((o) => o.name === obsName);
+                if (obs) {
+                    observablePatterns[obsName] = obs.pattern;
+                    // strip the "(var)" from body template so result is just obsName
+                    bodyTemplate = bodyTemplate.replace(callMatch[0], obsName);
+                }
+            }
+            if (Object.keys(observablePatterns).length > 0) {
+                localFunctionMap.set(fn.name, { contextVar, observablePatterns, bodyTemplate });
+            }
+        }
+    }
+
+    // Helper: Detect a local-function call in a rate expression and return its context, or null.
+    const detectLocalFn = (rateStr: string): (LocalFnDef & { functionName: string }) | null => {
+        for (const [fnName, localFn] of localFunctionMap) {
+            const escapedFn = fnName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const escapedCtx = localFn.contextVar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const callRe = new RegExp(`^\\s*${escapedFn}\\s*\\(\\s*${escapedCtx}\\s*\\)\\s*$`);
+            if (callRe.test(rateStr)) return { ...localFn, functionName: fnName };
+        }
+        return null;
+    };
+
     // BNG2 Rule: Rules are expanded from the model definition.
     // We map over each rule to determine if it uses functional rates (non-mass action).
     const rules = inputModel.reactionRules.flatMap((r) => {
@@ -119,15 +166,23 @@ export async function generateExpandedNetwork(
         const expandedRate = expandRateLawMacros(r.rate, forwardSubstrateVar);
         const hasMacro = containsRateLawMacro(r.rate); // Logic like Sat() or MM()
 
+        // Detect local function call (must be checked BEFORE isFunctionalRateExpr below).
+        // Local functions are NOT dynamic rates; they're evaluated per-species at network-generation time.
+        const localFnDetected = detectLocalFn(r.rate);
+
         // Check if the rate depends on observables, functions, or changing parameters (Time dependent).
         // FIX: Do NOT mark as functional if only dependent on changing parameters.
-        // SimulationLoop handles parameter updates separately for mass-action rates IF the rate string is preserved.
-        const isForwardFunctional = hasMacro ||
-            isFunctionalRateExpr(expandedRate, observableNames, functionNames, new Set());
+        // Local function calls are also excluded here since they are handled separately.
+        const isForwardFunctional = !localFnDetected && (hasMacro ||
+            isFunctionalRateExpr(expandedRate, observableNames, functionNames, new Set()));
 
         let rate: number;
         if (r.isArrhenius) {
             // Arrhenius rates are computed by NetworkGenerator from energy patterns
+            rate = 0;
+        } else if (localFnDetected) {
+            // Local function: rate will be computed per-species in NetworkGenerator.
+            // Use 0 as placeholder; NetworkGenerator overrides this via localFunctionContext.
             rate = 0;
         } else if (isForwardFunctional) {
             // For functional rates, the base rateConstant is effectively 1 (or a scaling factor).
@@ -224,6 +279,21 @@ export async function generateExpandedNetwork(
         if (isForwardFunctional) {
             (forwardRule as any).isFunctionalRate = true;
             (forwardRule as any).propensityFactor = 1;
+        }
+
+        // Local function: tag the rule so NetworkGenerator can compute per-species rates.
+        // These are BNG2-style %x:: rules where f(x) evaluates observable patterns within
+        // the matched reactant species (a constant per concrete reaction at network-gen time).
+        if (localFnDetected) {
+            (forwardRule as any).localFunctionContext = {
+                functionName: localFnDetected.functionName,
+                contextVar: localFnDetected.contextVar,
+                observablePatterns: localFnDetected.observablePatterns,
+                bodyTemplate: localFnDetected.bodyTemplate,
+            };
+            // Local function rates are statically computed; no dynamic rateExpression.
+            (forwardRule as any).rateExpression = undefined;
+            (forwardRule as any).originalRate = undefined;
         }
 
             // Propagate Arrhenius fields for forward rule

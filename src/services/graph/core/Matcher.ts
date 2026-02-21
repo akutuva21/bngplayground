@@ -1413,7 +1413,13 @@ class VF2State {
     // BioNetGen compartment matching semantics:
     // - If pattern specifies a compartment, target must be in the same compartment
     // - If pattern does NOT specify a compartment (undefined/null), it matches ANY compartment
-    if (patternMol.compartment && patternMol.compartment !== targetMol.compartment) {
+    // IMPORTANT: Use getEffectiveCompartment (with graph-level fallback) instead of
+    // raw molecule.compartment. Species whose molecules inherit the graph-level
+    // compartment (e.g. @CP::TF.TF where each TF.compartment is undefined) must
+    // still match observable patterns like TF(d~pY!1)@CP.TF(d~pY!1)@CP.
+    const pEffComp = this.getEffectiveCompartment(this.pattern, pMolIdx);
+    const tEffComp = this.getEffectiveCompartment(this.target, tMolIdx);
+    if (pEffComp && pEffComp !== tEffComp) {
       return false;
     }
 

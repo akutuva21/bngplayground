@@ -62,29 +62,20 @@ export function parseBNGLWithANTLR(input: string): ParseResult {
       const warnings: string[] = [];
       let next = src;
 
-      // Best-effort normalization for local function context syntax (e.g., %x::A()).
-      // The current grammar/runtime does not fully support local-function scoping.
-      // Fallback strategy:
-      //   %x::Pattern      -> Pattern
-      //   f(x) = expr(x)   -> f = expr
-      //   f(x) in rates    -> f
+      // Normalization for local function context syntax (e.g., %x::A()).
+      // Strategy:
+      //   %x::Pattern      -> Pattern  (stripped so ANTLR can parse the pattern)
+      //   f(x) = expr(x)   -> KEPT AS-IS (grammar supports param_list in function defs)
+      //   f(x) in rates    -> KEPT AS-IS (NetworkExpansion detects & handles these)
+      // The local function bodies and calls are preserved so NetworkExpansion.ts can
+      // detect which rules use local functions and compute per-species rates at
+      // network-generation time.
       const localContextMatches = Array.from(next.matchAll(/%([A-Za-z_][A-Za-z0-9_]*)::/g));
       if (localContextMatches.length > 0) {
-        const localVars = Array.from(new Set(localContextMatches.map((m) => m[1])));
-
+        // Only strip the %x:: prefix from pattern positions; leave function defs/calls intact.
         next = next.replace(/%[A-Za-z_][A-Za-z0-9_]*::/g, '');
 
-        for (const localVar of localVars) {
-          const escapedVar = localVar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-          const fnDefWithArg = new RegExp(`\\b([A-Za-z_][A-Za-z0-9_]*)\\s*\\(\\s*${escapedVar}\\s*\\)\\s*=`, 'g');
-          next = next.replace(fnDefWithArg, (_m, fnName) => `${fnName} =`);
-
-          const callWithLocalArg = new RegExp(`\\b([A-Za-z_][A-Za-z0-9_]*)\\s*\\(\\s*${escapedVar}\\s*\\)`, 'g');
-          next = next.replace(callWithLocalArg, (_m, symbolName) => symbolName);
-        }
-
-        warnings.push('Normalized unsupported local-function context syntax (%x::) to global-function fallback.');
+        warnings.push('Detected local-function context syntax (%x::); local function calls preserved for per-species rate evaluation.');
       }
 
       // Normalize legacy compartment-before-parentheses molecule syntax used in
@@ -108,13 +99,183 @@ export function parseBNGLWithANTLR(input: string): ParseResult {
       }
 
       // Legacy state-inheritance labels in component patterns use "%" (e.g., c1%1).
-      // The core parser/runtime does not model this syntax directly. Map to wildcard
-      // state (c1~?) so rules remain applicable without introducing invalid states
-      // like ~1/~2 for molecules that only define ~0/~1.
+      // The core parser/runtime does not model this syntax directly.
+      // Strategy: expand each rule with %n labels into one concrete rule per state
+      // combination by enumerating all possible states of the labelled components
+      // (from the molecule types block).  This matches the BNG2 expansion behaviour.
+      // Deduplication: for labels that appear on same-type reactants in different
+      // reactant slots (interchangeable reactants), only generate assignments in
+      // sorted state order to avoid double-counting.
+      // Fallback (no molecule-type info or expansion failed): strip %n to ~? wildcard.
+
+      // ── helper: extract molecule-type component states ──────────────────────
+      function extractMolCompStates(src: string): Map<string, Map<string, string[]>> {
+        const result = new Map<string, Map<string, string[]>>();
+        const block = src.match(/begin\s+molecule\s+types\s*[\r\n]+([\s\S]*?)end\s+molecule\s+types/i);
+        if (!block) return result;
+        for (const line of block[1].split(/\r?\n/)) {
+          const t = line.trim();
+          if (!t || t.startsWith('#')) continue;
+          const mm = t.match(/^([A-Za-z_][A-Za-z0-9_]*)\(([^)]*)\)/);
+          if (!mm) continue;
+          const cmap = new Map<string, string[]>();
+          for (const c of mm[2].split(',')) {
+            const parts = c.trim().split('~');
+            const cn = parts[0].trim();
+            const states = parts.slice(1).map((s) => s.trim()).filter((s) => s.length > 0);
+            if (states.length > 0) cmap.set(cn, states);
+          }
+          result.set(mm[1], cmap);
+        }
+        return result;
+      }
+
+      // ── helper: cartesian product ──────────────────────────────────────────
+      function cartesian(arrs: string[][]): string[][] {
+        return arrs.reduce<string[][]>((acc, arr) => {
+          const res: string[][] = [];
+          for (const a of acc) for (const s of arr) res.push([...a, s]);
+          return res;
+        }, [[]]);
+      }
+
+      // ── helper: expand a single rule line ─────────────────────────────────
+      function expandRuleLine(
+        ruleLine: string,
+        molCompStates: Map<string, Map<string, string[]>>
+      ): string[] | null {
+        // strip inline comment for processing, re-add later
+        const commentIdx = ruleLine.search(/\s*#(?![-+])/);
+        const mainPart = commentIdx >= 0 ? ruleLine.slice(0, commentIdx) : ruleLine;
+        const comment = commentIdx >= 0 ? ruleLine.slice(commentIdx) : '';
+
+        // Split into rule components: optional "name:", lhs, arrow, rhs, rate(s)
+        // We use a loose split: find the arrow (-> or <->), then parse around it.
+        const arrowMatch = mainPart.match(/^(.*?)\s*(<->|->|<-)\s*(.*?)\s+((?:\S+)(?:\s+\S+)?)\s*$/);
+        if (!arrowMatch) return null;
+        const lhsRaw = arrowMatch[1].trim();
+        const arrow = arrowMatch[2];
+        const rhsRaw = arrowMatch[3].trim();
+        const rateRaw = arrowMatch[4].trim();
+
+        // Find all label definitions in LHS (compName%label)
+        const labelRe = /([A-Za-z_][A-Za-z0-9_]*)%([A-Za-z0-9_]+)/g;
+        const labelDefs = new Map<
+          string,
+          { molName: string; compName: string; states: string[]; reactantIdx: number }
+        >();
+
+        const reactants = lhsRaw.split('+').map((s) => s.trim());
+        for (let ri = 0; ri < reactants.length; ri++) {
+          const reactant = reactants[ri];
+          // iterate over molecule patterns
+          const molPatRe = /([A-Za-z_][A-Za-z0-9_]*)\(([^)]*)\)/g;
+          let mm;
+          while ((mm = molPatRe.exec(reactant)) !== null) {
+            const molName = mm[1];
+            for (const comp of mm[2].split(',')) {
+              const ct = comp.trim();
+              const lm = ct.match(/^([A-Za-z_][A-Za-z0-9_]*)%([A-Za-z0-9_]+)/);
+              if (!lm) continue;
+              const compName = lm[1];
+              const label = lm[2];
+              const states = molCompStates.get(molName)?.get(compName) ?? [];
+              if (states.length > 0) labelDefs.set(label, { molName, compName, states, reactantIdx: ri });
+            }
+          }
+        }
+
+        if (labelDefs.size === 0) return null; // no expandable labels
+
+        const labels = [...labelDefs.keys()];
+        const stateArrays = labels.map((l) => labelDefs.get(l)!.states);
+
+        // Identify deduplication groups: labels on same (molName.compName) in different
+        // reactant slots that are interchangeable (swap does not change unordered set).
+        interface GroupEntry { label: string; reactantIdx: number }
+        const byGroupKey = new Map<string, GroupEntry[]>();
+        for (const [label, info] of labelDefs) {
+          const gk = `${info.molName}.${info.compName}`;
+          if (!byGroupKey.has(gk)) byGroupKey.set(gk, []);
+          byGroupKey.get(gk)!.push({ label, reactantIdx: info.reactantIdx });
+        }
+
+        // Collect groups where each entry is from a distinct reactant slot
+        const dedupeGroups: string[][] = []; // sorted label lists
+        for (const entries of byGroupKey.values()) {
+          const idxSet = new Set(entries.map((e) => e.reactantIdx));
+          if (idxSet.size === entries.length && entries.length > 1) {
+            dedupeGroups.push(entries.map((e) => e.label).sort());
+          }
+        }
+
+        const allAssignments = cartesian(stateArrays);
+
+        function assignmentAsMap(a: string[]): Map<string, string> {
+          const m = new Map<string, string>();
+          labels.forEach((l, i) => m.set(l, a[i]));
+          return m;
+        }
+
+        function isCanonical(a: string[]): boolean {
+          const am = assignmentAsMap(a);
+          for (const group of dedupeGroups) {
+            const groupStates = group.map((l) => am.get(l)!);
+            for (let i = 0; i < groupStates.length - 1; i++) {
+              if (groupStates[i] > groupStates[i + 1]) return false;
+            }
+          }
+          return true;
+        }
+
+        const canonical = allAssignments.filter(isCanonical);
+
+        return canonical.map((assignment) => {
+          const am = assignmentAsMap(assignment);
+          let expanded = mainPart;
+          for (const [label, state] of am) {
+            const re = new RegExp(`([A-Za-z_][A-Za-z0-9_]*)%${label}(?![A-Za-z0-9_])`, 'g');
+            expanded = expanded.replace(re, `$1~${state}`);
+          }
+          return expanded + comment;
+        });
+      }
+
+      // ── apply expansion to reaction rules block ────────────────────────────
+      const molCompStates = extractMolCompStates(next);
+      const rulesBlockRe =
+        /(begin\s+reaction\s+rules\s*[\r\n]+)([\s\S]*?)([\r\n]+end\s+reaction\s+rules)/i;
+      if (/%[A-Za-z0-9_]+/.test(next) && molCompStates.size > 0) {
+        const expandedSrc = next.replace(rulesBlockRe, (_full, open, body, close) => {
+          const lines = body.split(/\r?\n/);
+          const outLines: string[] = [];
+          for (const line of lines) {
+            const t = line.trim();
+            if (!t || t.startsWith('#') || !/%[A-Za-z0-9_]+/.test(t)) {
+              outLines.push(line);
+              continue;
+            }
+            const expanded = expandRuleLine(t, molCompStates);
+            if (expanded) {
+              outLines.push(...expanded);
+            } else {
+              outLines.push(line); // fallback: keep original
+            }
+          }
+          return open + outLines.join('\n') + close;
+        });
+        if (expandedSrc !== next) {
+          warnings.push('Expanded state-inheritance "%" labels into concrete rules (BNG2 style).');
+          next = expandedSrc;
+        }
+      }
+
+      // Fallback: if any %n patterns remain (molecule type info unavailable or
+      // expansion did not apply), strip to wildcard ~? to keep rules applicable.
       // Keep molecule labels like ")%1" unchanged by anchoring to component starts.
       const percentInheritanceNormalized = next.replace(/([,(]\s*[A-Za-z_][A-Za-z0-9_]*)%([A-Za-z0-9_+-]+)/g, '$1~?');
       if (percentInheritanceNormalized !== next) {
-        warnings.push('Normalized legacy component inheritance "%" labels to wildcard state "~?".');
+        warnings.push('Normalized legacy component inheritance "%" labels to wildcard state "~?" (fallback: no molecule type info available).');
         next = percentInheritanceNormalized;
       }
 

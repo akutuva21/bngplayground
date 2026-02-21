@@ -388,6 +388,38 @@ export class GraphCanonicalizer {
 
       if (minNeighborRankA !== minNeighborRankB) return minNeighborRankA - minNeighborRankB;
 
+      // Quaternary-B Sort: Component Index on Lowest-Ranked Neighbor
+      // For identical molecules (same name, sig, bonded-partner-sig, min-neighbor-rank),
+      // the molecule connected at the LOWER component index of its best-ranked neighbor
+      // comes first. This ensures Ox(h!1) sorts before Ox(h!2) when both bond to
+      // H(b,g!1,g!2,...), matching BNG2's canonical bond-index assignment convention.
+      const getMinNeighborCompIdx = (molIdx: number): number => {
+        let bestRank = Number.MAX_SAFE_INTEGER;
+        let bestCompIdx = Number.MAX_SAFE_INTEGER;
+        for (let compIdx = 0; compIdx < graph.molecules[molIdx].components.length; compIdx++) {
+          const adjKey = `${molIdx}.${compIdx}`;
+          const partners = graph.adjacency.get(adjKey);
+          if (partners) {
+            for (const pKey of partners) {
+              const dotP = pKey.indexOf('.');
+              const pMolIdx = parseInt(pKey.substring(0, dotP), 10);
+              if (pMolIdx !== molIdx) {
+                const pCompIdx = parseInt(pKey.substring(dotP + 1), 10);
+                const rank = canonicalRank.get(pMolIdx) ?? Number.MAX_SAFE_INTEGER;
+                if (rank < bestRank || (rank === bestRank && pCompIdx < bestCompIdx)) {
+                  bestRank = rank;
+                  bestCompIdx = pCompIdx;
+                }
+              }
+            }
+          }
+        }
+        return bestCompIdx;
+      };
+      const neighborCompIdxA = getMinNeighborCompIdx(a);
+      const neighborCompIdxB = getMinNeighborCompIdx(b);
+      if (neighborCompIdxA !== neighborCompIdxB) return neighborCompIdxA - neighborCompIdxB;
+
       // Quinary Sort: WL Color Class (Structural / Topological Equivalence)
       const rankA = moleculeInfos[a].colorClass;
       const rankB = moleculeInfos[b].colorClass;

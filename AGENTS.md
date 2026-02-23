@@ -33,6 +33,14 @@ Notes:
   - `services/cvode_loader.js`
   - `public/cvode.wasm`
 
+### WASM (NFsim)
+- Pre-built artifacts are checked in at `public/nfsim.js` and `public/nfsim.wasm`.
+- C++ source lives in the `akutuva21/nfsim` fork (not in this repo).
+- Rebuild NFsim WASM (Windows): `cd wasm-nfsim` then `build_wasm.bat` (requires `NFSIM_SRC` env var pointing to `akutuva21/nfsim`)
+- Rebuild NFsim WASM (bash): `cd wasm-nfsim` then `./build_wasm.sh` (requires `NFSIM_SRC` env var)
+- Fetch latest pre-built artifacts from CI: `./tools/fetch-nfsim-wasm.sh` (requires GitHub CLI)
+- CI template for `akutuva21/nfsim`: `wasm-nfsim/build-wasm.github-actions-template.yml`
+
 ## Code Style Guidelines
 
 ### TypeScript Configuration

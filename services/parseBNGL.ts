@@ -9,7 +9,7 @@
 import type { BNGLModel } from '../types.ts';
 import { BNGLParser } from '../src/services/graph/core/BNGLParser.ts';
 import { SafeExpressionEvaluator } from './safeExpressionEvaluator.ts';
-import { parseBNGLWithANTLR } from '../src/parser/BNGLParserWrapper.ts';
+import { parseBNGLWithANTLR } from '@bngplayground/engine';
 
 interface NetworkGenerationOptions {
   maxStoich?: Record<string, number>;

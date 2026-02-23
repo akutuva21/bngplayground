@@ -29,7 +29,7 @@ import {
 
 // SafeExpressionEvaluator will be dynamically imported only when functional rates are enabled to avoid bundling vulnerable libs
 // Using official ANTLR parser for bng2.pl parity (util polyfill added in vite.config.ts)
-import { parseBNGLWithANTLR } from '../src/parser/BNGLParserWrapper';
+import { parseBNGLWithANTLR } from '@bngplayground/engine';
 import { Atomizer } from '../src/lib/atomizer';
 
 const ctx: DedicatedWorkerGlobalScope = typeof self !== 'undefined'

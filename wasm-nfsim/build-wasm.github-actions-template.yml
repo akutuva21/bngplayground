@@ -1,0 +1,54 @@
+# NOTE: This workflow belongs in akutuva21/nfsim, not in bngplayground.
+# Copy to .github/workflows/build-wasm.yml in the nfsim fork, then delete this file.
+#
+# It builds the NFsim WASM and uploads artifacts so bngplayground can fetch
+# them via tools/fetch-nfsim-wasm.sh.
+
+name: Build NFsim WASM
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:   # manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '3.1.51'
+
+      - name: Build WASM
+        run: |
+          cd wasm
+          chmod +x build_wasm.sh
+          ./build_wasm.sh
+        env:
+          # build_wasm.sh outputs to wasm/../public/ by default.
+          # Override here to output directly into wasm/ for artifact upload.
+          NFSIM_OUTPUT_DIR: ${{ github.workspace }}/wasm
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nfsim-wasm
+          path: |
+            wasm/nfsim.js
+            wasm/nfsim.wasm
+          retention-days: 90
+
+      - name: Create release (master only)
+        if: github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: wasm-${{ github.sha }}
+          files: |
+            wasm/nfsim.js
+            wasm/nfsim.wasm
+          draft: false
+          prerelease: true

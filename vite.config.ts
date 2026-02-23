@@ -56,13 +56,13 @@ export default defineConfig(() => {
         'antlr4ts/Token',
         'jsep'
       ],
-      // Prevent Vite from pre-bundling the heavy transformers package for the dev server
-      exclude: ['@xenova/transformers'],
+      exclude: ['@bngplayground/engine', '@xenova/transformers'],
       force: true
     },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+        '@bngplayground/engine': path.resolve(__dirname, 'packages/engine/src'),
         // Polyfill Node.js modules for ANTLR4 browser compatibility
         'util': 'util',
         'assert': 'assert',

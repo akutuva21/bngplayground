@@ -18,7 +18,7 @@ interface ContactMapViewerProps {
 }
 
 // Layout type options - all built-in Cytoscape layouts plus dagre and fcose
-type LayoutType = 'hierarchical' | 'cose' | 'fcose' | 'grid' | 'concentric' | 'breadthfirst' | 'circle' | 'random' | 'preset';
+type LayoutType = 'hierarchical' | 'cose' | 'fcose' | 'grid' | 'concentric' | 'breadthfirst' | 'circle' | 'preset';
 
 // Layout configurations for different algorithms
 const LAYOUT_CONFIGS: Record<LayoutType, any> = {
@@ -124,13 +124,6 @@ const LAYOUT_CONFIGS: Record<LayoutType, any> = {
     spacingFactor: 1.5,
     nodeDimensionsIncludeLabels: true,
   },
-  random: {
-    name: 'random',
-    animate: true,
-    animationDuration: 300,
-    padding: 50,
-    fit: true,
-  },
   preset: {
     name: 'preset',
     animate: true,
@@ -147,6 +140,7 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
   const [theme] = useTheme();
   const [isLayoutRunning, setIsLayoutRunning] = useState(false);
   const [activeLayout, setActiveLayout] = useState<LayoutType>('hierarchical');
+  const [cyReady, setCyReady] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
 
@@ -276,10 +270,36 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
       ],
       layout: { ...BASE_LAYOUT },
     });
+    
+    setCyReady(true);
+
+    // ResizeObserver: when the container gains its actual dimensions (e.g. on
+    // first paint inside an overflow-y-auto flex chain, or after a tab switch),
+    // tell Cytoscape to re-measure and re-fit so the graph is visible.
+    let lastW = 0;
+    let lastH = 0;
+    const ro = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (!rect) return;
+      const w = Math.round(rect.width);
+      const h = Math.round(rect.height);
+      if (w === lastW && h === lastH) return; // ignore noise
+      lastW = w;
+      lastH = h;
+      const cy = cyRef.current;
+      if (!cy || w === 0 || h === 0) return;
+      cy.resize();
+      if (cy.elements().length > 0) {
+        cy.fit(undefined, 30);
+      }
+    });
+    ro.observe(containerRef.current);
 
     return () => {
+      ro.disconnect();
       cyRef.current?.destroy();
       cyRef.current = null;
+      setCyReady(false);
     };
   }, [theme]);
 
@@ -334,8 +354,17 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
       cy.add(elements);
     });
 
-    cy.layout({ ...BASE_LAYOUT }).run();
-  }, [contactMap]);
+    // Run layout after a short delay so the container has had a chance to
+    // lay out at its real size; call fit on layoutstop so everything is visible.
+    setTimeout(() => {
+      if (!cyRef.current) return;
+      const layout = cyRef.current.layout({ ...BASE_LAYOUT });
+      layout.on('layoutstop', () => {
+        cyRef.current?.fit(undefined, 30);
+      });
+      layout.run();
+    }, 50);
+  }, [contactMap, cyReady]);
 
   const runLayout = (layoutType: LayoutType = activeLayout) => {
     const cy = cyRef.current;
@@ -569,9 +598,6 @@ ${indent}</node>
           </Button>
           <Button variant={activeLayout === 'circle' ? 'primary' : 'subtle'} onClick={() => runLayout('circle')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Circle Layout">
             {isLayoutRunning && activeLayout === 'circle' ? <LoadingSpinner className="w-3 h-3" /> : '○ Circle'}
-          </Button>
-          <Button variant={activeLayout === 'random' ? 'primary' : 'subtle'} onClick={() => runLayout('random')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Random Layout">
-            {isLayoutRunning && activeLayout === 'random' ? <LoadingSpinner className="w-3 h-3" /> : '🎲 Rand'}
           </Button>
         </div>
         {/* Row 2: Actions */}

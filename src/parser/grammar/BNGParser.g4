@@ -409,6 +409,8 @@ nested_hash_item
 // This includes all possible BNG2.pl action options for full compatibility
 arg_name
     : STRING
+    // Expression identifiers
+    | TIME
     // generate_network options
     | OVERWRITE | MAX_AGG | MAX_ITER | MAX_STOICH | PRINT_ITER | CHECK_ISO
     // simulate options

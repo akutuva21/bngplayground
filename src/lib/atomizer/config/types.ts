@@ -389,7 +389,7 @@ export const DEFAULT_ATOMIZER_OPTIONS: AtomizerOptions = {
   memoizedResolver: false,
   replaceLocParams: true,
   quietMode: false,
-  logLevel: 'INFO',
+  logLevel: 'WARNING',
   tEnd: 10,
   nSteps: 100,
 };

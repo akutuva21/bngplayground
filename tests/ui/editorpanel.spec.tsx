@@ -3,8 +3,10 @@ import { render, fireEvent, screen } from '@testing-library/react';
 import { vi, describe, it, expect } from 'vitest';
 
 // Mock ExampleGalleryModal and SemanticSearchInput to avoid pulling in heavy services during unit tests
+let exampleOnSelect: any = null;
 vi.mock('../../components/ExampleGalleryModal', () => ({
   ExampleGalleryModal: (props: any) => {
+    exampleOnSelect = props.onSelect;
     return React.createElement('div', { 'data-testid': 'example-gallery' });
   }
 }));
@@ -49,5 +51,33 @@ describe('EditorPanel', () => {
     render(<EditorPanel {...baseProps} /> as any);
     const loadBtn = screen.getAllByText(/Load/)[0];
     expect(loadBtn).toBeInTheDocument();
+  });
+
+  it('automatically parses when a model file is loaded', async () => {
+    const onParse = vi.fn();
+    render(<EditorPanel {...baseProps} onParse={onParse} /> as any);
+    const input = screen.getByTestId('editor-load-input') as HTMLInputElement;
+
+    // mock FileReader to fire onload immediately
+    class MockReader {
+      onload: any = null;
+      readAsText(_file: any) {
+        if (this.onload) this.onload({ target: { result: 'dummy' } });
+      }
+    }
+    vi.stubGlobal('FileReader', MockReader as any);
+
+    const file = new File(['foo'], 'test.bngl', { type: 'text/plain' });
+    fireEvent.change(input, { target: { files: [file] } });
+    await Promise.resolve(); // allow microtask
+    expect(onParse).toHaveBeenCalled();
+  });
+
+  it('automatically parses when an example is selected', () => {
+    const onParse = vi.fn();
+    render(<EditorPanel {...baseProps} onParse={onParse} /> as any);
+    // invoke the captured onSelect callback as if the gallery passed code
+    exampleOnSelect?.('example code', 'ExampleName', 'ExampleID');
+    expect(onParse).toHaveBeenCalled();
   });
 });

@@ -49,9 +49,9 @@ export interface RegulatoryInsights {
 }
 
 const parseAtomId = (atomId: string): AtomMetadata => {
-  if (atomId.startsWith('bond:')) {
-    const payload = atomId.slice(5);
-    const [leftRaw, rightRaw] = payload.split('|');
+  // bonds are now identified simply by containing a `|` separator
+  if (atomId.includes('|')) {
+    const [leftRaw, rightRaw] = atomId.split('|');
     const formatEndpoint = (endpoint: string): string => endpoint.replace(':', '.');
     const label = `${formatEndpoint(leftRaw)} — ${formatEndpoint(rightRaw ?? '')}`;
 

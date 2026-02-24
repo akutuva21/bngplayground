@@ -92,6 +92,7 @@ interface EditorPanelProps {
   onImportSBML?: (file: File) => void;
   onExportSBML?: () => void;
   onExportBNGL?: () => void;
+  onExportNET?: () => void;
   lastResized?: number;
 }
 
@@ -113,6 +114,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   onImportSBML,
   onExportSBML,
   onExportBNGL,
+  onExportNET,
   lastResized,
 }) => {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -146,10 +148,13 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
     // Otherwise treat as a BNGL (.bngl) file
     const reader = new FileReader();
     reader.onload = (e) => {
-      onCodeChange(e.target?.result as string);
+      const newCode = e.target?.result as string;
+      onCodeChange(newCode);
       // Clear model name when loading from file
       onModelNameChange?.(file.name.replace(/\.bngl$/i, ''));
       onModelIdChange?.(null);
+      // automatically parse newly loaded file
+      onParse(newCode);
     };
     reader.readAsText(file);
   };
@@ -165,6 +170,8 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
     onModelNameChange?.(modelName ?? null);
     onModelIdChange?.(modelId ?? null);
     setIsGalleryOpen(false);
+    // automatically parse after loading an example
+    onParse(exampleCode);
   };
 
   return (
@@ -260,6 +267,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
             }>
               <DropdownItem onClick={() => onExportBNGL?.()} disabled={!code?.trim()}>Export BNGL</DropdownItem>
               <DropdownItem onClick={() => onExportSBML?.()} disabled={!modelExists}>Export SBML</DropdownItem>
+              <DropdownItem onClick={() => onExportNET?.()} disabled={!modelExists}>Export NET</DropdownItem>
             </Dropdown>
 
             <Button variant="subtle" onClick={() => onCodeChange(formatBNGLMini(code))} className="h-9 px-3">

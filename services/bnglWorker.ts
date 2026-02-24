@@ -110,6 +110,22 @@ const originalConsoleLog = console.log;
 const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
 const originalConsoleDebug = console.debug;
+const workerGlobal = globalThis as any;
+const processEnv: Record<string, string | undefined> | undefined =
+  typeof process !== 'undefined' ? (process as any)?.env : undefined;
+const WORKER_VERBOSE_LOGS =
+  processEnv?.BNGL_WORKER_VERBOSE === '1' || workerGlobal.__BNGL_WORKER_VERBOSE__ === true;
+const FORWARD_WORKER_LOGS =
+  WORKER_VERBOSE_LOGS ||
+  processEnv?.BNGL_WORKER_FORWARD_LOGS === '1' ||
+  workerGlobal.__BNGL_WORKER_FORWARD_LOGS__ === true;
+const FORWARD_WORKER_WARNINGS =
+  WORKER_VERBOSE_LOGS ||
+  processEnv?.BNGL_WORKER_FORWARD_WARNINGS === '1' ||
+  workerGlobal.__BNGL_WORKER_FORWARD_WARNINGS__ === true;
+const FORWARD_WORKER_ERRORS =
+  (processEnv?.BNGL_WORKER_FORWARD_ERRORS ?? '1') !== '0' &&
+  workerGlobal.__BNGL_WORKER_FORWARD_ERRORS__ !== false;
 
 console.log = (...args: any[]) => {
   const message = args.map((arg) => safeStringify(arg)).join(' ');
@@ -133,24 +149,36 @@ console.log = (...args: any[]) => {
       // best-effort only
     }
   }
-  originalConsoleLog(...args); // Still log to actual console for debugging
+  if (FORWARD_WORKER_LOGS) {
+    originalConsoleLog(...args);
+  }
 };
 
 console.warn = (...args: any[]) => {
   const message = '[WARN] ' + args.map((arg) => safeStringify(arg)).join(' ');
   logBuffer.add(message);
-  originalConsoleWarn(...args);
+  if (FORWARD_WORKER_WARNINGS) {
+    originalConsoleWarn(...args);
+  }
 };
 
 console.error = (...args: any[]) => {
   const message = '[ERROR] ' + args.map((arg) => safeStringify(arg)).join(' ');
   logBuffer.add(message);
-  originalConsoleError(...args);
+  if (FORWARD_WORKER_ERRORS) {
+    originalConsoleError(...args);
+  }
 };
 console.debug = (...args: any[]) => {
   const message = '[DEBUG] ' + args.map((arg) => safeStringify(arg)).join(' ');
   logBuffer.add(message);
-  originalConsoleDebug?.(...args);
+  if (FORWARD_WORKER_LOGS) {
+    originalConsoleDebug?.(...args);
+  }
+};
+const workerVerboseLog = (...args: any[]) => {
+  if (!WORKER_VERBOSE_LOGS) return;
+  console.log(...args);
 };
 const cachedModels = new Map<number, BNGLModel>();
 let nextModelId = 1;
@@ -270,7 +298,7 @@ export function getCacheSizes() {
 
 async function parseBNGL(jobId: number, bnglCode: string): Promise<BNGLModel> {
   ensureNotCancelled(jobId);
-  console.log('[Worker-Debug] parseBNGL called for job', jobId);
+  workerVerboseLog('[Worker-Debug] parseBNGL called for job', jobId);
 
   // 1. Parse via ANTLR best-effort model recovery (preserves recoverable legacy inputs)
   const parseResult = parseBNGLWithANTLR(bnglCode);
@@ -286,7 +314,7 @@ async function parseBNGL(jobId: number, bnglCode: string): Promise<BNGLModel> {
 
   // 2. Resolve compartmental volumes if needed
   if (requiresCompartmentResolution(model)) {
-    console.log('[Worker] Model has compartments, resolving volumes...');
+    workerVerboseLog('[Worker] Model has compartments, resolving volumes...');
     return await resolveCompartmentVolumes(model);
   }
 
@@ -335,16 +363,16 @@ if (typeof ctx.addEventListener === 'function') {
     }
 
     if (type === 'atomize') {
-      console.log(`!!! [Worker] Received atomize request ${id}`);
+      workerVerboseLog(`[Worker] Received atomize request ${id}`);
       registerJob(id);
       try {
         const sbml = typeof payload === 'string' ? payload : '';
         const atomizer = new Atomizer();
-        console.log(`!!! [Worker] Initializing atomizer...`);
+        workerVerboseLog('[Worker] Initializing atomizer...');
         await atomizer.initialize();
-        console.log(`!!! [Worker] Starting atomization...`);
+        workerVerboseLog('[Worker] Starting atomization...');
         const result = await atomizer.atomize(sbml);
-        console.log(`!!! [Worker] Atomization complete ${id}: success=${result.success}`);
+        workerVerboseLog(`[Worker] Atomization complete ${id}: success=${result.success}`);
         const response: WorkerResponse = { id, type: 'atomize_success', payload: result };
         ctx.postMessage(response);
       } catch (error) {
@@ -400,7 +428,7 @@ if (typeof ctx.addEventListener === 'function') {
               (cached.reactions || []).forEach((r) => {
                 const rateConst = nextModel.parameters[r.rate] ?? Number.parseFloat(r.rate);
                 if (isNaN(rateConst)) {
-                  console.warn(`[Worker] Unresolved rate parameter: ${r.rate}`);
+                  workerVerboseLog(`[Worker] Unresolved rate parameter: ${r.rate}`);
                   // If we can't resolve it, we'll let SimulationLoop handle it (sets to 0) 
                   // but we'll log it here for diagnostics.
                 }
@@ -460,42 +488,46 @@ if (typeof ctx.addEventListener === 'function') {
               if (simAction.args['t_end'] !== undefined) {
                 const tEnd = Number(simAction.args['t_end']);
                 if (!isNaN(tEnd)) {
-                  console.log(`[Worker] Overriding t_end with model value: ${tEnd} (was ${options.t_end})`);
+                  workerVerboseLog(`[Worker] Overriding t_end with model value: ${tEnd} (was ${options.t_end})`);
                   options.t_end = tEnd;
                 }
               }
               if (simAction.args['n_steps'] !== undefined) {
                 const nSteps = Number(simAction.args['n_steps']);
                 if (!isNaN(nSteps)) {
-                  console.log(`[Worker] Overriding n_steps with model value: ${nSteps} (was ${options.n_steps})`);
+                  workerVerboseLog(
+                    `[Worker] Overriding n_steps with model value: ${nSteps} (was ${options.n_steps})`
+                  );
                   options.n_steps = nSteps;
                 }
               }
               if (simAction.args['utl'] !== undefined) {
                 const utl = Number(simAction.args['utl']);
                 if (!isNaN(utl)) {
-                  console.log(`[Worker] Overriding utl with model value: ${utl} (was ${options.utl ?? 'default'})`);
+                  workerVerboseLog(
+                    `[Worker] Overriding utl with model value: ${utl} (was ${options.utl ?? 'default'})`
+                  );
                   options.utl = utl;
                 }
               }
               if (simAction.args['gml'] !== undefined) {
                 const gml = Number(simAction.args['gml']);
                 if (!isNaN(gml)) {
-                  console.log(`[Worker] Overriding gml with model value: ${gml}`);
+                  workerVerboseLog(`[Worker] Overriding gml with model value: ${gml}`);
                   options.gml = gml;
                 }
               }
               if (simAction.args['equilibrate'] !== undefined || simAction.args['eq'] !== undefined) {
                 const eq = Number(simAction.args['equilibrate'] ?? simAction.args['eq']);
                 if (!isNaN(eq)) {
-                  console.log(`[Worker] Overriding equilibrate with model value: ${eq}`);
+                  workerVerboseLog(`[Worker] Overriding equilibrate with model value: ${eq}`);
                   options.equilibrate = eq;
                 }
               }
               if (simAction.args['seed'] !== undefined) {
                 const seed = Number(simAction.args['seed']);
                 if (!isNaN(seed)) {
-                  console.log(`[Worker] Overriding seed with model value: ${seed}`);
+                  workerVerboseLog(`[Worker] Overriding seed with model value: ${seed}`);
                   options.seed = seed;
                 }
               }
@@ -509,12 +541,16 @@ if (typeof ctx.addEventListener === 'function') {
             phases.some(p => p.method !== phases[0].method);
 
           const VERBOSE_BNGL_WORKER_DEBUG = false; // enable for extra bngl worker debug
-          if (VERBOSE_BNGL_WORKER_DEBUG) console.log(`[Worker Debug] Resolved method: ${effectiveMethod}, isNF=${isNF}, hasMixedMethods=${hasMixedMethods}`);
+          if (VERBOSE_BNGL_WORKER_DEBUG) {
+            workerVerboseLog(
+              `[Worker Debug] Resolved method: ${effectiveMethod}, isNF=${isNF}, hasMixedMethods=${hasMixedMethods}`
+            );
+          }
 
           if (hasRules && !hasReactions && !isNF) {
-            console.log('[Worker] Auto-generating network from reaction rules...');
-            console.log('[Worker] Model parameters:', model.parameters);
-            console.log('[Worker] Model reactionRules:', model.reactionRules.map((r, i) => `${i}: ${r.rate}`));
+            workerVerboseLog('[Worker] Auto-generating network from reaction rules...');
+            workerVerboseLog('[Worker] Model parameters:', model.parameters);
+            workerVerboseLog('[Worker] Model reactionRules:', model.reactionRules.map((r, i) => `${i}: ${r.rate}`));
             try {
               // Ensure evaluator is loaded for network generation
               // CRITICAL: We MUST load the evaluator - the fallback returns zeros for all expressions
@@ -525,7 +561,9 @@ if (typeof ctx.addEventListener === 'function') {
                 () => ensureNotCancelled(id),
                 (p) => safePostMessage({ id, type: 'generate_network_progress', payload: p })
               );
-              console.log(`[Worker] Network auto-generation complete: ${model.species.length} species, ${model.reactions?.length ?? 0} reactions`);
+              workerVerboseLog(
+                `[Worker] Network auto-generation complete: ${model.species.length} species, ${model.reactions?.length ?? 0} reactions`
+              );
             } catch (genError) {
               console.error('[Worker] Network auto-generation failed:', genError);
               throw new Error(`Network generation failed: ${genError instanceof Error ? genError.message : String(genError)}`);
@@ -537,7 +575,7 @@ if (typeof ctx.addEventListener === 'function') {
             // For mixed-method workflows, use the main simulation loop
             // which will delegate individual phases to appropriate simulators
             if (hasMixedMethods) {
-              console.log('[Worker] Using mixed-method simulation workflow');
+              workerVerboseLog('[Worker] Using mixed-method simulation workflow');
               return await simulate(id, model, options, {
                 checkCancelled: () => ensureNotCancelled(id),
                 postMessage: (msg) => safePostMessage(msg)
@@ -546,7 +584,7 @@ if (typeof ctx.addEventListener === 'function') {
 
             // For pure NFsim simulations (all phases are 'nf' or single phase)
             if (isNF) {
-              console.log('[Worker] Using NFsim for simulation');
+              workerVerboseLog('[Worker] Using NFsim for simulation');
 
               if (!model) throw new Error('Model missing for NFsim simulation');
               if (!options) throw new Error('Options missing for NFsim simulation');
@@ -591,7 +629,9 @@ if (typeof ctx.addEventListener === 'function') {
               return await runNFsimSimulation(model, nfOptions, id);
 
             } else {
-              console.log(`[Worker] Received 'simulate' request. Model has ${phases.length} phases. Options: t_end=${options?.t_end}, method=${options?.method}`);
+              workerVerboseLog(
+                `[Worker] Received 'simulate' request. Model has ${phases.length} phases. Options: t_end=${options?.t_end}, method=${options?.method}`
+              );
               if (!model || !options) throw new Error('Model or options missing during simulate');
               return await simulate(id, model, options, {
                 checkCancelled: () => ensureNotCancelled(id),
@@ -665,7 +705,7 @@ if (typeof ctx.addEventListener === 'function') {
               cachedModels.delete(oldest);
               // best-effort notification
 
-              console.warn('[Worker] Evicted cached model (LRU) id=', oldest);
+              workerVerboseLog('[Worker] Evicted cached model (LRU) id=', oldest);
             }
           }
         } catch (e) {
@@ -728,20 +768,20 @@ if (typeof ctx.addEventListener === 'function') {
              if (genAction) {
                  const actionMaxIter = Number(genAction.args['max_iter']);
                  if (!isNaN(actionMaxIter)) {
-                     console.log(`[Worker] Overriding maxIterations with model action value: ${actionMaxIter}`);
+                     workerVerboseLog(`[Worker] Overriding maxIterations with model action value: ${actionMaxIter}`);
                      options = { ...options, maxIterations: actionMaxIter };
                  }
                  
                  const actionMaxAgg = Number(genAction.args['max_agg']);
                  if (!isNaN(actionMaxAgg)) {
-                     console.log(`[Worker] Overriding maxAgg with model action value: ${actionMaxAgg}`);
+                     workerVerboseLog(`[Worker] Overriding maxAgg with model action value: ${actionMaxAgg}`);
                      options = { ...options, maxAgg: actionMaxAgg };
                  }
                  
                  const actionMaxStoich = Number(genAction.args['max_stoich']);
                  if (!isNaN(actionMaxStoich)) {
                     // For simple numeric max_stoich
-                     console.log(`[Worker] Overriding maxStoich with model action value: ${actionMaxStoich}`);
+                     workerVerboseLog(`[Worker] Overriding maxStoich with model action value: ${actionMaxStoich}`);
                      // Note: NetworkGenerator expects Map<string, number> or number, simplified here
                      options = { ...options, maxStoich: actionMaxStoich as any };
                  }

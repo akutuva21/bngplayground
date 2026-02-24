@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest';
-import { roundForInput, computeDefaultBounds, generateRange, validateScanSettings, DEFAULT_ZERO_DELTA } from '../../src/services/analysis/ParameterScan';
+import { roundForInput, computeDefaultBounds, generateRange, validateScanSettings, DEFAULT_ZERO_DELTA, formatNumber } from '../../src/services/analysis/ParameterScan';
 
 describe('ParameterScan Analysis Service', () => {
 
@@ -55,6 +55,22 @@ describe('ParameterScan Analysis Service', () => {
                 expect(u).toBeGreaterThan(val);
             });
         }
+    });
+
+    describe('formatNumber helper', () => {
+        it('uses scientific notation when value < 1', () => {
+            expect(formatNumber(0.5)).toBe('5.00e-1');
+            expect(formatNumber(-0.01)).toBe('-1.00e-2');
+        });
+        it('uses scientific notation when value > 1000', () => {
+            expect(formatNumber(1001)).toBe('1.00e+3');
+            expect(formatNumber(-12345)).toBe('-1.23e+4');
+        });
+        it('uses plain formatting for 1 <= value <= 1000', () => {
+            expect(formatNumber(1)).toBe('1.000');
+            expect(formatNumber(999.9)).toBe('999.900');
+            expect(formatNumber(1000)).toBe('1000.000');
+        });
     });
 
     describe('generateRange (Linear)', () => {
@@ -132,6 +148,8 @@ describe('ParameterScan Analysis Service', () => {
             });
         }
     });
+
+
 
     describe('validateScanSettings', () => {
         it('should accept valid input', () => {

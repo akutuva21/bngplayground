@@ -18,7 +18,7 @@ interface ContactMapViewerProps {
 }
 
 // Layout type options - all built-in Cytoscape layouts plus dagre and fcose
-type LayoutType = 'hierarchical' | 'cose' | 'fcose' | 'grid' | 'concentric' | 'breadthfirst' | 'circle' | 'random' | 'preset';
+type LayoutType = 'hierarchical' | 'cose' | 'fcose' | 'grid' | 'concentric' | 'breadthfirst' | 'circle' | 'preset';
 
 // Layout configurations for different algorithms
 const LAYOUT_CONFIGS: Record<LayoutType, any> = {
@@ -124,13 +124,6 @@ const LAYOUT_CONFIGS: Record<LayoutType, any> = {
     spacingFactor: 1.5,
     nodeDimensionsIncludeLabels: true,
   },
-  random: {
-    name: 'random',
-    animate: true,
-    animationDuration: 300,
-    padding: 50,
-    fit: true,
-  },
   preset: {
     name: 'preset',
     animate: true,
@@ -149,16 +142,47 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
   const [activeLayout, setActiveLayout] = useState<LayoutType>('hierarchical');
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
+  // Keep a ref to the callback so tap handlers always see the latest version
+  // without needing to destroy/recreate the Cytoscape instance on prop changes.
+  const onSelectRuleRef = useRef(onSelectRule);
+  onSelectRuleRef.current = onSelectRule;
 
-  // Create the Cytoscape instance once the container mounts
+  // Single effect: creates Cytoscape with elements already in the constructor,
+  // then immediately runs the default layout. Destroys and re-creates the
+  // instance whenever data or theme changes, eliminating the prior two-effect
+  // race where cy.fit() fired on an empty graph before elements were loaded.
   useEffect(() => {
-    if (!containerRef.current || cyRef.current) {
-      return;
-    }
+    if (!containerRef.current) return;
 
-    cyRef.current = cytoscape({
+    const elements = [
+      ...contactMap.nodes.map((node) => ({
+        data: {
+          id: node.id,
+          label: node.label,
+          parent: node.parent,
+          type: node.type,
+          isGroup: node.isGroup,
+        },
+      })),
+      ...contactMap.edges.map((edge, index) => ({
+        data: {
+          id: `edge-${index}`,
+          source: edge.from,
+          target: edge.to,
+          label: edge.componentPair ? `${edge.componentPair[0]}-${edge.componentPair[1]}` : '',
+          type: edge.interactionType,
+          ruleIds: edge.ruleIds,
+          ruleLabels: edge.ruleLabels,
+        },
+      })),
+    ];
+
+    // Destroy any previous instance before creating a new one.
+    cyRef.current?.destroy();
+
+    const cy = cytoscape({
       container: containerRef.current,
-      elements: [],
+      elements,
       style: [
         {
           selector: 'node',
@@ -169,7 +193,6 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
             'text-valign': 'center',
             'text-max-width': '70px',
             'font-size': '12px',
-            // Default text color based on theme
             color: theme === 'dark' ? '#FFFFFF' : '#000000',
           },
         },
@@ -258,7 +281,8 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
           style: {
             width: 1,
             'curve-style': 'bezier',
-            'line-color': '#000000', // BNG yEd uses black edges
+            'line-color': theme === 'dark' ? '#9ca3af' : '#000000',
+            'target-arrow-color': theme === 'dark' ? '#9ca3af' : '#000000',
             'target-arrow-shape': 'none', // Contact maps are undirected graphs
           },
         },
@@ -268,74 +292,63 @@ export const ContactMapViewer: React.FC<ContactMapViewerProps> = ({ contactMap, 
             'border-width': 4,
             'border-color': '#0ea5e9',
             'line-color': '#0ea5e9',
-            // 'target-arrow-color': '#0ea5e9',
             'transition-property': 'border-width, border-color, line-color, target-arrow-color',
             'transition-duration': 150,
           },
         },
       ],
-      layout: { ...BASE_LAYOUT },
+      layout: { name: 'preset' },
     });
 
-    return () => {
-      cyRef.current?.destroy();
-      cyRef.current = null;
-    };
-  }, [theme]);
+    cyRef.current = cy;
 
-  // Refresh tap handlers whenever the callback changes
-  useEffect(() => {
-    const cy = cyRef.current;
-    if (!cy) {
-      return;
-    }
-
-    cy.off('tap', 'edge');
+    // Tap handler reads from ref so onSelectRule is always current without
+    // needing to destroy/recreate cy when the callback identity changes.
     cy.on('tap', 'edge', (event) => {
       const edge = event.target;
       const ruleIds = edge.data('ruleIds') as string[] | undefined;
       if (ruleIds && ruleIds.length > 0) {
-        onSelectRule?.(ruleIds[0]);
+        onSelectRuleRef.current?.(ruleIds[0]);
       }
     });
-  }, [onSelectRule]);
 
-  // Update elements and layout whenever the contact map changes
-  useEffect(() => {
-    const cy = cyRef.current;
-    if (!cy) {
-      return;
-    }
-    const elements = [
-      ...contactMap.nodes.map((node) => ({
-        data: {
-          id: node.id,
-          label: node.label,
-          parent: node.parent,
-          type: node.type,
-          isGroup: node.isGroup,
-        },
-      })),
-      ...contactMap.edges.map((edge, index) => ({
-        data: {
-          id: `edge-${index}`,
-          source: edge.from,
-          target: edge.to,
-          label: edge.componentPair ? `${edge.componentPair[0]}-${edge.componentPair[1]}` : '',
-          type: edge.interactionType,
-          ruleIds: edge.ruleIds,
-          ruleLabels: edge.ruleLabels,
-        },
-      })),
-    ];
-
-    cy.batch(() => {
-      cy.elements().remove();
-      cy.add(elements);
+    // Run default layout; fit once it stops so all nodes are visible.
+    setIsLayoutRunning(true);
+    const layout = cy.layout({ ...BASE_LAYOUT });
+    layout.on('layoutstop', () => {
+      cyRef.current?.fit(undefined, 30);
+      setIsLayoutRunning(false);
     });
+    layout.run();
 
-    cy.layout({ ...BASE_LAYOUT }).run();
-  }, [contactMap]);
+    // ResizeObserver: re-fit when the container gains its real dimensions
+    // (e.g. first paint in a flex chain, or after a tab switch).
+    let lastW = 0;
+    let lastH = 0;
+    const ro = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (!rect) return;
+      const w = Math.round(rect.width);
+      const h = Math.round(rect.height);
+      if (w === lastW && h === lastH) return;
+      lastW = w;
+      lastH = h;
+      const c = cyRef.current;
+      if (!c || w === 0 || h === 0) return;
+      c.resize();
+      if (c.elements().length > 0) {
+        c.fit(undefined, 30);
+      }
+    });
+    ro.observe(containerRef.current);
+
+    return () => {
+      ro.disconnect();
+      cy.off('tap');
+      cyRef.current?.destroy();
+      cyRef.current = null;
+    };
+  }, [contactMap, theme]);
 
   const runLayout = (layoutType: LayoutType = activeLayout) => {
     const cy = cyRef.current;
@@ -570,9 +583,6 @@ ${indent}</node>
           <Button variant={activeLayout === 'circle' ? 'primary' : 'subtle'} onClick={() => runLayout('circle')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Circle Layout">
             {isLayoutRunning && activeLayout === 'circle' ? <LoadingSpinner className="w-3 h-3" /> : '○ Circle'}
           </Button>
-          <Button variant={activeLayout === 'random' ? 'primary' : 'subtle'} onClick={() => runLayout('random')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Random Layout">
-            {isLayoutRunning && activeLayout === 'random' ? <LoadingSpinner className="w-3 h-3" /> : '🎲 Rand'}
-          </Button>
         </div>
         {/* Row 2: Actions */}
         <div className="flex items-center gap-1">
@@ -616,9 +626,10 @@ ${indent}</node>
       </div>
 
       {/* Graph Container */}
-      <div className="relative flex-1 min-h-[500px] w-full rounded-lg border border-stone-200 bg-white dark:border-slate-700 dark:bg-slate-900 overflow-hidden">
-        <div ref={containerRef} className="absolute inset-0 z-0" />
-      </div>
+      <div
+        ref={containerRef}
+        className="h-[600px] w-full rounded-lg border border-stone-200 bg-white dark:border-slate-700 dark:bg-slate-900"
+      />
 
       {/* Legend Box */}
       <div className="flex items-center gap-4 bg-white dark:bg-slate-900 p-2 rounded-md border border-slate-200 dark:border-slate-700">

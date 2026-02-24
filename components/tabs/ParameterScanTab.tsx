@@ -12,6 +12,14 @@ import { CHART_COLORS } from '../../constants';
 import HeatmapChart from '../HeatmapChart';
 import { formatTooltipNumber, formatYAxisTick } from '../charts/InteractiveLegend';
 
+// reusable helpers for parameter scanning logic and formatting
+import {
+  roundForInput,
+  computeDefaultBounds,
+  generateRange,
+  formatNumber,
+} from '../../src/services/analysis/ParameterScan';
+
 interface ParameterScanTabProps {
   model: BNGLModel | null;
 }
@@ -35,54 +43,6 @@ interface TwoDResult {
   grid: Record<string, number[][]>;
 }
 
-const roundForInput = (value: number): string => {
-  if (!Number.isFinite(value)) return '';
-  const rounded = Math.round(value * 1e6) / 1e6;
-  return rounded.toString();
-};
-
-const DEFAULT_ZERO_DELTA = 0.1;
-
-const computeDefaultBounds = (value: number): [number, number] => {
-  if (!Number.isFinite(value) || value < 0) return [0, 0];
-  // For value = 0, use a fixed delta; otherwise compute exactly ±10%
-  if (value === 0) {
-    return [0, DEFAULT_ZERO_DELTA];
-  }
-  const lower = Math.max(0, value * 0.9);  // p1 - 10%
-  const upper = value * 1.1;               // p1 + 10%
-  return [lower, upper];
-};
-
-const generateRange = (start: number, end: number, steps: number, isLog = false): number[] => {
-  if (steps <= 1) return [start];
-  if (isLog) {
-    // Log scale requires positive start/end; fall back to linear if invalid
-    if (start <= 0 || end <= 0) {
-
-      console.warn('Log scale requires positive start/end values. Falling back to linear.');
-      isLog = false;
-    }
-  }
-
-  if (isLog) {
-    const logStart = Math.log10(start);
-    const logEnd = Math.log10(end);
-    const delta = (logEnd - logStart) / (steps - 1);
-    return Array.from({ length: steps }, (_, index) => Number(Math.pow(10, logStart + index * delta).toPrecision(12)));
-  }
-
-  const delta = (end - start) / (steps - 1);
-  return Array.from({ length: steps }, (_, index) => Number((start + index * delta).toPrecision(12)));
-};
-
-const formatNumber = (value: number) => {
-  if (!Number.isFinite(value)) return '0';
-  if (Math.abs(value) >= 1000 || Math.abs(value) < 0.001) {
-    return value.toExponential(2);
-  }
-  return value.toFixed(3);
-};
 
 export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => {
   const [scanType, setScanType] = useState<ScanMode>('1d');
@@ -139,13 +99,36 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
   const previousParameter1 = useRef<string | null>(null);
   const previousParameter2 = useRef<string | null>(null);
 
-  const parameterNames = useMemo(() => {
-    if (!model) return [];
-    const params = Object.keys(model.parameters);
-    const species = model.species.map((s) => s.name);
-    return [...params, ...species];
+  // keep track of whether each entry is a parameter or a species so we can
+  // show appropriate hints and compute default bounds correctly.
+  const parameterTypeMap = useMemo(() => {
+    const map: Record<string, 'parameter' | 'species'> = {};
+    if (!model) return map;
+    Object.keys(model.parameters).forEach((p) => (map[p] = 'parameter'));
+    model.species.forEach((s) => (map[s.name] = 'species'));
+    return map;
   }, [model]);
+
+  const parameterNames = useMemo(() => Object.keys(parameterTypeMap), [parameterTypeMap]);
   const observableNames = useMemo(() => (model ? model.observables.map((obs) => obs.name) : []), [model]);
+
+  // map from a parameter name to any species whose initialExpression references it
+  const paramToSpecies = useMemo<Record<string, string[]>>(() => {
+    const map: Record<string, string[]> = {};
+    if (!model) return map;
+    model.species.forEach((s) => {
+      if (s.initialExpression) {
+        const tokens = s.initialExpression.match(/\b[A-Za-z_]\w*\b/g) || [];
+        tokens.forEach((tok) => {
+          if (tok in model.parameters) {
+            map[tok] = map[tok] || [];
+            if (!map[tok].includes(s.name)) map[tok].push(s.name);
+          }
+        });
+      }
+    });
+    return map;
+  }, [model]);
 
   useEffect(() => {
     if (!model) {
@@ -550,15 +533,32 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
 
   const baseParam1 = useMemo(() => {
     if (!parameter1 || !model) return undefined;
-    if (parameter1 in model.parameters) return model.parameters[parameter1];
-    return model.species.find(s => s.name === parameter1)?.initialConcentration;
-  }, [parameter1, model]);
+    if (parameter1 in model.parameters) {
+      // if scanning a parameter that drives one or more species, use the
+      // species' initial concentration as the base value for defaults (makes
+      // more sense to the user). fall back to the raw parameter value.
+      const deps = paramToSpecies[parameter1];
+      if (deps && deps.length > 0) {
+        const sp = model.species.find((s) => s.name === deps[0]);
+        if (sp) return sp.initialConcentration;
+      }
+      return model.parameters[parameter1];
+    }
+    return model.species.find((s) => s.name === parameter1)?.initialConcentration;
+  }, [parameter1, model, paramToSpecies]);
 
   const baseParam2 = useMemo(() => {
     if (!parameter2 || !model) return undefined;
-    if (parameter2 in model.parameters) return model.parameters[parameter2];
-    return model.species.find(s => s.name === parameter2)?.initialConcentration;
-  }, [parameter2, model]);
+    if (parameter2 in model.parameters) {
+      const deps = paramToSpecies[parameter2];
+      if (deps && deps.length > 0) {
+        const sp = model.species.find((s) => s.name === deps[0]);
+        if (sp) return sp.initialConcentration;
+      }
+      return model.parameters[parameter2];
+    }
+    return model.species.find((s) => s.name === parameter2)?.initialConcentration;
+  }, [parameter2, model, paramToSpecies]);
 
   const [defaultParam1Lower, defaultParam1Upper] = useMemo(() => {
     if (baseParam1 === undefined) return [0, 0];
@@ -665,9 +665,16 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
 
       if (scanType === '1d') {
         const result: OneDResult = { parameterName: parameter1, values: [] };
+        const speciesDeps = paramToSpecies[parameter1] || [];
         let completed = 0;
         for (const value of range1) {
-          const overrides = { [parameter1]: value } as Record<string, number>;
+          const overrides: Record<string, number> = { [parameter1]: value };
+          // if we're scanning a parameter that also feeds species initial
+          // concentrations, make sure the override updates the species too
+          speciesDeps.forEach((sname) => {
+            overrides[sname] = value;
+          });
+
           const simResults = await bnglService.simulateCached(modelId, overrides, simulationOptions, {
             signal: controller.signal,
             description: `Parameter scan (${parameter1}=${value})`,
@@ -690,9 +697,16 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
           grid[name] = range2.map(() => new Array(range1.length).fill(0));
         });
         let completed = 0;
+        const deps1 = paramToSpecies[parameter1] || [];
+        const deps2 = paramToSpecies[parameter2] || [];
         for (let yi = 0; yi < range2.length; yi += 1) {
           for (let xi = 0; xi < range1.length; xi += 1) {
-            const overrides = { [parameter1]: range1[xi], [parameter2]: range2[yi] };
+            const overrides: Record<string, number> = {
+              [parameter1]: range1[xi],
+              [parameter2]: range2[yi],
+            };
+            deps1.forEach((s) => (overrides[s] = range1[xi]));
+            deps2.forEach((s) => (overrides[s] = range2[yi]));
             const simResults = await bnglService.simulateCached(modelId, overrides, simulationOptions, {
               signal: controller.signal,
               description: `2D parameter scan (${parameter1}, ${parameter2})`,
@@ -861,12 +875,31 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Parameter 1</h4>
             <Select value={parameter1} onChange={(event) => setParameter1(event.target.value)}>
-              {parameterNames.map((param) => (
-                <option key={param} value={param}>
-                  {param}
-                </option>
-              ))}
+              {parameterNames.map((param) => {
+                const isSpecies = parameterTypeMap[param] === 'species';
+                let label = param;
+                if (isSpecies && model) {
+                  const sp = model.species.find((s) => s.name === param);
+                  const expr = sp?.initialExpression || param;
+                  label = `${expr} (initial amount for ${param})`;
+                }
+                return (
+                  <option key={param} value={param}>
+                    {label}
+                  </option>
+                );
+              })}
             </Select>
+            <div className="text-xs text-slate-500">
+              {parameterTypeMap[parameter1] === 'species'
+                ? `Numbers correspond to the initial concentration/amount of the selected species. This value is injected directly into the simulator; changing the underlying parameter (${model?.species.find((s) => s.name === parameter1)?.initialExpression || parameter1}) outside of the scan UI will not automatically update the species.`
+                : 'Numbers correspond to the value of the selected model parameter.'}
+            </div>
+            {parameterTypeMap[parameter1] !== 'species' && paramToSpecies[parameter1] && paramToSpecies[parameter1].length > 0 && (
+              <div className="text-xs text-yellow-600">
+                Scanning this parameter will also update the initial amount of species: {paramToSpecies[parameter1].join(', ')}.
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Input type="number" value={param1Start} onChange={(event) => setParam1Start(event.target.value)} placeholder={defaultParam1Start || "Start"} />
               <Input type="number" value={param1End} onChange={(event) => setParam1End(event.target.value)} placeholder={defaultParam1End || "End"} />
@@ -878,12 +911,31 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Parameter 2</h4>
               <Select value={parameter2} onChange={(event) => setParameter2(event.target.value)}>
-                {parameterNames.map((param) => (
-                  <option key={param} value={param}>
-                    {param}
-                  </option>
-                ))}
+                {parameterNames.map((param) => {
+                  const isSpecies = parameterTypeMap[param] === 'species';
+                  let label = param;
+                  if (isSpecies && model) {
+                    const sp = model.species.find((s) => s.name === param);
+                    const expr = sp?.initialExpression || param;
+                    label = `${expr} (initial amount for ${param})`;
+                  }
+                  return (
+                    <option key={param} value={param}>
+                      {label}
+                    </option>
+                  );
+                })}
               </Select>
+              <div className="text-xs text-slate-500">
+                {parameterTypeMap[parameter2] === 'species'
+                  ? `Numbers correspond to the initial concentration/amount of the selected species. This value is injected directly into the simulator; changing the underlying parameter (${model?.species.find((s) => s.name === parameter2)?.initialExpression || parameter2}) outside of the scan UI will not automatically update the species.`
+                  : 'Numbers correspond to the value of the selected model parameter.'}
+              </div>
+              {parameterTypeMap[parameter2] !== 'species' && paramToSpecies[parameter2] && paramToSpecies[parameter2].length > 0 && (
+                <div className="text-xs text-yellow-600">
+                  Scanning this parameter will also update the initial amount of species: {paramToSpecies[parameter2].join(', ')}.
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Input type="number" value={param2Start} onChange={(event) => setParam2Start(event.target.value)} placeholder={defaultParam2Start || "Start"} />
                 <Input type="number" value={param2End} onChange={(event) => setParam2End(event.target.value)} placeholder={defaultParam2End || "End"} />
@@ -1204,6 +1256,7 @@ export const ParameterScanTab: React.FC<ParameterScanTabProps> = ({ model }) => 
                   type="number"
                   domain={currentOneDDomain ? [currentOneDDomain.x1, currentOneDDomain.x2] : ['dataMin', 'dataMax']}
                   scale={isLogScale ? 'log' : 'linear'}
+                  tickFormatter={(v) => formatNumber(Number(v))}
                 />
                 <YAxis
                   label={{ value: selectedObservable, angle: -90, position: 'insideLeft', fontWeight: 'bold' }}

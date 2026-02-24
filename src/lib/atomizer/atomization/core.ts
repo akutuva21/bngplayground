@@ -38,6 +38,20 @@ import {
 } from '../utils/helpers';
 import { getAnnotationsByQualifier, extractUniProtIds } from '../parser/sbmlParser';
 
+const DEP_CYCLE_LOG_LIMIT = Number(
+  (typeof process !== 'undefined' && process.env?.ATOMIZER_DEP_CYCLE_LOG_LIMIT) || '20'
+);
+let depCycleLogCount = 0;
+
+const logDependencyCycle = (message: string): void => {
+  if (DEP_CYCLE_LOG_LIMIT < 0 || depCycleLogCount < DEP_CYCLE_LOG_LIMIT) {
+    logger.warning('DEP001', message);
+  } else if (depCycleLogCount === DEP_CYCLE_LOG_LIMIT) {
+    logger.warning('DEP001', 'Additional dependency cycle logs suppressed.');
+  }
+  depCycleLogCount += 1;
+};
+
 // =============================================================================
 // Dependency Graph
 // =============================================================================
@@ -76,7 +90,7 @@ export function topologicalSort(
   function visit(id: string, path: string[] = []): void {
     if (visited.has(id)) return;
     if (visiting.has(id)) {
-      logger.warning('DEP001', `Dependency cycle detected: ${path.join(' -> ')} -> ${id}`);
+      logDependencyCycle(`Dependency cycle detected: ${path.join(' -> ')} -> ${id}`);
       return;
     }
 
@@ -675,6 +689,32 @@ function parseAndApplyCompartments(
   return speciesCompartment;
 }
 
+function sanitizeComponentStateToken(token: string): string {
+  if (!token) return token;
+  if (token === '+' || token === '?') return token;
+  if (/^-?\d+(?:\.\d+)?$/.test(token)) return token;
+  return standardizeName(token);
+}
+
+/**
+ * SBML names can contain punctuation that parses as BNGL component syntax
+ * but is not a valid BNGL identifier (e.g., apostrophes/hyphens in metabolite names).
+ * Normalize parsed tokens so generated BNGL remains syntactically valid.
+ */
+function sanitizeSpeciesStructureNames(species: Species): void {
+  for (const mol of species.molecules) {
+    mol.name = standardizeName(mol.name);
+    if (mol.compartment) {
+      mol.compartment = standardizeName(mol.compartment);
+    }
+    for (const comp of mol.components) {
+      comp.name = standardizeName(comp.name);
+      comp.states = comp.states.map((s) => sanitizeComponentStateToken(s));
+      comp.activeState = sanitizeComponentStateToken(comp.activeState);
+    }
+  }
+}
+
 /**
   * Create elemental species structure
    */
@@ -690,6 +730,7 @@ function createElementalSpecies(
   try {
     const parsedSpecies = readFromString(nameWithoutCompartment);
     if (parsedSpecies.molecules.length > 0) {
+      sanitizeSpeciesStructureNames(parsedSpecies);
       // Update molecule IDs to use SBML species ID
       for (const mol of parsedSpecies.molecules) {
         mol.idx = sbmlSpecies.id;

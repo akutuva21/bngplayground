@@ -16,7 +16,7 @@ interface RegulatoryGraphViewerProps {
 }
 
 // Layout type options - matching ContactMapViewer
-type LayoutType = 'hierarchical' | 'cose' | 'fcose' | 'grid' | 'concentric' | 'breadthfirst' | 'circle' | 'random' | 'preset';
+type LayoutType = 'hierarchical' | 'cose' | 'fcose' | 'grid' | 'concentric' | 'breadthfirst' | 'circle' | 'preset';
 
 // Layout configurations - same as ContactMapViewer
 const LAYOUT_CONFIGS: Record<LayoutType, any> = {
@@ -120,13 +120,6 @@ const LAYOUT_CONFIGS: Record<LayoutType, any> = {
     spacingFactor: 1.5,
     nodeDimensionsIncludeLabels: true,
   },
-  random: {
-    name: 'random',
-    animate: true,
-    animationDuration: 300,
-    padding: 50,
-    fit: true,
-  },
   preset: {
     name: 'preset',
     animate: true,
@@ -143,16 +136,44 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
   const [activeLayout, setActiveLayout] = useState<LayoutType>('hierarchical');
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
+  // Keep a ref to the callback so tap handlers always see the latest version
+  // without needing to destroy/recreate the Cytoscape instance on prop changes.
+  const onSelectRuleRef = useRef(onSelectRule);
+  onSelectRuleRef.current = onSelectRule;
 
-  // Create the Cytoscape instance once the container mounts
+  // Single effect: creates Cytoscape with elements already in the constructor,
+  // then immediately runs the default layout. Destroys and re-creates the
+  // instance whenever data or theme changes, eliminating the prior two-effect
+  // race where cy.fit() fired on an empty graph before elements were loaded.
   useEffect(() => {
-    if (!containerRef.current || cyRef.current) {
-      return;
-    }
+    if (!containerRef.current) return;
 
-    cyRef.current = cytoscape({
+    const elements = [
+      ...graph.nodes.map((node) => ({
+        data: {
+          id: node.id,
+          label: node.label,
+          type: node.type,
+          tooltip: node.label,
+        },
+      })),
+      ...graph.edges.map((edge, index) => ({
+        data: {
+          id: `edge-${index}`,
+          source: edge.from,
+          target: edge.to,
+          type: edge.type,
+          reversible: edge.reversible || false,
+        },
+      })),
+    ];
+
+    // Destroy any previous instance before creating a new one.
+    cyRef.current?.destroy();
+
+    const cy = cytoscape({
       container: containerRef.current,
-      elements: [],
+      elements,
       style: [
         {
           selector: 'node',
@@ -204,6 +225,8 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
           style: {
             width: 1.5,
             'curve-style': 'bezier',
+            'line-color': theme === 'dark' ? '#9ca3af' : '#888888',
+            'target-arrow-color': theme === 'dark' ? '#9ca3af' : '#888888',
             'target-arrow-shape': 'triangle',
             'arrow-scale': 1.2,
           },
@@ -255,79 +278,66 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
           },
         },
       ],
-      layout: { ...LAYOUT_CONFIGS.hierarchical },
+      layout: { name: 'preset' },
     });
 
-    return () => {
-      cyRef.current?.destroy();
-      cyRef.current = null;
-    };
-  }, [theme]);
+    cyRef.current = cy;
 
-  // Refresh tap handlers
-  useEffect(() => {
-    const cy = cyRef.current;
-    if (!cy) return;
-
-    cy.off('tap');
+    // Tap handlers read from ref so onSelectRule is always current without
+    // needing to destroy/recreate cy when the callback identity changes.
     cy.on('tap', 'node[type = "rule"]', (event) => {
       const node = event.target;
-      onSelectRule?.(node.id());
+      onSelectRuleRef.current?.(node.id());
     });
 
     cy.on('tap', 'edge', (event) => {
       const edge = event.target;
       const source = edge.source();
       const target = edge.target();
-
-      // If connected to a rule node, select that rule
       if (source.data('type') === 'rule') {
-        onSelectRule?.(source.id());
+        onSelectRuleRef.current?.(source.id());
       } else if (target.data('type') === 'rule') {
-        onSelectRule?.(target.id());
+        onSelectRuleRef.current?.(target.id());
       }
     });
 
-  }, [onSelectRule]);
-
-  // Update elements and layout whenever the graph changes
-  useEffect(() => {
-    const cy = cyRef.current;
-    if (!cy) {
-      return;
-    }
-
-    const elements = [
-      ...graph.nodes.map((node) => ({
-        data: {
-          id: node.id,
-          label: node.label,
-          type: node.type,
-          tooltip: node.label, // Store full label for tooltip if needed
-        },
-      })),
-      ...graph.edges.map((edge, index) => ({
-        data: {
-          id: `edge-${index}`,
-          source: edge.from,
-          target: edge.to,
-          type: edge.type,
-          reversible: edge.reversible || false,
-        },
-      })),
-    ];
-
-    cy.batch(() => {
-      cy.elements().remove();
-      cy.add(elements);
+    // Run default layout; fit once it stops so all nodes are visible.
+    setIsLayoutRunning(true);
+    const layout = cy.layout({ ...LAYOUT_CONFIGS[activeLayout] });
+    layout.on('layoutstop', () => {
+      cyRef.current?.fit(undefined, 30);
+      setIsLayoutRunning(false);
     });
+    layout.run();
 
-    // Run layout with a slight delay to ensure container size is correct
-    setTimeout(() => {
-      runLayout();
-    }, 50);
+    // ResizeObserver: re-fit when the container gains its real dimensions
+    // (e.g. first paint in a flex chain, or after a tab switch).
+    let lastW = 0;
+    let lastH = 0;
+    const ro = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (!rect) return;
+      const w = Math.round(rect.width);
+      const h = Math.round(rect.height);
+      if (w === lastW && h === lastH) return;
+      lastW = w;
+      lastH = h;
+      const c = cyRef.current;
+      if (!c || w === 0 || h === 0) return;
+      c.resize();
+      if (c.elements().length > 0) {
+        c.fit(undefined, 30);
+      }
+    });
+    ro.observe(containerRef.current);
 
-  }, [graph]);
+    return () => {
+      ro.disconnect();
+      cy.off('tap');
+      cyRef.current?.destroy();
+      cyRef.current = null;
+    };
+  }, [graph, theme]);
 
   const runLayout = (layoutType?: LayoutType) => {
     const cy = cyRef.current;
@@ -350,11 +360,6 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
       setIsLayoutRunning(false);
     }
   };
-
-  // Re-run layout when activeLayout changes
-  useEffect(() => {
-    runLayout();
-  }, [activeLayout]);
 
   const handleFit = () => {
     const cy = cyRef.current;
@@ -512,9 +517,6 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
           <Button variant={activeLayout === 'circle' ? 'primary' : 'subtle'} onClick={() => runLayout('circle')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Circle Layout">
             {isLayoutRunning && activeLayout === 'circle' ? <LoadingSpinner className="w-3 h-3" /> : '○ Circle'}
           </Button>
-          <Button variant={activeLayout === 'random' ? 'primary' : 'subtle'} onClick={() => runLayout('random')} disabled={isLayoutRunning} className="text-xs h-6 px-1.5" title="Random Layout">
-            {isLayoutRunning && activeLayout === 'random' ? <LoadingSpinner className="w-3 h-3" /> : '🎲 Rand'}
-          </Button>
         </div>
         {/* Row 2: Actions */}
         <div className="flex items-center gap-1">
@@ -558,9 +560,10 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
       </div>
 
       {/* Graph Container */}
-      <div className="relative flex-1 min-h-[500px] w-full rounded-lg border border-stone-200 bg-white dark:border-slate-700 dark:bg-slate-900 overflow-hidden">
-        <div ref={containerRef} className="absolute inset-0 z-0" />
-      </div>
+      <div
+        ref={containerRef}
+        className="h-[600px] w-full rounded-lg border border-stone-200 bg-white dark:border-slate-700 dark:bg-slate-900"
+      />
 
       {/* Legend Box */}
       <div className="flex items-center gap-4 bg-white dark:bg-slate-900 p-2 rounded-md border border-slate-200 dark:border-slate-700">

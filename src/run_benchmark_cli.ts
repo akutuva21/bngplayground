@@ -6,7 +6,6 @@ import { parseBNGLWithANTLR } from './parser/BNGLParserWrapper';
 import { NetworkGenerator } from './services/graph/NetworkGenerator';
 import { BNGLParser } from './services/graph/core/BNGLParser';
 import { GraphCanonicalizer } from './services/graph/core/Canonical';
-import { createSolver } from '../services/ODESolver';
 import type { BNGLModel } from '../types';
 import modelsList from './gdat_models.json';
 
@@ -90,7 +89,7 @@ function calculateMetrics(simData: any, refData: any, headers: string[]) {
 }
 
 // Simulation Helper
-async function simulateModel(inputModel: BNGLModel, t_end: number, n_steps: number): Promise<{ results: any, time: number }> {
+export async function simulateModel(inputModel: BNGLModel, t_end: number, n_steps: number): Promise<{ results: any, time: number }> {
     const start = Date.now();
 
     // 1. Prepare for Network Generation
@@ -321,7 +320,8 @@ async function simulateModel(inputModel: BNGLModel, t_end: number, n_steps: numb
     console.log(`[ODESolver] Creating solver: ${solverOptions.solver} for ${numSpecies} species`);
     let solver;
     try {
-        solver = await createSolver(numSpecies, derivatives, solverOptions);
+        const { createSolver: dynCreate } = await import('@bngplayground/engine');
+        solver = await dynCreate(numSpecies, derivatives, solverOptions);
     } catch (e) {
         console.error(`[ODESolver] Failed to create solver: ${e}`);
         throw e;

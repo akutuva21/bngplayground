@@ -8,6 +8,7 @@ import { SemanticSearchInput, SearchResult } from './SemanticSearchInput';
 import { BioModelsSearch } from './BioModelsSearch';
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from './ui/Tabs';
 import { loadModelCode } from '../services/modelLoader';
+import { fetchBioModelsSbml } from '../services/bioModelsImport';
 
 // Helper to convert model names to Title Case
 // Handles special acronyms like MAPK, EGFR, etc.
@@ -286,29 +287,10 @@ export const ExampleGalleryModal: React.FC<ExampleGalleryModalProps> = ({ isOpen
                 <div className="p-4 bg-slate-50 dark:bg-slate-900/40 rounded-md border border-slate-100 dark:border-slate-700">
                   <BioModelsSearch onImportById={async (id) => {
                     try {
-                      const url = `https://www.ebi.ac.uk/biomodels/model/${encodeURIComponent(id)}/download?format=xml`;
-                      const res = await fetch(url);
-                      if (!res.ok) throw new Error('Failed to fetch model');
-                      const blob = await res.blob();
-                      const ct = (res.headers.get('content-type') || '').toLowerCase();
-
-                      // If archive, try to extract SBML file
-                      if (ct.includes('zip') || ct.includes('omex')) {
-                        const JSZipModule = await import('jszip');
-                        const JSZip = JSZipModule.default || JSZipModule;
-                        const zip = await JSZip.loadAsync(blob);
-                        const candidates = Object.keys(zip.files).filter(name => name.toLowerCase().endsWith('.xml') || name.toLowerCase().endsWith('.sbml'));
-                        if (candidates.length === 0) throw new Error('No SBML/XML in archive');
-                        const sbmlText = await zip.file(candidates[0])!.async('string');
-                        const file = new File([sbmlText], `${id}.xml`, { type: 'application/xml' });
-                        if (onImportSBML) onImportSBML(file);
-                        else onSelect(sbmlText, id, id);
-                      } else {
-                        const xmlText = await blob.text();
-                        const file = new File([xmlText], `${id}.xml`, { type: 'application/xml' });
-                        if (onImportSBML) onImportSBML(file);
-                        else onSelect(xmlText, id, id);
-                      }
+                      const { normalizedId, sbmlText } = await fetchBioModelsSbml(id);
+                      const file = new File([sbmlText], `${normalizedId}.xml`, { type: 'application/xml' });
+                      if (onImportSBML) onImportSBML(file);
+                      else onSelect(sbmlText, normalizedId, normalizedId);
                     } catch (e) {
                       console.warn('BioModels quick import failed', e);
                     }

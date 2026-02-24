@@ -263,6 +263,11 @@ declare namespace LibSBML {
 let libsbml: any = null;
 let initPromise: Promise<void> | null = null;
 
+const isAbortLikeError = (err: unknown): boolean => {
+  const msg = err instanceof Error ? err.message : String(err ?? '');
+  return /abort\(|libsbmljs aborted|runtimeerror|unreachable/i.test(msg);
+};
+
 // =============================================================================
 // SBML Parser Class
 // =============================================================================
@@ -690,6 +695,7 @@ export class SBML2JSON {
 export class SBMLParser {
   private initialized: boolean = false;
   private currentSbml: string = '';
+  private nativeFormulaToStringDisabled: boolean = false;
 
   /**
    * Initialize the parser by loading libsbmljs
@@ -1029,43 +1035,95 @@ export class SBMLParser {
     // Extract rules/functions/events
     console.log('[SBMLParser] Extracting rules/functions/events...');
     t = performance.now();
+    let advancedExtractionAborted = false;
+
     for (let i = 0; i < model.getNumFunctionDefinitions(); i++) {
-      const func = this.extractFunctionDefinition(model.getFunctionDefinition(i));
-      result.functionDefinitions.set(func.id, func);
-    }
-
-    // Extract rules
-    for (let i = 0; i < model.getNumRules(); i++) {
-      const rule = this.extractRule(model.getRule(i));
-      if (rule) {
-        result.rules.push(rule);
-      }
-    }
-
-    for (let i = 0; i < model.getNumEvents(); i++) {
-      const event = this.extractEvent(model.getEvent(i));
-      if (event) result.events.push(event);
-    }
-    for (let i = 0; i < model.getNumInitialAssignments(); i++) {
-      const ia = this.extractInitialAssignment(model.getInitialAssignment(i));
-      if (ia) result.initialAssignments.push(ia);
-    }
-
-    // Extract Unit Definitions
-    for (let i = 0; i < model.getNumUnitDefinitions(); i++) {
-      const ud = model.getUnitDefinition(i);
-      const units: Array<[number, number, number, number]> = [];
-      for (let j = 0; j < ud.getNumUnits(); j++) {
-        const u = ud.getUnit(j);
-        if (u) {
-          const kind = typeof u.getKind === 'function' ? u.getKind() : 0;
-          const scale = typeof u.getScale === 'function' ? u.getScale() : 0;
-          const exponent = typeof u.getExponent === 'function' ? u.getExponent() : 1;
-          const multiplier = typeof u.getMultiplier === 'function' ? u.getMultiplier() : 1;
-          units.push([kind, scale, exponent, multiplier]);
+      try {
+        const func = this.extractFunctionDefinition(model.getFunctionDefinition(i));
+        result.functionDefinitions.set(func.id, func);
+      } catch (e) {
+        logger.warning('SBM005', `Skipping function definition #${i}: ${String(e)}`);
+        if (isAbortLikeError(e)) {
+          advancedExtractionAborted = true;
+          break;
         }
       }
-      result.unitDefinitions.set(ud.getId(), units);
+    }
+
+    if (!advancedExtractionAborted) {
+      for (let i = 0; i < model.getNumRules(); i++) {
+        try {
+          const rule = this.extractRule(model.getRule(i));
+          if (rule) result.rules.push(rule);
+        } catch (e) {
+          logger.warning('SBM005', `Skipping rule #${i}: ${String(e)}`);
+          if (isAbortLikeError(e)) {
+            advancedExtractionAborted = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!advancedExtractionAborted) {
+      for (let i = 0; i < model.getNumEvents(); i++) {
+        try {
+          const event = this.extractEvent(model.getEvent(i));
+          if (event) result.events.push(event);
+        } catch (e) {
+          logger.warning('SBM005', `Skipping event #${i}: ${String(e)}`);
+          if (isAbortLikeError(e)) {
+            advancedExtractionAborted = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!advancedExtractionAborted) {
+      for (let i = 0; i < model.getNumInitialAssignments(); i++) {
+        try {
+          const ia = this.extractInitialAssignment(model.getInitialAssignment(i));
+          if (ia) result.initialAssignments.push(ia);
+        } catch (e) {
+          logger.warning('SBM005', `Skipping initial assignment #${i}: ${String(e)}`);
+          if (isAbortLikeError(e)) {
+            advancedExtractionAborted = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (advancedExtractionAborted) {
+      logger.warning(
+        'SBM006',
+        'libSBML aborted while parsing events/rules; continuing with species/reactions only.'
+      );
+    } else {
+      // Extract Unit Definitions only when the module remains healthy.
+      for (let i = 0; i < model.getNumUnitDefinitions(); i++) {
+        try {
+          const ud = model.getUnitDefinition(i);
+          const units: Array<[number, number, number, number]> = [];
+          for (let j = 0; j < ud.getNumUnits(); j++) {
+            const u = ud.getUnit(j);
+            if (u) {
+              const kind = typeof u.getKind === 'function' ? u.getKind() : 0;
+              const scale = typeof u.getScale === 'function' ? u.getScale() : 0;
+              const exponent = typeof u.getExponent === 'function' ? u.getExponent() : 1;
+              const multiplier = typeof u.getMultiplier === 'function' ? u.getMultiplier() : 1;
+              units.push([kind, scale, exponent, multiplier]);
+            }
+          }
+          result.unitDefinitions.set(ud.getId(), units);
+        } catch (e) {
+          logger.warning('SBM005', `Skipping unit definition #${i}: ${String(e)}`);
+          if (isAbortLikeError(e)) {
+            break;
+          }
+        }
+      }
     }
     const otherTime = performance.now() - t;
 
@@ -1182,12 +1240,19 @@ export class SBMLParser {
     if (!math) return '';
 
     // 1. Try built-in libsbml.formulaToString
-    try {
-      if (typeof libsbml.formulaToString === 'function') {
-        const s = libsbml.formulaToString(math);
-        if (s) return s;
+    if (!this.nativeFormulaToStringDisabled) {
+      try {
+        if (typeof libsbml.formulaToString === 'function') {
+          const s = libsbml.formulaToString(math);
+          if (s) return s;
+        }
+      } catch (e) {
+        if (isAbortLikeError(e)) {
+          this.nativeFormulaToStringDisabled = true;
+          logger.warning('SBM007', 'Disabled libsbml.formulaToString after abort-like failure; using AST fallback.');
+        }
       }
-    } catch (e) { /* ignore */ }
+    }
 
     // 2. Try object's toString (unless it's [object Object])
     if (typeof math.toString === 'function') {
@@ -1343,7 +1408,7 @@ export class SBMLParser {
 
   private extractRule(rule: any): SBMLRule | null {
     const math = rule.getMath();
-    const formula = rule.getFormula() || (math ? this.safeFormulaToString(math) : '');
+    const formula = math ? this.safeFormulaToString(math) : '';
 
     if (rule.isAlgebraic()) {
       return {

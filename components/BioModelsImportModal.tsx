@@ -2,17 +2,16 @@ import React, { useState } from 'react';
 import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
+import { fetchBioModelsSbml } from '../services/bioModelsImport';
 
 // Note: BioModels provides a REST API (https://www.ebi.ac.uk/biomodels/docs/)
-// We use the `GET /model/{modelId}/download` endpoint with `format=xml` when
-// possible. Responses may be a single SBML XML file or a COMBINE/OMEX archive
-// (zip-like). If an archive is returned, we extract it client-side and locate
-// the first SBML/XML file to import.
+// We use the public download endpoint under `/model/download/{modelId}` and
+// prefer the direct `?filename={id}_url.xml` SBML payload. If an archive is
+// returned, we extract the SBML entry client-side before import.
 //
 // The import flow below will:
-// 1. Fetch the model from BioModels as XML (prefer `format=xml`).
-// 2. If Content-Type indicates an archive (zip/omex) or filename suggests an
-//    archive, dynamically load `jszip` and extract the first `.xml`/`.sbml` file.
+// 1. Fetch the model from BioModels using `/model/download/{id}`.
+// 2. Validate payload and, for OMEX archives, extract the primary SBML file.
 // 3. Create a `File` object named with the BioModels identifier (e.g.,
 //    `BIOMD0000000123.xml`) and call `onImportSBML(file)`. The App will set
 //    the loaded model title from the file name (see `App.tsx` comment).
@@ -34,41 +33,8 @@ export const BioModelsImportModal: React.FC<BioModelsImportModalProps> = ({ isOp
     setError(null);
     setLoading(true);
     try {
-      // Try requesting SBML/XML explicitly (server supports `format` parameter)
-      const url = `https://www.ebi.ac.uk/biomodels/model/${encodeURIComponent(trimmed)}/download?format=xml`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-
-      const contentType = (res.headers.get('content-type') || '').toLowerCase();
-      const contentDisposition = (res.headers.get('content-disposition') || '').toLowerCase();
-
-      const blob = await res.blob();
-
-      // If we received a zip/omex archive, attempt to unzip and extract an SBML file
-      if (contentType.includes('zip') || contentType.includes('omex') || contentDisposition.includes('.zip') || contentDisposition.includes('.omex')) {
-        try {
-          // Dynamic import so tests/dev env that don't have JSZip aren't blocked
-          const JSZipModule = await import('jszip');
-          const JSZip = JSZipModule.default || JSZipModule;
-          const zip = await JSZip.loadAsync(blob);
-          const candidates = Object.keys(zip.files).filter(name => name.toLowerCase().endsWith('.xml') || name.toLowerCase().endsWith('.sbml'));
-          if (candidates.length === 0) throw new Error('No SBML/XML files found inside the archive');
-          // Pick the first SBML/XML file
-          const sbmlName = candidates[0];
-          const sbmlText = await zip.file(sbmlName)!.async('string');
-          const file = new File([sbmlText], `${trimmed}.xml`, { type: 'application/xml' });
-          onImportSBML(file);
-          onClose();
-          return;
-        } catch (zipErr) {
-          console.warn('Failed to extract archive using JSZip:', zipErr);
-          // Fall through to try to interpret blob as XML text
-        }
-      }
-
-      // Otherwise treat as XML/SBML text
-      const xml = await blob.text();
-      const file = new File([xml], `${trimmed}.xml`, { type: 'application/xml' });
+      const { normalizedId, sbmlText } = await fetchBioModelsSbml(trimmed);
+      const file = new File([sbmlText], `${normalizedId}.xml`, { type: 'application/xml' });
       onImportSBML(file);
       onClose();
     } catch (e: any) {

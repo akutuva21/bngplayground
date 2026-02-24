@@ -12,9 +12,24 @@ export const roundForInput = (value: number): string => {
 
 export const DEFAULT_ZERO_DELTA = 0.1;
 
+// Formatting helper shared with UI components. Uses scientific notation for
+// magnitudes <1 or >1000, otherwise prints three decimal places.
+export const formatNumber = (value: number): string => {
+    if (!Number.isFinite(value)) return '0';
+    if (Math.abs(value) > 1000 || (Math.abs(value) < 1 && value !== 0)) {
+        return value.toExponential(2);
+    }
+    return value.toFixed(3);
+};
+
+// Returns a reasonable default scan range centered around `value`.
+// Historically we simply used a ±10% window with a fixed delta for zero.
+// Although it might be tempting to special‑case species, the UI already
+// provides explicit start/end editable by the user, so keeping the logic
+// uniform avoids unexpected surprises if we tweak it later.
 export const computeDefaultBounds = (value: number): [number, number] => {
     if (!Number.isFinite(value) || value < 0) return [0, 0];
-    // For value = 0, use a fixed delta; otherwise compute exactly ±10%
+
     if (value === 0) {
         return [0, DEFAULT_ZERO_DELTA];
     }

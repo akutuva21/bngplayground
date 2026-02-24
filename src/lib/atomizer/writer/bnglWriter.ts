@@ -25,6 +25,44 @@ import {
 } from '../utils/helpers';
 import { SCTEntry, SpeciesCompositionTable } from '../config/types';
 
+const ASSIGN_RULE_META_PREFIX = '__assign_rule__';
+const RATE_RULE_META_PREFIX = '__rate_rule__';
+const RATE_RULE_POS_PREFIX = '__rate_rule_pos__';
+const RATE_RULE_NEG_PREFIX = '__rate_rule_neg__';
+const SYNTH_RATE_RULE_SPECIES_PREFIX = '__rate_rule_state__';
+const ENABLE_SYNTHETIC_RATE_RULE_REACTIONS =
+  ((typeof process !== 'undefined' && process.env?.BNGL_RATE_RULE_SYNTH_REACTIONS) || '1') !== '0';
+const TRANSPORT_LOG_LIMIT = Number(
+  (typeof process !== 'undefined' && process.env?.BNGL_TRANSPORT_LOG_LIMIT) || '40'
+);
+const MISSING_KINETIC_RATE_FALLBACK =
+  ((typeof process !== 'undefined' && process.env?.BNGL_MISSING_KINETIC_RATE) || '1').trim() || '1';
+const MISSING_KINETIC_LOG_LIMIT = Number(
+  (typeof process !== 'undefined' && process.env?.BNGL_MISSING_KINETIC_LOG_LIMIT) || '25'
+);
+let transportLogCount = 0;
+let missingKineticLogCount = 0;
+
+const logTransportInfo = (message: string): void => {
+  if (TRANSPORT_LOG_LIMIT < 0 || transportLogCount < TRANSPORT_LOG_LIMIT) {
+    logger.info('BNW004', message);
+  } else if (transportLogCount === TRANSPORT_LOG_LIMIT) {
+    logger.info('BNW004', 'Additional transport reaction logs suppressed.');
+  }
+  transportLogCount += 1;
+};
+
+const logMissingKinetic = (message: string): void => {
+  if (MISSING_KINETIC_LOG_LIMIT < 0 || missingKineticLogCount < MISSING_KINETIC_LOG_LIMIT) {
+    logger.warning('BNW011', message);
+  } else if (missingKineticLogCount === MISSING_KINETIC_LOG_LIMIT) {
+    logger.warning('BNW011', 'Additional missing-kinetic-law logs suppressed.');
+  }
+  missingKineticLogCount += 1;
+};
+
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 
 /**
  * Detect and extract statistical factors from SBML kinetic law.
@@ -835,23 +873,36 @@ export function writeFunctions(
   skipRules: Set<string>,
   speciesAmts: Set<string>,
   assignmentRuleCompartments: Map<string, string>,
-  sbmlToBnglId: Map<string, string> = new Map()
+  sbmlToBnglId: Map<string, string> = new Map(),
+  rateRules: Array<{ variable: string; math: string }> = [],
+  rateRuleFluxTargets: Set<string> = new Set(),
+  forceRuleOnlyFastPath: boolean = false
 ): string {
   const lines: string[] = [];
+  const debugTimings =
+    typeof process !== 'undefined' &&
+    !!process.env &&
+    process.env.BNGL_WRITER_DEBUG_TIMINGS === '1';
+  const t0 = Date.now();
+  if (debugTimings) {
+    console.error(
+      `[bnglWriter][writeFunctions] start funcs=${functions.size} assignmentRules=${assignmentRules.length} rateRules=${rateRules.length} fluxTargets=${rateRuleFluxTargets.size} speciesAmts=${speciesAmts.size} speciesMap=${speciesToCompartment.size}`
+    );
+  }
+
+  // Avoid O(n^2) lookups for large species sets (genome-scale reconstructions).
+  const standardizedSpeciesInfo = new Map<string, { compId: string; isAmountOnly: boolean }>();
+  for (const [sbmlId, comp] of speciesToCompartment) {
+    standardizedSpeciesInfo.set(standardizeName(sbmlId), {
+      compId: comp,
+      isAmountOnly: speciesToHasOnlySubstanceUnits.get(sbmlId) || false,
+    });
+  }
 
   // Species scaling functions
   for (const name of speciesAmts) {
-    let compId: string | undefined;
-    let isAmountOnly = false;
-
-    // First try to find in speciesToCompartment (for species IDs)
-    for (const [sbmlId, comp] of speciesToCompartment) {
-      if (standardizeName(sbmlId) === name) {
-        compId = comp;
-        isAmountOnly = speciesToHasOnlySubstanceUnits.get(sbmlId) || false;
-        break;
-      }
-    }
+    let compId: string | undefined = standardizedSpeciesInfo.get(name)?.compId;
+    let isAmountOnly = standardizedSpeciesInfo.get(name)?.isAmountOnly || false;
 
     // If not found, check assignmentRuleCompartments (for A, B, C, etc.)
     if (!compId && assignmentRuleCompartments.has(name)) {
@@ -880,6 +931,74 @@ export function writeFunctions(
     body = convertPiecewise(body);
 
     lines.push(`${name}(${args}) = ${body}`);
+  }
+  if (debugTimings) {
+    console.error(`[bnglWriter][writeFunctions] after function definitions ${Date.now() - t0}ms`);
+  }
+
+  // Fast path for rule-only SBML (no species/reactions): avoid heavy bnglFunction transforms
+  // that can become prohibitively slow (or hang) on ODE rule systems.
+  const noSpeciesContext =
+    forceRuleOnlyFastPath || (speciesToCompartment.size === 0 && speciesToHasOnlySubstanceUnits.size === 0);
+  if (noSpeciesContext) {
+    if (debugTimings) {
+      console.error(`[bnglWriter][writeFunctions] fast-path enabled ${Date.now() - t0}ms`);
+    }
+    const dynamicTargets = Array.from(rateRuleFluxTargets.values()).sort((a, b) => b.length - a.length);
+    const rewriteRateRuleTargets = (expr: string): string => {
+      let rewritten = expr;
+      for (const target of dynamicTargets) {
+        const re = new RegExp(`\\b${escapeRegExp(target)}\\b`, 'g');
+        rewritten = rewritten.replace(re, `${target}_amt`);
+      }
+      return rewritten;
+    };
+    const normalizeRuleMath = (expr: string): string => {
+      // Keep this branch intentionally light-weight for large rule-only ODE models.
+      // Heavy symbolic rewrites can stall for minutes on long expressions.
+      let body = (expr || '0').replace(/\s+/g, ' ').trim();
+      if (!body) body = '0';
+      if (dynamicTargets.length > 0) {
+        body = rewriteRateRuleTargets(body);
+      }
+      return body;
+    };
+
+    for (const rule of assignmentRules) {
+      if (!rule.variable || skipRules.has(rule.variable)) continue;
+      const name = standardizeName(rule.variable);
+      const body = normalizeRuleMath(rule.math);
+      lines.push(`${name}() = ${body}`);
+      lines.push(`${ASSIGN_RULE_META_PREFIX}${name}() = ${body}`);
+    }
+
+    if (rateRules.length > 0 && lines.length > 0) {
+      lines.push('');
+    }
+
+    for (const rule of rateRules) {
+      if (!rule.variable) continue;
+      const name = standardizeName(rule.variable);
+      const body = normalizeRuleMath(rule.math);
+      lines.push(`${RATE_RULE_META_PREFIX}${name}() = ${body}`);
+      if (rateRuleFluxTargets.has(name)) {
+        lines.push(
+          `${RATE_RULE_POS_PREFIX}${name}() = if(${RATE_RULE_META_PREFIX}${name}() > 0, ${RATE_RULE_META_PREFIX}${name}(), 0)`
+        );
+        lines.push(
+          `${RATE_RULE_NEG_PREFIX}${name}() = if(${RATE_RULE_META_PREFIX}${name}() < 0, -(${RATE_RULE_META_PREFIX}${name}()), 0)`
+        );
+      }
+    }
+
+    if (debugTimings) {
+      console.error(`[bnglWriter][writeFunctions] fast-path complete ${Date.now() - t0}ms`);
+    }
+    return sectionTemplate('functions', lines);
+  }
+
+  if (debugTimings) {
+    console.error(`[bnglWriter][writeFunctions] entering full-path ${Date.now() - t0}ms`);
   }
 
 
@@ -917,6 +1036,9 @@ export function writeFunctions(
   for (const rule of assignmentRules) {
     visit(rule.variable);
   }
+  if (debugTimings) {
+    console.error(`[bnglWriter][writeFunctions] dependency sort done ${Date.now() - t0}ms`);
+  }
 
   const assignmentRuleIds = new Set(assignmentRules.map(r => standardizeName(r.variable)));
 
@@ -946,6 +1068,50 @@ export function writeFunctions(
     );
 
     lines.push(`${name}() = ${body}`);
+    // Emit explicit metadata functions so downstream SBML export can reconstruct listOfRules.
+    lines.push(`${ASSIGN_RULE_META_PREFIX}${name}() = ${body}`);
+  }
+
+  if (rateRules.length > 0 && lines.length > 0) {
+    lines.push('');
+  }
+
+  const rateRuleIds = new Set(rateRules.map(r => standardizeName(r.variable)));
+  const knownRuleIds = new Set<string>([...assignmentRuleIds, ...rateRuleIds]);
+  for (const rule of rateRules) {
+    if (!rule.variable) continue;
+    const name = standardizeName(rule.variable);
+
+    let inlinedMath = inlineSBMLFunctions(rule.math, functions);
+    let body = bnglFunction(
+      inlinedMath,
+      rule.variable,
+      [],
+      [],
+      new Map(Array.from(parameterDict.entries()).map(([k, v]) => [k, Number(v)])),
+      new Map(),
+      knownRuleIds,
+      new Set(speciesToCompartment.keys()),
+      speciesToHasOnlySubstanceUnits,
+      skipRules,
+      speciesAmts,
+      sbmlToBnglId
+    );
+
+    // Keep rate-rule metadata isolated to avoid affecting BNGL simulation semantics.
+    lines.push(`${RATE_RULE_META_PREFIX}${name}() = ${body}`);
+    if (rateRuleFluxTargets.has(name)) {
+      lines.push(
+        `${RATE_RULE_POS_PREFIX}${name}() = if(${RATE_RULE_META_PREFIX}${name}() > 0, ${RATE_RULE_META_PREFIX}${name}(), 0)`
+      );
+      lines.push(
+        `${RATE_RULE_NEG_PREFIX}${name}() = if(${RATE_RULE_META_PREFIX}${name}() < 0, -(${RATE_RULE_META_PREFIX}${name}()), 0)`
+      );
+    }
+  }
+
+  if (debugTimings) {
+    console.error(`[bnglWriter][writeFunctions] full-path complete ${Date.now() - t0}ms`);
   }
 
   return sectionTemplate('functions', lines);
@@ -1050,9 +1216,7 @@ export function writeReactionRulesFlat(
 
       if (useCompartments && compId && reactantComp && reactantComp !== compId) {
         if (!areCompartmentsAdjacent(reactantComp, compId, compartments)) {
-          logger.info('BNW004',
-            `Transport reaction ${rxnId}: ${ref.species} moves from ${reactantComp} to ${compId}`
-          );
+          logTransportInfo(`Transport reaction ${rxnId}: ${ref.species} moves from ${reactantComp} to ${compId}`);
         }
       }
 
@@ -1296,7 +1460,8 @@ export function writeReactionRulesAtomized(
   speciesToHasOnlySubstanceUnits: Map<string, boolean>,
   options: AtomizerOptions,
   sbmlToBnglId: Map<string, string> = new Map(),
-  idToPattern: Map<string, string> = new Map()
+  idToPattern: Map<string, string> = new Map(),
+  syntheticRateRuleLines: string[] = []
 ): string {
   const lines: string[] = [];
   const useCompartments = compartments.size > 0;
@@ -1379,6 +1544,11 @@ export function writeReactionRulesAtomized(
     lines.push(`${standardizeName(rxn.name || rxnId)}: ${reactants} ${arrow} ${products} ${finalRate}`);
   }
 
+  if (syntheticRateRuleLines.length > 0) {
+    if (lines.length > 0) lines.push('');
+    lines.push(...syntheticRateRuleLines);
+  }
+
   return sectionTemplate('reaction rules', lines);
 }
 
@@ -1402,7 +1572,16 @@ export function generateBNGL(
   seedSpecies: SeedSpeciesEntry[],
   options: AtomizerOptions
 ): BNGLGenerationResult {
-  console.error("DEBUG_MARKER: EXECUTING CONSOLIDATED BNGLWRITER VERSION 4.0");
+  const debugTimings =
+    typeof process !== 'undefined' &&
+    !!process.env &&
+    process.env.BNGL_WRITER_DEBUG_TIMINGS === '1';
+  const mark = (label: string, t0: number): void => {
+    if (debugTimings) {
+      const dt = Date.now() - t0;
+      console.error(`[bnglWriter][timing] ${label} ${dt}ms`);
+    }
+  };
   const warnings: string[] = [];
   const observableMap = new Map<string, string>();
 
@@ -1410,6 +1589,7 @@ export function generateBNGL(
 
   // Collect assignment rules for processing
   const assignmentRules: Array<{ variable: string; math: string }> = [];
+  const rateRules: Array<{ variable: string; math: string }> = [];
   const assignmentRuleVariables = new Set<string>();
 
   if (model.rules) {
@@ -1417,6 +1597,8 @@ export function generateBNGL(
       if (rule.type === 'assignment' && rule.variable) {
         assignmentRules.push({ variable: rule.variable, math: rule.math });
         assignmentRuleVariables.add(standardizeName(rule.variable));
+      } else if (rule.type === 'rate' && rule.variable) {
+        rateRules.push({ variable: rule.variable, math: rule.math });
       }
     }
   }
@@ -1440,6 +1622,85 @@ export function generateBNGL(
     const isActuallyAmount = sp.hasOnlySubstanceUnits;
     speciesToHasOnlySubstanceUnits.set(id, isActuallyAmount);
   }
+  const forceRuleOnlyFastPath = model.species.size === 0;
+
+  const augmentedSctEntries = new Map<string, SCTEntry>(sct.entries);
+  const augmentedSct: SpeciesCompositionTable = {
+    ...sct,
+    entries: augmentedSctEntries,
+  };
+  const augmentedMoleculeTypes: Molecule[] = [...moleculeTypes];
+  const augmentedSeedSpecies: SeedSpeciesEntry[] = [...seedSpecies];
+  const syntheticRateRuleVariables = new Set<string>();
+
+  if (ENABLE_SYNTHETIC_RATE_RULE_REACTIONS && rateRules.length > 0) {
+    const defaultCompartment =
+      Array.from(model.compartments.keys())[0] || 'Compartment';
+    const existingSeedIds = new Set<string>(augmentedSeedSpecies.map((entry) => entry.sbmlId));
+    const existingMolNames = new Set<string>(
+      augmentedMoleculeTypes.map((mol) => standardizeName(mol.name))
+    );
+
+    for (const rule of rateRules) {
+      if (!rule.variable) continue;
+      const variable = rule.variable;
+      const target = standardizeName(variable);
+      const hasBackedSpecies =
+        model.species.has(variable) ||
+        model.species.has(target) ||
+        existingSeedIds.has(variable) ||
+        existingSeedIds.has(target);
+      if (hasBackedSpecies) continue;
+
+      syntheticRateRuleVariables.add(variable);
+      speciesToCompartment.set(variable, defaultCompartment);
+      speciesToHasOnlySubstanceUnits.set(variable, true);
+
+      const moleculeName = `${SYNTH_RATE_RULE_SPECIES_PREFIX}${target}`;
+      if (!existingMolNames.has(standardizeName(moleculeName))) {
+        augmentedMoleculeTypes.push(new Molecule(moleculeName));
+        existingMolNames.add(standardizeName(moleculeName));
+      }
+
+      const structure = new Species();
+      structure.addMolecule(new Molecule(moleculeName));
+      structure.renumberBonds();
+      const initialValue =
+        model.parameters.get(variable)?.value ??
+        model.parameters.get(target)?.value ??
+        0;
+      const initial = Number.isFinite(Number(initialValue))
+        ? Number(initialValue)
+        : 0;
+
+      augmentedSeedSpecies.push({
+        species: structure.copy(),
+        concentration: String(initial),
+        compartment: defaultCompartment,
+        sbmlId: variable,
+      });
+      existingSeedIds.add(variable);
+
+      if (!augmentedSctEntries.has(variable)) {
+        augmentedSctEntries.set(variable, {
+          structure,
+          components: [],
+          sbmlId: variable,
+          isElemental: true,
+          modifications: new Map(),
+          weight: 0,
+          bonds: [],
+        });
+      }
+    }
+
+    if (syntheticRateRuleVariables.size > 0) {
+      logger.info(
+        'BNW012',
+        `Synthesized ${syntheticRateRuleVariables.size} rate-rule state species`
+      );
+    }
+  }
 
   // Add assignment variables to options for lower-level writers to use
   options = { ...options, assignmentRuleVariables };
@@ -1452,8 +1713,8 @@ export function generateBNGL(
 
   /* REMOVED: setOption("NumberPerQuantityUnit") to avoid unintended scaling with Avogadro's number */
 
-  // Issue 4: Ensure all structures in seedSpecies are canonicalized
-  for (const s of seedSpecies) {
+  // Issue 4: Ensure all structures in seed species are canonicalized
+  for (const s of augmentedSeedSpecies) {
     s.species.renumberBonds();
   }
 
@@ -1461,30 +1722,56 @@ export function generateBNGL(
   sections.push('');
 
   // Parameters
+  let t = Date.now();
   sections.push(writeParameters(model.parameters, model.compartments, assignmentRuleVariables));
+  mark('writeParameters', t);
 
   // Compartments
   if (model.compartments.size > 0) {
+    t = Date.now();
     sections.push(writeCompartments(model.compartments));
+    mark('writeCompartments', t);
   }
 
   // Molecule types
+  t = Date.now();
   const molTypeAnnotations = new Map<string, string>();
-  for (const mol of moleculeTypes) {
-    const entry = Array.from(sct.entries.values()).find(
-      e => e.isElemental && standardizeName(e.structure.molecules[0]?.name) === standardizeName(mol.name)
-    );
-    if (entry) {
-      molTypeAnnotations.set(`M_${mol.toString()}`, entry.sbmlId);
+  const elementalNameToSbmlId = new Map<string, string>();
+  for (const entry of sct.entries.values()) {
+    if (!entry.isElemental) continue;
+    const firstMol = entry.structure?.molecules?.[0];
+    if (!firstMol) continue;
+    const key = standardizeName(firstMol.name);
+    if (!elementalNameToSbmlId.has(key)) {
+      elementalNameToSbmlId.set(key, entry.sbmlId);
     }
   }
-  sections.push(writeMoleculeTypes(moleculeTypes, molTypeAnnotations));
+  for (const mol of moleculeTypes) {
+    const key = standardizeName(mol.name);
+    const sbmlId = elementalNameToSbmlId.get(key);
+    if (sbmlId) {
+      // Match writeMoleculeTypes() line content (M_<mol.str2 without compartment suffix>).
+      const annotationKey = `M_${mol.str2().split('@')[0]}`;
+      molTypeAnnotations.set(annotationKey, sbmlId);
+    }
+  }
+  sections.push(writeMoleculeTypes(augmentedMoleculeTypes, molTypeAnnotations));
+  mark('writeMoleculeTypes', t);
 
   // Seed species
-  const { section: speciesSection, patternToId, sbmlToBnglId, idToPattern } = writeSeedSpecies(seedSpecies, model.compartments, sct, speciesToCompartment, options.atomize);
+  t = Date.now();
+  const { section: speciesSection, patternToId, sbmlToBnglId, idToPattern } = writeSeedSpecies(
+    augmentedSeedSpecies,
+    model.compartments,
+    augmentedSct,
+    speciesToCompartment,
+    options.atomize
+  );
   if (speciesSection) sections.push(speciesSection);
+  mark('writeSeedSpecies', t);
 
   // Observables
+  t = Date.now();
   const {
     lines: observableLines,
     writtenRules: observableRules,
@@ -1492,7 +1779,7 @@ export function generateBNGL(
     assignmentRuleCompartments,
   } = writeObservables(
     model.species,
-    sct,
+    augmentedSct,
     assignmentRules,
     speciesToCompartment,
     speciesToHasOnlySubstanceUnits,
@@ -1501,10 +1788,44 @@ export function generateBNGL(
     sbmlToBnglId,
     idToPattern
   );
+  if (syntheticRateRuleVariables.size > 0) {
+    for (const variable of syntheticRateRuleVariables) {
+      const target = standardizeName(variable);
+      const bnglId = sbmlToBnglId.get(variable) || sbmlToBnglId.get(target);
+      const pattern = bnglId ? idToPattern.get(bnglId) : undefined;
+      if (!pattern) continue;
+      observableLines.push(`Species ${target}_amt ${pattern}`);
+    }
+  }
   sections.push(sectionTemplate('observables', observableLines));
+  mark('writeObservables', t);
 
   // Pass speciesAmts to options so it reaches reaction writers
   options = { ...options, speciesAmts };
+
+  const rateRuleFluxTargets = new Set<string>();
+  const syntheticRateRuleLines: string[] = [];
+  if (ENABLE_SYNTHETIC_RATE_RULE_REACTIONS && rateRules.length > 0) {
+    const emittedTargets = new Set<string>();
+    for (const rule of rateRules) {
+      if (!rule.variable) continue;
+      const target = standardizeName(rule.variable);
+      const bnglId = sbmlToBnglId.get(rule.variable) || sbmlToBnglId.get(target);
+      const pattern = bnglId ? idToPattern.get(bnglId) : undefined;
+      if (!pattern) continue;
+
+      rateRuleFluxTargets.add(target);
+      if (emittedTargets.has(target)) continue;
+      emittedTargets.add(target);
+
+      syntheticRateRuleLines.push(
+        `__rate_rule_in_${target}: 0 -> ${pattern} ${RATE_RULE_POS_PREFIX}${target}()`
+      );
+      syntheticRateRuleLines.push(
+        `__rate_rule_out_${target}: ${pattern} -> 0 ${RATE_RULE_NEG_PREFIX}${target}()`
+      );
+    }
+  }
 
   for (const [id, sp] of model.species) {
     const name = standardizeName(id);
@@ -1517,17 +1838,35 @@ export function generateBNGL(
     paramDict.set(id, param.value);
   }
 
-  sections.push(writeFunctions(model.functionDefinitions, assignmentRules, paramDict, speciesToCompartment, speciesToHasOnlySubstanceUnits, observableRules, speciesAmts, assignmentRuleCompartments, sbmlToBnglId));
+  t = Date.now();
+  sections.push(
+    writeFunctions(
+      model.functionDefinitions,
+      assignmentRules,
+      paramDict,
+      speciesToCompartment,
+      speciesToHasOnlySubstanceUnits,
+      observableRules,
+      speciesAmts,
+      assignmentRuleCompartments,
+      sbmlToBnglId,
+      rateRules,
+      rateRuleFluxTargets,
+      forceRuleOnlyFastPath
+    )
+  );
+  mark('writeFunctions', t);
 
   // Reaction rules
+  t = Date.now();
   if (options.atomize) {
     const translator = new Map<string, Species>();
-    for (const [id, entry] of sct.entries) {
+    for (const [id, entry] of augmentedSct.entries) {
       translator.set(id, entry.structure);
     }
     sections.push(writeReactionRulesAtomized(
       model.reactions,
-      sct,
+      augmentedSct,
       translator,
       model.compartments,
       paramDict,
@@ -1536,13 +1875,14 @@ export function generateBNGL(
       speciesToHasOnlySubstanceUnits,
       options,
       sbmlToBnglId,
-      idToPattern
+      idToPattern,
+      syntheticRateRuleLines
     ));
   } else {
     sections.push(writeReactionRulesFlat_V2(
       model.reactions,
       model.species,
-      sct,
+      augmentedSct,
       model.compartments,
       paramDict,
       model.functionDefinitions,
@@ -1550,9 +1890,11 @@ export function generateBNGL(
       speciesToHasOnlySubstanceUnits,
       options,
       sbmlToBnglId,
-      idToPattern
+      idToPattern,
+      syntheticRateRuleLines
     ));
   }
+  mark('writeReactionRules', t);
 
   sections.push('end model');
   sections.push('');
@@ -2217,8 +2559,11 @@ export function processReactionRate(
   ) => number | null,
 ): ProcessedRate {
 
-  if (!rxn.kineticLaw) {
-    return { rateString: '0', forceIrreversible: false, isSplitRxn: false };
+  if (!rxn.kineticLaw || !rxn.kineticLaw.math || rxn.kineticLaw.math.trim().length === 0) {
+    logMissingKinetic(
+      `Reaction ${standardizeName(rxn.name || rxnId)} missing kinetic law; using fallback rate ${MISSING_KINETIC_RATE_FALLBACK}`
+    );
+    return { rateString: MISSING_KINETIC_RATE_FALLBACK, forceIrreversible: false, isSplitRxn: false };
   }
 
   // ── Step 1: Get raw rate and substitute local parameters ──
@@ -2504,7 +2849,8 @@ export function writeReactionRulesFlat_V2(
   speciesToHasOnlySubstanceUnits: Map<string, boolean>,
   options: AtomizerOptions,
   sbmlToBnglId: Map<string, string> = new Map(),
-  idToPattern: Map<string, string> = new Map()
+  idToPattern: Map<string, string> = new Map(),
+  syntheticRateRuleLines: string[] = []
 ): string {
   const lines: string[] = [];
   const useCompartments = compartments.size > 0;
@@ -2577,9 +2923,7 @@ export function writeReactionRulesFlat_V2(
 
       if (useCompartments && compId && reactantComp && reactantComp !== compId) {
         if (!areCompartmentsAdjacent(reactantComp, compId, compartments)) {
-          logger.info('BNW004',
-            `Transport reaction ${rxnId}: ${ref.species} moves from ${reactantComp} to ${compId}`
-          );
+          logTransportInfo(`Transport reaction ${rxnId}: ${ref.species} moves from ${reactantComp} to ${compId}`);
         }
       }
 
@@ -2611,6 +2955,11 @@ export function writeReactionRulesFlat_V2(
     const reactants = reactantStrs.length > 0 ? reactantStrs.join(' + ') : '0';
     const products = productStrs.length > 0 ? productStrs.join(' + ') : '0';
     lines.push(`${standardizeName(rxn.name || rxnId)}: ${reactants} ${arrow} ${products} ${finalRate}`);
+  }
+
+  if (syntheticRateRuleLines.length > 0) {
+    if (lines.length > 0) lines.push('');
+    lines.push(...syntheticRateRuleLines);
   }
 
   return sectionTemplate('reaction rules', lines);

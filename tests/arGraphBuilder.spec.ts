@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildAtomRuleGraph } from '../services/visualization/arGraphBuilder';
 import { exportArGraphToGraphML } from '../services/visualization/arGraphExporter';
+import { parseSpeciesGraphs } from '../services/visualization/speciesGraphUtils';
 
 describe('Atom-rule graph builder enhancements', () => {
   it('prefixes numeric rule names with underscore', () => {
@@ -10,20 +11,27 @@ describe('Atom-rule graph builder enhancements', () => {
     expect(ruleNode!.id).toBe('_1');
   });
 
-  it('generates wildcard atoms and edges', () => {
-    // reactant contains a wildcard bond component that should create a wildcard atom
+  it('expands wildcard atoms/edges and removes helpers (bng2 mode)', () => {
+    // reactant contains a wildcard bond component that should initially create a
+    // wildcard atom, which will later be removed and replaced with concrete
+    // consumes/produces edges.
     const r = { name: 'w', reactants: ['A(b!+).B(a)'], products: ['A(b!1).B(a!1)'], rate: '', isBidirectional: false };
-    const graph = buildAtomRuleGraph([r]);
-    // expect a wildcard atom node
-    const wildcardNode = graph.nodes.find(n => n.label.includes('!+'));
-    expect(wildcardNode).toBeDefined();
-    // expect there is at least one wildcard edge connecting to a bond atom
+    const graph = buildAtomRuleGraph([r], { atomization: 'bng2' });
+    // debug output
+    // eslint-disable-next-line no-console
+    console.log('wildcard graph nodes:', graph.nodes);
+    // eslint-disable-next-line no-console
+    console.log('wildcard graph edges:', graph.edges);
+
+    // wildcard nodes/edges should have been removed
+    expect(graph.nodes.map(n => n.id)).not.toContain('A(b!+)');
     const wildcardEdges = graph.edges.filter(e => e.edgeType === 'wildcard');
-    expect(wildcardEdges.length).toBeGreaterThan(0);
-    // exporting should produce a wildcard edge with normal color
-    const xml = exportArGraphToGraphML(graph);
-    expect(xml).toContain('color="#000000"');
-    expect(xml).toMatch(/edge id="n\d+::e\d+"/);
+    expect(wildcardEdges.length).toBe(0);
+
+    // there should still be a consumes relation involving the concrete atom
+    const consumeEdge = graph.edges.find(e => e.edgeType === 'consumes');
+    expect(consumeEdge).toBeDefined();
+    expect(consumeEdge!.from).toBe('A(b!1)');
   });
 
   it('suppresses rate-law dependency edges when includeRateLawDeps=false', () => {
@@ -57,6 +65,32 @@ describe('Atom-rule graph builder enhancements', () => {
     expect(defLabels).not.toContain('A(b!1).B(a!1)');
     // ensure bng2 graph has only one atom per reactant
     expect(bng2Labels.length).toBe(rule.reactants.length + rule.products.length);
+  });
+
+  it('sanitizes atom ids containing dots so edges always find a matching node', () => {
+    const rule = {
+      name: 'r',
+      reactants: ['IL6(r!+).IL6R(activity~I,l_bind!+)'],
+      products: ['X()'],
+      rate: '',
+      isBidirectional: false,
+    };
+    // check parsing separately to catch parse failures early
+    const reactantGraphs = parseSpeciesGraphs(rule.reactants);
+    expect(reactantGraphs.length).toBeGreaterThan(0);
+    // show what the parser returned for debugging
+    // eslint-disable-next-line no-console
+    console.log('parsed reactant graphs:', reactantGraphs.map(g => g.toString()));
+
+    const graph = buildAtomRuleGraph([rule], { atomization: 'bng2' });
+    // log graph for debugging on failure
+    // eslint-disable-next-line no-console
+    console.log('graph nodes', graph.nodes);
+    // wildcard helpers should have been removed entirely, so there
+    // should be no node or edge referring to IL6(r!+)
+    expect(graph.nodes.map(n => n.id)).not.toContain('IL6(r!+)');
+    const badEdge = graph.edges.find(e => e.from === 'IL6(r!+)' || e.to === 'IL6(r!+)');
+    expect(badEdge).toBeUndefined();
   });
 });
 

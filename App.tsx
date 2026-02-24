@@ -20,10 +20,10 @@ import { validateBNGLModel, validationWarningsToMarkers } from './services/model
 import { lintBNGL, lintDiagnosticsToMarkers } from './services/bnglLinter';
 import { getSharedModelFromUrl, clearModelFromUrl } from './src/utils/shareUrl';
 import { resolveAutoMethod } from './src/utils/simulationOptions';
-import { Atomizer } from '@/src/lib/atomizer';
 import { parseParametersFromCode, isNumericLiteral, stripParametersBlock } from './services/paramUtils';
 
 const normalizeCode = (value: string) => value.replace(/\r\n/g, '\n').trim();
+const SBML_IMPORT_TIMEOUT_MS = 45_000;
 
 const findExampleById = (id?: string | null) => {
   if (!id) return undefined;
@@ -676,10 +676,15 @@ function App() {
   const handleImportSBML = async (file: File) => {
     setStatus({ type: 'info', message: 'Importing SBML...' });
     try {
+      const startedAt = performance.now();
       const text = await file.text();
-      const atomizer = new Atomizer();
-      await atomizer.initialize();
-      const result = await atomizer.atomize(text);
+      console.log(
+        `[App][SBML Import] file=${file.name} bytes=${file.size} chars=${text.length} timeoutMs=${SBML_IMPORT_TIMEOUT_MS}`
+      );
+      const result = await bnglService.atomize(text, {
+        timeoutMs: SBML_IMPORT_TIMEOUT_MS,
+        description: `SBML import atomize (${file.name})`,
+      });
       if (result.success && result.bngl) {
         handleCodeChange(result.bngl);
         // Use the incoming file name (e.g., BIOMD0000000123.xml) as the loaded model title
@@ -688,12 +693,18 @@ function App() {
         } catch (e) {
           // ignore failures in name parsing
         }
+        console.log(`[App][SBML Import] success in ${Math.round(performance.now() - startedAt)} ms`);
         setStatus({ type: 'success', message: 'SBML imported successfully!' });
       } else {
         setStatus({ type: 'error', message: `Import failed: ${result.error || 'Unknown error'}` });
       }
     } catch (e) {
-      setStatus({ type: 'error', message: 'Failed to read SBML file.' });
+      const message = e instanceof Error ? e.message : String(e);
+      const timedOut = (e as { name?: string } | null)?.name === 'TimeoutError' || /timed out/i.test(message);
+      if (timedOut) {
+        bnglService.restart();
+      }
+      setStatus({ type: 'error', message: `Import failed: ${message}` });
       console.error('SBML Import error:', e);
     }
   };

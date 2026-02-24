@@ -88,15 +88,38 @@ const resolveWildcards = (
   const edgesToRemove = new Set<number>();
 
   edges.forEach((edge, idx) => {
-    // In our graph, Context edges are atom -> rule (modifies)
-    if (edge.edgeType === 'modifies' && wcIds.has(edge.from)) {
-      // Find matches: WC -> CON
-      const matches = edges.filter(e => e.edgeType === 'wildcard' && e.from === edge.from);
+    // In our graph, Context edges are atom -> rule (modifies), and we also
+    // want to treat consumes/produces similarly when they involve a wildcard
+    // atom.  Those should be expanded to the concrete partner atoms so that
+    // no edge continues to reference a removed wildcard node.
+    const isWildcardEdgeFrom = wcIds.has(edge.from);
+    const isWildcardEdgeTo = wcIds.has(edge.to);
+
+    // helper to expand an edge by replacing the wildcard endpoint with each
+    // concrete match derived from existing wildcard->concrete edges
+    const expand = (source: string, target: string, type: AREdge['edgeType']) => {
+      const matches = edges.filter(e => e.edgeType === 'wildcard' && e.from === source);
       matches.forEach(m => {
         newEdges.push({
-          from: m.to, // Con
-          to: edge.to, // Rule
-          edgeType: 'modifies',
+          from: m.to,
+          to: target,
+          edgeType: type,
+        });
+      });
+    };
+
+    if (isWildcardEdgeFrom && (edge.edgeType === 'modifies' || edge.edgeType === 'consumes')) {
+      expand(edge.from, edge.to, edge.edgeType);
+      edgesToRemove.add(idx);
+    }
+    if (isWildcardEdgeTo && (edge.edgeType === 'modifies' || edge.edgeType === 'produces')) {
+      // when wildcard is the target we need to swap roles for expansion
+      const matches = edges.filter(e => e.edgeType === 'wildcard' && e.from === edge.to);
+      matches.forEach(m => {
+        newEdges.push({
+          from: edge.from,
+          to: m.to,
+          edgeType: edge.edgeType,
         });
       });
       edgesToRemove.add(idx);
@@ -115,20 +138,32 @@ const resolveWildcards = (
   nodes.push(...finalNodes);
 };
 
+// some atom IDs (especially with BNG2 atomization) may include
+// a dot because they were returned as whole species strings.  Cytoscape
+// uses the id field to correlate nodes and edges, so we need a
+// deterministic "safe" identifier that matches for both.  The simplest
+// approach is the same sanitization we already applied elsewhere: drop
+// anything after the first dot.  The label shown to the user still uses
+// the full original string via `formatLabel`.
+const sanitizeAtomId = (id: string) => id.split('.')[0];
+
 const ensureAtomNode = (
   atomId: string,
   nodes: ARNode[],
   atomSet: Set<string>,
   formatLabel: (id: string) => string,
 ): void => {
-  if (isSuppressed(atomId)) return;
-  if (atomSet.has(atomId)) {
+  const safeId = sanitizeAtomId(atomId);
+  if (isSuppressed(safeId)) return;
+  if (atomSet.has(safeId)) {
     return;
   }
-  atomSet.add(atomId);
+  atomSet.add(safeId);
   nodes.push({
-    id: atomId,
+    id: safeId,
     type: 'atom',
+    // keep full atomId for the label so the user sees the complete
+    // pattern even though the internal id is stripped
     label: formatLabel(atomId),
   });
 };
@@ -140,15 +175,17 @@ const addEdge = (
   edges: AREdge[],
   edgeSet: Set<string>,
 ): void => {
-  if (isSuppressed(from) || isSuppressed(to)) return;
-  const key = `${from}->${to}:${edgeType}`;
+  const safeFrom = sanitizeAtomId(from);
+  const safeTo = sanitizeAtomId(to);
+  if (isSuppressed(safeFrom) || isSuppressed(safeTo)) return;
+  const key = `${safeFrom}->${safeTo}:${edgeType}`;
   if (edgeSet.has(key)) {
     return;
   }
   edgeSet.add(key);
   edges.push({
-    from,
-    to,
+    from: safeFrom,
+    to: safeTo,
     edgeType,
   });
 };

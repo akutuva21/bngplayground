@@ -23,6 +23,13 @@ import type {
   BNGLAction
 } from '../types';
 
+const BNGL_VISITOR_DEBUG =
+  typeof process !== 'undefined' && !!process?.env && process.env.BNGL_VISITOR_DEBUG === '1';
+const visitorDebugLog = (...args: unknown[]): void => {
+  if (!BNGL_VISITOR_DEBUG) return;
+  console.log(...args);
+};
+
 export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements BNGParserVisitor<any> {
   private parameters: Record<string, number> = {};
   private moleculeTypes: BNGLMoleculeType[] = [];
@@ -845,7 +852,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
 
 
     // Build simulation phase
-    console.log(`[BNGLVisitor] visitSimulate_cmd: ${cmdText}, raw args:`, args);
+    visitorDebugLog(`[BNGLVisitor] visitSimulate_cmd: ${cmdText}, raw args:`, args);
     const parsedContinue = args.continue !== undefined
       ? (String(args.continue).trim() === '1' || String(args.continue).trim().toLowerCase() === 'true')
       : undefined;
@@ -867,7 +874,7 @@ export class BNGLVisitor extends AbstractParseTreeVisitor<BNGLModel> implements 
         ? (String(args.print_functions).trim() === '1' || String(args.print_functions).trim().toLowerCase() === 'true')
         : undefined,
     };
-    console.log(`[BNGLVisitor] evaluated phase:`, phase);
+    visitorDebugLog(`[BNGLVisitor] evaluated phase:`, phase);
 
     // Add to standardized actions list
     this.actions.push({

@@ -533,10 +533,29 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   CRITICAL: 4,
 };
 
+const resolveDefaultLogLevel = (): LogLevel => {
+  const raw =
+    (typeof process !== 'undefined' && process?.env?.ATOMIZER_LOG_LEVEL) ||
+    ((globalThis as any)?.ATOMIZER_LOG_LEVEL as string | undefined) ||
+    '';
+  const normalized = String(raw).trim().toUpperCase();
+  if (normalized === 'DEBUG' || normalized === 'INFO' || normalized === 'WARNING' || normalized === 'ERROR' || normalized === 'CRITICAL') {
+    return normalized as LogLevel;
+  }
+  return 'WARNING';
+};
+
+const resolveQuietModeDefault = (): boolean => {
+  const raw =
+    (typeof process !== 'undefined' && process?.env?.ATOMIZER_QUIET) ||
+    ((globalThis as any)?.ATOMIZER_QUIET as string | undefined);
+  return String(raw ?? '').trim() === '1';
+};
+
 class Logger {
   private messages: LogMessage[] = [];
-  private level: LogLevel = 'INFO';
-  private quietMode: boolean = false;
+  private level: LogLevel = resolveDefaultLogLevel();
+  private quietMode: boolean = resolveQuietModeDefault();
 
   setLevel(level: LogLevel): void {
     this.level = level;

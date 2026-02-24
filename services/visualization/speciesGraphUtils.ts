@@ -135,8 +135,11 @@ export const convertSpeciesGraph = (graph: SpeciesGraph): VisualizationMolecule[
 export const extractBonds = (graphs: SpeciesGraph[]): Map<string, BondInfo> => {
   const bonds = new Map<string, BondInfo>();
 
+  const sanitize = (name: string) => name.split('.')[0];
+
   graphs.forEach((graph) => {
     graph.molecules.forEach((molecule, molIdx) => {
+      const molName = sanitize(molecule.name);
       molecule.components.forEach((component, compIdx) => {
         const partnerKeys = graph.adjacency.get(`${molIdx}.${compIdx}`);
         if (!partnerKeys || partnerKeys.length === 0) {
@@ -166,9 +169,11 @@ export const extractBonds = (graphs: SpeciesGraph[]): Map<string, BondInfo> => {
             continue;
           }
 
+          const partnerName = sanitize(partnerMolecule.name);
+
           const endpoints = [
-            `${molecule.name}:${component.name}`,
-            `${partnerMolecule.name}:${partnerComponent.name}`,
+            `${molName}:${component.name}`,
+            `${partnerName}:${partnerComponent.name}`,
           ].sort();
           const key = endpoints.join('|');
 
@@ -181,8 +186,8 @@ export const extractBonds = (graphs: SpeciesGraph[]): Map<string, BondInfo> => {
 
           bonds.set(key, {
             key,
-            mol1: molecule.name,
-            mol2: partnerMolecule.name,
+            mol1: molName,
+            mol2: partnerName,
             comp1: component.name,
             comp2: partnerComponent.name,
             label: bondLabel,

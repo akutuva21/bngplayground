@@ -263,9 +263,21 @@ declare namespace LibSBML {
 let libsbml: any = null;
 let initPromise: Promise<void> | null = null;
 
+export const getLibSBMLInstance = (): any | null => libsbml;
+
 const isAbortLikeError = (err: unknown): boolean => {
   const msg = err instanceof Error ? err.message : String(err ?? '');
   return /abort\(|libsbmljs aborted|runtimeerror|unreachable/i.test(msg);
+};
+
+const SBML_PARSER_DEBUG =
+  typeof process !== 'undefined' &&
+  !!process.env &&
+  process.env.SBML_PARSER_DEBUG === '1';
+
+const debugSbml = (...args: unknown[]): void => {
+  if (!SBML_PARSER_DEBUG) return;
+  console.log(...args);
 };
 
 // =============================================================================
@@ -706,13 +718,34 @@ export class SBMLParser {
 
     initPromise = (async () => {
       try {
-        console.log('[SBMLParser] Dynamic import of libsbmljs_stable ...');
+        debugSbml('[SBMLParser] Dynamic import of libsbmljs_stable ...');
         const libsbmlModule = await import('libsbmljs_stable');
-        console.log('[SBMLParser] Import complete.');
+        debugSbml('[SBMLParser] Import complete.');
 
         const factory = libsbmlModule.default || libsbmlModule.libsbml || libsbmlModule;
         if (typeof factory !== 'function') {
           throw new Error(`libsbmljs export is not a function: ${typeof factory}`);
+        }
+
+        const isNodeEnv =
+          typeof process !== 'undefined' &&
+          !!(process as any).versions?.node;
+        let nodeWasmPath: string | null = null;
+        let nodeWasmBinary: Uint8Array | null = null;
+        if (isNodeEnv) {
+          try {
+            const fs = await import('node:fs');
+            const path = await import('node:path');
+            nodeWasmPath = path.resolve(process.cwd(), 'public', 'libsbml.wasm');
+            if (fs.existsSync(nodeWasmPath)) {
+              nodeWasmBinary = new Uint8Array(fs.readFileSync(nodeWasmPath));
+              debugSbml(`[SBMLParser] Node wasm preload path=${nodeWasmPath} bytes=${nodeWasmBinary.byteLength}`);
+            } else {
+              debugSbml(`[SBMLParser] Node wasm preload path missing: ${nodeWasmPath}`);
+            }
+          } catch (e) {
+            debugSbml('[SBMLParser] Node wasm preload failed:', e);
+          }
         }
 
         await new Promise<void>((res, reject) => {
@@ -722,18 +755,12 @@ export class SBMLParser {
 
           const config = {
             locateFile: (file: string) => {
-              console.log(`[SBMLParser] locateFile: ${file}`);
+              debugSbml(`[SBMLParser] locateFile: ${file}`);
               if (file.endsWith('.wasm')) {
                 // Node environment: prefer the local public asset via file URL
                 if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-                  try {
-                    // For Node environment, use a simple string path
-                    return './public/libsbml.wasm';
-                  } catch (e) {
-                    console.warn('[SBMLParser] Failed to locate libsbml.wasm via resolve:', e);
-                    // fall back to bundled path
-                    return '/bngplayground/libsbml.wasm';
-                  }
+                  if (nodeWasmPath) return nodeWasmPath;
+                  return './public/libsbml.wasm';
                 }
 
                 // Browser default
@@ -746,10 +773,10 @@ export class SBMLParser {
               return file;
             },
             TOTAL_MEMORY: 128 * 1024 * 1024,
-            print: (text: string) => console.log(`[libsbml] ${text}`),
-            printErr: (text: string) => console.warn(`[libsbml-err] ${text}`),
+            print: (text: string) => debugSbml(`[libsbml] ${text}`),
+            printErr: (text: string) => debugSbml(`[libsbml-err] ${text}`),
             onRuntimeInitialized: () => {
-              console.log('[SBMLParser] onRuntimeInitialized');
+              debugSbml('[SBMLParser] onRuntimeInitialized');
               clearTimeout(timeoutId);
               
               // If libsbml wasn't set by the Thenable yet, it might be available in 'this' or global
@@ -758,34 +785,38 @@ export class SBMLParser {
               }
 
               if (libsbml && (typeof libsbml.readSBMLFromString === 'function' || libsbml.SBMLReader)) {
-                console.log('[SBMLParser] libsbml ready via onRuntimeInitialized');
+                debugSbml('[SBMLParser] libsbml ready via onRuntimeInitialized');
                 res();
               } else {
-                console.log('[SBMLParser] waiting for Thenable to set libsbml...');
+                debugSbml('[SBMLParser] waiting for Thenable to set libsbml...');
                 // We don't resolve yet, wait for the factory promise
               }
             },
             onAbort: (msg: any) => {
-              console.error('[SBMLParser] Aborted:', msg);
+              debugSbml('[SBMLParser] Aborted:', msg);
               clearTimeout(timeoutId);
               reject(new Error(`libsbmljs aborted: ${msg}`));
             },
             noInitialRun: true
           };
 
-          console.log('[SBMLParser] Calling factory...');
+          if (nodeWasmBinary) {
+            (config as any).wasmBinary = nodeWasmBinary;
+          }
+
+          debugSbml('[SBMLParser] Calling factory...');
           try {
             const result = factory.call(self, config);
 
             if (result && typeof result.then === 'function') {
-              console.log('[SBMLParser] Factory returned Thenable, awaiting...');
+              debugSbml('[SBMLParser] Factory returned Thenable, awaiting...');
               result.then(
                 (instance: any) => {
-                  console.log('[SBMLParser] Thenable resolved. Instance type:', typeof instance);
+                  debugSbml('[SBMLParser] Thenable resolved. Instance type:', typeof instance);
                   // Only set libsbml if instance is actually valid
                   if (instance && (typeof instance.SBMLReader === 'function' || typeof instance.readSBMLFromString === 'function')) {
                     libsbml = instance;
-                    console.log('[SBMLParser] libsbml ready via Thenable. SBMLReader type:', typeof libsbml.SBMLReader);
+                    debugSbml('[SBMLParser] libsbml ready via Thenable. SBMLReader type:', typeof libsbml.SBMLReader);
                   } else {
                     console.error('[SBMLParser] Invalid libsbml instance:', instance);
                     reject(new Error('libsbml initialization returned invalid instance'));
@@ -801,7 +832,7 @@ export class SBMLParser {
                 }
               );
             } else {
-              console.log('[SBMLParser] Factory returned immediate result. SBMLReader type:', typeof (result as any)?.SBMLReader);
+              debugSbml('[SBMLParser] Factory returned immediate result. SBMLReader type:', typeof (result as any)?.SBMLReader);
               if (result && (typeof (result as any).SBMLReader === 'function' || typeof (result as any).readSBMLFromString === 'function')) {
                 libsbml = result;
                 clearTimeout(timeoutId);
@@ -863,31 +894,31 @@ export class SBMLParser {
       await this.initialize();
     }
 
-    if (typeof self !== 'undefined' && (self as any).postMessage) {
+    if (SBML_PARSER_DEBUG && typeof self !== 'undefined' && (self as any).postMessage) {
       (self as any).postMessage({ type: 'debug_heartbeat', payload: 'BEFORE_READ_SBML' });
     }
 
-    console.log(`!!! [SBMLParser] _parseInternal: Length: ${sbmlString.length}`);
+    debugSbml(`!!! [SBMLParser] _parseInternal: Length: ${sbmlString.length}`);
     this.currentSbml = sbmlString;
-    console.log(`!!! [SBMLParser] SBML Snippet: ${sbmlString.substring(0, 200)}`);
+    debugSbml(`!!! [SBMLParser] SBML Snippet: ${sbmlString.substring(0, 200)}`);
     let document: any;
     let reader: any;
     try {
       reader = new libsbml.SBMLReader();
       document = reader.readSBMLFromString(sbmlString);
 
-      if (typeof self !== 'undefined' && (self as any).postMessage) {
+      if (SBML_PARSER_DEBUG && typeof self !== 'undefined' && (self as any).postMessage) {
         (self as any).postMessage({ type: 'debug_heartbeat', payload: 'AFTER_READ_SBML' });
       }
-      console.log('!!! [SBMLParser] AFTER readSBMLFromString');
+      debugSbml('!!! [SBMLParser] AFTER readSBMLFromString');
       if (document) {
-        console.log(`!!! [SBMLParser] document pointer: ${document.ptr}`);
-        console.log(`!!! [SBMLParser] document.getNumErrors: ${typeof document.getNumErrors}`);
+        debugSbml(`!!! [SBMLParser] document pointer: ${document.ptr}`);
+        debugSbml(`!!! [SBMLParser] document.getNumErrors: ${typeof document.getNumErrors}`);
         if (typeof document.getNumErrors === 'function') {
-          console.log(`!!! [SBMLParser] numErrors: ${document.getNumErrors()}`);
+          debugSbml(`!!! [SBMLParser] numErrors: ${document.getNumErrors()}`);
         }
         if (typeof document.getLevel === 'function') {
-          console.log(`!!! [SBMLParser] Level: ${document.getLevel()}, Version: ${document.getVersion()}`);
+          debugSbml(`!!! [SBMLParser] Level: ${document.getLevel()}, Version: ${document.getVersion()}`);
         }
       }
     } catch (e) {
@@ -920,11 +951,11 @@ export class SBMLParser {
         }
       }
 
-      console.log('!!! [SBMLParser] Calling getModel()');
+      debugSbml('!!! [SBMLParser] Calling getModel()');
       const model = typeof document.getModel === 'function' ? document.getModel() : null;
-      console.log(`!!! [SBMLParser] getModel result: ${model ? 'object' : 'null'}`);
+      debugSbml(`!!! [SBMLParser] getModel result: ${model ? 'object' : 'null'}`);
       if (model && typeof model.ptr !== 'undefined') {
-        console.log(`!!! [SBMLParser] model pointer: ${model.ptr}`);
+        debugSbml(`!!! [SBMLParser] model pointer: ${model.ptr}`);
       }
 
       if (!model || model.ptr === 0) {
@@ -932,9 +963,9 @@ export class SBMLParser {
         throw new Error('SBML document contains no model or model pointer is NULL (0)');
       }
 
-      console.log('!!! [SBMLParser] Calling extractModel()');
+      debugSbml('!!! [SBMLParser] Calling extractModel()');
       const extractedModel = this.extractModel(model);
-      console.log(`[SBMLParser] Total parse time: ${(performance.now() - start).toFixed(2)}ms`);
+      debugSbml(`[SBMLParser] Total parse time: ${(performance.now() - start).toFixed(2)}ms`);
       return { model: extractedModel, _document: document, _reader: reader };
     } finally {
       // Cleanup happens AFTER extractModel() completes
@@ -946,19 +977,19 @@ export class SBMLParser {
    */
   private extractModel(model: any): SBMLModel {
     const start = performance.now();
-    console.log('!!! [SBMLParser] extractModel: Entered');
+    debugSbml('!!! [SBMLParser] extractModel: Entered');
     if (model) {
-      console.log(`!!! [SBMLParser] model pointer: ${model.ptr}`);
-      console.log(`!!! [SBMLParser] model keys: ${Object.keys(model).filter(k => !k.startsWith('_')).join(', ')}`);
+      debugSbml(`!!! [SBMLParser] model pointer: ${model.ptr}`);
+      debugSbml(`!!! [SBMLParser] model keys: ${Object.keys(model).filter(k => !k.startsWith('_')).join(', ')}`);
     }
 
-    console.log('!!! [SBMLParser] extractModel: Calling model.getId()');
+    debugSbml('!!! [SBMLParser] extractModel: Calling model.getId()');
     const modelId = (typeof model.getId === 'function') ? model.getId() : 'unnamed_model';
-    console.log(`!!! [SBMLParser] modelId: ${modelId}`);
+    debugSbml(`!!! [SBMLParser] modelId: ${modelId}`);
 
-    console.log('!!! [SBMLParser] extractModel: Calling model.getName()');
+    debugSbml('!!! [SBMLParser] extractModel: Calling model.getName()');
     const modelName = (typeof model.getName === 'function') ? model.getName() : (modelId || 'Unnamed Model');
-    console.log(`!!! [SBMLParser] modelName: ${modelName}`);
+    debugSbml(`!!! [SBMLParser] modelName: ${modelName}`);
 
     const result: SBMLModel = {
       id: modelId || 'unnamed_model',
@@ -976,9 +1007,9 @@ export class SBMLParser {
     };
 
     // Extract compartments
-    console.log('!!! [SBMLParser] extractModel: getNumCompartments');
+    debugSbml('!!! [SBMLParser] extractModel: getNumCompartments');
     const numComps = model.getNumCompartments();
-    console.log(`!!! [SBMLParser] Extracting ${numComps} compartments...`);
+    debugSbml(`!!! [SBMLParser] Extracting ${numComps} compartments...`);
     let t = performance.now();
     for (let i = 0; i < model.getNumCompartments(); i++) {
       const compRaw = model.getCompartment(i);
@@ -989,9 +1020,9 @@ export class SBMLParser {
     const compTime = performance.now() - t;
 
     // Extract species
-    console.log('!!! [SBMLParser] extractModel: getNumSpecies');
+    debugSbml('!!! [SBMLParser] extractModel: getNumSpecies');
     const numSpecies = model.getNumSpecies();
-    console.log(`!!! [SBMLParser] Extracting ${numSpecies} species...`);
+    debugSbml(`!!! [SBMLParser] Extracting ${numSpecies} species...`);
     t = performance.now();
     for (let i = 0; i < model.getNumSpecies(); i++) {
       const spRaw = model.getSpecies(i);
@@ -1007,9 +1038,9 @@ export class SBMLParser {
     const speciesTime = performance.now() - t;
 
     // Extract parameters
-    console.log('!!! [SBMLParser] extractModel: getNumParameters');
+    debugSbml('!!! [SBMLParser] extractModel: getNumParameters');
     const numParams = model.getNumParameters();
-    console.log(`!!! [SBMLParser] Extracting ${numParams} parameters...`);
+    debugSbml(`!!! [SBMLParser] Extracting ${numParams} parameters...`);
     t = performance.now();
     for (let i = 0; i < model.getNumParameters(); i++) {
       const paramRaw = model.getParameter(i);
@@ -1020,9 +1051,9 @@ export class SBMLParser {
     const paramTime = performance.now() - t;
 
     // Extract reactions
-    console.log('!!! [SBMLParser] extractModel: getNumReactions');
+    debugSbml('!!! [SBMLParser] extractModel: getNumReactions');
     const numRxns = model.getNumReactions();
-    console.log(`!!! [SBMLParser] Extracting ${numRxns} reactions...`);
+    debugSbml(`!!! [SBMLParser] Extracting ${numRxns} reactions...`);
     t = performance.now();
     for (let i = 0; i < model.getNumReactions(); i++) {
       const rxnRaw = model.getReaction(i);
@@ -1033,7 +1064,7 @@ export class SBMLParser {
     const rxnTime = performance.now() - t;
 
     // Extract rules/functions/events
-    console.log('[SBMLParser] Extracting rules/functions/events...');
+    debugSbml('[SBMLParser] Extracting rules/functions/events...');
     t = performance.now();
     let advancedExtractionAborted = false;
 
@@ -1127,7 +1158,7 @@ export class SBMLParser {
     }
     const otherTime = performance.now() - t;
 
-    console.log(`[SBMLParser] extractModel breakdown:
+    debugSbml(`[SBMLParser] extractModel breakdown:
       Compartments: ${compTime.toFixed(2)}ms
       Species: ${speciesTime.toFixed(2)}ms
       Parameters: ${paramTime.toFixed(2)}ms
@@ -1170,7 +1201,7 @@ export class SBMLParser {
   }
 
   private extractSpecies(sp: any): SBMLSpecies {
-    console.log(`!!! [SBMLParser] extractSpecies: ${sp.getId ? sp.getId() : 'unknown'}`);
+    debugSbml(`!!! [SBMLParser] extractSpecies: ${sp.getId ? sp.getId() : 'unknown'}`);
     const name = typeof sp.getName === 'function' ? (sp.getName() || '') : '';
     const attrName = typeof sp.getAttributeValue === 'function' ? (sp.getAttributeValue('name') || '') : '';
     const finalName = name || attrName || sp.getId();
@@ -1407,8 +1438,29 @@ export class SBMLParser {
   }
 
   private extractRule(rule: any): SBMLRule | null {
-    const math = rule.getMath();
-    const formula = math ? this.safeFormulaToString(math) : '';
+    let formula = '';
+
+    // Some generated SBML may encode rule formulas in the formula attribute.
+    // Prefer getFormula() first to avoid aborts when getMath() is unavailable/invalid.
+    try {
+      if (typeof rule.getFormula === 'function') {
+        const raw = rule.getFormula();
+        if (typeof raw === 'string' && raw.trim().length > 0) {
+          formula = raw.trim();
+        }
+      }
+    } catch {
+      // Fall through to getMath fallback.
+    }
+
+    if (!formula) {
+      try {
+        const math = typeof rule.getMath === 'function' ? rule.getMath() : null;
+        formula = math ? this.safeFormulaToString(math) : '';
+      } catch {
+        formula = '';
+      }
+    }
 
     if (rule.isAlgebraic()) {
       return {

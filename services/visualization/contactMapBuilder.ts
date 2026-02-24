@@ -15,6 +15,13 @@ export const buildContactMap = (
   moleculeTypes: BNGLMoleculeType[] = [],
   options: ContactMapOptions = {},
 ): ContactMap => {
+  // sanitize a molecule name returned by the parser.  In some edge cases
+  // (old parser bugs or malformed patterns) the name may include a dot
+  // separating multiple molecules or full pattern text.  We only care about
+  // the base type for the contact map, so take the portion before the first
+  // dot. This mirrors the behaviour of the parsers used earlier.
+  const sanitizeName = (name: string) => name.split('.')[0];
+
   // Track molecules and their component set for hierarchical (compound) nodes
   const moleculeMap = new Map<string, Set<string>>();
   // Track states for each component: key="molecule_component", value=Set<stateName>
@@ -56,12 +63,13 @@ export const buildContactMap = (
           // Skip null molecule '0' but NOT Trash (which is a valid molecule type)
           if (molecule.name === '0') return;
 
-          activeMolecules.add(molecule.name);
+          const molName = sanitizeName(molecule.name);
+          activeMolecules.add(molName);
 
-          if (!moleculeMap.has(molecule.name)) moleculeMap.set(molecule.name, new Set());
+          if (!moleculeMap.has(molName)) moleculeMap.set(molName, new Set());
 
           molecule.components.forEach((c: any) => {
-            moleculeMap.get(molecule.name)!.add(c.name);
+            moleculeMap.get(molName)!.add(c.name);
 
             // Skip '?' wildcard — it means "any state" in BNGL rule patterns
             // and must not be materialised as a concrete state node.
@@ -82,8 +90,8 @@ export const buildContactMap = (
 
     // (colors are chosen at render-time by viewers using colorFromName)
 
-    const reactantBonds = extractBonds(reactantGraphs);
-    const productBonds = extractBonds(productGraphs);
+    const reactantBonds = extractBonds(reactantGraphs, sanitizeName);
+    const productBonds = extractBonds(productGraphs, sanitizeName);
 
     // Collect all unique bonds seen in this rule (union of reactants and products)
     // BioNetGen contact maps show any bond that *can* exist in the model.

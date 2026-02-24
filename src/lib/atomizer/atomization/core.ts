@@ -675,6 +675,32 @@ function parseAndApplyCompartments(
   return speciesCompartment;
 }
 
+function sanitizeComponentStateToken(token: string): string {
+  if (!token) return token;
+  if (token === '+' || token === '?') return token;
+  if (/^-?\d+(?:\.\d+)?$/.test(token)) return token;
+  return standardizeName(token);
+}
+
+/**
+ * SBML names can contain punctuation that parses as BNGL component syntax
+ * but is not a valid BNGL identifier (e.g., apostrophes/hyphens in metabolite names).
+ * Normalize parsed tokens so generated BNGL remains syntactically valid.
+ */
+function sanitizeSpeciesStructureNames(species: Species): void {
+  for (const mol of species.molecules) {
+    mol.name = standardizeName(mol.name);
+    if (mol.compartment) {
+      mol.compartment = standardizeName(mol.compartment);
+    }
+    for (const comp of mol.components) {
+      comp.name = standardizeName(comp.name);
+      comp.states = comp.states.map((s) => sanitizeComponentStateToken(s));
+      comp.activeState = sanitizeComponentStateToken(comp.activeState);
+    }
+  }
+}
+
 /**
   * Create elemental species structure
    */
@@ -690,6 +716,7 @@ function createElementalSpecies(
   try {
     const parsedSpecies = readFromString(nameWithoutCompartment);
     if (parsedSpecies.molecules.length > 0) {
+      sanitizeSpeciesStructureNames(parsedSpecies);
       // Update molecule IDs to use SBML species ID
       for (const mol of parsedSpecies.molecules) {
         mol.idx = sbmlSpecies.id;

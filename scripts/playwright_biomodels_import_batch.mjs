@@ -29,10 +29,17 @@ const DEFAULT_MODELS = [
 const PORT = Number(process.env.BIOMODELS_PLAYWRIGHT_PORT || '3000');
 const BASE_PATH = '/bngplayground/';
 const BASE_URL = process.env.APP_URL || `http://127.0.0.1:${PORT}${BASE_PATH}`;
-const PER_MODEL_TIMEOUT_MS = Number(process.env.BIOMODELS_MODEL_TIMEOUT_MS || '240000');
+const VERBOSE = (process.env.BIOMODELS_PLAYWRIGHT_VERBOSE || '0') === '1';
+const PER_MODEL_TIMEOUT_MS = Number(process.env.BIOMODELS_MODEL_TIMEOUT_MS || '90000');
+const MODAL_OPEN_TIMEOUT_MS = Number(process.env.BIOMODELS_MODAL_OPEN_TIMEOUT_MS || '10000');
+const FETCH_PHASE_TIMEOUT_MS = Number(process.env.BIOMODELS_FETCH_PHASE_TIMEOUT_MS || '15000');
+const ATOMIZE_PHASE_TIMEOUT_MS = Number(process.env.BIOMODELS_ATOMIZE_PHASE_TIMEOUT_MS || '30000');
+const CODE_SETTLE_TIMEOUT_MS = Number(process.env.BIOMODELS_CODE_SETTLE_TIMEOUT_MS || '5000');
+const MODEL_HEARTBEAT_MS = Number(process.env.BIOMODELS_MODEL_HEARTBEAT_MS || (VERBOSE ? '2000' : '0'));
 const STARTUP_TIMEOUT_MS = Number(process.env.BIOMODELS_STARTUP_TIMEOUT_MS || '60000');
-const BATCH_MAX_MS = Number(process.env.BIOMODELS_BATCH_MAX_MS || '1800000'); // 30 min
+const BATCH_MAX_MS = Number(process.env.BIOMODELS_BATCH_MAX_MS || '900000'); // 15 min
 const OUTPUT_DIR = path.resolve('artifacts');
+const DEBUG_DIR = path.join(OUTPUT_DIR, 'biomodels-playwright-debug');
 const MODEL_IDS = (process.env.BIOMODELS_IDS || '')
   .split(',')
   .map((s) => s.trim())
@@ -40,6 +47,24 @@ const MODEL_IDS = (process.env.BIOMODELS_IDS || '')
 const TARGET_MODELS = MODEL_IDS.length > 0 ? MODEL_IDS : DEFAULT_MODELS;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const nowIso = () => new Date().toISOString();
+
+function logPhase(modelId, phase, message) {
+  if (!VERBOSE) return;
+  console.log(`[biomodels-batch][${modelId}][${phase}][${nowIso()}] ${message}`);
+}
+
+async function withTimeout(promise, ms, label) {
+  let timer;
+  try {
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms} ms`)), ms);
+    });
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 function stripAnsi(s) {
   return String(s).replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, '');
@@ -112,10 +137,10 @@ async function getEditorCode(page) {
 async function openBioModelsModal(page) {
   const editorPanel = page.getByTestId('editor-panel');
   const loadButton = editorPanel.getByRole('button', { name: 'Load' }).first();
-  await loadButton.click();
-  await page.getByText('Import from BioModels...').first().click();
+  await loadButton.click({ timeout: MODAL_OPEN_TIMEOUT_MS });
+  await page.getByText('Import from BioModels...').first().click({ timeout: MODAL_OPEN_TIMEOUT_MS });
   const dialog = page.getByRole('dialog').filter({ hasText: 'Import from BioModels' }).first();
-  await dialog.waitFor({ state: 'visible', timeout: 10000 });
+  await dialog.waitFor({ state: 'visible', timeout: MODAL_OPEN_TIMEOUT_MS });
   return dialog;
 }
 
@@ -154,24 +179,48 @@ async function runOneImport(page, modelId) {
     modelId,
     ok: false,
     durationMs: 0,
+    timedOut: false,
     phase: 'init',
     error: null,
     codeLength: 0,
+    events: [],
+    screenshotPath: null,
+  };
+  const pushEvent = (phase, message) => {
+    const line = `${nowIso()} ${phase}: ${message}`;
+    result.events.push(line);
+    logPhase(modelId, phase, message);
   };
 
+  const heartbeatStart = Date.now();
+  const heartbeat =
+    MODEL_HEARTBEAT_MS > 0
+      ? setInterval(() => {
+          pushEvent(result.phase, `heartbeat elapsedMs=${Date.now() - heartbeatStart}`);
+        }, MODEL_HEARTBEAT_MS)
+      : null;
+
   try {
+    pushEvent('init', 'starting model import');
     const codeBefore = await getEditorCode(page);
-    const dialog = await openBioModelsModal(page);
+    pushEvent('open_modal', 'opening BioModels modal');
+    const dialog = await withTimeout(openBioModelsModal(page), MODAL_OPEN_TIMEOUT_MS, `${modelId} open modal`);
     result.phase = 'fetch';
 
     const input = dialog.getByPlaceholder('BioModels ID');
-    await input.fill(modelId);
-    await dialog.getByRole('button', { name: 'Fetch & Import' }).click();
+    pushEvent('fetch', `submitting model id ${modelId}`);
+    await input.fill(modelId, { timeout: MODAL_OPEN_TIMEOUT_MS });
+    await dialog.getByRole('button', { name: 'Fetch & Import' }).click({ timeout: MODAL_OPEN_TIMEOUT_MS });
 
-    const modalOutcome = await waitForModalOutcome(page, dialog, PER_MODEL_TIMEOUT_MS);
+    const modalOutcome = await withTimeout(
+      waitForModalOutcome(page, dialog, FETCH_PHASE_TIMEOUT_MS),
+      FETCH_PHASE_TIMEOUT_MS + 1000,
+      `${modelId} modal fetch outcome`
+    );
     if (modalOutcome.kind === 'modal_error') {
       result.phase = 'fetch';
       result.error = modalOutcome.message;
+      pushEvent('fetch', `modal error: ${modalOutcome.message}`);
       try {
         await dialog.getByRole('button', { name: 'Cancel' }).click({ timeout: 1000 });
       } catch {
@@ -181,40 +230,57 @@ async function runOneImport(page, modelId) {
     }
 
     result.phase = 'atomize';
-    const atomizeOutcome = await waitForAtomizeOutcome(page, PER_MODEL_TIMEOUT_MS);
+    pushEvent('atomize', 'modal closed, waiting for atomization status');
+    const atomizeOutcome = await withTimeout(
+      waitForAtomizeOutcome(page, ATOMIZE_PHASE_TIMEOUT_MS),
+      ATOMIZE_PHASE_TIMEOUT_MS + 1000,
+      `${modelId} atomize outcome`
+    );
     if (atomizeOutcome.kind === 'status_error') {
       result.error = atomizeOutcome.message;
+      pushEvent('atomize', `status error: ${atomizeOutcome.message}`);
       return result;
     }
 
-    await delay(250);
+    result.phase = 'validate';
+    pushEvent('validate', 'success status observed; validating editor content');
+    await withTimeout(delay(250), CODE_SETTLE_TIMEOUT_MS, `${modelId} code settle`);
     const codeAfter = await getEditorCode(page);
     result.codeLength = codeAfter.length;
 
     if (!/begin\s+model/i.test(codeAfter)) {
       result.error = 'BNGL editor content missing "begin model" after reported success.';
+      pushEvent('validate', result.error);
       return result;
     }
 
     // Guard against stale no-op success.
     if (codeAfter === codeBefore) {
       result.error = 'Editor code did not change after import.';
+      pushEvent('validate', result.error);
       return result;
     }
 
     result.ok = true;
     result.phase = 'done';
+    pushEvent('done', `import succeeded with codeLength=${result.codeLength}`);
     return result;
   } catch (error) {
     result.error = error instanceof Error ? error.message : String(error);
+    result.timedOut = /timed out/i.test(result.error);
+    pushEvent(result.phase, `exception: ${result.error}`);
     return result;
   } finally {
+    if (heartbeat) {
+      clearInterval(heartbeat);
+    }
     result.durationMs = Date.now() - startTs;
   }
 }
 
 async function main() {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  fs.mkdirSync(DEBUG_DIR, { recursive: true });
   const reportPath = path.join(
     OUTPUT_DIR,
     `biomodels_playwright_batch_${new Date().toISOString().replace(/[:.]/g, '-')}.json`
@@ -264,7 +330,47 @@ async function main() {
 
     for (const modelId of TARGET_MODELS) {
       console.log(`[biomodels-batch] Importing ${modelId} ...`);
-      const res = await runOneImport(page, modelId);
+      let res;
+      try {
+        res = await withTimeout(
+          runOneImport(page, modelId),
+          PER_MODEL_TIMEOUT_MS,
+          `${modelId} overall import`
+        );
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        res = {
+          modelId,
+          ok: false,
+          durationMs: PER_MODEL_TIMEOUT_MS,
+          timedOut: /timed out/i.test(msg),
+          phase: 'overall_timeout',
+          error: msg,
+          codeLength: 0,
+          events: [`${nowIso()} overall_timeout: ${msg}`],
+          screenshotPath: null,
+        };
+      }
+
+      if (!res.ok) {
+        const shotPath = path.join(DEBUG_DIR, `${modelId}_${Date.now()}.png`);
+        try {
+          await page.screenshot({ path: shotPath, fullPage: true });
+          res.screenshotPath = shotPath;
+          console.log(`[biomodels-batch] Debug screenshot saved: ${shotPath}`);
+        } catch (e) {
+          console.warn(`[biomodels-batch] Failed to capture screenshot for ${modelId}:`, e);
+        }
+        try {
+          await page.goto(BASE_URL, { waitUntil: 'load', timeout: 30000 });
+          await page.waitForFunction(() => !!globalThis.monaco, null, { timeout: 30000 });
+          await page.getByTestId('editor-panel').waitFor({ state: 'visible', timeout: 10000 });
+          console.log(`[biomodels-batch] Page reset complete after failure for ${modelId}`);
+        } catch (resetErr) {
+          console.warn(`[biomodels-batch] Page reset failed after ${modelId}:`, resetErr);
+        }
+      }
+
       results.push(res);
       if (res.ok) {
         console.log(`[biomodels-batch] PASS ${modelId} (${res.durationMs} ms)`);

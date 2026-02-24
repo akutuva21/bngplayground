@@ -1,25 +1,33 @@
 import React, { useMemo } from 'react';
 import { BNGLModel } from '../../types';
-import { RegulatoryGraphViewer } from '../RegulatoryGraphViewer';
-import { buildRegulatoryGraph } from '../../services/visualization/regulatoryGraphBuilder';
+import { ARGraphViewer } from '../ARGraphViewer';
+import { buildAtomRuleGraph } from '../../services/visualization/arGraphBuilder';
 
 interface RegulatoryTabProps {
   model: BNGLModel | null;
   selectedRuleId?: string | null;
   onSelectRule?: (ruleId: string) => void;
+  /**
+   * Value forwarded to internal ARGraphViewer to force a fit when changed.
+   */
+  forceFitTrigger?: any;
 }
 
 const getRuleId = (rule: { name?: string }, index: number): string => rule.name ?? `rule_${index + 1}`;
 const getRuleLabel = (rule: { name?: string }, index: number): string => rule.name ?? `Rule ${index + 1}`;
 
-export const RegulatoryTab: React.FC<RegulatoryTabProps> = ({ model, selectedRuleId, onSelectRule }) => {
-  const regulatoryGraph = useMemo(() => {
+export const RegulatoryTab: React.FC<RegulatoryTabProps> = ({ model, selectedRuleId, onSelectRule, forceFitTrigger }) => {
+  const arGraph = useMemo(() => {
     if (!model) {
       return { nodes: [], edges: [] };
     }
-    return buildRegulatoryGraph(model.reactionRules, {
-      getRuleId,
+    return buildAtomRuleGraph(model.reactionRules, { 
+      getRuleId, 
       getRuleLabel,
+      observables: model.observables.map(o => ({ name: o.name, pattern: o.pattern })),
+      functions: model.functions?.map(f => ({ name: f.name, expression: f.expression })),
+      includeRateLawDeps: false,  // we don't show parameters like ka/kd in regulatory view
+      atomization: 'bng2',        // use BNG2-style patterns (Atomic Patterns) for parity
     });
   }, [model]);
 
@@ -35,11 +43,11 @@ export const RegulatoryTab: React.FC<RegulatoryTabProps> = ({ model, selectedRul
     <div className="flex h-full flex-col gap-6">
       <section className="h-full flex flex-col">
         <div className="flex-1 min-h-[500px] border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden relative">
-          {regulatoryGraph.nodes.length > 0 ? (
-            <RegulatoryGraphViewer graph={regulatoryGraph} onSelectRule={onSelectRule} />
+          {arGraph.nodes.length > 0 ? (
+            <ARGraphViewer arGraph={arGraph} selectedRuleId={selectedRuleId} onSelectRule={onSelectRule} forceFitTrigger={forceFitTrigger} />
           ) : (
             <div className="flex h-full items-center justify-center text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900">
-              No regulatory graph nodes generated. Check if rules are parsed correctly.
+              No graph nodes generated. Check if rules are parsed correctly.
             </div>
           )}
         </div>

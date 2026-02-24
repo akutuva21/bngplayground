@@ -134,19 +134,46 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
   const [theme] = useTheme();
   const [isLayoutRunning, setIsLayoutRunning] = useState(false);
   const [activeLayout, setActiveLayout] = useState<LayoutType>('hierarchical');
-  const [cyReady, setCyReady] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
+  // Keep a ref to the callback so tap handlers always see the latest version
+  // without needing to destroy/recreate the Cytoscape instance on prop changes.
+  const onSelectRuleRef = useRef(onSelectRule);
+  onSelectRuleRef.current = onSelectRule;
 
-  // Create the Cytoscape instance once the container mounts
+  // Single effect: creates Cytoscape with elements already in the constructor,
+  // then immediately runs the default layout. Destroys and re-creates the
+  // instance whenever data or theme changes, eliminating the prior two-effect
+  // race where cy.fit() fired on an empty graph before elements were loaded.
   useEffect(() => {
-    if (!containerRef.current || cyRef.current) {
-      return;
-    }
+    if (!containerRef.current) return;
 
-    cyRef.current = cytoscape({
+    const elements = [
+      ...graph.nodes.map((node) => ({
+        data: {
+          id: node.id,
+          label: node.label,
+          type: node.type,
+          tooltip: node.label,
+        },
+      })),
+      ...graph.edges.map((edge, index) => ({
+        data: {
+          id: `edge-${index}`,
+          source: edge.from,
+          target: edge.to,
+          type: edge.type,
+          reversible: edge.reversible || false,
+        },
+      })),
+    ];
+
+    // Destroy any previous instance before creating a new one.
+    cyRef.current?.destroy();
+
+    const cy = cytoscape({
       container: containerRef.current,
-      elements: [],
+      elements,
       style: [
         {
           selector: 'node',
@@ -198,6 +225,8 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
           style: {
             width: 1.5,
             'curve-style': 'bezier',
+            'line-color': theme === 'dark' ? '#9ca3af' : '#888888',
+            'target-arrow-color': theme === 'dark' ? '#9ca3af' : '#888888',
             'target-arrow-shape': 'triangle',
             'arrow-scale': 1.2,
           },
@@ -249,14 +278,40 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
           },
         },
       ],
-      layout: { ...LAYOUT_CONFIGS.hierarchical },
+      layout: { name: 'preset' },
     });
-    
-    setCyReady(true);
 
-    // ResizeObserver: when the container gains its actual dimensions (e.g. on
-    // first paint inside an overflow-y-auto flex chain, or after a tab switch),
-    // tell Cytoscape to re-measure and re-fit so the graph is visible.
+    cyRef.current = cy;
+
+    // Tap handlers read from ref so onSelectRule is always current without
+    // needing to destroy/recreate cy when the callback identity changes.
+    cy.on('tap', 'node[type = "rule"]', (event) => {
+      const node = event.target;
+      onSelectRuleRef.current?.(node.id());
+    });
+
+    cy.on('tap', 'edge', (event) => {
+      const edge = event.target;
+      const source = edge.source();
+      const target = edge.target();
+      if (source.data('type') === 'rule') {
+        onSelectRuleRef.current?.(source.id());
+      } else if (target.data('type') === 'rule') {
+        onSelectRuleRef.current?.(target.id());
+      }
+    });
+
+    // Run default layout; fit once it stops so all nodes are visible.
+    setIsLayoutRunning(true);
+    const layout = cy.layout({ ...LAYOUT_CONFIGS[activeLayout] });
+    layout.on('layoutstop', () => {
+      cyRef.current?.fit(undefined, 30);
+      setIsLayoutRunning(false);
+    });
+    layout.run();
+
+    // ResizeObserver: re-fit when the container gains its real dimensions
+    // (e.g. first paint in a flex chain, or after a tab switch).
     let lastW = 0;
     let lastH = 0;
     const ro = new ResizeObserver((entries) => {
@@ -264,90 +319,25 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
       if (!rect) return;
       const w = Math.round(rect.width);
       const h = Math.round(rect.height);
-      if (w === lastW && h === lastH) return; // ignore noise
+      if (w === lastW && h === lastH) return;
       lastW = w;
       lastH = h;
-      const cy = cyRef.current;
-      if (!cy || w === 0 || h === 0) return;
-      cy.resize();
-      if (cy.elements().length > 0) {
-        cy.fit(undefined, 30);
+      const c = cyRef.current;
+      if (!c || w === 0 || h === 0) return;
+      c.resize();
+      if (c.elements().length > 0) {
+        c.fit(undefined, 30);
       }
     });
     ro.observe(containerRef.current);
 
     return () => {
       ro.disconnect();
+      cy.off('tap');
       cyRef.current?.destroy();
       cyRef.current = null;
-      setCyReady(false);
     };
-  }, [theme]);
-
-  // Refresh tap handlers
-  useEffect(() => {
-    const cy = cyRef.current;
-    if (!cy) return;
-
-    cy.off('tap');
-    cy.on('tap', 'node[type = "rule"]', (event) => {
-      const node = event.target;
-      onSelectRule?.(node.id());
-    });
-
-    cy.on('tap', 'edge', (event) => {
-      const edge = event.target;
-      const source = edge.source();
-      const target = edge.target();
-
-      // If connected to a rule node, select that rule
-      if (source.data('type') === 'rule') {
-        onSelectRule?.(source.id());
-      } else if (target.data('type') === 'rule') {
-        onSelectRule?.(target.id());
-      }
-    });
-
-  }, [onSelectRule]);
-
-  // Update elements and layout whenever the graph changes
-  useEffect(() => {
-    const cy = cyRef.current;
-    if (!cy) {
-      return;
-    }
-
-    const elements = [
-      ...graph.nodes.map((node) => ({
-        data: {
-          id: node.id,
-          label: node.label,
-          type: node.type,
-          tooltip: node.label, // Store full label for tooltip if needed
-        },
-      })),
-      ...graph.edges.map((edge, index) => ({
-        data: {
-          id: `edge-${index}`,
-          source: edge.from,
-          target: edge.to,
-          type: edge.type,
-          reversible: edge.reversible || false,
-        },
-      })),
-    ];
-
-    cy.batch(() => {
-      cy.elements().remove();
-      cy.add(elements);
-    });
-
-    // Run layout with a slight delay to ensure container size is correct
-    setTimeout(() => {
-      runLayout();
-    }, 50);
-
-  }, [graph, cyReady]);
+  }, [graph, theme]);
 
   const runLayout = (layoutType?: LayoutType) => {
     const cy = cyRef.current;
@@ -370,11 +360,6 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
       setIsLayoutRunning(false);
     }
   };
-
-  // Re-run layout when activeLayout changes
-  useEffect(() => {
-    runLayout();
-  }, [activeLayout]);
 
   const handleFit = () => {
     const cy = cyRef.current;
@@ -575,9 +560,10 @@ export const RegulatoryGraphViewer: React.FC<RegulatoryGraphViewerProps> = ({ gr
       </div>
 
       {/* Graph Container */}
-      <div className="relative flex-1 min-h-[500px] w-full rounded-lg border border-stone-200 bg-white dark:border-slate-700 dark:bg-slate-900 overflow-hidden">
-        <div ref={containerRef} className="absolute inset-0 z-0" />
-      </div>
+      <div
+        ref={containerRef}
+        className="h-[600px] w-full rounded-lg border border-stone-200 bg-white dark:border-slate-700 dark:bg-slate-900"
+      />
 
       {/* Legend Box */}
       <div className="flex items-center gap-4 bg-white dark:bg-slate-900 p-2 rounded-md border border-slate-200 dark:border-slate-700">

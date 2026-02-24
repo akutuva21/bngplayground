@@ -334,6 +334,7 @@ export const detectStateChanges = (
 export const extractAtoms = (graphs: SpeciesGraph[]): Set<string> => {
   const atoms = new Set<string>();
 
+  // 1. State atoms: Mol.comp~state
   const states = snapshotComponentStates(graphs);
   states.forEach((snapshot) => {
     if (snapshot.state) {
@@ -341,9 +342,34 @@ export const extractAtoms = (graphs: SpeciesGraph[]): Set<string> => {
     }
   });
 
+  // 2. Bond atoms: bond:Mol1:comp1|Mol2:comp2 (from extractBonds)
   const bonds = extractBonds(graphs);
   bonds.forEach((bond) => {
     atoms.add(`bond:${bond.key}`);
+  });
+
+  // 3. Free component atoms: Mol.comp  (components that have no state and no bond)
+  //    Without this, rules that only bind/unbind components (no state changes)
+  //    show no reactant/product atom nodes at all.
+  graphs.forEach((graph) => {
+    graph.molecules.forEach((molecule, molIdx) => {
+      molecule.components.forEach((component, compIdx) => {
+        const partnerKeys = graph.adjacency.get(`${molIdx}.${compIdx}`);
+        const isBonded = partnerKeys && partnerKeys.length > 0;
+        if (!isBonded && !component.state) {
+          atoms.add(`${molecule.name}.${component.name}`);
+        }
+      });
+    });
+  });
+
+  // 4. Molecule atoms: Mol (for molecules that have no components, like H0)
+  graphs.forEach((graph) => {
+    graph.molecules.forEach((molecule) => {
+      if (molecule.components.length === 0) {
+        atoms.add(molecule.name);
+      }
+    });
   });
 
   return atoms;

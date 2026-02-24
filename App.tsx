@@ -82,6 +82,249 @@ function App() {
     simOptionsRef.current = simOptions;
   }, [simOptions]);
 
+  // --- Handlers (hoisted to prevent initialization errors in effects) ---
+
+  // parse the current code or an explicitly supplied string.  the
+  // optional argument is useful when callers set the code and immediately
+  // want to parse the new text without waiting for React state to propagate.
+  const handleParse = useCallback(async (codeOverride?: any): Promise<BNGLModel | null> => {
+    setResults(null);
+    if (parseAbortRef.current) {
+      parseAbortRef.current.abort('Parse request replaced.');
+    }
+    const controller = new AbortController();
+    parseAbortRef.current = controller;
+    // prefer the override if it's a string, otherwise use latest state value.
+    // this handles cases where it's used as an onClick handler (receiving an event).
+    const source = (typeof codeOverride === 'string') ? codeOverride : code;
+    try {
+      const parsedModel = await bnglService.parse(source, {
+        signal: controller.signal,
+        description: 'Parse BNGL model',
+      });
+      setModel(parsedModel);
+      const warnings = validateBNGLModel(parsedModel);
+      setValidationWarnings(warnings);
+      const lintResult = lintBNGL(parsedModel, {}, source);
+      const combinedMarkers = [
+        ...validationWarningsToMarkers(source, warnings),
+        ...lintDiagnosticsToMarkers(source, lintResult.diagnostics),
+      ];
+      setEditorMarkers(combinedMarkers);
+      const hasValidationErrors = warnings.some((warning) => warning.severity === 'error');
+      const hasLintErrors = lintResult.summary.errors > 0;
+      const statusType = hasValidationErrors || hasLintErrors ? 'warning' : 'success';
+      const lintIssueCount = lintResult.diagnostics.length;
+      const lintSummaryMessage = lintIssueCount
+        ? ` Linter: ${lintResult.summary.errors} errors, ${lintResult.summary.warnings} warnings, ${lintResult.summary.info} info.`
+        : '';
+      const baseMessage = hasValidationErrors
+        ? 'Model parsed with validation issues. Review the warnings panel.'
+        : 'Model parsed successfully!';
+      setStatus({ type: statusType, message: `${baseMessage}${lintSummaryMessage}` });
+      return parsedModel;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return null;
+      }
+      setModel(null);
+      setValidationWarnings([]);
+      setEditorMarkers([]);
+      const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+      setStatus({ type: 'error', message: `Parsing failed: ${message}` });
+      return null;
+    } finally {
+      if (parseAbortRef.current === controller) {
+        parseAbortRef.current = null;
+      }
+    }
+  }, [code]);
+
+  const handleSimulate = useCallback(async (options: SimulationOptions, modelOverride?: BNGLModel) => {
+    const targetModel = modelOverride || model;
+    if (!targetModel) {
+      setStatus({ type: 'warning', message: 'Please parse a model before simulating.' });
+      return;
+    }
+    // Estimate complexity and warn user for large models
+    const estimateComplexity = (m: BNGLModel): number => {
+      const ruleCount = m.reactionRules?.length ?? 0;
+      const seedCount = m.species?.length ?? 0;
+      const molTypeCount = m.moleculeTypes?.length ?? 0;
+      // Heuristic: seeds × rules^1.5 × molTypes
+      return seedCount * Math.pow(Math.max(1, ruleCount), 1.5) * Math.max(1, molTypeCount);
+    };
+
+    const complexity = estimateComplexity(targetModel);
+    if (complexity > 150) {
+      const proceed = window.confirm(
+        `⚠️ Large Model Detected\n\n` +
+        `Complexity score: ${Math.round(complexity)}\n` +
+        `• ${targetModel.reactionRules?.length ?? 0} rules\n` +
+        `• ${targetModel.species.length} seed species\n` +
+        `• ${targetModel.moleculeTypes.length} molecule types\n\n` +
+        `Network generation may take 30-60 seconds. Continue?`
+      );
+      if (!proceed) return;
+    }
+    if (simulateAbortRef.current) {
+      simulateAbortRef.current.abort('Simulation replaced.');
+    }
+    const controller = new AbortController();
+    simulateAbortRef.current = controller;
+
+    // Resolve effective method (e.g. handle 'default' -> 'nf' if model has simulate_nf)
+    const effectiveMethod = resolveAutoMethod(targetModel, options.method);
+    setCurrentMethod(effectiveMethod);
+    setSimOptions(options);
+    setIsSimulating(true);
+    try {
+      const simResults = await bnglService.simulate(targetModel, options, {
+        signal: controller.signal,
+        description: `Simulation (${effectiveMethod})`,
+      });
+      setResults(simResults);
+      setStatus({
+        type: 'success', message: (
+          <span>
+            Simulation ({effectiveMethod}) completed.&nbsp;
+            Explore: <button className="underline" onClick={() => setActiveVizTab(0)}>Time Courses</button>,{' '}
+            <button className="underline" onClick={() => setActiveVizTab(2)}>Regulatory Graph</button>
+          </span>
+        )
+      });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setResults(null);
+        return;
+      }
+      setResults(null);
+      const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+      setStatus({ type: 'error', message: `Simulation failed: ${message}` });
+    } finally {
+      if (simulateAbortRef.current === controller) {
+        simulateAbortRef.current = null;
+      }
+      setIsSimulating(false);
+    }
+  }, [model]);
+
+  // Apply numeric parameter changes in-place without reparsing/simulating. Re-resolves dependent params and species initial concentrations.
+  async function applyParameterPatch(changes: Map<string, string>, currentModel: BNGLModel | null) {
+    if (!currentModel) return;
+    try {
+      // Merge changes; treat changed numeric values as base values
+      const baseParams: Record<string, number> = { ...currentModel.parameters };
+      for (const [k, v] of changes) {
+        const val = parseFloat(v);
+        if (!isNaN(val)) baseParams[k] = val;
+      }
+
+      // Re-resolve paramExpressions (if present) iteratively like parser does
+      const paramExprs = (currentModel as any).paramExpressions || {};
+      const resolved: Record<string, number> = { ...baseParams };
+      const maxPasses = 10;
+      for (let pass = 0; pass < maxPasses; pass++) {
+        let changed = false;
+        for (const [name, expr] of Object.entries(paramExprs)) {
+          if (resolved[name] !== undefined) continue;
+          try {
+            const paramMap = new Map(Object.entries(resolved));
+            const val = (BNGLParser as any).evaluateExpression(expr, paramMap);
+            if (!isNaN(val)) {
+              resolved[name] = val;
+              changed = true;
+            }
+          } catch {
+            // ignore failures until later passes
+          }
+        }
+        if (!changed) break;
+      }
+
+      // Assign resolved params back to model.parameters
+      currentModel.parameters = { ...currentModel.parameters, ...resolved };
+
+      // Evaluate species initialExpression if present
+      const funcMap = new Map((currentModel.functions || []).map(f => [f.name, { args: f.args, expr: f.expression } as any]));
+      for (const sp of currentModel.species) {
+        if (sp.initialExpression) {
+          try {
+            const val = (BNGLParser as any).evaluateExpression(sp.initialExpression, new Map(Object.entries(currentModel.parameters)), new Set(), funcMap);
+            if (!isNaN(val)) sp.initialConcentration = val;
+          } catch {
+            // ignore expression eval errors
+          }
+        }
+      }
+
+      // Update state to reflect parameter-only changes; do not reparse or simulate
+      setModel({ ...currentModel });
+
+      // Re-run validation and lint so editor markers update (but do not run network generation/simulation)
+      const warnings = validateBNGLModel(currentModel);
+      setValidationWarnings(warnings);
+      const lintResult = lintBNGL(currentModel);
+      setEditorMarkers([
+        ...validationWarningsToMarkers(codeRef.current, warnings),
+        ...lintDiagnosticsToMarkers(codeRef.current, lintResult.diagnostics),
+      ]);
+
+      setStatus({ type: 'success', message: `Updated ${changes.size} parameter${changes.size === 1 ? '' : 's'} (no reparse)` });
+
+      // If we already have simulation results and options, re-solve without re-parsing (debounced upstream)
+      if (results && simOptionsRef.current) {
+        void runSimulationForParameterUpdate(currentModel, simOptionsRef.current);
+      }
+    } catch (e) {
+      console.warn('Parameter patch failed:', e);
+      setStatus({ type: 'warning', message: 'Parameter update failed; consider re-parsing the model.' });
+    }
+  }
+
+  const runSimulationForParameterUpdate = async (updatedModel: BNGLModel, options: SimulationOptions) => {
+    if (simulateAbortRef.current) {
+      simulateAbortRef.current.abort('Parameter update replaced.');
+    }
+    const controller = new AbortController();
+    simulateAbortRef.current = controller;
+    setIsSimulating(true);
+    setStatus({ type: 'info', message: 'Updating simulation for parameter change...' });
+    try {
+      const simResults = await bnglService.simulate(updatedModel, options, {
+        signal: controller.signal,
+        description: 'Simulation (parameter update)',
+      });
+      setResults(simResults);
+      setStatus({ type: 'success', message: 'Simulation updated for parameter change.' });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+      setStatus({ type: 'warning', message: `Parameter update simulation failed: ${message}` });
+    } finally {
+      if (simulateAbortRef.current === controller) {
+        simulateAbortRef.current = null;
+      }
+      setIsSimulating(false);
+    }
+  };
+
+  const handleCancelSimulation = useCallback(() => {
+    if (simulateAbortRef.current) {
+      simulateAbortRef.current.abort('Simulation cancelled by user.');
+      simulateAbortRef.current = null;
+    }
+    // Force reset state immediately when user cancels
+    setIsSimulating(false);
+    setGenerationProgress('');
+    setProgressStats({ species: 0, reactions: 0, iteration: 0 });
+    setStatus({ type: 'info', message: 'Simulation cancelled.' });
+  }, []);
+
+  // --- Effects and other logic ---
+
   // Remove the parameters block from source for equality checks
 
   // Called by the editor on every change. If the change is strictly numeric parameter edits
@@ -198,127 +441,129 @@ function App() {
 
   // Load model from URL hash on startup (for shared links) or from query param (?model=...)
   useEffect(() => {
-    const shared = getSharedModelFromUrl();
-    if (shared?.code) {
-      setCode(shared.code);
-
-      const example = findExampleById(shared.modelId);
-      // Trust the modelId in the share link for identification; skip code comparison since code may not be embedded
-      if (example) {
-        setLoadedModelId(example.id);
-        setLoadedModelName(shared.name ?? example.name);
-      } else {
-        setLoadedModelId(null);
-        setLoadedModelName(shared.name ?? null);
-      }
-
-      clearModelFromUrl(); // Clean up URL
-      setStatus({ type: 'success', message: 'Model loaded from shared link!' });
-    }
-
-    // Also support loading a model by ID via query parameter (used by the Model Explorer / UMAP page)
     try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.has('model')) {
-        const raw = params.get('model') || '';
-        console.log('[App] Model explorer requesting model:', raw);
+      const shared = getSharedModelFromUrl();
+      if (shared?.code) {
+        setCode(shared.code);
 
-        // Normalize: allow both 'example-models/akt-signaling' and 'akt-signaling.bngl'
-        let candidate = raw.includes('/') ? raw.split('/').pop() || raw : raw;
-        candidate = candidate.replace(/\.bngl$/i, '');
-
-        // Try several matching strategies: exact id, candidate suffix, name, and filename
-        let example = findExampleById(raw) || findExampleById(candidate);
-        if (!example) {
-          example = EXAMPLES.find(e => (
-            e.id === candidate ||
-            e.id === raw ||
-            (e.name && (e.name === candidate || e.name === raw)) ||
-            // @ts-ignore
-            (e.filename && (e.filename === candidate || e.filename === raw || e.filename === `${candidate}.bngl`))
-          ));
+        const example = findExampleById(shared.modelId);
+        // Trust the modelId in the share link for identification; skip code comparison since code may not be embedded
+        if (example) {
+          setLoadedModelId(example.id);
+          setLoadedModelName(shared.name ?? example.name);
+        } else {
+          setLoadedModelId(null);
+          setLoadedModelName(shared.name ?? null);
         }
 
-        if (example) {
-          console.log('[App] Found model in EXAMPLES:', example.id);
-          // Load code from cache/fetch (may already be embedded in example.code or pre-cached)
-          (async () => {
-            try {
-              const code = example.code ?? await loadModelCode(example.id);
-              setCode(code);
-              setLoadedModelId(example.id);
-              setLoadedModelName(example.name);
-              // Remove the query param so the URL is clean afterwards
-              window.history.replaceState(null, '', window.location.pathname + window.location.hash);
-              setStatus({ type: 'success', message: `Loaded ${example.name} from Model Explorer` });
-            } catch (e) {
-              console.warn('[App] Failed to load model code for', example.id, e);
-            }
-          })();
-        } else {
-          console.log('[App] Model not found in EXAMPLES, attempting fetch fallback...');
-          // Attempt to fetch BNGL file from likely locations if it's not embedded in EXAMPLES.
-          (async () => {
-            const tryPaths = (rawVal: string) => {
-              const paths = [] as string[];
-              const clean = rawVal.replace(/^\/+/, '');
+        clearModelFromUrl(); // Clean up URL
+        setStatus({ type: 'success', message: 'Model loaded from shared link!' });
 
-              // Determine base path of current app
-              const basePath = window.location.pathname.replace(/\/$/, '');
+        // parse right away when a shared example appears
+        handleParse(shared.code);
+      } else {
+        const params = new URLSearchParams(window.location.search);
+        const raw = params.get('model');
+        if (raw) {
+          const candidate = raw.toLowerCase();
+          let example = findExampleById(candidate);
 
-              const pushBoth = (p: string) => {
-                paths.push(p);
-                if (basePath) paths.push(basePath + (p.startsWith('/') ? '' : '/') + p);
+          if (!example) {
+            example = EXAMPLES.find(e => (
+              e.id === candidate ||
+              e.id === raw ||
+              (e.name && (e.name === candidate || e.name === raw)) ||
+              // @ts-ignore
+              (e.filename && (e.filename === candidate || e.filename === raw || e.filename === `${candidate}.bngl`))
+            ));
+          }
+
+          if (example) {
+            console.log('[App] Found model in EXAMPLES:', example.id);
+            // Load code from cache/fetch (may already be embedded in example.code or pre-cached)
+            (async () => {
+              try {
+                const code = example.code ?? await loadModelCode(example.id);
+                setCode(code);
+                setLoadedModelId(example.id);
+                setLoadedModelName(example.name);
+                // Remove the query param so the URL is clean afterwards
+                window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+                setStatus({ type: 'success', message: `Loaded ${example.name} from Model Explorer` });
+
+                // immediately parse the newly-loaded model so UI updates promptly
+                await handleParse(code); // parse the freshly‑set code
+              } catch (e) {
+                console.warn('[App] Failed to load model code for', example.id, e);
+              }
+            })();
+          } else {
+            console.log('[App] Model not found in EXAMPLES, attempting fetch fallback...');
+            // Attempt to fetch BNGL file from likely locations if it's not embedded in EXAMPLES.
+            (async () => {
+              const tryPaths = (rawVal: string) => {
+                const paths = [] as string[];
+                const clean = rawVal.replace(/^\/+/, '');
+
+                // Determine base path of current app
+                const basePath = window.location.pathname.replace(/\/$/, '');
+
+                const pushBoth = (p: string) => {
+                  paths.push(p);
+                  if (basePath) paths.push(basePath + (p.startsWith('/') ? '' : '/') + p);
+                };
+
+                if (/\.bngl$/i.test(clean)) {
+                  pushBoth('/' + clean);
+                } else {
+                  pushBoth('/' + clean + '.bngl');
+                  const base = clean.split('/').pop();
+                  if (base) {
+                    pushBoth('/models/' + base + '.bngl');
+                    pushBoth('/example-models/' + base + '.bngl');
+                    pushBoth('/published-models/' + base + '.bngl');
+                  }
+                }
+                return paths;
               };
 
-              if (/\.bngl$/i.test(clean)) {
-                pushBoth('/' + clean);
+              const paths = tryPaths(raw);
+              console.debug('[App] Attempting to fetch model from paths:', paths);
+
+              let fetchedCode: string | null = null;
+              let fetchedPath: string | null = null;
+              for (const p of paths) {
+                try {
+                  const attemptUrl = p.startsWith('/') ? p : (window.location.pathname.replace(/\/$/, '') + '/' + p);
+                  console.debug('[App] Fetching', attemptUrl);
+                  const resp = await fetch(attemptUrl);
+                  if (resp.ok) {
+                    fetchedCode = await resp.text();
+                    fetchedPath = attemptUrl;
+                    console.debug('[App] Fetched model from', attemptUrl);
+                    break;
+                  } else {
+                    console.debug('[App] Fetch failed', attemptUrl, resp.status);
+                  }
+                } catch (e) {
+                  console.debug('[App] Fetch error for', p, e);
+                  // ignore and continue
+                }
+              }
+
+              if (fetchedCode) {
+                setCode(fetchedCode);
+                setLoadedModelId(raw);
+                setLoadedModelName((raw.split('/').pop() || raw).replace(/[-_]/g, ' '));
+                window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+                setStatus({ type: 'success', message: 'Model loaded from Model Explorer (fetched)' });
+                // auto-parse the fetched code too
+                await handleParse(fetchedCode);
               } else {
-                pushBoth('/' + clean + '.bngl');
-                const base = clean.split('/').pop();
-                if (base) {
-                  pushBoth('/models/' + base + '.bngl');
-                  pushBoth('/example-models/' + base + '.bngl');
-                  pushBoth('/published-models/' + base + '.bngl');
-                }
+                console.warn('[App] Model param not matched to embedded example and fetch failed:', raw, 'tried paths:', paths);
               }
-              return paths;
-            };
-
-            const paths = tryPaths(raw);
-            console.debug('[App] Attempting to fetch model from paths:', paths);
-
-            let fetchedCode: string | null = null;
-            let fetchedPath: string | null = null;
-            for (const p of paths) {
-              try {
-                const attemptUrl = p.startsWith('/') ? p : (window.location.pathname.replace(/\/$/, '') + '/' + p);
-                console.debug('[App] Fetching', attemptUrl);
-                const resp = await fetch(attemptUrl);
-                if (resp.ok) {
-                  fetchedCode = await resp.text();
-                  fetchedPath = attemptUrl;
-                  console.debug('[App] Fetched model from', attemptUrl);
-                  break;
-                } else {
-                  console.debug('[App] Fetch failed', attemptUrl, resp.status);
-                }
-              } catch (e) {
-                console.debug('[App] Fetch error for', p, e);
-                // ignore and continue
-              }
-            }
-
-            if (fetchedCode) {
-              setCode(fetchedCode);
-              setLoadedModelId(raw);
-              setLoadedModelName((raw.split('/').pop() || raw).replace(/[-_]/g, ' '));
-              window.history.replaceState(null, '', window.location.pathname + window.location.hash);
-              setStatus({ type: 'success', message: 'Model loaded from Model Explorer (fetched)' });
-            } else {
-              console.warn('[App] Model param not matched to embedded example and fetch failed:', raw, 'tried paths:', paths);
-            }
-          })();
+            })();
+          }
         }
       }
     } catch (e) {
@@ -332,6 +577,16 @@ function App() {
       console.log('🤖 batch runner loaded. Run `window.runAllModels()` to start.');
     });
   }, []);
+
+  // Whenever a named model is loaded, kick off a parse so the visualization
+  // reflects the new code immediately.  we watch loadedModelId rather than
+  // code directly to avoid parsing on every keystroke.
+  useEffect(() => {
+    if (loadedModelId) {
+      // parse in background, ignore result
+      handleParse();
+    }
+  }, [loadedModelId, handleParse]);
 
   // Auto-run simulation on first visit for immediate value demonstration
   useEffect(() => {
@@ -386,338 +641,10 @@ function App() {
     }
   }, []); // Empty deps - run once on mount
 
-
-
-  // Apply numeric parameter changes in-place without reparsing/simulating. Re-resolves dependent params and species initial concentrations.
-  async function applyParameterPatch(changes: Map<string, string>, currentModel: BNGLModel | null) {
-    if (!currentModel) return;
-    try {
-      // Merge changes; treat changed numeric values as base values
-      const baseParams: Record<string, number> = { ...currentModel.parameters };
-      for (const [k, v] of changes) {
-        const val = parseFloat(v);
-        if (!isNaN(val)) baseParams[k] = val;
-      }
-
-      // Re-resolve paramExpressions (if present) iteratively like parser does
-      const paramExprs = (currentModel as any).paramExpressions || {};
-      const resolved: Record<string, number> = { ...baseParams };
-      const maxPasses = 10;
-      for (let pass = 0; pass < maxPasses; pass++) {
-        let changed = false;
-        for (const [name, expr] of Object.entries(paramExprs)) {
-          if (resolved[name] !== undefined) continue;
-          try {
-            const paramMap = new Map(Object.entries(resolved));
-            const val = (BNGLParser as any).evaluateExpression(expr, paramMap);
-            if (!isNaN(val)) {
-              resolved[name] = val;
-              changed = true;
-            }
-          } catch {
-            // ignore failures until later passes
-          }
-        }
-        if (!changed) break;
-      }
-
-      // Assign resolved params back to model.parameters
-      currentModel.parameters = { ...currentModel.parameters, ...resolved };
-
-      // Evaluate species initialExpression if present
-      const funcMap = new Map((currentModel.functions || []).map(f => [f.name, { args: f.args, expr: f.expression } as any]));
-      for (const sp of currentModel.species) {
-        if (sp.initialExpression) {
-          try {
-            const val = (BNGLParser as any).evaluateExpression(sp.initialExpression, new Map(Object.entries(currentModel.parameters)), new Set(), funcMap);
-            if (!isNaN(val)) sp.initialConcentration = val;
-          } catch {
-            // ignore expression eval errors
-          }
-        }
-      }
-
-      // Update state to reflect parameter-only changes; do not reparse or simulate
-      setModel({ ...currentModel });
-
-      // Re-run validation and lint so editor markers update (but do not run network generation/simulation)
-      const warnings = validateBNGLModel(currentModel);
-      setValidationWarnings(warnings);
-      const lintResult = lintBNGL(currentModel);
-      setEditorMarkers([
-        ...validationWarningsToMarkers(codeRef.current, warnings),
-        ...lintDiagnosticsToMarkers(codeRef.current, lintResult.diagnostics),
-      ]);
-
-      setStatus({ type: 'success', message: `Updated ${changes.size} parameter${changes.size === 1 ? '' : 's'} (no reparse)` });
-
-      // If we already have simulation results and options, re-solve without re-parsing (debounced upstream)
-      if (results && simOptionsRef.current) {
-        void runSimulationForParameterUpdate(currentModel, simOptionsRef.current);
-      }
-    } catch (e) {
-      console.warn('Parameter patch failed:', e);
-      setStatus({ type: 'warning', message: 'Parameter update failed; consider re-parsing the model.' });
-    }
-  }
-
-  const runSimulationForParameterUpdate = async (updatedModel: BNGLModel, options: SimulationOptions) => {
-    if (simulateAbortRef.current) {
-      simulateAbortRef.current.abort('Parameter update replaced.');
-    }
-    const controller = new AbortController();
-    simulateAbortRef.current = controller;
-    setIsSimulating(true);
-    setStatus({ type: 'info', message: 'Updating simulation for parameter change...' });
-    try {
-      const simResults = await bnglService.simulate(updatedModel, options, {
-        signal: controller.signal,
-        description: 'Simulation (parameter update)',
-      });
-      setResults(simResults);
-      setStatus({ type: 'success', message: 'Simulation updated for parameter change.' });
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        return;
-      }
-      const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-      setStatus({ type: 'warning', message: `Parameter update simulation failed: ${message}` });
-    } finally {
-      if (simulateAbortRef.current === controller) {
-        simulateAbortRef.current = null;
-      }
-      setIsSimulating(false);
-    }
-  };
-
-  const handleParse = useCallback(async (): Promise<BNGLModel | null> => {
-    setResults(null);
-    if (parseAbortRef.current) {
-      parseAbortRef.current.abort('Parse request replaced.');
-    }
-    const controller = new AbortController();
-    parseAbortRef.current = controller;
-    try {
-      const parsedModel = await bnglService.parse(code, {
-        signal: controller.signal,
-        description: 'Parse BNGL model',
-      });
-      setModel(parsedModel);
-      const warnings = validateBNGLModel(parsedModel);
-      setValidationWarnings(warnings);
-      const lintResult = lintBNGL(parsedModel, {}, code);
-      const combinedMarkers = [
-        ...validationWarningsToMarkers(code, warnings),
-        ...lintDiagnosticsToMarkers(code, lintResult.diagnostics),
-      ];
-      setEditorMarkers(combinedMarkers);
-      const hasValidationErrors = warnings.some((warning) => warning.severity === 'error');
-      const hasLintErrors = lintResult.summary.errors > 0;
-      const statusType = hasValidationErrors || hasLintErrors ? 'warning' : 'success';
-      const lintIssueCount = lintResult.diagnostics.length;
-      const lintSummaryMessage = lintIssueCount
-        ? ` Linter: ${lintResult.summary.errors} errors, ${lintResult.summary.warnings} warnings, ${lintResult.summary.info} info.`
-        : '';
-      const baseMessage = hasValidationErrors
-        ? 'Model parsed with validation issues. Review the warnings panel.'
-        : 'Model parsed successfully!';
-      setStatus({ type: statusType, message: `${baseMessage}${lintSummaryMessage}` });
-      return parsedModel;
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        return null;
-      }
-      setModel(null);
-      setValidationWarnings([]);
-      setEditorMarkers([]);
-      const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-      setStatus({ type: 'error', message: `Parsing failed: ${message}` });
-      return null;
-    } finally {
-      if (parseAbortRef.current === controller) {
-        parseAbortRef.current = null;
-      }
-    }
-  }, [code]);
-
-  const handleSimulate = useCallback(async (options: SimulationOptions, modelOverride?: BNGLModel) => {
-    const targetModel = modelOverride || model;
-    if (!targetModel) {
-      setStatus({ type: 'warning', message: 'Please parse a model before simulating.' });
-      return;
-    }
-    // Estimate complexity and warn user for large models
-    const estimateComplexity = (m: BNGLModel): number => {
-      const ruleCount = m.reactionRules?.length ?? 0;
-      const seedCount = m.species?.length ?? 0;
-      const molTypeCount = m.moleculeTypes?.length ?? 0;
-      // Heuristic: seeds × rules^1.5 × molTypes
-      return seedCount * Math.pow(Math.max(1, ruleCount), 1.5) * Math.max(1, molTypeCount);
-    };
-
-    const complexity = estimateComplexity(targetModel);
-    if (complexity > 150) {
-      const proceed = window.confirm(
-        `⚠️ Large Model Detected\n\n` +
-        `Complexity score: ${Math.round(complexity)}\n` +
-        `• ${targetModel.reactionRules?.length ?? 0} rules\n` +
-        `• ${targetModel.species.length} seed species\n` +
-        `• ${targetModel.moleculeTypes.length} molecule types\n\n` +
-        `Network generation may take 30-60 seconds. Continue?`
-      );
-      if (!proceed) return;
-    }
-    if (simulateAbortRef.current) {
-      simulateAbortRef.current.abort('Simulation replaced.');
-    }
-    const controller = new AbortController();
-    simulateAbortRef.current = controller;
-
-    // Resolve effective method (e.g. handle 'default' -> 'nf' if model has simulate_nf)
-    const effectiveMethod = resolveAutoMethod(targetModel, options.method);
-    setCurrentMethod(effectiveMethod);
-    setSimOptions(options);
-    setIsSimulating(true);
-    try {
-      // Note: We still pass the original options to the worker, letting it also resolve 'default' if needed,
-      // or we could pass the resolved method. Passing original preserves intent, but let's pass resolved for consistent behavior
-      // IF we trust our resolution. The worker specifically has logic for 'default' too.
-      // Let's stick to passing options as-is, but use effectiveMethod for UI state.
-      const simResults = await bnglService.simulate(targetModel, options, {
-        signal: controller.signal,
-        description: `Simulation (${effectiveMethod})`,
-      });
-      setResults(simResults);
-      setStatus({
-        type: 'success', message: (
-          <span>
-            Simulation ({effectiveMethod}) completed.&nbsp;
-            Explore: <button className="underline" onClick={() => setActiveVizTab(0)}>Time Courses</button>,{' '}
-            <button className="underline" onClick={() => setActiveVizTab(2)}>Regulatory Graph</button>
-          </span>
-        )
-      });
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        // User cancelled - status already set by handleCancelSimulation
-        // Just ensure results are cleared
-        setResults(null);
-        return;
-      }
-      setResults(null);
-      const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-      setStatus({ type: 'error', message: `Simulation failed: ${message}` });
-    } finally {
-      if (simulateAbortRef.current === controller) {
-        simulateAbortRef.current = null;
-      }
-      setIsSimulating(false);
-    }
-  }, [model]);
-
-  const handleCancelSimulation = useCallback(() => {
-    if (simulateAbortRef.current) {
-      simulateAbortRef.current.abort('Simulation cancelled by user.');
-      simulateAbortRef.current = null;
-    }
-    // Force reset state immediately when user cancels
-    setIsSimulating(false);
-    setGenerationProgress('');
-    setProgressStats({ species: 0, reactions: 0, iteration: 0 });
-    setStatus({ type: 'info', message: 'Simulation cancelled.' });
-  }, []);
-
-  useEffect(() => {
-    const onProgress = (payload: any) => {
-      if (!payload) return;
-
-      // Extract simulation time (use console-derived NFsim logs as source of truth)
-      let simTimeVal: number | undefined = undefined;
-
-      const isAuthoritativeSimTime = payload.source === 'nfsim-console' ||
-        (typeof payload.message === 'string' && /(?:^|\b)Sim\s*time\s*[:=]/i.test(payload.message));
-
-      if (isAuthoritativeSimTime && typeof payload.simulationTime === 'number') {
-        simTimeVal = payload.simulationTime;
-      } else if (typeof payload.simTime === 'number') {
-        simTimeVal = payload.simTime;
-      } else if (typeof payload.message === 'string') {
-        // Strict regex: only parse "Sim time" to avoid CPU time
-        const m = payload.message.match(/(?:^|\b)Sim\s*time\s*[:=]\s*([+-]?(?:\d+\.?\d*|\d*\.\d+)(?:e[+-]?\d+)?)/i) ||
-          payload.message.match(/\bt\s*=\s*([+-]?(?:\d+\.?\d*|\d*\.\d+)(?:e[+-]?\d+)?)/i);
-        if (m) {
-          const val = Number(m[1]);
-          setSimulationTimeLabel(m[1]);
-          if (!isNaN(val)) simTimeVal = val;
-        }
-      }
-
-      if (typeof simTimeVal === 'number' && Number.isFinite(simTimeVal)) {
-        setSimulationTime(simTimeVal);
-
-        // Use simulationProgress from payload if provided, else calculate
-        if (isAuthoritativeSimTime && typeof payload.simulationProgress === 'number') {
-          setSimulationProgress(payload.simulationProgress);
-        } else {
-          const tEnd = simOptionsRef.current?.t_end;
-          if (typeof tEnd === 'number' && tEnd > 0) {
-            const next = (simTimeVal / tEnd) * 100;
-            setSimulationProgress(prev => (prev === undefined || next > prev) ? next : prev);
-          }
-        }
-      } else if (typeof payload.simulationProgress === 'number') {
-        setSimulationProgress(payload.simulationProgress);
-      }
-
-      // Update progress stats
-      if (payload.species !== undefined || payload.speciesCount !== undefined || payload.reactionCount !== undefined || payload.iteration !== undefined) {
-        setProgressStats(prev => ({
-          species: payload.species ?? payload.speciesCount ?? prev.species,
-          reactions: payload.reactions ?? payload.reactionCount ?? prev.reactions,
-          iteration: payload.iteration ?? prev.iteration
-        }));
-      }
-
-      if (payload.message) {
-        setGenerationProgress(String(payload.message));
-      }
-    };
-
-    const onWarning = (payload: any) => {
-      if (!payload) return;
-      setGenerationProgress(`⚠️ ${String(payload.message ?? 'Warning during generation')}`);
-    };
-
-    const unsubP = bnglService.onProgress(onProgress);
-    const unsubW = bnglService.onWarning(onWarning);
-    return () => {
-      unsubP();
-      unsubW();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isSimulating) {
-      // Reset progress stats when not simulating
-      setProgressStats({ species: 0, reactions: 0, iteration: 0 });
-      setGenerationProgress('');
-      setSimulationProgress(0);
-      setSimulationTime(0);
-      setSimulationTimeLabel(undefined);
-    }
-  }, [isSimulating]);
-
-  // Simulation progress estimator for silent solvers (like NFsim)
-  useEffect(() => {
-    if (!isSimulating || currentMethod !== 'nf' || !simOptions) {
-      return undefined;
-    }
-
-    // The simulator is now correctly parsing Sim time logs from the console. 
-    // We don't need a wall-clock estimator anymore as it just causes lag/confusion.
-    // The onProgress handler will catch scientific notation logs and update the UI in real time.
-    return undefined;
-  }, [isSimulating, currentMethod, simOptions]);
+  const handleSimulateWrapper = useCallback(async (options: SimulationOptions, modelOverride?: BNGLModel) => {
+    // This wrapper is just to maintain the same interface if needed, or I can just use handleSimulate directly.
+    return handleSimulate(options, modelOverride);
+  }, [handleSimulate]);
 
   const handleCodeChange = (newCode: string) => {
     console.log('[App] handleCodeChange called:', {

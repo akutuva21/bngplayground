@@ -83,7 +83,7 @@ export interface ARNode {
 export interface AREdge {
   from: string;
   to: string;
-  edgeType: 'produces' | 'consumes' | 'modifies';
+  edgeType: 'produces' | 'consumes' | 'modifies' | 'wildcard';
 }
 
 export interface AtomRuleGraph {

@@ -21,9 +21,9 @@ if (!fs.existsSync(TEMP_DIR)) {
 }
 
 // Robust GraphML parser for BNG contact maps
-function parseGraphML(content: string) {
-  const nodes: { id: string; label: string; color: string }[] = [];
-  const edges: { source: string; target: string }[] = [];
+export function parseGraphML(content: string) {
+  const nodes: { id: string; label: string; color: string; shape?: string; outline?: string; fontSize?: string; fontStyle?: string }[] = [];
+  const edges: { source: string; target: string; color?: string; width?: string; sourceArrow?: string; targetArrow?: string }[] = [];
 
   let pos = 0;
   const stack: any[] = [];
@@ -55,12 +55,28 @@ function parseGraphML(content: string) {
       } else {
         stack.pop();
       }
+    } else if (tagName === 'edge') {
+      if (!isClosing) {
+        const source = getAttr(tagContent, 'source');
+        const target = getAttr(tagContent, 'target');
+        if (source && target) {
+          const edgeObj: any = { source, target };
+          edges.push(edgeObj);
+          stack.push(edgeObj);
+        }
+      } else {
+        stack.pop();
+      }
     } else if (tagName === 'y:NodeLabel') {
       if (!isClosing && stack.length > 0) {
         const textEnd = content.indexOf('<', nextTagEnd);
         if (textEnd !== -1) {
           const text = content.substring(nextTagEnd + 1, textEnd).trim();
           stack[stack.length - 1].label = text;
+          const fsz = getAttr(tagContent, 'fontSize');
+          const fstyle = getAttr(tagContent, 'fontStyle');
+          if (fsz) stack[stack.length - 1].fontSize = fsz;
+          if (fstyle) stack[stack.length - 1].fontStyle = fstyle;
         }
       }
     } else if (tagName === 'y:Fill') {
@@ -68,13 +84,29 @@ function parseGraphML(content: string) {
         const color = getAttr(tagContent, 'color');
         if (color) stack[stack.length - 1].color = color;
       }
-    } else if (tagName === 'edge') {
-      if (!isClosing) {
-        const source = getAttr(tagContent, 'source');
-        const target = getAttr(tagContent, 'target');
-        if (source && target) {
-          edges.push({ source, target });
-        }
+    } else if (tagName === 'y:Shape') {
+      if (!isClosing && stack.length > 0) {
+        const type = getAttr(tagContent, 'type');
+        if (type) stack[stack.length - 1].shape = type;
+      }
+    } else if (tagName === 'y:BorderStyle') {
+      if (!isClosing && stack.length > 0) {
+        const col = getAttr(tagContent, 'color');
+        if (col) stack[stack.length - 1].outline = col;
+      }
+    } else if (tagName === 'y:LineStyle') {
+      if (!isClosing && stack.length > 0) {
+        const col = getAttr(tagContent, 'color');
+        const width = getAttr(tagContent, 'width');
+        if (col) stack[stack.length - 1].color = col;
+        if (width) stack[stack.length - 1].width = width;
+      }
+    } else if (tagName === 'y:Arrows') {
+      if (!isClosing && stack.length > 0) {
+        const sa = getAttr(tagContent, 'source');
+        const ta = getAttr(tagContent, 'target');
+        if (sa) stack[stack.length - 1].sourceArrow = sa;
+        if (ta) stack[stack.length - 1].targetArrow = ta;
       }
     }
 
@@ -188,4 +220,7 @@ async function runTest() {
   console.log(`No GML: ${noGml.length}`);
 }
 
-runTest();
+// only execute the brute‑force sweep when run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runTest();
+}

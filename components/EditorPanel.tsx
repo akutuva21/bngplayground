@@ -148,10 +148,13 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
     // Otherwise treat as a BNGL (.bngl) file
     const reader = new FileReader();
     reader.onload = (e) => {
-      onCodeChange(e.target?.result as string);
+      const newCode = e.target?.result as string;
+      onCodeChange(newCode);
       // Clear model name when loading from file
       onModelNameChange?.(file.name.replace(/\.bngl$/i, ''));
       onModelIdChange?.(null);
+      // automatically parse newly loaded file
+      onParse(newCode);
     };
     reader.readAsText(file);
   };
@@ -167,6 +170,8 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
     onModelNameChange?.(modelName ?? null);
     onModelIdChange?.(modelId ?? null);
     setIsGalleryOpen(false);
+    // automatically parse after loading an example
+    onParse(exampleCode);
   };
 
   return (

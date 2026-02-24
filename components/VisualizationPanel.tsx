@@ -295,6 +295,7 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
               model={model}
               selectedRuleId={selectedRuleId}
               onSelectRule={setSelectedRuleId}
+              forceFitTrigger={`${activeTab}:${networkViewMode}:${model?.reactionRules?.length ?? 0}`}
             />
           </div>
         )}

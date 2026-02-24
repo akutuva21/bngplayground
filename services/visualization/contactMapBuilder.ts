@@ -63,7 +63,9 @@ export const buildContactMap = (
           molecule.components.forEach((c: any) => {
             moleculeMap.get(molecule.name)!.add(c.name);
 
-            if (c.state) {
+            // Skip '?' wildcard — it means "any state" in BNGL rule patterns
+            // and must not be materialised as a concrete state node.
+            if (c.state && c.state !== '?') {
               const compKey = `${molecule.name}_${c.name}`;
               if (!componentStateMap.has(compKey)) {
                 componentStateMap.set(compKey, new Set());

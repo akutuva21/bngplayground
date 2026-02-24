@@ -6,6 +6,7 @@ import { spawn } from 'node:child_process';
 import { fetchBioModelsSbml } from '../services/bioModelsImport';
 import { Atomizer, SBMLParser } from '../src/lib/atomizer';
 import { parseBNGLStrict } from '../src/parser/BNGLParserWrapper';
+import { parseBNGLRegexDeprecated } from '../services/parseBNGL';
 import { generateExpandedNetwork } from '../services/simulation/NetworkExpansion';
 import { loadEvaluator } from '../services/simulation/ExpressionEvaluator';
 import { requiresCompartmentResolution, resolveCompartmentVolumes } from '../services/simulation/CompartmentResolver';
@@ -62,6 +63,8 @@ type RoundtripResult = {
       expandedNetwork: boolean;
       expansionTimedOut: boolean;
       exportUsedUnexpandedFallback: boolean;
+      parserUsed: 'strict' | 'legacy';
+      parserStrictError?: string;
     };
     parseCompareFallback?: {
       used: boolean;
@@ -153,6 +156,22 @@ const LARGE_COMPARE_REACTIONS = Number(process.env.BIOMODELS_ROUNDTRIP_LARGE_REA
 const REQUIRE_EFFECTIVE_ROUNDTRIP = (process.env.BIOMODELS_ROUNDTRIP_REQUIRE_EFFECTIVE ?? '0') === '1';
 const STREAM_CHILD_LOGS =
   ROUNDTRIP_VERBOSE || (process.env.BIOMODELS_ROUNDTRIP_STREAM_CHILD_LOGS ?? '0') === '1';
+const SKIP_EXISTING_RESULTS = (process.env.BIOMODELS_ROUNDTRIP_SKIP_EXISTING ?? '0') === '1';
+const SKIP_DIAGNOSTICS_ON_HUGE_BNGL =
+  (process.env.BIOMODELS_ROUNDTRIP_SKIP_PARSE_DIAGNOSTICS_LARGE ?? '1') !== '0';
+const SKIP_DIAGNOSTICS_BNGL_LEN = Number(
+  process.env.BIOMODELS_ROUNDTRIP_SKIP_PARSE_DIAGNOSTICS_BNGL_LEN || '3000000'
+);
+const SKIP_DIAGNOSTICS_FUNCTIONS = Number(
+  process.env.BIOMODELS_ROUNDTRIP_SKIP_PARSE_DIAGNOSTICS_FUNCTIONS || '8000'
+);
+const SKIP_DIAGNOSTICS_RULE_LINES = Number(
+  process.env.BIOMODELS_ROUNDTRIP_SKIP_PARSE_DIAGNOSTICS_RULE_LINES || '6000'
+);
+const PARSER_FORCE_LEGACY = (process.env.BIOMODELS_ROUNDTRIP_FORCE_LEGACY_PARSER ?? '0') === '1';
+const PARSER_STRICT_MAX_BNGL_LEN = Number(process.env.BIOMODELS_ROUNDTRIP_STRICT_MAX_BNGL_LEN || '10000000');
+const PARSER_STRICT_MAX_FUNCTIONS = Number(process.env.BIOMODELS_ROUNDTRIP_STRICT_MAX_FUNCTIONS || '5000');
+const PARSER_STRICT_MAX_RULE_LINES = Number(process.env.BIOMODELS_ROUNDTRIP_STRICT_MAX_RULE_LINES || '10000');
 
 const arg = (name: string): string | null => {
   const idx = process.argv.indexOf(name);
@@ -466,6 +485,72 @@ const extractBnglParseSnippet = (bngl: string, errText: string): string | undefi
   return `L${lineNo}:${colNo} ${line}\n${pointer}`;
 };
 
+const parserPreferenceForBngl = (args: {
+  bnglLength: number;
+  functionCount: number;
+  reactionRuleLineCount: number;
+  hasRules: boolean;
+  reactionTagCount: number;
+  hasRateRuleMetadata?: boolean;
+}): { preferLegacyFirst: boolean; reasons: string[] } => {
+  const reasons: string[] = [];
+  if (PARSER_FORCE_LEGACY) reasons.push('force_legacy_env');
+  if (args.bnglLength >= PARSER_STRICT_MAX_BNGL_LEN) reasons.push(`bngl_len>=${PARSER_STRICT_MAX_BNGL_LEN}`);
+  if (args.functionCount >= PARSER_STRICT_MAX_FUNCTIONS) reasons.push(`functions>=${PARSER_STRICT_MAX_FUNCTIONS}`);
+  if (args.reactionRuleLineCount >= PARSER_STRICT_MAX_RULE_LINES) reasons.push(`rule_lines>=${PARSER_STRICT_MAX_RULE_LINES}`);
+  if (args.hasRules && args.reactionTagCount === 0) reasons.push('rule_only_source');
+  if (args.hasRateRuleMetadata) reasons.push('rate_rule_metadata');
+  return { preferLegacyFirst: reasons.length > 0, reasons };
+};
+
+const parseBnglWithFallback = (
+  bngl: string,
+  preferLegacyFirst = false
+): {
+  model: BNGLModel;
+  parser: 'strict' | 'legacy';
+  strictError?: string;
+} => {
+  if (preferLegacyFirst) {
+    try {
+      return {
+        model: parseBNGLRegexDeprecated(bngl, { debug: false }),
+        parser: 'legacy',
+      };
+    } catch (legacyErr) {
+      const legacyMessage = legacyErr instanceof Error ? legacyErr.message : String(legacyErr);
+      try {
+        return {
+          model: parseBNGLStrict(bngl),
+          parser: 'strict',
+        };
+      } catch (strictErr) {
+        const strictMessage = strictErr instanceof Error ? strictErr.message : String(strictErr);
+        throw new Error(`Legacy parse failed: ${legacyMessage}\nStrict parse failed: ${strictMessage}`);
+      }
+    }
+  }
+
+  try {
+    return {
+      model: parseBNGLStrict(bngl),
+      parser: 'strict',
+    };
+  } catch (strictErr) {
+    const strictMessage = strictErr instanceof Error ? strictErr.message : String(strictErr);
+    try {
+      return {
+        model: parseBNGLRegexDeprecated(bngl, { debug: false }),
+        parser: 'legacy',
+        strictError: strictMessage,
+      };
+    } catch (legacyErr) {
+      const legacyMessage = legacyErr instanceof Error ? legacyErr.message : String(legacyErr);
+      throw new Error(`Strict parse failed: ${strictMessage}\nLegacy parse failed: ${legacyMessage}`);
+    }
+  }
+};
+
 const toBnglThenSbml = async (
   modelId: string,
   bngl: string
@@ -476,15 +561,33 @@ const toBnglThenSbml = async (
   expandedNetwork: boolean;
   expansionTimedOut: boolean;
   exportUsedUnexpandedFallback: boolean;
+  parserUsed: 'strict' | 'legacy';
+  parserStrictError?: string;
 }> => {
   const stopParseHb = startHeartbeat(modelId, 'bngl_to_sbml.parse_model');
   let model: BNGLModel;
+  let parserUsed: 'strict' | 'legacy' = 'strict';
+  let parserStrictError: string | undefined;
+  const parserPref = parserPreferenceForBngl({
+    bnglLength: bngl.length,
+    functionCount: bngl
+      .split('\n')
+      .filter((line) => /^\s*[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)\s*=/.test(line))
+      .length,
+    reactionRuleLineCount: extractReactionRuleLines(bngl).length,
+    hasRules: false,
+    reactionTagCount: 1,
+    hasRateRuleMetadata: /__rate_rule__/i.test(bngl),
+  });
   try {
-    model = await withTimeout(
-      Promise.resolve(parseBNGLStrict(bngl)),
+    const parsed = await withTimeout(
+      Promise.resolve(parseBnglWithFallback(bngl, parserPref.preferLegacyFirst)),
       PHASE_TIMEOUT_MS,
       `${modelId} parse BNGL (for SBML export)`
     );
+    model = parsed.model;
+    parserUsed = parsed.parser;
+    parserStrictError = parsed.strictError;
   } finally {
     stopParseHb();
   }
@@ -630,6 +733,8 @@ const toBnglThenSbml = async (
     expandedNetwork,
     expansionTimedOut,
     exportUsedUnexpandedFallback,
+    parserUsed,
+    parserStrictError,
   };
 };
 
@@ -760,25 +865,64 @@ async function roundtripOne(modelId: string): Promise<RoundtripResult> {
     diagnostics.bngl.nonZeroRateRuleLineCount =
       diagnostics.bngl.reactionRuleLineCount - diagnostics.bngl.zeroRateRuleLineCount;
     diagnostics.bngl.hasRateRuleMetadata = /__rate_rule__/i.test(atomized.bngl);
-
-    const parsedBngl = await runPhase('parse_bngl_diagnostics', async () => {
-      try {
-        return await withTimeout(
-          Promise.resolve(parseBNGLStrict(atomized.bngl)),
-          PARSE_BNGL_PHASE_TIMEOUT_MS,
-          `${modelId} parse BNGL`
+    const skipHeavyDiagnosticsParse =
+      SKIP_DIAGNOSTICS_ON_HUGE_BNGL &&
+      (
+        atomized.bngl.length >= SKIP_DIAGNOSTICS_BNGL_LEN ||
+        diagnostics.bngl.functionCount >= SKIP_DIAGNOSTICS_FUNCTIONS ||
+        diagnostics.bngl.reactionRuleLineCount >= SKIP_DIAGNOSTICS_RULE_LINES
+      );
+    if (skipHeavyDiagnosticsParse) {
+      diagnostics.bngl.parameterCount = 0;
+      diagnostics.bngl.nonZeroParameterCount = 0;
+      diagnostics.bngl.speciesCount = diagnostics.sbmlInput.speciesTagCount;
+      diagnostics.bngl.reactionRuleCount = diagnostics.bngl.reactionRuleLineCount;
+      diagnostics.bngl.reactionCount = 0;
+      log(
+        modelId,
+        'parse_bngl_diagnostics',
+        `Skipped heavy BNGL diagnostics parse (bnglLen=${atomized.bngl.length}, functions=${diagnostics.bngl.functionCount}, ruleLines=${diagnostics.bngl.reactionRuleLineCount})`
+      );
+    } else {
+      const diagnosticsParserPref = parserPreferenceForBngl({
+        bnglLength: atomized.bngl.length,
+        functionCount: diagnostics.bngl.functionCount,
+        reactionRuleLineCount: diagnostics.bngl.reactionRuleLineCount,
+        hasRules: diagnostics.sbmlInput.hasRules,
+        reactionTagCount: diagnostics.sbmlInput.reactionTagCount,
+        hasRateRuleMetadata: diagnostics.bngl.hasRateRuleMetadata,
+      });
+      if (diagnosticsParserPref.preferLegacyFirst) {
+        log(
+          modelId,
+          'parse_bngl_diagnostics',
+          `parser_preference=legacy_first reason=${diagnosticsParserPref.reasons.join(',')}`
         );
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        diagnostics.parseBnglErrorSnippet = extractBnglParseSnippet(atomized.bngl, msg);
-        throw error;
       }
-    });
-    diagnostics.bngl.parameterCount = Object.keys(parsedBngl.parameters || {}).length;
-    diagnostics.bngl.nonZeroParameterCount = Object.values(parsedBngl.parameters || {}).filter((v) => Number(v) !== 0).length;
-    diagnostics.bngl.speciesCount = parsedBngl.species?.length ?? 0;
-    diagnostics.bngl.reactionRuleCount = parsedBngl.reactionRules?.length ?? 0;
-    diagnostics.bngl.reactionCount = parsedBngl.reactions?.length ?? 0;
+
+      const parsedBnglResult = await runPhase('parse_bngl_diagnostics', async () => {
+        try {
+          return await withTimeout(
+            Promise.resolve(parseBnglWithFallback(atomized.bngl, diagnosticsParserPref.preferLegacyFirst)),
+            PARSE_BNGL_PHASE_TIMEOUT_MS,
+            `${modelId} parse BNGL`
+          );
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : String(error);
+          diagnostics.parseBnglErrorSnippet = extractBnglParseSnippet(atomized.bngl, msg);
+          throw error;
+        }
+      });
+      const parsedBngl = parsedBnglResult.model;
+      if (parsedBnglResult.parser === 'legacy' && parsedBnglResult.strictError) {
+        diagnostics.parseBnglErrorSnippet = extractBnglParseSnippet(atomized.bngl, parsedBnglResult.strictError);
+      }
+      diagnostics.bngl.parameterCount = Object.keys(parsedBngl.parameters || {}).length;
+      diagnostics.bngl.nonZeroParameterCount = Object.values(parsedBngl.parameters || {}).filter((v) => Number(v) !== 0).length;
+      diagnostics.bngl.speciesCount = parsedBngl.species?.length ?? 0;
+      diagnostics.bngl.reactionRuleCount = parsedBngl.reactionRules?.length ?? 0;
+      diagnostics.bngl.reactionCount = parsedBngl.reactions?.length ?? 0;
+    }
 
     const flatlineReasons: string[] = [];
     const sourceRuleOnly = diagnostics.sbmlInput.hasRules && diagnostics.sbmlInput.reactionTagCount === 0;
@@ -827,6 +971,8 @@ async function roundtripOne(modelId: string): Promise<RoundtripResult> {
       expandedNetwork: conversion.expandedNetwork,
       expansionTimedOut: conversion.expansionTimedOut,
       exportUsedUnexpandedFallback: conversion.exportUsedUnexpandedFallback,
+      parserUsed: conversion.parserUsed,
+      parserStrictError: conversion.parserStrictError,
     };
     const roundtripSbml = conversion.sbml;
     roundtripSbmlPath = path.join(modelDir, 'roundtrip.sbml.xml');
@@ -1011,6 +1157,21 @@ async function runBatchMode() {
   await fs.mkdir(effectiveOutDir, { recursive: true });
   const startedAt = nowIso();
   const targetIds = await resolveTargetIds();
+  const existingResults: RoundtripResult[] = [];
+  const runIds: string[] = [];
+  if (SKIP_EXISTING_RESULTS) {
+    for (const id of targetIds) {
+      const existingResultPath = path.join(effectiveOutDir, id, 'result.json');
+      try {
+        const raw = await fs.readFile(existingResultPath, 'utf8');
+        existingResults.push(JSON.parse(raw) as RoundtripResult);
+      } catch {
+        runIds.push(id);
+      }
+    }
+  } else {
+    runIds.push(...targetIds);
+  }
   const passLogEvery = Math.max(1, Number(process.env.BIOMODELS_ROUNDTRIP_PASS_LOG_EVERY || '25'));
   console.log(
     `[roundtrip] Starting batch: models=${targetIds.length} timeoutPerModelMs=${PER_MODEL_TIMEOUT_MS} maxBatchMs=${BATCH_TIMEOUT_MS}`
@@ -1019,6 +1180,12 @@ async function runBatchMode() {
     console.log(
       `[roundtrip] Source: BioModels SBML catalog offset=${allSbmlOffset} limit=${allSbmlLimit > 0 ? allSbmlLimit : 'all'}`
     );
+  }
+  if (SKIP_EXISTING_RESULTS) {
+    console.log(`[roundtrip] Resume: reusing existing=${existingResults.length} pending=${runIds.length}`);
+  }
+  if (runIds.length === 0) {
+    console.log('[roundtrip] No pending models after resume filter.');
   }
 
   const watchdog = setTimeout(() => {
@@ -1031,11 +1198,11 @@ async function runBatchMode() {
       1,
       Math.trunc(parseFiniteNumber(process.env.BIOMODELS_ROUNDTRIP_CONCURRENCY, 1))
     );
-    const workerCount = Math.min(concurrency, targetIds.length);
+    const workerCount = Math.min(concurrency, runIds.length);
     if (workerCount > 1) {
       console.log(`[roundtrip] Concurrency: ${workerCount}`);
     }
-    const results: RoundtripResult[] = new Array(targetIds.length);
+    const freshResults: RoundtripResult[] = new Array(runIds.length);
 
     const runChildForId = async (id: string): Promise<RoundtripResult> => {
       const modelDir = path.join(effectiveOutDir, id);
@@ -1117,12 +1284,22 @@ async function runBatchMode() {
             : `Child exited with code ${exitCode} before writing result.json`,
           durationMs: PER_MODEL_TIMEOUT_MS,
         };
+        try {
+          await fs.writeFile(resultPath, JSON.stringify(result, null, 2), 'utf8');
+        } catch {
+          // best-effort persistence for resume mode
+        }
       }
 
       if (timedOut) {
         result.ok = false;
         result.timedOut = true;
         result.error = result.error || `Child timed out after ${PER_MODEL_TIMEOUT_MS} ms`;
+        try {
+          await fs.writeFile(resultPath, JSON.stringify(result, null, 2), 'utf8');
+        } catch {
+          // best-effort persistence for resume mode
+        }
       }
       return result;
     };
@@ -1132,27 +1309,34 @@ async function runBatchMode() {
     const runWorker = async () => {
       while (true) {
         const idx = nextIndex++;
-        if (idx >= targetIds.length) return;
-        const id = targetIds[idx];
+        if (idx >= runIds.length) return;
+        const id = runIds[idx];
         if (ROUNDTRIP_VERBOSE) {
           console.log(
-            `[roundtrip] Spawning child ${idx + 1}/${targetIds.length} for ${id} (timeout=${PER_MODEL_TIMEOUT_MS}ms)`
+            `[roundtrip] Spawning child ${idx + 1}/${runIds.length} for ${id} (timeout=${PER_MODEL_TIMEOUT_MS}ms)`
           );
         }
         const result = await runChildForId(id);
-        results[idx] = result;
+        freshResults[idx] = result;
         completed += 1;
-        const shouldLogPass = ROUNDTRIP_VERBOSE || (completed % passLogEvery === 0) || completed === targetIds.length;
+        const shouldLogPass = ROUNDTRIP_VERBOSE || (completed % passLogEvery === 0) || completed === runIds.length;
         if (!result.ok || shouldLogPass) {
           console.log(
-            `[roundtrip] ${result.ok ? 'PASS' : 'FAIL'} ${completed}/${targetIds.length} ${id} (${result.durationMs} ms)${
+            `[roundtrip] ${result.ok ? 'PASS' : 'FAIL'} ${completed}/${runIds.length} ${id} (${result.durationMs} ms)${
               result.error ? ' - ' + result.error : ''
             }`
           );
         }
       }
     };
-    await Promise.all(Array.from({ length: workerCount }, () => runWorker()));
+    if (workerCount > 0) {
+      await Promise.all(Array.from({ length: workerCount }, () => runWorker()));
+    }
+
+    const results = [
+      ...existingResults,
+      ...freshResults.filter((r): r is RoundtripResult => !!r),
+    ];
 
     const summary = {
       startedAt,

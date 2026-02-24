@@ -4,10 +4,17 @@ const ZIP_MAGIC_1 = 0x4b;
 const ZIP_MAGIC_2 = 0x03;
 const ZIP_MAGIC_3 = 0x04;
 const FETCH_TIMEOUT_MS = Number(
-  (typeof process !== 'undefined' && process.env?.BIOMODELS_FETCH_TIMEOUT_MS) || '20000'
+  (typeof process !== 'undefined' &&
+    (process.env?.BIOMODELS_FETCH_TIMEOUT_MS ||
+      process.env?.BIOMODELS_ROUNDTRIP_FETCH_TIMEOUT_MS)) ||
+    '20000'
 );
 const BODY_READ_TIMEOUT_MS = Number(
-  (typeof process !== 'undefined' && process.env?.BIOMODELS_BODY_READ_TIMEOUT_MS) || '15000'
+  (typeof process !== 'undefined' &&
+    (process.env?.BIOMODELS_BODY_READ_TIMEOUT_MS ||
+      process.env?.BIOMODELS_ROUNDTRIP_BODY_READ_TIMEOUT_MS ||
+      process.env?.BIOMODELS_ROUNDTRIP_FETCH_TIMEOUT_MS)) ||
+    '15000'
 );
 
 const SBML_TAG_RE = /<\s*sbml(?:\s|>)/i;

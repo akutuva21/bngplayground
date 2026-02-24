@@ -40,6 +40,14 @@ const MISSING_KINETIC_RATE_FALLBACK =
 const MISSING_KINETIC_LOG_LIMIT = Number(
   (typeof process !== 'undefined' && process.env?.BNGL_MISSING_KINETIC_LOG_LIMIT) || '25'
 );
+const ENABLE_MASS_ACTION_CHECK =
+  ((typeof process !== 'undefined' && process.env?.BNGL_ENABLE_MASS_ACTION_CHECK) || '1') !== '0';
+const MASS_ACTION_SKIP_MIN_REACTIONS = Number(
+  (typeof process !== 'undefined' && process.env?.BNGL_SKIP_MASS_ACTION_MIN_REACTIONS) || '1000'
+);
+const MASS_ACTION_SKIP_EXPR_LEN = Number(
+  (typeof process !== 'undefined' && process.env?.BNGL_SKIP_MASS_ACTION_EXPR_LEN) || '2000'
+);
 let transportLogCount = 0;
 let missingKineticLogCount = 0;
 
@@ -314,14 +322,16 @@ function convertComparisonOperators(expr: string): string {
  */
 function replaceNestedFunc(expr: string, funcName: string, replacer: (args: string[]) => string): string {
   let result = expr;
-  const regexStr = `\\b${funcName}\\s*\\(`;
+  const regex = new RegExp(`\\b${funcName}\\s*\\(`, 'g');
+  let searchIndex = 0;
+  let guard = 0;
 
-  while (true) {
-    const regex = new RegExp(regexStr);
-    const match = result.match(regex);
+  while (guard < 100000) {
+    regex.lastIndex = searchIndex;
+    const match = regex.exec(result);
     if (!match) break;
 
-    const startIndex = match.index!;
+    const startIndex = match.index;
     let parenCount = 1;
     let i = startIndex + match[0].length;
     while (parenCount > 0 && i < result.length) {
@@ -334,12 +344,21 @@ function replaceNestedFunc(expr: string, funcName: string, replacer: (args: stri
       const inner = result.substring(startIndex + match[0].length, i - 1);
       const args = splitArguments(inner);
       const replacement = replacer(args);
-      result = result.substring(0, startIndex) + replacement + result.substring(i);
+      const originalCall = result.substring(startIndex, i);
+      if (replacement === originalCall) {
+        // Keep scanning forward when replacer leaves the call unchanged.
+        searchIndex = i;
+      } else {
+        result = result.substring(0, startIndex) + replacement + result.substring(i);
+        searchIndex = startIndex + replacement.length;
+      }
     } else {
       // Unmatched parenthesis, something is wrong with the expression
       break;
     }
+    guard += 1;
   }
+
   return result;
 }
 
@@ -879,16 +898,6 @@ export function writeFunctions(
   forceRuleOnlyFastPath: boolean = false
 ): string {
   const lines: string[] = [];
-  const debugTimings =
-    typeof process !== 'undefined' &&
-    !!process.env &&
-    process.env.BNGL_WRITER_DEBUG_TIMINGS === '1';
-  const t0 = Date.now();
-  if (debugTimings) {
-    console.error(
-      `[bnglWriter][writeFunctions] start funcs=${functions.size} assignmentRules=${assignmentRules.length} rateRules=${rateRules.length} fluxTargets=${rateRuleFluxTargets.size} speciesAmts=${speciesAmts.size} speciesMap=${speciesToCompartment.size}`
-    );
-  }
 
   // Avoid O(n^2) lookups for large species sets (genome-scale reconstructions).
   const standardizedSpeciesInfo = new Map<string, { compId: string; isAmountOnly: boolean }>();
@@ -932,18 +941,12 @@ export function writeFunctions(
 
     lines.push(`${name}(${args}) = ${body}`);
   }
-  if (debugTimings) {
-    console.error(`[bnglWriter][writeFunctions] after function definitions ${Date.now() - t0}ms`);
-  }
 
   // Fast path for rule-only SBML (no species/reactions): avoid heavy bnglFunction transforms
   // that can become prohibitively slow (or hang) on ODE rule systems.
   const noSpeciesContext =
     forceRuleOnlyFastPath || (speciesToCompartment.size === 0 && speciesToHasOnlySubstanceUnits.size === 0);
   if (noSpeciesContext) {
-    if (debugTimings) {
-      console.error(`[bnglWriter][writeFunctions] fast-path enabled ${Date.now() - t0}ms`);
-    }
     const dynamicTargets = Array.from(rateRuleFluxTargets.values()).sort((a, b) => b.length - a.length);
     const rewriteRateRuleTargets = (expr: string): string => {
       let rewritten = expr;
@@ -991,14 +994,7 @@ export function writeFunctions(
       }
     }
 
-    if (debugTimings) {
-      console.error(`[bnglWriter][writeFunctions] fast-path complete ${Date.now() - t0}ms`);
-    }
     return sectionTemplate('functions', lines);
-  }
-
-  if (debugTimings) {
-    console.error(`[bnglWriter][writeFunctions] entering full-path ${Date.now() - t0}ms`);
   }
 
 
@@ -1035,9 +1031,6 @@ export function writeFunctions(
 
   for (const rule of assignmentRules) {
     visit(rule.variable);
-  }
-  if (debugTimings) {
-    console.error(`[bnglWriter][writeFunctions] dependency sort done ${Date.now() - t0}ms`);
   }
 
   const assignmentRuleIds = new Set(assignmentRules.map(r => standardizeName(r.variable)));
@@ -1108,10 +1101,6 @@ export function writeFunctions(
         `${RATE_RULE_NEG_PREFIX}${name}() = if(${RATE_RULE_META_PREFIX}${name}() < 0, -(${RATE_RULE_META_PREFIX}${name}()), 0)`
       );
     }
-  }
-
-  if (debugTimings) {
-    console.error(`[bnglWriter][writeFunctions] full-path complete ${Date.now() - t0}ms`);
   }
 
   return sectionTemplate('functions', lines);
@@ -1465,6 +1454,11 @@ export function writeReactionRulesAtomized(
 ): string {
   const lines: string[] = [];
   const useCompartments = compartments.size > 0;
+  const numericParameterDict = new Map<string, number>(
+    Array.from(parameterDict.entries()).map(([k, v]) => [k, Number(v)])
+  );
+  const skipMassActionCheck =
+    !ENABLE_MASS_ACTION_CHECK || reactions.size >= MASS_ACTION_SKIP_MIN_REACTIONS;
 
   for (const [rxnId, rxn] of reactions) {
     const reactantStrs: string[] = [];
@@ -1529,7 +1523,9 @@ export function writeReactionRulesAtomized(
       speciesToCompartment,
       speciesToHasOnlySubstanceUnits,
       options,
+      numericParameterDict,
       sbmlToBnglId,
+      skipMassActionCheck,
       bnglFunction,       // Pass reference to existing bnglFunction
       checkMassAction,    // Pass reference to existing checkMassAction
     );
@@ -2542,7 +2538,9 @@ export function processReactionRate(
   speciesToCompartment: Map<string, string>,
   speciesToHasOnlySubstanceUnits: Map<string, boolean>,
   options: AtomizerOptions,
+  numericParameterDict: Map<string, number> | undefined,
   sbmlToBnglId: Map<string, string>,
+  skipMassActionCheck: boolean,
   // Pass these as callbacks so we don't duplicate your existing logic
   bnglFunctionFn: (
     rule: string, functionTitle: string, reactants: string[],
@@ -2600,12 +2598,17 @@ export function processReactionRate(
   }
 
   // ── Step 4: Convert to BNGL math ──
+  const effectiveNumericParameterDict =
+    numericParameterDict ||
+    new Map<string, number>(
+      Array.from(parameterDict.entries()).map(([k, v]) => [k, Number(v)])
+    );
   const convertedRate = bnglFunctionFn(
     rate,
     rxnId,
     rxn.reactants.map(r => r.species),
     Array.from(compartments.keys()),
-    new Map(Array.from(parameterDict.entries()).map(([k, v]) => [k, Number(v)])),
+    effectiveNumericParameterDict,
     new Map(),
     options.assignmentRuleVariables || new Set(),
     new Set(speciesToCompartment.keys()),
@@ -2654,12 +2657,12 @@ export function processReactionRate(
       const fwdRate = processOneDirection(
         split.forwardRate, reactantCounts, totalStoichiometry,
         vScaleName, parameterDict, compartments, speciesToCompartment,
-        options, checkMassActionFn
+        options, checkMassActionFn, skipMassActionCheck
       );
       const revRate = processOneDirection(
         split.reverseRate, productCounts, totalProductStoichiometry,
         vScaleName, parameterDict, compartments, speciesToCompartment,
-        options, checkMassActionFn
+        options, checkMassActionFn, skipMassActionCheck
       );
 
       if (fwdRate.isSplitRxn || revRate.isSplitRxn) {
@@ -2686,7 +2689,7 @@ export function processReactionRate(
         rateString: processOneDirection(
           convertedRate, reactantCounts, totalStoichiometry,
           vScaleName, parameterDict, compartments, speciesToCompartment,
-          options, checkMassActionFn
+          options, checkMassActionFn, skipMassActionCheck
         ).rateString,
         forceIrreversible: true,
         isSplitRxn: false,
@@ -2698,7 +2701,7 @@ export function processReactionRate(
   const result = processOneDirection(
     convertedRate, reactantCounts, totalStoichiometry,
     vScaleName, parameterDict, compartments, speciesToCompartment,
-    options, checkMassActionFn
+    options, checkMassActionFn, skipMassActionCheck
   );
 
   return {
@@ -2727,6 +2730,7 @@ function processOneDirection(
     parameterDict: Map<string, number | string>, compartments: Map<string, SBMLCompartment>,
     speciesToCompartment: Map<string, string>, assignmentRuleVariables: Set<string>
   ) => number | null,
+  skipMassActionCheck: boolean,
 ): DirectionResult {
 
   // Build divisor expression: product of (speciesName_amt^stoich / stoich!)
@@ -2743,15 +2747,19 @@ function processOneDirection(
   const divisorExpr = divisorParts.length > 0 ? divisorParts.join(' * ') : '1';
 
   // ── Tier 1: Numerical mass-action check ──
-  const maConstant = checkMassActionFn(
-    rateExpr,
-    divisorExpr,
-    vScaleName,
-    parameterDict,
-    compartments,
-    speciesToCompartment,
-    options.assignmentRuleVariables || new Set(),
-  );
+  const shouldSkipMassActionCheck =
+    skipMassActionCheck || rateExpr.length >= MASS_ACTION_SKIP_EXPR_LEN;
+  const maConstant = shouldSkipMassActionCheck
+    ? null
+    : checkMassActionFn(
+      rateExpr,
+      divisorExpr,
+      vScaleName,
+      parameterDict,
+      compartments,
+      speciesToCompartment,
+      options.assignmentRuleVariables || new Set(),
+    );
 
   if (maConstant !== null) {
     return { rateString: String(maConstant), isSplitRxn: false };
@@ -2854,6 +2862,11 @@ export function writeReactionRulesFlat_V2(
 ): string {
   const lines: string[] = [];
   const useCompartments = compartments.size > 0;
+  const numericParameterDict = new Map<string, number>(
+    Array.from(parameterDict.entries()).map(([k, v]) => [k, Number(v)])
+  );
+  const skipMassActionCheck =
+    !ENABLE_MASS_ACTION_CHECK || reactions.size >= MASS_ACTION_SKIP_MIN_REACTIONS;
 
   const buildFlatPattern = (speciesId: string): string => {
     // Robust mapping first - use actual pattern instead of BNGL ID
@@ -2942,7 +2955,9 @@ export function writeReactionRulesFlat_V2(
       speciesToCompartment,
       speciesToHasOnlySubstanceUnits,
       options,
+      numericParameterDict,
       sbmlToBnglId,
+      skipMassActionCheck,
       bnglFunction,       // Pass reference to existing bnglFunction
       checkMassAction,    // Pass reference to existing checkMassAction
     );

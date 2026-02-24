@@ -12,8 +12,11 @@ import {
   DEFAULT_ATOMIZER_OPTIONS,
   AtomizerResult,
   SBMLModel,
+  SBMLSpecies,
   NamingConventions,
   DEFAULT_NAMING_CONVENTIONS,
+  SCTEntry,
+  SeedSpeciesEntry,
   SpeciesCompositionTable,
 } from './config/types';
 import { SBMLParser } from './parser/sbmlParser';
@@ -136,6 +139,32 @@ export class Atomizer {
         `Model "${this.model.name}": ${this.model.species.size} species, ${this.model.reactions.size} reactions`
       );
 
+      if (this.shouldUseLargeFlatFastPath(sbmlString, this.model)) {
+        logger.warning(
+          'ATM011',
+          `Large-model flat fast path enabled (species=${this.model.species.size}, reactions=${this.model.reactions.size}, sbmlChars=${sbmlString.length})`
+        );
+        const { sct, moleculeTypes, seedSpecies } = this.buildLargeModelFlatArtifacts(this.model);
+        this.sct = sct;
+
+        const result = generateBNGL(
+          this.model,
+          this.sct,
+          moleculeTypes,
+          seedSpecies,
+          this.options
+        );
+
+        return {
+          bngl: result.bngl,
+          database: this.databases,
+          annotation: null,
+          observableMap: result.observableMap,
+          log: logger.getMessages(),
+          success: true,
+        };
+      }
+
       // Build Species Composition Table
       logger.info('ATM005', 'Building species composition table...');
       this.sct = buildSpeciesCompositionTable(this.model, {
@@ -197,6 +226,119 @@ export class Atomizer {
         error: String(error),
       };
     }
+  }
+
+  private shouldUseLargeFlatFastPath(sbmlString: string, model: SBMLModel): boolean {
+    if (this.options.atomize) return false;
+
+    const env = typeof process !== 'undefined' ? process.env : undefined;
+    const enabled = (env?.ATOMIZER_LARGE_FASTPATH ?? '1') !== '0';
+    if (!enabled) return false;
+
+    const minSpecies = Number(env?.ATOMIZER_FASTPATH_MIN_SPECIES ?? '1500');
+    const minReactions = Number(env?.ATOMIZER_FASTPATH_MIN_REACTIONS ?? '1000');
+    const minSbmlChars = Number(env?.ATOMIZER_FASTPATH_MIN_SBML_CHARS ?? '5000000');
+
+    return (
+      model.species.size >= minSpecies ||
+      model.reactions.size >= minReactions ||
+      sbmlString.length >= minSbmlChars
+    );
+  }
+
+  private buildLargeModelFlatArtifacts(model: SBMLModel): {
+    sct: SpeciesCompositionTable;
+    moleculeTypes: Molecule[];
+    seedSpecies: SeedSpeciesEntry[];
+  } {
+    const entries = new Map<string, SCTEntry>();
+    const dependencies = new Map<string, Set<string>>();
+    const reverseDependencies = new Map<string, Set<string>>();
+    const sortedSpecies: string[] = [];
+    const weights: [string, number][] = [];
+    const moleculeTypesMap = new Map<string, Molecule>();
+    const seedSpecies: SeedSpeciesEntry[] = [];
+    const usedMoleculeNames = new Set<string>();
+
+    const uniqueMoleculeName = (base: string, idx: number): string => {
+      if (!usedMoleculeNames.has(base)) {
+        usedMoleculeNames.add(base);
+        return base;
+      }
+      let n = idx;
+      while (usedMoleculeNames.has(`${base}_${n}`)) {
+        n += 1;
+      }
+      const resolved = `${base}_${n}`;
+      usedMoleculeNames.add(resolved);
+      return resolved;
+    };
+
+    let row = 1;
+    for (const [speciesId, sp] of model.species) {
+      const baseName = standardizeName(speciesId || sp.name || `sp_${row}`);
+      const moleculeName = uniqueMoleculeName(baseName, row);
+
+      const structure = new Species();
+      structure.addMolecule(new Molecule(moleculeName));
+      structure.renumberBonds();
+
+      entries.set(speciesId, {
+        structure,
+        components: [],
+        sbmlId: speciesId,
+        isElemental: true,
+        modifications: new Map(),
+        weight: 0,
+        bonds: [],
+      });
+
+      dependencies.set(speciesId, new Set<string>());
+      reverseDependencies.set(speciesId, new Set<string>());
+      sortedSpecies.push(speciesId);
+      weights.push([speciesId, 0]);
+
+      if (!moleculeTypesMap.has(moleculeName)) {
+        moleculeTypesMap.set(moleculeName, new Molecule(moleculeName));
+      }
+
+      seedSpecies.push({
+        species: structure.copy(),
+        concentration: this.initialAmountExpression(sp),
+        compartment: sp.compartment,
+        sbmlId: speciesId,
+      });
+      row += 1;
+    }
+
+    const sct: SpeciesCompositionTable = {
+      entries,
+      dependencies,
+      reverseDependencies,
+      sortedSpecies,
+      weights,
+    };
+
+    return {
+      sct,
+      moleculeTypes: Array.from(moleculeTypesMap.values()),
+      seedSpecies,
+    };
+  }
+
+  private initialAmountExpression(sp: SBMLSpecies): string {
+    const amount = Number(sp.initialAmount);
+    if (Number.isFinite(amount) && amount > 0) {
+      return String(amount);
+    }
+
+    const concentration = Number(sp.initialConcentration);
+    if (Number.isFinite(concentration) && concentration > 0) {
+      const compId = standardizeName(sp.compartment || 'Compartment');
+      return `(${concentration} * Na * __compartment_${compId}__)`;
+    }
+
+    return '0';
   }
 
   /**

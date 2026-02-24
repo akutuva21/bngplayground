@@ -1257,12 +1257,25 @@ export class SBMLParser {
   }
 
   private extractParameter(param: any, scope: 'global' | 'local'): SBMLParameter {
+    const get = <T>(fn: unknown, fallback: T): T => {
+      try {
+        if (typeof fn === 'function') {
+          const value = fn();
+          return (value ?? fallback) as T;
+        }
+      } catch {
+        // ignore malformed libsbml bindings and use fallback
+      }
+      return fallback;
+    };
+
+    const id = String(get<string>(param?.getId?.bind(param), ''));
     return {
-      id: param.getId(),
-      name: param.getName() || param.getId(),
-      value: param.getValue() || 0,
-      units: param.getUnits() || '',
-      constant: param.getConstant(),
+      id,
+      name: String(get<string>(param?.getName?.bind(param), '') || id),
+      value: Number(get<number>(param?.getValue?.bind(param), 0)) || 0,
+      units: String(get<string>(param?.getUnits?.bind(param), '')),
+      constant: Boolean(get<boolean>(param?.getConstant?.bind(param), true)),
       scope,
     };
   }
@@ -1366,7 +1379,7 @@ export class SBMLParser {
       reactants.push({
         species: ref.getSpecies(),
         stoichiometry: ref.getStoichiometry() || 1,
-        constant: ref.getConstant(),
+        constant: typeof ref.getConstant === 'function' ? ref.getConstant() : true,
       });
     }
 
@@ -1376,7 +1389,7 @@ export class SBMLParser {
       products.push({
         species: ref.getSpecies(),
         stoichiometry: ref.getStoichiometry() || 1,
-        constant: ref.getConstant(),
+        constant: typeof ref.getConstant === 'function' ? ref.getConstant() : true,
       });
     }
 

@@ -38,6 +38,20 @@ import {
 } from '../utils/helpers';
 import { getAnnotationsByQualifier, extractUniProtIds } from '../parser/sbmlParser';
 
+const DEP_CYCLE_LOG_LIMIT = Number(
+  (typeof process !== 'undefined' && process.env?.ATOMIZER_DEP_CYCLE_LOG_LIMIT) || '20'
+);
+let depCycleLogCount = 0;
+
+const logDependencyCycle = (message: string): void => {
+  if (DEP_CYCLE_LOG_LIMIT < 0 || depCycleLogCount < DEP_CYCLE_LOG_LIMIT) {
+    logger.warning('DEP001', message);
+  } else if (depCycleLogCount === DEP_CYCLE_LOG_LIMIT) {
+    logger.warning('DEP001', 'Additional dependency cycle logs suppressed.');
+  }
+  depCycleLogCount += 1;
+};
+
 // =============================================================================
 // Dependency Graph
 // =============================================================================
@@ -76,7 +90,7 @@ export function topologicalSort(
   function visit(id: string, path: string[] = []): void {
     if (visited.has(id)) return;
     if (visiting.has(id)) {
-      logger.warning('DEP001', `Dependency cycle detected: ${path.join(' -> ')} -> ${id}`);
+      logDependencyCycle(`Dependency cycle detected: ${path.join(' -> ')} -> ${id}`);
       return;
     }
 
